@@ -35,14 +35,14 @@ jobs:
           python-version: 3.8
       - name: Install dependencies
         run: |
-          conda install conda-build pytest 
+          conda install conda-build conda-verify pytest 
       - name: Build conda package
         run: |
           conda build recipe \
-                --no-anaconda-upload \
-                --output-folder .
+                --output-folder dist/conda \
+                --no-anaconda-upload 
       - name: Install distribution
         run: |
-          conda install -c . coiled-distribution
+          conda install -c ./dist/conda coiled-distribution
       - name: Run tests
         run: pytest -v tests
