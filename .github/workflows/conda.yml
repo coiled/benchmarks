@@ -1,0 +1,48 @@
+name: Conda build
+on: [push, pull_request]
+  # push:
+  #   branches:
+  #     - main
+  # pull_request:
+  #     - main
+  #   paths:
+  #     - recipe/**
+  #     - .github/workflows/conda.yml
+
+# When this workflow is queued, automatically cancel any previous running
+# or pending jobs from the same branch
+concurrency:
+  group: conda-${{ github.head_ref }}
+  cancel-in-progress: true
+
+# Required shell entrypoint to have properly activated conda environments
+defaults:
+  run:
+    shell: bash -l {0}
+
+jobs:
+  conda:
+    name: Build (and upload)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Set up Python
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-version: latest
+          python-version: 3.8
+      - name: Build conda package
+        run: |
+          conda build recipe \
+                --no-anaconda-upload \
+                --output-folder .
+      - name: Install distribution
+        run: |
+          conda install -c . coiled-distribution
+      - name: Install pytest
+        run: |
+          conda install pytest 
+      - name: Run tests
+        run: pytest -v tests
