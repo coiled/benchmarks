@@ -19,7 +19,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest",  "macos-latest", "windows-latest"]
+        os: ["ubuntu-latest"]
         python-version: ["3.8", "3.9"]
     
     steps:
@@ -30,24 +30,23 @@ jobs:
       - name: Set up Python
         uses: conda-incubator/setup-miniconda@v2
         with:
-          # miniforge-variant: Mambaforge
-          miniforge-version: latest
-          # use-mamba: true
+          use-mamba: true
+          channels: conda-forge
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
         run: |
-          conda install conda-build conda-verify pytest 
+          mamba install boa conda-verify pytest 
 
       - name: Build conda package
         run: |
-          conda build recipe \
+          conda mambabuild recipe \
                 --output-folder dist/conda \
                 --no-anaconda-upload 
 
       - name: Install distribution
         run: |
-          conda install -c ./dist/conda coiled-distribution
+          mamba install -c ./dist/conda coiled-distribution
 
       - name: Run tests
         run: pytest -v tests
