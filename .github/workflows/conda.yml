@@ -30,7 +30,7 @@ jobs:
       - name: Set up Python
         uses: conda-incubator/setup-miniconda@v2
         with:
-          use-mamba: true
+          mamba-version: "*"
           channels: conda-forge
           python-version: ${{ matrix.python-version }}
 
