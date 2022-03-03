@@ -28,29 +28,24 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up enviornment
+      - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
         with:
-          mamba-version: "*"
-          channels: conda-forge
+          miniforge-version: latest
           python-version: ${{ matrix.python-version }}
           environment-file: continuous_integration/environment-${{ matrix.python-version }}.yaml
           activate-environment: test-environment
           auto-activate-base: false
 
-      # - name: Install dependencies
-      #   run: |
-      #     mamba install boa conda-verify pytest 
-
       - name: Build conda package
         run: |
-          conda mambabuild continuous_integration/recipe \
+          conda build continuous_integration/recipe \
                 --output-folder dist/conda \
                 --no-anaconda-upload 
 
-      - name: Install distribution
+      - name: Install coiled-distribution
         run: |
-          mamba install -c ./dist/conda coiled-distribution
+          conda install -c ./dist/conda coiled-distribution
 
       - name: Run tests
         run: pytest -v tests

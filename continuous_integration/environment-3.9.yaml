@@ -3,6 +3,6 @@ channels:
   - conda-forge
 dependencies:
   - python=3.9
-  - boa 
+  - conda-build
   - conda-verify 
   - pytest
