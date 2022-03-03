@@ -12,6 +12,7 @@ jobs:
   conda:
     name: Build (and upload)
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
     # Required shell entrypoint to have properly activated conda environments
     defaults:
       run:
@@ -27,20 +28,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Set up Python
+      - name: Set up enviornment
         uses: conda-incubator/setup-miniconda@v2
         with:
           mamba-version: "*"
           channels: conda-forge
           python-version: ${{ matrix.python-version }}
+          environment-file: continuous_integration/environment-${{ matrix.python-version }}.yaml
+          activate-environment: test-environment
+          auto-activate-base: false
 
-      - name: Install dependencies
-        run: |
-          mamba install boa conda-verify pytest 
+      # - name: Install dependencies
+      #   run: |
+      #     mamba install boa conda-verify pytest 
 
       - name: Build conda package
         run: |
-          conda mambabuild recipe \
+          conda mambabuild continuous_integration/recipe \
                 --output-folder dist/conda \
                 --no-anaconda-upload 
 
