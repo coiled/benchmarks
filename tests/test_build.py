@@ -36,7 +36,6 @@ def test_install_dist():
     versions installed"""
     d_meta = get_meta_packages_dict()
     d_conda = get_conda_list_dict()
-    breakpoint()
     for p in d_meta.keys():
         assert p in d_conda
         assert d_meta[p] == d_conda[p]
