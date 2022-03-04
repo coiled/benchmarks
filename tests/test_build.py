@@ -22,10 +22,11 @@ def get_meta_packages_dict():
 
     meta_packages_dict = dict()
 
-    # avoid python and pip as we don't pinned them
-    for p in meta["requirements"]["run"][2:-1]:
-        pv = p.split("==")
-        meta_packages_dict[pv[0]] = pv[1]
+    # avoid checking unpinned packages
+    for p in meta["requirements"]["run"]:
+        if "==" in p:
+            pv = p.split("==")
+            meta_packages_dict[pv[0]] = pv[1]
 
     return meta_packages_dict
 
@@ -35,7 +36,7 @@ def test_install_dist():
     versions installed"""
     d_meta = get_meta_packages_dict()
     d_conda = get_conda_list_dict()
-
+    breakpoint()
     for p in d_meta.keys():
         assert p in d_conda
         assert d_meta[p] == d_conda[p]
