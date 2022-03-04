@@ -13,7 +13,9 @@ requirements:
   run:
     - python >=3.8
     - pip
-    - coiled==0.0.65
+    - coiled
+    - nodejs==17.4.0
+    - nb_conda_kernels==2.3.1
     - dask==2022.02.0
     - distributed==2022.02.0
     - fsspec==2022.1.0
