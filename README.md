@@ -21,5 +21,5 @@ Make sure the version on the `meta.yaml` has been updated. Once that's on main p
    git tag -a $RELEASE -m "Version $RELEASE"
 
    # Push
-   git push upstream --tags
+   git push upstream main --tags
 ```
