@@ -12,8 +12,7 @@ Releasing
 
 Make sure the version on the `meta.yaml` has been updated. Once that's on main proceed as follow.
 
-.. code-block:: bash
-
+```bash
    # Set next version number (matching version on `meta.yml`)
    export RELEASE=x.x.x
 
@@ -23,3 +22,4 @@ Make sure the version on the `meta.yaml` has been updated. Once that's on main p
 
    # Push
    git push upstream --tags
+```
