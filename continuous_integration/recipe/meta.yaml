@@ -1,6 +1,6 @@
 package:
   name:  coiled-distribution
-  version: 0.0.1b
+  version: 0.0.1a
 
 build:
   noarch: python
