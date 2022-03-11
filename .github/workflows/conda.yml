@@ -59,4 +59,4 @@ jobs:
         run: |
           # install anaconda for upload
           conda install anaconda-client
-          anaconda upload dist/conda/noarch/*.tar.bz2 --channel coiled-enterprise
+          anaconda upload dist/conda/noarch/*.tar.bz2
