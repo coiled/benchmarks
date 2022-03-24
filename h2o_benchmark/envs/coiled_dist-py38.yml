@@ -1,0 +1,25 @@
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+    - python=3.8
+    - pip
+    - coiled
+    - nodejs=17.4.0
+    - nb_conda_kernels=2.3.1
+    - numpy=1.21.5
+    - pandas=1.4.1
+    - dask=2022.2.0
+    - distributed=2022.2.0
+    - fsspec=2022.1.0
+    - s3fs=2022.1.0
+    - gcsfs=2022.1.0
+    - pyarrow=6.0.1
+    - python-snappy=0.6.0
+    - jupyterlab=3.2.9
+    - dask-labextension=5.2.0
+    - lz4=3.1.10
+    - ipywidgets=7.6.5
+    - numba=0.55.1
+    - scikit-learn=1.0.2
+    - python-graphviz=0.19
