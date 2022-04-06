@@ -1,5 +1,5 @@
 package:
-  name:  coiled-distribution
+  name:  coiled-runtime
   version: 0.0.3
 
 build:
