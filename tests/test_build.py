@@ -1,5 +1,8 @@
+import pathlib
+
 import conda.cli.python_api as Conda
 import yaml
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 
 def get_conda_list_dict():
@@ -16,18 +19,24 @@ def get_conda_list_dict():
 
 def get_meta_packages_dict():
     """Get packages and versions specified on meta.yaml as a dictionary"""
-    with open("continuous_integration/recipe/meta.yaml", "r") as f:
-        meta = yaml.safe_load(f)
+    env = Environment(
+        loader=FileSystemLoader(
+            pathlib.Path(__file__).parent.parent / "continuous_integration/recipe"
+        ),
+        autoescape=select_autoescape(),
+    )
+    template = env.get_template("meta.yaml")
+    meta = yaml.safe_load(template.render())
 
-    meta_packages_dict = dict()
+    meta_versions = {}
 
     # avoid checking unpinned packages
     for p in meta["requirements"]["run"]:
         if "==" in p:
             pv = p.split("==")
-            meta_packages_dict[pv[0]] = pv[1]
+            meta_versions[pv[0]] = pv[1]
 
-    return meta_packages_dict
+    return meta_versions
 
 
 def test_install_dist():

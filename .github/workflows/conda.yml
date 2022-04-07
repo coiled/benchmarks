@@ -37,7 +37,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          conda install conda-build conda-verify pytest
+          conda install conda-build conda-verify pytest jinja2
 
       - name: Build conda package
         run: |
