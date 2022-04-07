@@ -51,12 +51,12 @@ jobs:
       - name: Run tests
         run: pytest -v tests
 
-#       - name: Upload conda package
-#         if: |
-#           matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-#         env:
-#           ANACONDA_API_TOKEN: ${{ secrets.COILED_ENTERPRISE_ANACONDA_UPLOAD_TOKEN }}
-#         run: |
-#           # install anaconda for upload
-#           conda install anaconda-client
-#           anaconda upload dist/conda/noarch/*.tar.bz2
+      - name: Upload conda package
+        if: |
+          matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.COILED_CHANNEL_TOKEN }}
+        run: |
+          # install anaconda for upload
+          conda install anaconda-client
+          anaconda upload dist/conda/noarch/*.tar.bz2
