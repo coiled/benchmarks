@@ -1,4 +1,5 @@
 from __future__ import annotations
+
 import pathlib
 
 import conda.cli.python_api as Conda
