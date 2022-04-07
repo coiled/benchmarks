@@ -1,62 +1,62 @@
-name: Conda build
-on:
-  push:
+# name: Conda build
+# on:
+#   push:
 
-# When this workflow is queued, automatically cancel any previous running
-# or pending jobs from the same branch
-concurrency:
-  group: conda-${{ github.head_ref }}
-  cancel-in-progress: true
+# # When this workflow is queued, automatically cancel any previous running
+# # or pending jobs from the same branch
+# concurrency:
+#   group: conda-${{ github.head_ref }}
+#   cancel-in-progress: true
 
-jobs:
-  conda:
-    name: Build (and upload)
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
-    # Required shell entrypoint to have properly activated conda environments
-    defaults:
-      run:
-        shell: bash -l {0}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
-        python-version: ["3.8", "3.9"]
+# jobs:
+#   conda:
+#     name: Build (and upload)
+#     runs-on: ${{ matrix.os }}
+#     timeout-minutes: 120
+#     # Required shell entrypoint to have properly activated conda environments
+#     defaults:
+#       run:
+#         shell: bash -l {0}
+#     strategy:
+#       fail-fast: false
+#       matrix:
+#         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+#         python-version: ["3.8", "3.9"]
     
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+#     steps:
+#       - uses: actions/checkout@v2
+#         with:
+#           fetch-depth: 0
 
-      - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-version: latest
-          python-version: ${{ matrix.python-version }}
+#       - name: Set up environment
+#         uses: conda-incubator/setup-miniconda@v2
+#         with:
+#           miniforge-version: latest
+#           python-version: ${{ matrix.python-version }}
 
-      - name: Install dependencies
-        run: |
-          conda install conda-build conda-verify pytest
+#       - name: Install dependencies
+#         run: |
+#           conda install conda-build conda-verify pytest
 
-      - name: Build conda package
-        run: |
-          conda build continuous_integration/recipe \
-                --output-folder dist/conda \
-                --no-anaconda-upload 
+#       - name: Build conda package
+#         run: |
+#           conda build continuous_integration/recipe \
+#                 --output-folder dist/conda \
+#                 --no-anaconda-upload 
 
-      - name: Install coiled-distribution
-        run: |
-          conda install -c ./dist/conda coiled-distribution
+#       - name: Install coiled-distribution
+#         run: |
+#           conda install -c ./dist/conda coiled-distribution
 
-      - name: Run tests
-        run: pytest -v tests
+#       - name: Run tests
+#         run: pytest -v tests
 
-      - name: Upload conda package
-        if: |
-          matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
-        env:
-          ANACONDA_API_TOKEN: ${{ secrets.COILED_ENTERPRISE_ANACONDA_UPLOAD_TOKEN }}
-        run: |
-          # install anaconda for upload
-          conda install anaconda-client
-          anaconda upload dist/conda/noarch/*.tar.bz2
+#       - name: Upload conda package
+#         if: |
+#           matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+#         env:
+#           ANACONDA_API_TOKEN: ${{ secrets.COILED_ENTERPRISE_ANACONDA_UPLOAD_TOKEN }}
+#         run: |
+#           # install anaconda for upload
+#           conda install anaconda-client
+#           anaconda upload dist/conda/noarch/*.tar.bz2
