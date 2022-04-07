@@ -1,7 +1,9 @@
 import conda.cli.python_api as Conda
+import pytest
 import yaml
 
 
+@pytest.mark.skip
 def get_conda_list_dict():
     """Get conda list packages and versions in a dictionary"""
     # Get conda list packages in a list, and strip headers
@@ -15,6 +17,7 @@ def get_conda_list_dict():
     return conda_list_dict
 
 
+@pytest.mark.skip
 def get_meta_packages_dict():
     """Get packages and versions specified on meta.yaml as a dictionary"""
     with open("continuous_integration/recipe/meta.yaml", "r") as f:
@@ -31,6 +34,7 @@ def get_meta_packages_dict():
     return meta_packages_dict
 
 
+@pytest.mark.skip
 def test_install_dist():
     """Test that versions of packages pinned in meta match the
     versions installed"""
