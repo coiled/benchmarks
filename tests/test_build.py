@@ -45,5 +45,5 @@ def test_install_dist():
 
     assert all(
         specifier.contains(installed_versions[package])
-        for package, specifier in meta_specifiers
+        for package, specifier in meta_specifiers.items()
     )
