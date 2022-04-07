@@ -45,7 +45,9 @@ requirements:
 
 test:
   imports:
-   - coiled-runtime
+   - dask
+   - distributed
+   - pyarrow
 
 about:
   home: https://github.com/coiled/coiled-runtime
