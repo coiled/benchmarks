@@ -32,8 +32,8 @@ def get_meta_packages_dict():
 
     # avoid checking unpinned packages
     for p in meta["requirements"]["run"]:
-        if "==" in p:
-            pv = p.split("==")
+        if " ==" in p:
+            pv = p.split(" ==")
             meta_versions[pv[0]] = pv[1]
 
     return meta_versions
