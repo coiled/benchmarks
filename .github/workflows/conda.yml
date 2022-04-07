@@ -44,9 +44,9 @@ jobs:
                 --output-folder dist/conda \
                 --no-anaconda-upload 
 
-      - name: Install coiled-distribution
+      - name: Install coiled-runtime
         run: |
-          conda install -c ./dist/conda coiled-distribution
+          conda install -c ./dist/conda coiled-runtime
 
       - name: Run tests
         run: pytest -v tests
