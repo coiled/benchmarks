@@ -24,7 +24,7 @@ def get_meta_specifiers() -> dict[str, SpecifierSet]:
     """Get packages version specifiers from `meta.yaml`"""
     env = Environment(
         loader=FileSystemLoader(
-            pathlib.Path(__file__).parent.parent / "continuous_integration/recipe"
+            pathlib.Path(__file__).parent.parent / "recipe"
         ),
         autoescape=select_autoescape(),
     )
