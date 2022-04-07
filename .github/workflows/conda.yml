@@ -59,7 +59,7 @@ jobs:
         if: |
           matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
         env:
-          ANACONDA_API_TOKEN: ${{ secrets.COILED_CHANNEL_TOKEN }}
+          ANACONDA_API_TOKEN: ${{ secrets.COILED_UPLOAD_TOKEN }}
         run: |
           # install anaconda for upload
           conda install anaconda-client
