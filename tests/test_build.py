@@ -1,12 +1,13 @@
+from __future__ import annotations
 import pathlib
 
 import conda.cli.python_api as Conda
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from packaging.requirements import Requirement
+from packaging.requirements import Requirement, SpecifierSet
 
 
-def get_conda_installed_versions():
+def get_conda_installed_versions() -> dict[str, str]:
     """Get conda list packages in a list, and strip headers"""
     conda_list = Conda.run_command(Conda.Commands.LIST)[0].split("\n")[3:-1]
 
@@ -18,7 +19,7 @@ def get_conda_installed_versions():
     return package_versions
 
 
-def get_meta_specifiers():
+def get_meta_specifiers() -> dict[str, SpecifierSet]:
     """Get packages version specifiers from `meta.yaml`"""
     env = Environment(
         loader=FileSystemLoader(

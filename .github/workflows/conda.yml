@@ -36,8 +36,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: |
-          conda install conda-build conda-verify pytest jinja2
+        run: conda install conda-build conda-verify jinja2 packaging pytest
 
       - name: Build conda package
         run: |
@@ -53,7 +52,7 @@ jobs:
           conda env export | grep -E -v '^prefix:.*$'
 
       - name: Run tests
-        run: pytest -v tests
+        run: python -m pytest tests
 
       - name: Upload conda package
         if: |
