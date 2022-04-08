@@ -6,7 +6,7 @@ package:
   version: {{ version }}
 
 source:
-  git_url:  ../..
+  git_url:  ../
 
 build:
   noarch: python

@@ -40,7 +40,7 @@ jobs:
 
       - name: Build conda package
         run: |
-          conda build continuous_integration/recipe \
+          conda build recipe \
                 --output-folder dist/conda \
                 --no-anaconda-upload 
 
