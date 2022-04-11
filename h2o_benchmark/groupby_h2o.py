@@ -4,6 +4,7 @@ h2o-ai benchmark groupby part running on coiled.
 import datetime
 import os
 import timeit
+import uuid
 
 import coiled
 import dask.dataframe as dd
@@ -60,7 +61,7 @@ SOFTWARE = os.environ["SOFTWARE_ENV"]
 tic_cluster = timeit.default_timer()
 cluster = coiled.Cluster(
     software=SOFTWARE,
-    name="h2o-groupby-benchmark",
+    name="h2o-groupby-benchmark_" + str(uuid.uuid4()),
     account="dask-engineering",
     n_workers=4,
     backend_options={"spot": False},
