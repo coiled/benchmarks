@@ -7,7 +7,7 @@ The Coiled Runtime is a conda metapackage which makes it easy to get started wit
 `coiled-runtime` can be installed with:
 
 ```bash
-conda install -c coiled coiled-runtime
+conda install -c coiled -c conda-forge coiled-runtime
 ```
 
 ## Build
