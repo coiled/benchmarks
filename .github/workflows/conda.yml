@@ -1,6 +1,7 @@
 name: Conda build
 on:
   push:
+  pull_request:
 
 # When this workflow is queued, automatically cancel any previous running
 # or pending jobs from the same branch
@@ -35,27 +36,29 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: |
-          conda install conda-build conda-verify pytest
+        run: conda install conda-build conda-verify jinja2 packaging pytest
 
       - name: Build conda package
         run: |
-          conda build continuous_integration/recipe \
+          conda build recipe \
                 --output-folder dist/conda \
                 --no-anaconda-upload 
 
       - name: Install coiled-runtime
         run: |
           conda install -c ./dist/conda coiled-runtime
+          # For debugging
+          echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
+          conda env export | grep -E -v '^prefix:.*$'
 
       - name: Run tests
-        run: pytest -v tests
+        run: python -m pytest tests
 
       - name: Upload conda package
         if: |
           matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
         env:
-          ANACONDA_API_TOKEN: ${{ secrets.COILED_CHANNEL_TOKEN }}
+          ANACONDA_API_TOKEN: ${{ secrets.COILED_UPLOAD_TOKEN }}
         run: |
           # install anaconda for upload
           conda install anaconda-client

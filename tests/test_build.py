@@ -1,45 +1,49 @@
+from __future__ import annotations
+
+import pathlib
+
 import conda.cli.python_api as Conda
-import pytest
 import yaml
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from packaging.requirements import Requirement, SpecifierSet
 
 
-@pytest.mark.skip
-def get_conda_list_dict():
-    """Get conda list packages and versions in a dictionary"""
-    # Get conda list packages in a list, and strip headers
+def get_conda_installed_versions() -> dict[str, str]:
+    """Get conda list packages in a list, and strip headers"""
     conda_list = Conda.run_command(Conda.Commands.LIST)[0].split("\n")[3:-1]
-    conda_list_dict = dict()
 
-    for package in conda_list:
-        p = package.split()
-        conda_list_dict[p[0]] = p[1]
+    package_versions = {}
+    for line in conda_list:
+        name, version, *_ = line.split()
+        package_versions[name] = version
 
-    return conda_list_dict
-
-
-@pytest.mark.skip
-def get_meta_packages_dict():
-    """Get packages and versions specified on meta.yaml as a dictionary"""
-    with open("continuous_integration/recipe/meta.yaml", "r") as f:
-        meta = yaml.safe_load(f)
-
-    meta_packages_dict = dict()
-
-    # avoid checking unpinned packages
-    for p in meta["requirements"]["run"]:
-        if "==" in p:
-            pv = p.split("==")
-            meta_packages_dict[pv[0]] = pv[1]
-
-    return meta_packages_dict
+    return package_versions
 
 
-@pytest.mark.skip
+def get_meta_specifiers() -> dict[str, SpecifierSet]:
+    """Get packages version specifiers from `meta.yaml`"""
+    env = Environment(
+        loader=FileSystemLoader(pathlib.Path(__file__).parent.parent / "recipe"),
+        autoescape=select_autoescape(),
+    )
+    template = env.get_template("meta.yaml")
+    meta = yaml.safe_load(template.render())
+
+    meta_specifiers = {}
+    for req in meta["requirements"]["run"]:
+        requirement = Requirement(req)
+        meta_specifiers[requirement.name] = requirement.specifier
+
+    return meta_specifiers
+
+
 def test_install_dist():
-    """Test that versions of packages pinned in meta match the
-    versions installed"""
-    d_meta = get_meta_packages_dict()
-    d_conda = get_conda_list_dict()
-    for p in d_meta.keys():
-        assert p in d_conda
-        assert d_meta[p] == d_conda[p]
+    # Test that versions of packages installed are consistent with those
+    # specified in `meta.yaml`
+    meta_specifiers = get_meta_specifiers()
+    installed_versions = get_conda_installed_versions()
+
+    assert all(
+        specifier.contains(installed_versions[package])
+        for package, specifier in meta_specifiers.items()
+    )

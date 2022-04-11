@@ -1,25 +1,50 @@
-# Coiled Distribution
+# Coiled Runtime
 
-Create conda recipe as follows:
+The Coiled Runtime is a conda metapackage which makes it easy to get started with Dask.
 
-1. Create and activate a conda environment and install conda-build
-1. Clone the existing repository
-2. From within the repository run: `conda build continuous_integration/recipe --output-folder dist/conda --no-anaconda-upload`
-3. Install with: `conda install -c ./dist/conda/ coiled-distribution`
+## Install
 
-Releasing
----------
-
-Make sure the version on the `meta.yaml` has been updated. Once that's on main proceed as follow.
+`coiled-runtime` can be installed with:
 
 ```bash
-   # Set next version number (matching version on `meta.yml`)
-   export RELEASE=x.x.x
-
-   # Create tags
-   git commit --allow-empty -m "Release $RELEASE"
-   git tag -a $RELEASE -m "Version $RELEASE"
-
-   # Push
-   git push upstream main --tags
+conda install -c coiled coiled-runtime
 ```
+
+## Build
+
+To build and install `coiled-runtime` locally, use the following steps:
+
+```bash
+# Have a local copy of the `coiled-runtime` repository
+git clone https://github.com/coiled/coiled-runtime
+cd coiled-runtime
+
+# Make sure conda-build is installed
+conda install -c conda-forge conda-build
+
+# Build the metapackage
+conda build recipe --output-folder dist/conda --no-anaconda-upload
+
+# Install the built `coiled-runtime` metapackage
+conda install -c ./dist/conda/ coiled-runtime
+```
+
+## Release
+
+To issue a new `coiled-runtime` release, update the `coiled-runtime` version specified in `meta.yaml`, then:
+
+```bash
+# Set next version number (matching version on `meta.yml`)
+export RELEASE=x.x.x
+
+# Create tags
+git commit -m "Release $RELEASE"
+git tag -a $RELEASE -m "Version $RELEASE"
+
+# Push
+git push upstream main --tags
+```
+
+## License
+
+[BSD-3](LICENSE)
