@@ -32,24 +32,25 @@ jobs:
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
         with:
-          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          use-mamba: true
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: conda install conda-build conda-verify jinja2 packaging pytest
+        run: mamba install boa conda-verify jinja2 packaging pytest
 
       - name: Build conda package
         run: |
-          conda build recipe \
+          conda mambabuild recipe \
                 --output-folder dist/conda \
                 --no-anaconda-upload 
 
       - name: Install coiled-runtime
         run: |
-          conda install -c ./dist/conda coiled-runtime
+          mamba install -c ./dist/conda -c conda-forge coiled-runtime
           # For debugging
           echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
-          conda env export | grep -E -v '^prefix:.*$'
+          mamba env export | grep -E -v '^prefix:.*$'
 
       - name: Run tests
         run: python -m pytest tests
@@ -61,5 +62,5 @@ jobs:
           ANACONDA_API_TOKEN: ${{ secrets.COILED_UPLOAD_TOKEN }}
         run: |
           # install anaconda for upload
-          conda install anaconda-client
+          mamba install anaconda-client
           anaconda upload dist/conda/noarch/*.tar.bz2
