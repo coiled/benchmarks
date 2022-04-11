@@ -47,6 +47,6 @@ jobs:
       - name: Run groupby benchmark 
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-          SOFTWARE_ENV: ${{ matrix.software-env }}
+          SOFTWARE_ENV: dask-engineering/${{ matrix.software-env }}
         shell: bash -l {0}
         run: python h2o_benchmark/groupby_h2o.py
