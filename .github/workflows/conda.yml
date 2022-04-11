@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   conda:
-    name: Build (and upload)
+    name: Build (and upload) - ${{ matrix.node-version }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     # Required shell entrypoint to have properly activated conda environments
