@@ -104,7 +104,7 @@ def q2(ddf):
 
 
 q1(ddf)
-q1_stats = client.scheduler.get_task_groups()
+q1_stats = client.sync(client.scheduler.get_task_groups)
 
 df_q1 = pandas.DataFrame.from_dict(q1_stats, orient="index")
 df_q1.index.name = "group"
@@ -115,7 +115,7 @@ print(df_q1)
 client.restart()
 
 q2(ddf)
-q2_stats = client.scheduler.get_task_groups()
+q2_stats = client.sync(client.scheduler.get_task_groups)
 
 df_q2 = pandas.DataFrame.from_dict(q2_stats, orient="index")
 df_q2.index.name = "group"
