@@ -6,7 +6,7 @@ on:
 # When this workflow is queued, automatically cancel any previous running
 # or pending jobs from the same branch
 concurrency:
-  group: conda-${{ github.head_ref }}
+  group: ${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -33,16 +33,17 @@ jobs:
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
         with:
-          miniforge-version: latest
+          miniforge-variant: Mambaforge
+          use-mamba: true
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: conda install conda-build conda-verify jinja2 packaging pytest
+        run: mamba install boa conda-verify jinja2 packaging pytest
 
       - name: Build coiled-runtime
         if: ${{ matrix.runtime-version == 'latest' }}
         run: |
-          conda build recipe \
+          conda mambabuild recipe \
                 --output-folder dist/conda \
                 --no-anaconda-upload 
 
@@ -50,16 +51,16 @@ jobs:
         run: |
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
           then
-            conda install -c ./dist/conda coiled-runtime
+            mamba install -c ./dist/conda coiled-runtime
           else
-            conda install -c coiled -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
+            mamba install -c coiled -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
           fi
 
       - name: Export environment
         run: |
           # For debugging
           echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
-          conda env export | grep -E -v '^prefix:.*$'
+          mamba env export | grep -E -v '^prefix:.*$'
 
       - name: Run tests
         run: python -m pytest tests
@@ -71,5 +72,5 @@ jobs:
           ANACONDA_API_TOKEN: ${{ secrets.COILED_UPLOAD_TOKEN }}
         run: |
           # install anaconda for upload
-          conda install anaconda-client
+          mamba install anaconda-client
           anaconda upload dist/conda/noarch/*.tar.bz2
