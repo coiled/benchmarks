@@ -51,7 +51,7 @@ jobs:
         run: |
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
           then
-            mamba install -c ./dist/conda coiled-runtime
+            mamba install -c ./dist/conda -c conda-forge coiled-runtime
           else
             mamba install -c coiled -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
           fi
