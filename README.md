@@ -4,13 +4,7 @@ The Coiled Runtime is a conda metapackage which makes it easy to get started wit
 
 ## Install
 
-Currently, `coiled-runtime` is not in the default channel. The conda-forge channel must be enabled:
-
-```bash
-conda config --add channels conda-forge
-```
-
-`coiled-runtime` can then be installed with:
+`coiled-runtime` can be installed with:
 
 ```bash
 conda install -c coiled coiled-runtime
