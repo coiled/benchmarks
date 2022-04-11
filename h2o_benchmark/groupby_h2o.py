@@ -13,6 +13,7 @@ SOFTWARE = os.environ["SOFTWARE_ENV"]
 tic_cluster = timeit.default_timer()
 cluster = coiled.Cluster(
     software=SOFTWARE,
+    account="dask-engineering",
     n_workers=4,
     backend_options={"spot": False},
 )
@@ -25,7 +26,7 @@ client = Client(cluster)
 tic_read_gby = timeit.default_timer()
 
 ddf = dd.read_csv(
-    "s3://coiled-datasets/h2o/G1_1e7_1e2_0_0/csv/G1_1e7_1e2_0_0.csv",
+    "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_single.csv",
     dtype={
         "id1": "category",
         "id2": "category",
