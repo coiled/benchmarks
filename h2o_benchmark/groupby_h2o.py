@@ -60,6 +60,7 @@ SOFTWARE = os.environ["SOFTWARE_ENV"]
 tic_cluster = timeit.default_timer()
 cluster = coiled.Cluster(
     software=SOFTWARE,
+    name="h2o-groupby-benchmark",
     account="dask-engineering",
     n_workers=4,
     backend_options={"spot": False},
@@ -103,28 +104,36 @@ def q2(ddf):
     )
 
 
+tic_q1 = timeit.default_timer()
 q1(ddf)
+toc_q1 = timeit.default_timer()
+
 q1_stats = client.sync(client.scheduler.get_task_groups)
 
 df_q1 = pandas.DataFrame.from_dict(q1_stats, orient="index")
 df_q1.index.name = "group"
 
 print("q1 STATS")
-print(df_q1)
+print(df_q1.to_string(index=False))
 
 client.restart()
 
+tic_q2 = timeit.default_timer()
 q2(ddf)
+toc_q2 = timeit.default_timer()
+
 q2_stats = client.sync(client.scheduler.get_task_groups)
 
 df_q2 = pandas.DataFrame.from_dict(q2_stats, orient="index")
 df_q2.index.name = "group"
 
 print("q2 STATS")
-print(df_q2)
+print(df_q2.to_string(index=False))
 
 # save this times somewhere, maybe for now print them.
 print(f"{time_cluster= }")
+print(f"time q1 = {toc_q1-tic_q1}")
+print(f"time q2 = {toc_q2-tic_q2}")
 
 client.close()
 cluster.close()
