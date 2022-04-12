@@ -60,13 +60,6 @@ class TaskGroupStatistics(SchedulerPlugin):
 SOFTWARE = os.environ["SOFTWARE_ENV"]
 
 
-@pytest.fixture()
-def client(cluster):
-    with Client(cluster) as client:
-        client.register_scheduler_plugin(TaskGroupStatistics())
-        yield client
-
-
 @pytest.fixture(scope="module")
 def cluster():
     with coiled.Cluster(
@@ -77,6 +70,17 @@ def cluster():
         backend_options={"spot": False},
     ) as cluster:
         yield cluster
+
+
+plugin = TaskGroupStatistics()
+
+
+@pytest.fixture()
+def client(cluster):
+    with Client(cluster) as client:
+        client.register_scheduler_plugin(plugin)
+        yield client
+        client.restart()
 
 
 @pytest.fixture(scope="module")
