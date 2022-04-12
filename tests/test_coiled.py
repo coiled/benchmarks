@@ -1,4 +1,4 @@
-import os
+import sys
 import uuid
 
 import coiled
@@ -6,7 +6,7 @@ import dask.dataframe as dd
 import pandas
 from dask.distributed import Client
 
-SOFTWARE = os.environ["SOFTWARE_ENV"]
+SOFTWARE = f"dask-engineering/coiled_dist-py{sys.version_info[0]}{sys.version_info[1]}"
 
 
 def test_quickstart():
