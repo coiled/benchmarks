@@ -33,5 +33,5 @@ def test_quickstart():
 
         result = ddf.groupby("passenger_count").tip_amount.mean().compute()
 
-        assert isinstance(result, pandas.core.series.Series)
+        assert isinstance(result, pd.Series)
         assert not result.empty
