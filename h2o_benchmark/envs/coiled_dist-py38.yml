@@ -1,7 +1,0 @@
-channels:
-  - conda-forge
-  - coiled
-dependencies:
-    - python=3.8
-    - coiled-runtime
-    - pytest
