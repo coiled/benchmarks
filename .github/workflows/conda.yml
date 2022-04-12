@@ -23,6 +23,7 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
         python-version: ["3.8", "3.9"]
+        software-env: ["coiled_dist-py38", "coiled_dist-py39"]
     
     steps:
       - uses: actions/checkout@v2
@@ -53,6 +54,9 @@ jobs:
           mamba env export | grep -E -v '^prefix:.*$'
 
       - name: Run tests
+        env:
+            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+            SOFTWARE_ENV: dask-engineering/${{ matrix.software-env }}
         run: python -m pytest tests
 
       - name: Upload conda package
