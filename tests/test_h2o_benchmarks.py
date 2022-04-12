@@ -44,7 +44,6 @@ def client(cluster):
 def ddf(request):
     yield dd.read_csv(
         request.param,
-        "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_single.csv",
         dtype={
             "id1": "category",
             "id2": "category",
