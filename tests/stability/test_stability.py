@@ -1,0 +1,14 @@
+import dask
+
+
+def test_shuffle_stability():
+    df = dask.datasets.timeseries(
+        start="2000-01-01",
+        end="2000-12-31",
+        freq="1s",
+        partition_freq="1D")
+
+    sdf = df.shuffle(on="x")
+
+    sdf_size = sdf.memory_usage(index=True).sum() / (1024.**3)
+    assert sdf_size.compute() > 1.1  # 1.1
