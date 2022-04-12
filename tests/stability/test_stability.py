@@ -9,4 +9,4 @@ def test_shuffle_stability():
     sdf = df.shuffle(on="x")
 
     sdf_size = sdf.memory_usage(index=True).sum() / (1024.0**3)
-    assert sdf_size.compute() > 1.1  # 1.1
+    assert sdf_size.compute() > 1.0  # 1.0 GB
