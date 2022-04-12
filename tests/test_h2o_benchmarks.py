@@ -25,7 +25,7 @@ def cluster():
         yield cluster
 
 
-@pytest.fixture()
+@pytest.fixture(autouse=True)
 def client(cluster):
     with Client(cluster) as client:
         yield client
