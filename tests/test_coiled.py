@@ -3,7 +3,7 @@ import uuid
 
 import coiled
 import dask.dataframe as dd
-import pandas
+import pandas as pd
 from dask.distributed import Client
 
 SOFTWARE = os.environ["SOFTWARE_ENV"]
