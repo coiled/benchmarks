@@ -1,7 +1,8 @@
 name: Conda build
 on:
   push:
-    - main
+    branches:
+      - main
   pull_request:
 
 # When this workflow is queued, automatically cancel any previous running
