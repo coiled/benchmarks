@@ -1,6 +1,8 @@
 name: Conda build
 on:
   push:
+    branches:
+      - main
   pull_request:
 
 # When this workflow is queued, automatically cancel any previous running
@@ -63,6 +65,8 @@ jobs:
           mamba env export | grep -E -v '^prefix:.*$'
 
       - name: Run tests
+        env:
+            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: python -m pytest tests
 
       - name: Upload conda package
