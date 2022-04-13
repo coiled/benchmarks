@@ -1,4 +1,9 @@
+import os
+import sys
+
 import pytest
+from coiled._beta import ClusterBeta as Cluster
+from dask.distributed import Client
 
 
 def pytest_addoption(parser):
@@ -15,3 +20,29 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "latest_runtime" in item.keywords:
             item.add_marker(skip_latest)
+
+
+@pytest.fixture
+def software():
+    return os.environ.get(
+        "COILED_SOFTWARE_NAME",
+        f"dask-engineering/coiled_dist-py{sys.version_info[0]}{sys.version_info[1]}",
+    )
+
+
+@pytest.fixture
+def small_cluster(software):
+    with Cluster(
+        software=software,
+        account="dask-engineering",
+        n_workers=10,
+        worker_vm_types=["m5.large"],
+        scheduler_vm_types=["m5.large"],
+    ) as cluster:
+        yield cluster
+
+
+@pytest.fixture
+def small_client(small_cluster):
+    with Client(small_cluster) as client:
+        yield client
