@@ -3,9 +3,12 @@ from __future__ import annotations
 import pathlib
 
 import conda.cli.python_api as Conda
+import pytest
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from packaging.requirements import Requirement, SpecifierSet
+
+pytestmark = pytest.mark.latest_runtime
 
 
 def get_conda_installed_versions() -> dict[str, str]:

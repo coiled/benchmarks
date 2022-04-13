@@ -65,14 +65,21 @@ jobs:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
-          coiled env create \
-            --name dask-engineering/coiled-runtime-pr-$GITHUB_REF_NAME-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED \
-            --conda latest.yaml
+          export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-branch-$GITHUB_REF_NAME-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED
+          echo COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME >> $GITHUB_ENV
+          coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
 
       - name: Run tests
         env:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-        run: python -m pytest tests
+        run: |
+          if [[ ${{ matrix.runtime-version }} = 'latest' ]]
+          then
+            export PYTEST_MARKERS = "-m latest_runtime"
+          else
+            export PYTEST_MARKERS = ""
+          fi
+          python -m pytest $PYTEST_MARKERS tests
 
       - name: Build coiled-runtime
         if: ${{ matrix.runtime-version == 'latest' }}
