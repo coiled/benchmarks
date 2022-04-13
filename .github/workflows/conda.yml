@@ -48,6 +48,9 @@ jobs:
 
       - name: Install coiled-runtime
         run: |
+          # If testing the latest `coiled-runtime` then install packages defined in `recipe/meta.yaml`
+          # Otherwise, just install directly from the coiled / conda-forge channel
+
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
           then
             python ci/create_latest_runtime_meta.py
@@ -67,6 +70,9 @@ jobs:
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
+          # If testing the latest `coiled-runtime`, we need to build a Coiled software environment
+          # that can be used when running tests
+
           # Coiled software environment names can't contain "." characters
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
 
@@ -108,6 +114,7 @@ jobs:
         env:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
+          # Clean up an Coiled software environments we created just for this CI build
           export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
           coiled env delete $COILED_SOFTWARE_NAME
           if [[ ${{ steps.tests.outcome }} != 'success' ]]
