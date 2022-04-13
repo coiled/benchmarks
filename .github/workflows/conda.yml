@@ -66,6 +66,7 @@ jobs:
         run: |
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
           export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-branch-$GITHUB_REF_NAME-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED
+          echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
           echo COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME >> $GITHUB_ENV
           coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
 
