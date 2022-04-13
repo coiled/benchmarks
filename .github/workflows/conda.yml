@@ -76,11 +76,9 @@ jobs:
           # Coiled software environment names can't contain "." characters
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
 
-          # NOTE: We _should_ be able to use GITHUB_REF_NAME for both push and pull_request events
-          # but have to add the if/else below to work around https://github.com/github/docs/issues/15319
           if [[ ${{ github.event_name }} = 'pull_request' ]]
           then
-            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-$GITHUB_HEAD_REF-$GITHUB_SHA-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED
+            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-${{ github.event.number }}-$GITHUB_SHA-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED
           else
             export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-main-$GITHUB_SHA-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED
           fi
