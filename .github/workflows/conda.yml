@@ -4,6 +4,13 @@ on:
     branches:
       - main
   pull_request:
+    # types:
+    #   - opened
+    #   - synchronize
+    #   - reopened
+    #   # Trigger on `closed` so we can clean up Coiled software environments
+    #   # that were created specifically for pull requests
+    #   - closed
 
 # When this workflow is queued, automatically cancel any previous running
 # or pending jobs from the same branch
@@ -14,6 +21,7 @@ concurrency:
 jobs:
   conda:
     name: Build (and upload) - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    # if: ${{ github.event_name == 'push' }} || ${{ github.event.action != 'closed' }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     # Required shell entrypoint to have properly activated conda environments
@@ -82,6 +90,9 @@ jobs:
           coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
 
       - name: Run tests
+        # Want to delete software environment in next step even if tests fail
+        continue-on-error: true
+        id: tests
         env:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
@@ -95,6 +106,18 @@ jobs:
           fi
 
           python -m pytest $EXTRA_OPTIONS tests
+
+      - name: Remove Coiled software environment
+        if: ${{ matrix.runtime-version == 'latest' }}
+        env:
+            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+        run: |
+          export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
+          coiled env delete $COILED_SOFTWARE_NAME
+          if [[ ${{ steps.tests.outcome }} != 'success' ]]
+          then
+            exit 1
+          fi
 
       - name: Build coiled-runtime
         if: ${{ matrix.runtime-version == 'latest' }}
