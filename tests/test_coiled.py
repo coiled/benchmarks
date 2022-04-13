@@ -5,10 +5,8 @@ import dask.dataframe as dd
 import pandas as pd
 from dask.distributed import Client
 
-from .utils import runtime_software_env
 
-
-def test_quickstart():
+def test_quickstart(runtime_software_env):
     with coiled.Cluster(
         software=runtime_software_env,
         name="nyc-quickstart_" + str(uuid.uuid4()),

@@ -13,7 +13,7 @@ concurrency:
 
 jobs:
   conda:
-    name: Build (and upload)
+    name: Build (and upload) - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     # Required shell entrypoint to have properly activated conda environments
@@ -25,6 +25,11 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
         python-version: ["3.8", "3.9"]
+        runtime-version: ["latest", "0.0.3"]
+        exclude:
+          # FIXME: Building Coiled software environments is currently broken on Windows
+          - os: windows-latest
+            runtime-version: "latest"
     
     steps:
       - uses: actions/checkout@v2
@@ -41,27 +46,95 @@ jobs:
       - name: Install dependencies
         run: mamba install boa conda-verify jinja2 packaging pytest
 
-      - name: Build conda package
-        run: |
-          conda mambabuild recipe \
-                --output-folder dist/conda \
-                --no-anaconda-upload 
-
       - name: Install coiled-runtime
         run: |
-          mamba install -c ./dist/conda -c conda-forge coiled-runtime
+          # If testing the latest `coiled-runtime` then install packages defined in `recipe/meta.yaml`
+          # Otherwise, just install directly from the coiled / conda-forge channel
+
+          if [[ ${{ matrix.runtime-version }} = 'latest' ]]
+          then
+            python ci/create_latest_runtime_meta.py
+            mamba install -c coiled -c conda-forge --file latest.txt
+          else
+            mamba install -c coiled -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
+          fi
+
+      - name: Export environment
+        run: |
           # For debugging
           echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
           mamba env export | grep -E -v '^prefix:.*$'
 
+      - name: Build Coiled software environment
+        if: ${{ matrix.runtime-version == 'latest' }}
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+        run: |
+          # If testing the latest `coiled-runtime`, we need to build a Coiled software environment
+          # that can be used when running tests
+
+          # Coiled software environment names can't contain "." characters
+          export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
+
+          if [[ ${{ github.event_name }} = 'pull_request' ]]
+          then
+            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-${{ github.event.number }}-$GITHUB_SHA-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED
+          else
+            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-main-$GITHUB_SHA-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED
+          fi
+
+          echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
+          # Put COILED_SOFTWARE_NAME into $GITHUB_ENV so it can be used in subsequent workflow steps
+          echo COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME >> $GITHUB_ENV
+
+          coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
+
       - name: Run tests
+        # Want to delete software environment in next step even if tests fail
+        continue-on-error: true
+        id: tests
         env:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-        run: python -m pytest tests
+        run: |
+          # Ensure we run additional tests when testing the latest coiled-runtime
+          if [[ ${{ matrix.runtime-version }} = 'latest' ]]
+          then
+            export EXTRA_OPTIONS="--run-latest"
+            export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
+          else
+            export EXTRA_OPTIONS=" "
+          fi
+
+          python -m pytest $EXTRA_OPTIONS tests
+
+      - name: Remove Coiled software environment
+        if: ${{ matrix.runtime-version == 'latest' }}
+        env:
+            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+        run: |
+          # Clean up an Coiled software environments we created just for this CI build
+          export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
+          coiled env delete $COILED_SOFTWARE_NAME
+          if [[ ${{ steps.tests.outcome }} != 'success' ]]
+          then
+            exit 1
+          fi
+
+      - name: Build coiled-runtime
+        if: ${{ matrix.runtime-version == 'latest' }}
+        run: |
+          conda mambabuild recipe \
+                --output-folder dist/conda \
+                --no-anaconda-upload
 
       - name: Upload conda package
+        # Only upload on a single CI build when pushing a tagged commit to `main`
         if: |
-          matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+          matrix.os == 'ubuntu-latest' &&
+          matrix.python-version == '3.9' &&
+          matrix.runtime-version == 'latest' &&
+          github.event_name == 'push' &&
+          startsWith(github.ref, 'refs/tags')
         env:
           ANACONDA_API_TOKEN: ${{ secrets.COILED_UPLOAD_TOKEN }}
         run: |

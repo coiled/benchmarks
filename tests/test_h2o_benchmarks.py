@@ -10,11 +10,9 @@ import pandas as pd
 import pytest
 from dask.distributed import Client
 
-from .utils import runtime_software_env
-
 
 @pytest.fixture(scope="module")
-def cluster():
+def cluster(runtime_software_env):
     with coiled.Cluster(
         software=runtime_software_env,
         name="h2o-groupby-benchmark_" + str(uuid.uuid4()),
