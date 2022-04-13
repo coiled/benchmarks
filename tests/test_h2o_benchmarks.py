@@ -4,21 +4,20 @@ h2o-ai benchmark groupby part running on coiled.
 
 import uuid
 
-import coiled
 import dask.dataframe as dd
 import pandas as pd
 import pytest
+from coiled._beta import ClusterBeta as Cluster
 from dask.distributed import Client
 
 
 @pytest.fixture(scope="module")
 def cluster(runtime_software_env):
-    with coiled.Cluster(
+    with Cluster(
         software=runtime_software_env,
         name="h2o-groupby-benchmark_" + str(uuid.uuid4()),
         account="dask-engineering",
         n_workers=10,
-        backend_options={"spot": False},
     ) as cluster:
         yield cluster
 
