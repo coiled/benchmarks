@@ -42,18 +42,20 @@ jobs:
       - name: Install dependencies
         run: mamba install boa conda-verify jinja2 packaging pytest
 
-      - name: Build coiled-runtime
-        if: ${{ matrix.runtime-version == 'latest' }}
-        run: |
-          conda mambabuild recipe \
-                --output-folder dist/conda \
-                --no-anaconda-upload 
+      # - name: Build coiled-runtime
+      #   if: ${{ matrix.runtime-version == 'latest' }}
+      #   run: |
+      #     conda mambabuild recipe \
+      #           --output-folder dist/conda \
+      #           --no-anaconda-upload 
 
       - name: Install coiled-runtime
         run: |
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
           then
-            mamba install -c ./dist/conda -c conda-forge coiled-runtime
+            python ci/create_latest_runtime_meta.py --output latest.txt
+            mamba install -c coiled -c conda-forge --file latest.txt
+            # mamba install -c ./dist/conda -c conda-forge coiled-runtime
           else
             mamba install -c coiled -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
           fi
