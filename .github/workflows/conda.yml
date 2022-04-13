@@ -42,13 +42,6 @@ jobs:
       - name: Install dependencies
         run: mamba install boa conda-verify jinja2 packaging pytest
 
-      # - name: Build coiled-runtime
-      #   if: ${{ matrix.runtime-version == 'latest' }}
-      #   run: |
-      #     conda mambabuild recipe \
-      #           --output-folder dist/conda \
-      #           --no-anaconda-upload 
-
       - name: Install coiled-runtime
         run: |
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
@@ -79,9 +72,21 @@ jobs:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: python -m pytest tests
 
+      - name: Build coiled-runtime
+        if: ${{ matrix.runtime-version == 'latest' }}
+        run: |
+          conda mambabuild recipe \
+                --output-folder dist/conda \
+                --no-anaconda-upload
+
       - name: Upload conda package
+        # Only upload on a single CI build when pushing a tagged commit to `main`
         if: |
-          matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9' && matrix.runtime-version == 'latest' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+          matrix.os == 'ubuntu-latest' && \
+          matrix.python-version == '3.9' && \
+          matrix.runtime-version == 'latest' && \
+          github.event_name == 'push' && \
+          startsWith(github.ref, 'refs/tags')
         env:
           ANACONDA_API_TOKEN: ${{ secrets.COILED_UPLOAD_TOKEN }}
         run: |
