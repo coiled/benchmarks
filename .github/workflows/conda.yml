@@ -64,8 +64,10 @@ jobs:
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
-          export COILED_ENV_NAME=$(echo "dask-engineering/coiled-runtime-pr-${{ matrix.os }}-${{ matrix.python-version }}" | sed 's/\.//g' )
-          coiled env create --name $COILED_ENV_NAME --conda latest.yaml
+          export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
+          coiled env create \
+            --name dask-engineering/coiled-runtime-pr-$GITHUB_REF_NAME-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED \
+            --conda latest.yaml
 
       - name: Run tests
         env:
