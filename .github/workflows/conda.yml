@@ -63,26 +63,33 @@ jobs:
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
+          # Coiled software environment names can't contain "." characters
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
 
+          # NOTE: We _should_ be able to use GITHUB_REF_NAME for both push and pull_request events
+          # but have to add the if/else below to work around https://github.com/github/docs/issues/15319
           if [[ ${{ github.event_name }} = 'pull_request' ]]
           then
-            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-pr-$GITHUB_HEAD_REF-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED
+            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-$GITHUB_HEAD_REF-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED
           else
-            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-push-main-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED
+            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-main-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED
           fi
 
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
+          # Put COILED_SOFTWARE_NAME into $GITHUB_ENV so it can be used in subsequent workflow steps
           echo COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME >> $GITHUB_ENV
+
           coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
 
       - name: Run tests
         env:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
+          # Ensure we run additional tests when testing the latest coiled-runtime
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
           then
             export PYTEST_MARKERS="-m latest_runtime"
+            export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
           else
             export PYTEST_MARKERS=" "
           fi
