@@ -3,6 +3,7 @@ from __future__ import annotations
 import pathlib
 
 import conda.cli.python_api as Conda
+import pytest
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from packaging.requirements import Requirement, SpecifierSet
@@ -37,6 +38,7 @@ def get_meta_specifiers() -> dict[str, SpecifierSet]:
     return meta_specifiers
 
 
+@pytest.mark.latest_runtime
 def test_install_dist():
     # Test that versions of packages installed are consistent with those
     # specified in `meta.yaml`
