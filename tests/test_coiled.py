@@ -4,7 +4,7 @@ import uuid
 
 import dask.dataframe as dd
 import pandas as pd
-from coiled.v2 import Cluster
+from coiled._beta import ClusterBeta as Cluster
 from dask.distributed import Client
 
 SOFTWARE = os.environ.get(
