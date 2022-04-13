@@ -8,8 +8,6 @@ import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from packaging.requirements import Requirement, SpecifierSet
 
-pytestmark = pytest.mark.latest_runtime
-
 
 def get_conda_installed_versions() -> dict[str, str]:
     """Get conda list packages in a list, and strip headers"""
@@ -40,6 +38,7 @@ def get_meta_specifiers() -> dict[str, SpecifierSet]:
     return meta_specifiers
 
 
+@pytest.mark.latest_runtime
 def test_install_dist():
     # Test that versions of packages installed are consistent with those
     # specified in `meta.yaml`
