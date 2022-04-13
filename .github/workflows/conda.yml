@@ -75,10 +75,11 @@ jobs:
         run: |
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
           then
-            export PYTEST_MARKERS = "-m latest_runtime"
+            export PYTEST_MARKERS="-m latest_runtime"
           else
-            export PYTEST_MARKERS = ""
+            export PYTEST_MARKERS=" "
           fi
+
           python -m pytest $PYTEST_MARKERS tests
 
       - name: Build coiled-runtime
