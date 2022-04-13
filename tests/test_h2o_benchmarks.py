@@ -35,12 +35,12 @@ def client(cluster):
     params=[
         "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_single.csv",
         "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_single.csv",
-        "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_single.csv",
+        # "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_single.csv",
     ],
     ids=[
         "0.5 GB",
         "5 GB",
-        "50 GB",
+        # "50 GB",
     ],
 )
 def ddf(request):
