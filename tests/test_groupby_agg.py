@@ -14,7 +14,7 @@ SOFTWARE = os.environ.get(
 
 
 @pytest.mark.parametrize("partition_size", ["10MB", "100MB", "1GB"])
-def test_quickstart(partition_size):
+def test_groupby_agg(partition_size):
     with Cluster(
         software=SOFTWARE,
         name="test_groupby_agg" + str(uuid.uuid4()),
