@@ -1,3 +1,6 @@
+import os
+import sys
+
 import pytest
 
 
@@ -15,3 +18,11 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "latest_runtime" in item.keywords:
             item.add_marker(skip_latest)
+
+
+@pytest.fixture(scope="session")
+def runtime_software_env():
+    return os.environ.get(
+        "COILED_SOFTWARE_NAME",
+        f"dask-engineering/coiled_dist-py{sys.version_info[0]}{sys.version_info[1]}",
+    )

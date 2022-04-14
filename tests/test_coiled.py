@@ -1,5 +1,3 @@
-import os
-import sys
 import uuid
 
 import dask.dataframe as dd
@@ -7,15 +5,10 @@ import pandas as pd
 from coiled._beta import ClusterBeta as Cluster
 from dask.distributed import Client
 
-SOFTWARE = os.environ.get(
-    "COILED_SOFTWARE_NAME",
-    f"dask-engineering/coiled_dist-py{sys.version_info[0]}{sys.version_info[1]}",
-)
 
-
-def test_quickstart():
+def test_quickstart(runtime_software_env):
     with Cluster(
-        software=SOFTWARE,
+        software=runtime_software_env,
         name="nyc-quickstart_" + str(uuid.uuid4()),
         account="dask-engineering",
         n_workers=10,
