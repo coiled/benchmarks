@@ -44,7 +44,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: mamba install boa conda-verify jinja2 packaging pytest
+        run: mamba install boa conda-verify jinja2 packaging pytest pytest-xdist
 
       - name: Install coiled-runtime
         run: |
@@ -105,7 +105,7 @@ jobs:
             export EXTRA_OPTIONS=" "
           fi
 
-          python -m pytest $EXTRA_OPTIONS tests
+          python -m pytest -n auto --dist loadscope $EXTRA_OPTIONS tests
 
       - name: Remove Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}
