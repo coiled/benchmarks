@@ -22,7 +22,7 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_latest)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def software():
     return os.environ.get(
         "COILED_SOFTWARE_NAME",
@@ -30,7 +30,7 @@ def software():
     )
 
 
-@pytest.fixture
+@pytest.fixture(scope="module")
 def small_cluster(software):
     with Cluster(
         software=software,
@@ -45,4 +45,5 @@ def small_cluster(software):
 @pytest.fixture
 def small_client(small_cluster):
     with Client(small_cluster) as client:
+        client.restart()
         yield client

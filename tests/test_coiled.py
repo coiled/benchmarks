@@ -2,7 +2,7 @@ import dask.dataframe as dd
 import pandas as pd
 
 
-def test_quickstart(client):
+def test_quickstart(small_client):
     ddf = dd.read_csv(
         "s3://nyc-tlc/trip data/yellow_tripdata_2019-*.csv",
         dtype={
