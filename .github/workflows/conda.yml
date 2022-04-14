@@ -147,7 +147,7 @@ jobs:
     needs: steps
     if: |
       always()
-      && github.event_name != 'pull_request' # this implies push to main
+      && github.event_name != 'pull_request'
       && github.repository == 'coiled/coiled-runtime'
       && needs.steps.test.outcome == 'failure'
     runs-on: ubuntu-latest
