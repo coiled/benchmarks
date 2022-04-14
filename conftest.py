@@ -35,7 +35,7 @@ def software():
 def small_cluster(software, request):
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
-        name=f"{module}-{uuid.uuid4().hex}",
+        name=f"{module}-{uuid.uuid4().hex[:8]}",
         software=software,
         account="dask-engineering",
         n_workers=10,
@@ -48,5 +48,7 @@ def small_cluster(software, request):
 @pytest.fixture
 def small_client(small_cluster):
     with Client(small_cluster) as client:
+        small_cluster.scale(10)
+        client.wait_for_workers(10)
         client.restart()
         yield client
