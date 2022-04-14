@@ -1,5 +1,6 @@
 import os
 import sys
+import uuid
 
 import pytest
 from coiled._beta import ClusterBeta as Cluster
@@ -22,7 +23,7 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_latest)
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def software():
     return os.environ.get(
         "COILED_SOFTWARE_NAME",
@@ -30,9 +31,11 @@ def software():
     )
 
 
-@pytest.fixture
-def small_cluster(software):
+@pytest.fixture(scope="module")
+def small_cluster(software, request):
+    module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
+        name=f"{module}-{uuid.uuid4().hex[:8]}",
         software=software,
         account="dask-engineering",
         n_workers=10,
@@ -45,4 +48,7 @@ def small_cluster(software):
 @pytest.fixture
 def small_client(small_cluster):
     with Client(small_cluster) as client:
+        small_cluster.scale(10)
+        client.wait_for_workers(10)
+        client.restart()
         yield client
