@@ -165,9 +165,9 @@ jobs:
               const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
               const issue_body = `[Workflow Run URL](${workflow_url})`
               // Run GraphQL query against GitHub API to find the most recent open issue used for reporting failures
-              const query = `query($owner:String!, $name:String!, $creator:String!, $label:String!){
+              const query = `query($owner:String!, $name:String!, $creator:String!){
                 repository(owner: $owner, name: $name) {
-                  issues(first: 1, states: OPEN, filterBy: {createdBy: $creator, labels: [$label]}, orderBy: {field: CREATED_AT, direction: DESC}) {
+                  issues(first: 1, states: OPEN, filterBy: {createdBy: $creator}, orderBy: {field: CREATED_AT, direction: DESC}) {
                     edges {
                       node {
                         body
