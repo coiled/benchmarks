@@ -1,7 +1,7 @@
 import dask
 
 
-def test_shuffle_stability(small_client):
+def test_shuffle_simple(small_client):
     df = dask.datasets.timeseries(
         start="2000-01-01", end="2000-12-31", freq="1s", partition_freq="1D"
     )
