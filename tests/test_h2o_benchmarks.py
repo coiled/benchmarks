@@ -2,31 +2,9 @@
 h2o-ai benchmark groupby part running on coiled.
 """
 
-import uuid
-
 import dask.dataframe as dd
 import pandas as pd
 import pytest
-from coiled._beta import ClusterBeta as Cluster
-from dask.distributed import Client
-
-
-@pytest.fixture(scope="module")
-def cluster(runtime_software_env):
-    with Cluster(
-        software=runtime_software_env,
-        name="h2o-groupby-benchmark_" + str(uuid.uuid4()),
-        account="dask-engineering",
-        n_workers=10,
-    ) as cluster:
-        yield cluster
-
-
-@pytest.fixture(autouse=True)
-def client(cluster):
-    with Client(cluster) as client:
-        yield client
-        client.restart()
 
 
 @pytest.fixture(
@@ -60,11 +38,11 @@ def ddf(request):
     )
 
 
-def test_q1(ddf):
+def test_q1(ddf, small_client):
     ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"}).compute()
 
 
-def test_q2(ddf):
+def test_q2(ddf, small_client):
     (
         ddf.groupby(["id1", "id2"], dropna=False, observed=True)
         .agg({"v1": "sum"})
@@ -72,7 +50,7 @@ def test_q2(ddf):
     )
 
 
-def test_q3(ddf):
+def test_q3(ddf, small_client):
     (
         ddf.groupby("id3", dropna=False, observed=True)
         .agg({"v1": "sum", "v3": "mean"})
@@ -80,7 +58,7 @@ def test_q3(ddf):
     )
 
 
-def test_q4(ddf):
+def test_q4(ddf, small_client):
     (
         ddf.groupby("id4", dropna=False, observed=True)
         .agg({"v1": "mean", "v2": "mean", "v3": "mean"})
@@ -88,7 +66,7 @@ def test_q4(ddf):
     )
 
 
-def test_q5(ddf):
+def test_q5(ddf, small_client):
     (
         ddf.groupby("id6", dropna=False, observed=True)
         .agg({"v1": "sum", "v2": "sum", "v3": "sum"})
@@ -96,7 +74,7 @@ def test_q5(ddf):
     )
 
 
-def test_q7(ddf):
+def test_q7(ddf, small_client):
     (
         ddf.groupby("id3", dropna=False, observed=True)
         .agg({"v1": "max", "v2": "min"})
@@ -105,7 +83,7 @@ def test_q7(ddf):
     )
 
 
-def test_q8(ddf):
+def test_q8(ddf, small_client):
     (
         ddf[~ddf["v3"].isna()][["id6", "v3"]]
         .groupby("id6", dropna=False, observed=True)
@@ -117,7 +95,7 @@ def test_q8(ddf):
     )
 
 
-def test_q9(ddf):
+def test_q9(ddf, small_client):
     (
         ddf[["id2", "id4", "v1", "v2"]]
         .groupby(["id2", "id4"], dropna=False, observed=True)

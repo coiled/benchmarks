@@ -1,7 +1,10 @@
 import os
 import sys
+import uuid
 
 import pytest
+from coiled._beta import ClusterBeta as Cluster
+from dask.distributed import Client
 
 
 def pytest_addoption(parser):
@@ -21,8 +24,31 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(scope="session")
-def runtime_software_env():
+def software():
     return os.environ.get(
         "COILED_SOFTWARE_NAME",
         f"dask-engineering/coiled_dist-py{sys.version_info[0]}{sys.version_info[1]}",
     )
+
+
+@pytest.fixture(scope="module")
+def small_cluster(software, request):
+    module = os.path.basename(request.fspath).split(".")[0]
+    with Cluster(
+        name=f"{module}-{uuid.uuid4().hex[:8]}",
+        software=software,
+        account="dask-engineering",
+        n_workers=10,
+        worker_vm_types=["m5.large"],
+        scheduler_vm_types=["m5.large"],
+    ) as cluster:
+        yield cluster
+
+
+@pytest.fixture
+def small_client(small_cluster):
+    with Client(small_cluster) as client:
+        small_cluster.scale(10)
+        client.wait_for_workers(10)
+        client.restart()
+        yield client
