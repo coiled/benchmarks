@@ -13,7 +13,7 @@ SOFTWARE = os.environ.get(
 )
 
 
-@pytest.mark.parametrize("partition_size", ["1MB", "100MB", "1GB"])
+@pytest.mark.parametrize("partition_size", ["10MB", "100MB", "1GB"])
 def test_quickstart(partition_size):
     with Cluster(
         software=SOFTWARE,
