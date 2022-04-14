@@ -117,7 +117,7 @@ jobs:
           coiled env delete $COILED_SOFTWARE_NAME
           if [[ ${{ steps.tests.outcome }} != 'success' ]]
           then
-            python -c "print('Tests failed. Please see the output from the previous step for more details.')"
+            python -c "raise Exception('Tests failed. Please see the output from the previous step for more details.')"
           fi
 
       - name: Build coiled-runtime
