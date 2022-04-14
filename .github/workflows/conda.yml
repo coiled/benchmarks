@@ -144,12 +144,12 @@ jobs:
 
   report:
     name: report
-    needs: steps
+    needs: conda
     if: |
       always()
       && github.event_name != 'pull_request'
       && github.repository == 'coiled/coiled-runtime'
-      && needs.steps.test.outcome == 'failure'
+      && needs.conda.steps.test.outcome == 'failure'
     runs-on: ubuntu-latest
     defaults:
       run:
