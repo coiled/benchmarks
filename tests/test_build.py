@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 import pathlib
+import shlex
+import subprocess
 
+import coiled
 import conda.cli.python_api as Conda
 import pytest
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from packaging.requirements import Requirement, SpecifierSet
+from packaging.version import InvalidVersion, Version
 
 
 def get_conda_installed_versions() -> dict[str, str]:
@@ -49,3 +53,23 @@ def test_install_dist():
         specifier.contains(installed_versions[package])
         for package, specifier in meta_specifiers.items()
     )
+
+
+@pytest.mark.latest_runtime
+def test_latest_coiled():
+    # Ensure `coiled-runtime` installs the latest version of `coiled` by default
+    v_installed = Version(coiled.__version__)
+
+    # Get latest `coiled` release version from conda-forge
+    output = subprocess.check_output(
+        shlex.split("conda search --override-channels -c conda-forge coiled")
+    )
+    for i in output.decode().split("\n")[-2].split(" "):
+        try:
+            v_latest = Version(i)
+        except InvalidVersion:
+            continue
+        else:
+            break
+
+    assert v_latest == v_installed
