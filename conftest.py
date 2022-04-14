@@ -1,5 +1,6 @@
 import os
 import sys
+import uuid
 
 import pytest
 from coiled._beta import ClusterBeta as Cluster
@@ -31,8 +32,10 @@ def software():
 
 
 @pytest.fixture(scope="module")
-def small_cluster(software):
+def small_cluster(software, request):
+    module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
+        name=f"{module}-{uuid.uuid4().hex}",
         software=software,
         account="dask-engineering",
         n_workers=10,
