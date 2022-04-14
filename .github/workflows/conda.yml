@@ -91,7 +91,7 @@ jobs:
 
       - name: Run tests
         # Want to delete software environment in next step even if tests fail
-        continue-on-error: true
+        continue-on-error: ${{ matrix.runtime-version == 'latest' }}
         id: tests
         env:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
