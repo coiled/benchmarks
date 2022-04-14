@@ -38,6 +38,10 @@ def get_meta_specifiers() -> dict[str, SpecifierSet]:
     return meta_specifiers
 
 
+def test_bad():
+    assert False
+
+
 @pytest.mark.latest_runtime
 def test_install_dist():
     # Test that versions of packages installed are consistent with those
