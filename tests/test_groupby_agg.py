@@ -34,5 +34,4 @@ def test_groupby_agg(small_client, partition_size):
     )
     ddf2.columns = ddf2.columns.droplevel(0)
     mem = ddf2.memory_usage(deep=True).sum().compute()
-    assert hasattr(ddf2, "dask")
     assert mem > 0
