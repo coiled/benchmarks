@@ -83,9 +83,9 @@ jobs:
 
           if [[ ${{ github.event_name }} = 'pull_request' ]]
           then
-            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-${{ github.event.number }}-$GITHUB_SHA-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED
+            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-${{ github.event.number }}-$GITHUB_RUN_ID-$RUNNER_OS-py$PYTHON_VERSION_FORMATTED
           else
-            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-main-$GITHUB_SHA-${{ matrix.os }}-py$PYTHON_VERSION_FORMATTED
+            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-$GITHUB_REF_NAME-$GITHUB_RUN_ID-$RUNNER_OS-py$PYTHON_VERSION_FORMATTED
           fi
 
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
