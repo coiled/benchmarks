@@ -3,7 +3,7 @@ import sys
 import uuid
 
 import pytest
-from coiled.v2 import ClusterBeta as Cluster
+from coiled.v2 import Cluster
 from dask.distributed import Client
 
 
