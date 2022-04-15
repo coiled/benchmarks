@@ -80,7 +80,7 @@ jobs:
 
           # Coiled software environment names can't contain "." or uppercase characters
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
-          export OS_FORMATTED$(python -c "import os; print(os.environ['RUNNER_OS'].lower())")
+          export OS_FORMATTED=$(python -c "import os; print(os.environ['RUNNER_OS'].lower())")
 
           if [[ ${{ github.event_name }} = 'pull_request' ]]
           then
