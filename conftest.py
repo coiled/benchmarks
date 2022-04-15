@@ -2,19 +2,14 @@ import os
 import sys
 import uuid
 
-import coiled
 import pytest
-from dask.distributed import Client
-from packaging.version import Version
 
-# Use non-declarative clusters on Python 3.7 with `coiled <= 0.0.73`
-# See https://github.com/coiled/coiled-runtime/pull/54
-if tuple(sys.version_info[:2]) < (3, 8) and Version(coiled.__version__) <= Version(
-    "0.0.73"
-):
-    from coiled import Cluster
-else:
+try:
+    from coiled.v2 import Cluster
+except ImportError:
     from coiled._beta import ClusterBeta as Cluster
+
+from dask.distributed import Client
 
 
 def pytest_addoption(parser):
