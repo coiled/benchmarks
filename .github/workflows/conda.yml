@@ -24,12 +24,15 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
-        python-version: ["3.8", "3.9"]
+        python-version: ["3.7", "3.8", "3.9"]
         runtime-version: ["latest", "0.0.3"]
         exclude:
           # FIXME: Building Coiled software environments is currently broken on Windows
           - os: windows-latest
             runtime-version: "latest"
+          # TODO: This can be removed once there's a `coiled-runtime=0.0.3` build with `python>=3.7`
+          - python-version: "3.7"
+            runtime-version: "0.0.3"
     
     steps:
       - uses: actions/checkout@v2
