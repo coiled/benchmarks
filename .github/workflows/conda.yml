@@ -149,7 +149,7 @@ jobs:
       always()
       && github.event_name == 'pull_request'
       && github.repository == 'coiled/coiled-runtime'
-      && needs.conda.steps.test.outcome == 'failure'
+      && needs.conda.result == 'failure'
     runs-on: ubuntu-latest
     defaults:
       run:
