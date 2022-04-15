@@ -3,7 +3,12 @@ import sys
 import uuid
 
 import pytest
-from coiled.v2 import Cluster
+
+try:
+    from coiled.v2 import Cluster
+except ImportError:
+    from coiled._beta import ClusterBeta as Cluster
+
 from dask.distributed import Client
 
 
