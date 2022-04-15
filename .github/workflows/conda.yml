@@ -78,14 +78,15 @@ jobs:
           # If testing the latest `coiled-runtime`, we need to build a Coiled software environment
           # that can be used when running tests
 
-          # Coiled software environment names can't contain "." characters
+          # Coiled software environment names can't contain "." or uppercase characters
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
+          export OS_FORMATTED$(python -c "import os; print(os.environ['RUNNER_OS'].lower())")
 
           if [[ ${{ github.event_name }} = 'pull_request' ]]
           then
-            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-${{ github.event.number }}-$GITHUB_RUN_ID-$RUNNER_OS-py$PYTHON_VERSION_FORMATTED
+            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-${{ github.event.number }}-$GITHUB_RUN_ID-$OS_FORMATTED-py$PYTHON_VERSION_FORMATTED
           else
-            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-$GITHUB_REF_NAME-$GITHUB_RUN_ID-$RUNNER_OS-py$PYTHON_VERSION_FORMATTED
+            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-$GITHUB_REF_NAME-$GITHUB_RUN_ID-$OS_FORMATTED-py$PYTHON_VERSION_FORMATTED
           fi
 
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
