@@ -147,7 +147,7 @@ jobs:
     needs: conda
     if: |
       always()
-      && github.event_name == 'pull_request'
+      && github.event_name != 'pull_request'
       && github.repository == 'coiled/coiled-runtime'
       && needs.conda.result == 'failure'
     runs-on: ubuntu-latest
