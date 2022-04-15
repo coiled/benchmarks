@@ -161,7 +161,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const title = "⚠️ Main CI failed ⚠️"
+            const title = "⚠️ CI failed ⚠️"
             const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
             const issue_body = `[Workflow Run URL](${workflow_url})`
             // Run GraphQL query against GitHub API to find the most recent open issue used for reporting failures
