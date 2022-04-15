@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import pathlib
 import shlex
 import subprocess
@@ -10,7 +11,7 @@ import pytest
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from packaging.requirements import Requirement, SpecifierSet
-from packaging.version import InvalidVersion, Version
+from packaging.version import Version
 
 
 def get_conda_installed_versions() -> dict[str, str]:
@@ -62,14 +63,9 @@ def test_latest_coiled():
 
     # Get latest `coiled` release version from conda-forge
     output = subprocess.check_output(
-        shlex.split("conda search --override-channels -c conda-forge coiled")
+        shlex.split("conda search --override-channels --json -c conda-forge coiled")
     )
-    for i in output.decode().split("\n")[-2].split(" "):
-        try:
-            v_latest = Version(i)
-        except InvalidVersion:
-            continue
-        else:
-            break
+    result = json.loads(output)
+    v_latest = Version(result["coiled"][-1]["version"])
 
-    assert v_latest == v_installed
+    assert v_installed == v_latest
