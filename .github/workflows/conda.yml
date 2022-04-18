@@ -81,12 +81,15 @@ jobs:
           # Coiled software environment names can't contain "." or uppercase characters
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
           export OS_FORMATTED=$(python -c "import os; print(os.environ['RUNNER_OS'].lower())")
+          export REF_NAME_FORMATTED=$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
 
+          export COILED_SOFTWARE_NAME_HEAD=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME
+          export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-$OS_FORMATTED-py$PYTHON_VERSION_FORMATTED
           if [[ ${{ github.event_name }} = 'pull_request' ]]
           then
-            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-${{ github.event.number }}-$GITHUB_RUN_ID-$OS_FORMATTED-py$PYTHON_VERSION_FORMATTED
+            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-${{ github.event.number }}-$COILED_SOFTWARE_NAME_TAIL
           else
-            export COILED_SOFTWARE_NAME=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME-$GITHUB_REF_NAME-$GITHUB_RUN_ID-$OS_FORMATTED-py$PYTHON_VERSION_FORMATTED
+            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
           fi
 
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
