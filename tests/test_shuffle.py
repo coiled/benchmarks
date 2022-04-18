@@ -1,14 +1,13 @@
 import warnings
 
 import dask
-import dask.dataframe as dd
 import pytest
 
 BASE_URL = "s3://dask-io/stability"
 storage_options = {"config_kwargs": {"region_name": "us-east-1"}}
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def shuffle_dataset(small_client):
     # NOTE(sjperkins)
     # I think the dataset and worker memory limits are related for this test
@@ -36,23 +35,25 @@ def shuffle_dataset(small_client):
         start="2000-01-01", end="2000-12-31", freq="50ms", partition_freq="1D"
     )
 
-    url = f"{BASE_URL}/test-data"
-    write = df.to_parquet(
-        url, compute=False, overwrite=True, storage_options=storage_options
-    )
-    size = df.memory_usage(index=True).sum() / ONE_GB
+    yield df
+    # url = f"{BASE_URL}/test-data"
+    # write = df.to_parquet(
+    #     url, compute=False, overwrite=True, storage_options=storage_options
+    # )
+    # size = df.memory_usage(index=True).sum() / ONE_GB
 
-    size, _ = dask.compute(write, size)
+    # size, _ = dask.compute(write, size)
 
-    yield dd.read_parquet(url, storage_options=storage_options)
+    # yield dd.read_parquet(url, storage_options=storage_options)
 
 
 def test_shuffle_simple(shuffle_dataset):
     sdf = shuffle_dataset.shuffle(on="x")
-    write = sdf.to_parquet(
-        f"{BASE_URL}/simple",
-        compute=False,
-        overwrite=True,
-        storage_options=storage_options,
-    )
-    dask.compute(write)
+    dask.compute(sdf)
+    # write = sdf.to_parquet(
+    #     f"{BASE_URL}/simple",
+    #     compute=False,
+    #     overwrite=True,
+    #     storage_options=storage_options,
+    # )
+    # dask.compute(write)
