@@ -10,7 +10,7 @@ source:
 
 build:
   noarch: python
-  number: 1
+  number: 2
 
 requirements:
   host:
@@ -40,6 +40,8 @@ requirements:
     - scikit-learn ==1.0.2
     - python-graphviz ==0.19.1
     - click ==8.0.0
+    - xarray ==0.20.2
+    - zarr ==2.11.3
 
 test:
   imports:

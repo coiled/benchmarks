@@ -25,10 +25,10 @@ cd coiled-runtime
 conda install -c conda-forge conda-build
 
 # Build the metapackage
-conda build recipe --output-folder dist/conda --no-anaconda-upload
+conda build recipe -c conda-forge --output-folder dist/conda --no-anaconda-upload
 
 # Install the built `coiled-runtime` metapackage
-conda install -c ./dist/conda/ coiled-runtime
+conda install -c conda-forge -c ./dist/conda/ coiled-runtime
 ```
 
 ## Release
