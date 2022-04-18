@@ -1,4 +1,4 @@
-name: Conda build
+name: Tests
 on:
   push:
     branches:
@@ -14,8 +14,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  conda:
-    name: Build (and upload) - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+  tests:
+    name: ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     # Required shell entrypoint to have properly activated conda environments
@@ -32,9 +32,6 @@ jobs:
           # FIXME: Building Coiled software environments is currently broken on Windows
           - os: windows-latest
             runtime-version: "latest"
-          # TODO: This can be removed once there's a `coiled-runtime=0.0.3` build with `python>=3.7`
-          - python-version: "3.7"
-            runtime-version: "0.0.3"
     
     steps:
       - uses: actions/checkout@v2
@@ -134,7 +131,12 @@ jobs:
 
       - name: Upload conda package
         # Only upload on a single CI build when pushing a tagged commit to `main`
-        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.9' && matrix.runtime-version == 'latest' && github.event_name == 'push' && startsWith(github.ref, 'refs/tags')
+        if: |
+          matrix.os == 'ubuntu-latest'
+          && matrix.python-version == '3.9'
+          && matrix.runtime-version == 'latest'
+          && github.event_name == 'push'
+          && startsWith(github.ref, 'refs/tags')
         env:
           ANACONDA_API_TOKEN: ${{ secrets.COILED_UPLOAD_TOKEN }}
         run: |
@@ -144,12 +146,12 @@ jobs:
 
   report:
     name: report
-    needs: conda
+    needs: tests
     if: |
       always()
       && github.event_name != 'pull_request'
       && github.repository == 'coiled/coiled-runtime'
-      && needs.conda.result == 'failure'
+      && needs.tests.result == 'failure'
     runs-on: ubuntu-latest
     defaults:
       run:
