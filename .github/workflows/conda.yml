@@ -108,7 +108,7 @@ jobs:
             export EXTRA_OPTIONS=" "
           fi
 
-          python -m pytest -n 10 --dist loadscope $EXTRA_OPTIONS tests
+          python -m pytest -s -n 10 --dist loadscope $EXTRA_OPTIONS tests
 
       - name: Remove Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}

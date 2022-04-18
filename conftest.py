@@ -9,7 +9,11 @@ try:
 except ImportError:
     from coiled._beta import ClusterBeta as Cluster
 
+import threading
+
 from dask.distributed import Client
+
+print(f"\n\nDEBUG:\n{threading.enumerate() = }\n{threading.current_thread() = }\n\n")
 
 
 def pytest_addoption(parser):
