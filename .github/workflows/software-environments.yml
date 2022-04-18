@@ -3,6 +3,7 @@ name: Create software environments
 on:
   push:
     branches: main
+  pull_request:
 
 jobs:
   build:
@@ -39,4 +40,4 @@ jobs:
           export COILED_SOFTWARE_ENV_NAME=coiled-runtime-$RUNTIME_VERSION_FORMATTED-py$PYTHON_VERSION_FORMATTED
           export COILED_SOFTWARE_ENV_PATH=environments/coiled-runtime-${{ matrix.runtime-version }}-py$PYTHON_VERSION_FORMATTED
 
-          coiled env create --name dask-engineering/$COILED_SOFTWARE_ENV_NAME --conda $COILED_SOFTWARE_ENV_PATH
+          coiled env create --name dask-engineering/testci_$COILED_SOFTWARE_ENV_NAME --conda $COILED_SOFTWARE_ENV_PATH
