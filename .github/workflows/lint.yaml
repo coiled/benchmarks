@@ -7,7 +7,7 @@ on:
   pull_request:
 
 jobs:
-  pre-commit:
+  checks:
     name: pre-commit hooks
     runs-on: ubuntu-latest
     steps:
