@@ -38,6 +38,6 @@ jobs:
           export RUNTIME_VERSION_FORMATTED=$(echo "${{ matrix.runtime-version }}" | sed 's/\./-/g' )
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
           export COILED_SOFTWARE_ENV_NAME=coiled-runtime-$RUNTIME_VERSION_FORMATTED-py$PYTHON_VERSION_FORMATTED
-          export COILED_SOFTWARE_ENV_PATH=environments/coiled-runtime-${{ matrix.runtime-version }}-py$PYTHON_VERSION_FORMATTED
+          export COILED_SOFTWARE_ENV_PATH=environments/coiled-runtime-${{ matrix.runtime-version }}-py$PYTHON_VERSION_FORMATTED.yml
 
           coiled env create --name dask-engineering/testci_$COILED_SOFTWARE_ENV_NAME --conda $COILED_SOFTWARE_ENV_PATH
