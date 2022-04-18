@@ -1,6 +1,6 @@
 # Coiled Runtime
 
-[![Conda Build](https://github.com/coiled/coiled-runtime/actions/workflows/conda.yml/badge.svg)](https://github.com/coiled/coiled-runtime/actions/workflows/conda.yml) [![Linting](https://github.com/coiled/coiled-runtime/actions/workflows/pre-commit.yaml/badge.svg)](https://github.com/coiled/coiled-runtime/actions/workflows/pre-commit.yaml)
+[![Tests](https://github.com/coiled/coiled-runtime/actions/workflows/tests.yml/badge.svg)](https://github.com/coiled/coiled-runtime/actions/workflows/tests.yml) [![Linting](https://github.com/coiled/coiled-runtime/actions/workflows/pre-commit.yaml/badge.svg)](https://github.com/coiled/coiled-runtime/actions/workflows/pre-commit.yaml)
 
 The Coiled Runtime is a conda metapackage which makes it easy to get started with Dask.
 
