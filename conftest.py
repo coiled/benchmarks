@@ -1,3 +1,4 @@
+import asyncio
 import os
 import sys
 import uuid
@@ -61,3 +62,11 @@ def small_client(small_cluster):
         client.wait_for_workers(10)
         client.restart()
         yield client
+
+
+@pytest.fixture(scope="session")
+def event_loop():
+    # same as pytest-asyncio event_loop, but session-scoped
+    loop = asyncio.get_event_loop_policy().new_event_loop()
+    yield loop
+    loop.close()
