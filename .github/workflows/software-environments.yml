@@ -1,0 +1,42 @@
+name: Create software environments
+
+on:
+  push:
+    branches: main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      max-parallel: 4
+      matrix:
+        python-version: ["3.7", "3.8", "3.9"]
+        runtime-version: ["0.0.3"]
+        server: ["https://cloud.coiled.io"]
+        include:
+          - server: "https://cloud.coiled.io"
+            token-name: COILED_BENCHMARK_BOT_TOKEN
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v1
+
+      - name: Install Coiled
+        run: python -m pip install coiled
+
+      - name: Create Runtime ${{ matrix.runtime-version }} Python ${{ matrix.python-version }} software environment
+        env:
+          DASK_COILED__SERVER: ${{ matrix.server }}
+          DASK_COILED__TOKEN: ${{ secrets[matrix.token-name] }}
+        run: |
+          # Coiled software environment names can't contain "." or uppercase characters
+          export RUNTIME_VERSION_FORMATTED=$(echo "${{ matrix.runtime-version }}" | sed 's/\./-/g' )
+          export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
+          export COILED_SOFTWARE_ENV_NAME=coiled-runtime-$RUNTIME_VERSION_FORMATTED-py$PYTHON_VERSION_FORMATTED
+          export COILED_SOFTWARE_ENV_PATH=environments/coiled-runtime-${{ matrix.runtime-version }}-py$PYTHON_VERSION_FORMATTED
+
+          coiled env create --name dask-engineering/$COILED_SOFTWARE_ENV_NAME --conda $COILED_SOFTWARE_ENV_PATH
