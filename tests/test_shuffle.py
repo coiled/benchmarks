@@ -30,6 +30,10 @@ def s3_stability_url(s3, s3_bucket_name):
     # Unique, because multiple tests are accessing the bucket
     stability_url = f"{s3_bucket_name}/stability-{uuid.uuid4().hex[:8]}"
 
+    from pprint import pprint
+
+    pprint(s3.ls(s3_bucket_name))
+
     try:
         s3.makedirs(stability_url)
         yield stability_url
