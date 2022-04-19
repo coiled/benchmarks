@@ -3,6 +3,7 @@ import sys
 import uuid
 
 import pytest
+import s3fs
 
 try:
     from coiled.v2 import Cluster
@@ -57,3 +58,27 @@ def small_client(small_cluster):
         client.wait_for_workers(10)
         client.restart()
         yield client
+
+
+@pytest.fixture(scope="session")
+def s3_region():
+    return "us-east-1"
+
+
+@pytest.fixture(scope="session")
+def s3_bucket():
+    return "dask-io"
+
+
+@pytest.fixture(scope="session")
+def s3_storage_options(s3_region):
+    return {"config_kwargs": {"region_name": s3_region}}
+
+
+@pytest.fixture(scope="session")
+def s3(s3_region):
+    return s3fs.S3FileSystem(
+        key=os.environ["AWS_ACCESS_KEY_ID"],
+        secret=os.environ["AWS_SECRET_ACCESS_KEY"],
+        client_kwargs={"region_name": s3_region},
+    )
