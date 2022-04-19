@@ -1,6 +1,6 @@
 # Coiled Runtime
 
-[![Conda Build](https://github.com/coiled/coiled-runtime/actions/workflows/conda.yml/badge.svg)](https://github.com/coiled/coiled-runtime/actions/workflows/conda.yml) [![Linting](https://github.com/coiled/coiled-runtime/actions/workflows/pre-commit.yaml/badge.svg)](https://github.com/coiled/coiled-runtime/actions/workflows/pre-commit.yaml)
+[![Tests](https://github.com/coiled/coiled-runtime/actions/workflows/tests.yml/badge.svg)](https://github.com/coiled/coiled-runtime/actions/workflows/tests.yml) [![Linting](https://github.com/coiled/coiled-runtime/actions/workflows/lint.yml/badge.svg)](https://github.com/coiled/coiled-runtime/actions/workflows/lint.yml)
 
 The Coiled Runtime is a conda metapackage which makes it easy to get started with Dask.
 
@@ -25,10 +25,10 @@ cd coiled-runtime
 conda install -c conda-forge conda-build
 
 # Build the metapackage
-conda build recipe --output-folder dist/conda --no-anaconda-upload
+conda build recipe -c conda-forge --output-folder dist/conda --no-anaconda-upload
 
 # Install the built `coiled-runtime` metapackage
-conda install -c ./dist/conda/ coiled-runtime
+conda install -c conda-forge -c ./dist/conda/ coiled-runtime
 ```
 
 ## Release
