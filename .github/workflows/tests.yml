@@ -28,7 +28,8 @@ jobs:
         # ["ubuntu-latest", "windows-latest", "macos-latest"]
         #test windows for now
         os: ["windows-latest"]
-        python-version: ["3.7", "3.8", "3.9"]
+        #["3.7", "3.8", "3.9"]
+        python-version: ["3.7"]
         #["latest", "0.0.3"]
         runtime-version: ["latest"]
     
@@ -54,11 +55,21 @@ jobs:
 
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
           then
-            python ci/create_latest_runtime_meta.py
-            mamba install -c coiled -c conda-forge --file latest.txt
+            #python ci/create_latest_runtime_meta.py
+            #mamba install -c coiled -c conda-forge --file latest.txt
+            pip install coiled
           else
             mamba install -c coiled -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
           fi
+
+      - name: sys.executable
+        run: python -c "import sys; print(sys.executable)"
+      - name: Coiled version bash
+        shell: bash
+        run: coiled --version
+      - name: Coiled version pwsh
+        shell: pwsh
+        run: coiled --version
 
       - name: Export environment
         run: |
@@ -94,115 +105,115 @@ jobs:
 
           coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
 
-      - name: Run tests
-        # Want to delete software environment in next step even if tests fail
-        continue-on-error: ${{ matrix.runtime-version == 'latest' }}
-        id: tests
-        env:
-            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-        run: |
-          # Ensure we run additional tests when testing the latest coiled-runtime
-          if [[ ${{ matrix.runtime-version }} = 'latest' ]]
-          then
-            export EXTRA_OPTIONS="--run-latest"
-            export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
-          else
-            export EXTRA_OPTIONS=" "
-          fi
+  #     - name: Run tests
+  #       # Want to delete software environment in next step even if tests fail
+  #       continue-on-error: ${{ matrix.runtime-version == 'latest' }}
+  #       id: tests
+  #       env:
+  #           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+  #       run: |
+  #         # Ensure we run additional tests when testing the latest coiled-runtime
+  #         if [[ ${{ matrix.runtime-version }} = 'latest' ]]
+  #         then
+  #           export EXTRA_OPTIONS="--run-latest"
+  #           export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
+  #         else
+  #           export EXTRA_OPTIONS=" "
+  #         fi
 
-          python -m pytest $EXTRA_OPTIONS tests
+  #         python -m pytest $EXTRA_OPTIONS tests
 
-      - name: Remove Coiled software environment
-        if: ${{ matrix.runtime-version == 'latest' }}
-        env:
-            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-        run: |
-          # Clean up an Coiled software environments we created just for this CI build
-          export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
-          coiled env delete $COILED_SOFTWARE_NAME
-          if [[ ${{ steps.tests.outcome }} != 'success' ]]
-          then
-            python -c "raise Exception('Tests failed. Please see the output from the previous step for more details.')"
-          fi
+  #     - name: Remove Coiled software environment
+  #       if: ${{ matrix.runtime-version == 'latest' }}
+  #       env:
+  #           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+  #       run: |
+  #         # Clean up an Coiled software environments we created just for this CI build
+  #         export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
+  #         coiled env delete $COILED_SOFTWARE_NAME
+  #         if [[ ${{ steps.tests.outcome }} != 'success' ]]
+  #         then
+  #           python -c "raise Exception('Tests failed. Please see the output from the previous step for more details.')"
+  #         fi
 
-      - name: Build coiled-runtime
-        if: ${{ matrix.runtime-version == 'latest' }}
-        run: |
-          conda mambabuild recipe \
-                --output-folder dist/conda \
-                --no-anaconda-upload
+  #     - name: Build coiled-runtime
+  #       if: ${{ matrix.runtime-version == 'latest' }}
+  #       run: |
+  #         conda mambabuild recipe \
+  #               --output-folder dist/conda \
+  #               --no-anaconda-upload
 
-      - name: Upload conda package
-        # Only upload on a single CI build when pushing a tagged commit to `main`
-        if: |
-          matrix.os == 'ubuntu-latest'
-          && matrix.python-version == '3.9'
-          && matrix.runtime-version == 'latest'
-          && github.event_name == 'push'
-          && startsWith(github.ref, 'refs/tags')
-        env:
-          ANACONDA_API_TOKEN: ${{ secrets.COILED_UPLOAD_TOKEN }}
-        run: |
-          # install anaconda for upload
-          mamba install anaconda-client
-          anaconda upload dist/conda/noarch/*.tar.bz2
+  #     - name: Upload conda package
+  #       # Only upload on a single CI build when pushing a tagged commit to `main`
+  #       if: |
+  #         matrix.os == 'ubuntu-latest'
+  #         && matrix.python-version == '3.9'
+  #         && matrix.runtime-version == 'latest'
+  #         && github.event_name == 'push'
+  #         && startsWith(github.ref, 'refs/tags')
+  #       env:
+  #         ANACONDA_API_TOKEN: ${{ secrets.COILED_UPLOAD_TOKEN }}
+  #       run: |
+  #         # install anaconda for upload
+  #         mamba install anaconda-client
+  #         anaconda upload dist/conda/noarch/*.tar.bz2
 
-  report:
-    name: report
-    needs: tests
-    if: |
-      always()
-      && github.event_name != 'pull_request'
-      && github.repository == 'coiled/coiled-runtime'
-      && needs.tests.result == 'failure'
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v2
-      - name: Report failures
-        uses: actions/github-script@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const title = "⚠️ CI failed ⚠️"
-            const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-            const issue_body = `[Workflow Run URL](${workflow_url})`
-            // Run GraphQL query against GitHub API to find the most recent open issue used for reporting failures
-            const query = `query($owner:String!, $name:String!, $creator:String!){
-              repository(owner: $owner, name: $name) {
-                issues(first: 1, states: OPEN, filterBy: {createdBy: $creator}, orderBy: {field: CREATED_AT, direction: DESC}) {
-                  edges {
-                    node {
-                      body
-                      id
-                      number
-                    }
-                  }
-                }
-              }
-            }`;
-            const variables = {
-                owner: context.repo.owner,
-                name: context.repo.repo,
-                creator: "github-actions[bot]"
-            }
-            const result = await github.graphql(query, variables)
-            // If no issue is open, create a new issue,
-            // else update the body of the existing issue.
-            if (result.repository.issues.edges.length === 0) {
-                github.issues.create({
-                    owner: variables.owner,
-                    repo: variables.name,
-                    body: issue_body,
-                    title: title,
-                })
-            } else {
-                github.issues.update({
-                    owner: variables.owner,
-                    repo: variables.name,
-                    issue_number: result.repository.issues.edges[0].node.number,
-                    body: issue_body
-                })
-            }
+  # report:
+  #   name: report
+  #   needs: tests
+  #   if: |
+  #     always()
+  #     && github.event_name != 'pull_request'
+  #     && github.repository == 'coiled/coiled-runtime'
+  #     && needs.tests.result == 'failure'
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Report failures
+  #       uses: actions/github-script@v3
+  #       with:
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         script: |
+  #           const title = "⚠️ CI failed ⚠️"
+  #           const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+  #           const issue_body = `[Workflow Run URL](${workflow_url})`
+  #           // Run GraphQL query against GitHub API to find the most recent open issue used for reporting failures
+  #           const query = `query($owner:String!, $name:String!, $creator:String!){
+  #             repository(owner: $owner, name: $name) {
+  #               issues(first: 1, states: OPEN, filterBy: {createdBy: $creator}, orderBy: {field: CREATED_AT, direction: DESC}) {
+  #                 edges {
+  #                   node {
+  #                     body
+  #                     id
+  #                     number
+  #                   }
+  #                 }
+  #               }
+  #             }
+  #           }`;
+  #           const variables = {
+  #               owner: context.repo.owner,
+  #               name: context.repo.repo,
+  #               creator: "github-actions[bot]"
+  #           }
+  #           const result = await github.graphql(query, variables)
+  #           // If no issue is open, create a new issue,
+  #           // else update the body of the existing issue.
+  #           if (result.repository.issues.edges.length === 0) {
+  #               github.issues.create({
+  #                   owner: variables.owner,
+  #                   repo: variables.name,
+  #                   body: issue_body,
+  #                   title: title,
+  #               })
+  #           } else {
+  #               github.issues.update({
+  #                   owner: variables.owner,
+  #                   repo: variables.name,
+  #                   issue_number: result.repository.issues.edges[0].node.number,
+  #                   body: issue_body
+  #               })
+  #           }
