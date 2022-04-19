@@ -64,6 +64,8 @@ jobs:
 
       - name: sys.executable
         run: python -c "import sys; print(sys.executable)"
+      - name: Coiled version
+        run: coiled --version
       - name: Coiled version pwsh
         shell: pwsh
         run: coiled --version
