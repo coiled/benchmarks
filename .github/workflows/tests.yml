@@ -55,13 +55,21 @@ jobs:
 
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
           then
-            #python ci/create_latest_runtime_meta.py
-            #mamba install -c coiled -c conda-forge --file latest.txt
-            pip install coiled
+            python ci/create_latest_runtime_meta.py
+            mamba install -c coiled -c conda-forge --file latest.txt
           else
             mamba install -c coiled -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
           fi
-
+    
+      - name: Pip install coiled on windows
+      # FIXME: Coiled cli from conda-forge is broken. 
+        run: |
+           if [[ ${{ matrix.runtime-version }} = 'latest' ]] && [[ ${{ matrix.os }} = 'windows-latest' ]]
+          then
+            mamba uninstall --force coiled 
+            pip install coiled
+          fi
+  
       - name: sys.executable
         run: python -c "import sys; print(sys.executable)"
       - name: Coiled version
