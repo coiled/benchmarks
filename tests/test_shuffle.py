@@ -1,14 +1,46 @@
+import os
+import uuid
 import warnings
 
 import dask
+import dask.dataframe as dd
 import pytest
+import s3fs
 
-BASE_URL = "s3://dask-io/stability"
-storage_options = {"config_kwargs": {"region_name": "us-east-1"}}
+S3_REGION = "us-east-1"
+storage_options = {"config_kwargs": {"region_name": S3_REGION}}
 
 
 @pytest.fixture
-def shuffle_dataset(small_client):
+def s3_bucket_name():
+    return "S3-dask-io-read-write"
+
+
+@pytest.fixture(scope="session")
+def s3():
+    with s3fs.S3FileSystem(
+        key=os.environ["AWS_ACCESS_KEY_ID"],
+        secret=os.environ["AWS_ACCESS_KEY_SECRET"],
+        client_kwargs={"region_name": S3_REGION},
+    ) as fs:
+        yield fs
+
+
+@pytest.fixture(scope="session")
+def s3_stability_url(s3, s3_bucket_name):
+    dirname = "stability"
+
+    try:
+        s3.mkdir(dirname)
+
+        yield f"s3://{s3_bucket_name}/{dirname}"
+
+    finally:
+        s3.rmdir(dirname)
+
+
+@pytest.fixture
+def shuffle_dataset(small_client, s3_stability_url):
     # NOTE(sjperkins)
     # I think the dataset and worker memory limits are related for this test
     # as the dataset is large enough to provoke some spilling when it is
@@ -35,25 +67,26 @@ def shuffle_dataset(small_client):
         start="2000-01-01", end="2000-12-31", freq="50ms", partition_freq="1D"
     )
 
-    yield df
-    # url = f"{BASE_URL}/test-data"
-    # write = df.to_parquet(
-    #     url, compute=False, overwrite=True, storage_options=storage_options
-    # )
-    # size = df.memory_usage(index=True).sum() / ONE_GB
+    write = df.to_parquet(
+        s3_stability_url, compute=False, overwrite=True, storage_options=storage_options
+    )
+    size = df.memory_usage(index=True).sum() / ONE_GB
 
-    # size, _ = dask.compute(write, size)
+    size, _ = dask.compute(write, size)
 
-    # yield dd.read_parquet(url, storage_options=storage_options)
+    yield dd.read_parquet(s3_stability_url, storage_options=storage_options)
 
 
-def test_shuffle_simple(shuffle_dataset):
+def test_shuffle_simple(shuffle_dataset, s3, s3_stability_url):
     sdf = shuffle_dataset.shuffle(on="x")
-    dask.compute(sdf)
-    # write = sdf.to_parquet(
-    #     f"{BASE_URL}/simple",
-    #     compute=False,
-    #     overwrite=True,
-    #     storage_options=storage_options,
-    # )
-    # dask.compute(write)
+    write_url = f"{s3_stability_url}/write-{uuid.uuid4().hex[:8]}"
+
+    s3.makedirs(write_url)
+
+    write = sdf.to_parquet(
+        write_url,
+        compute=False,
+        overwrite=True,
+        storage_options=storage_options,
+    )
+    dask.compute(write)
