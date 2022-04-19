@@ -37,14 +37,12 @@ def shuffle_dataset(small_client, s3_stability_url, s3_storage_options):
         start="2000-01-01", end="2000-12-31", freq="50ms", partition_freq="1D"
     )
 
-    write = df.to_parquet(
+    df.to_parquet(
         f"s3://{s3_stability_url}",
-        compute=False,
+        compute=True,
         overwrite=True,
         storage_options=s3_storage_options,
     )
-    size = df.memory_usage(index=True).sum() / (1024.0**3)
-    size, _ = dask.compute(write, size)
 
     yield dd.read_parquet(
         f"s3://{s3_stability_url}", storage_options=s3_storage_options
