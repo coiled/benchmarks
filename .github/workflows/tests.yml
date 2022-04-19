@@ -116,10 +116,6 @@ jobs:
           # NOTE(sjperkins): Remove specific test_shuffle.py on completion of review
           python -m pytest -s -vvv $EXTRA_OPTIONS tests/test_shuffle.py
 
-      - name: Debug with tmate on failure
-        if: ${{ failure() }}
-        uses: mxschmitt/action-tmate@v3
-
       - name: Remove Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}
         env:
