@@ -13,7 +13,7 @@ storage_options = {"config_kwargs": {"region_name": S3_REGION}}
 
 @pytest.fixture(scope="session")
 def s3_bucket_name():
-    return "S3-dask-io-read-write"
+    return "dask-io"
 
 
 @pytest.fixture(scope="session")
