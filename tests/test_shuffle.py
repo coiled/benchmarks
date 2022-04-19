@@ -7,12 +7,8 @@ import pytest
 import s3fs
 
 S3_REGION = "us-east-1"
-storage_options = {"config_kwargs": {"region_name": S3_REGION}}
-
-
-@pytest.fixture(scope="session")
-def s3_bucket_name():
-    return "dask-io"
+S3_BUCKET = "dask-io"
+S3_STORAGE_OPTIONS = {"config_kwargs": {"region_name": S3_REGION}}
 
 
 @pytest.fixture(scope="session")
@@ -25,13 +21,13 @@ def s3():
 
 
 @pytest.fixture(scope="session")
-def s3_stability_url(s3, s3_bucket_name):
+def s3_stability_url(s3):
     # Unique, because multiple tests are accessing the bucket
-    stability_url = f"{s3_bucket_name}/stability-{uuid.uuid4().hex[:8]}"
+    stability_url = f"{S3_BUCKET}/stability-scratch-{uuid.uuid4().hex[:8]}"
 
     from pprint import pprint
 
-    pprint(s3.ls(s3_bucket_name))
+    pprint(s3.glob(f"{S3_BUCKET}/*"))
 
     try:
         s3.makedirs(stability_url)
@@ -64,12 +60,14 @@ def shuffle_dataset(small_client, s3_stability_url):
         f"s3://{s3_stability_url}",
         compute=False,
         overwrite=True,
-        storage_options=storage_options,
+        storage_options=S3_STORAGE_OPTIONS,
     )
     size = df.memory_usage(index=True).sum() / (1024.0**3)
     size, _ = dask.compute(write, size)
 
-    yield dd.read_parquet(f"s3://{s3_stability_url}", storage_options=storage_options)
+    yield dd.read_parquet(
+        f"s3://{s3_stability_url}", storage_options=S3_STORAGE_OPTIONS
+    )
 
 
 def test_shuffle_simple(shuffle_dataset, s3_stability_write_url):
@@ -78,6 +76,6 @@ def test_shuffle_simple(shuffle_dataset, s3_stability_write_url):
         f"s3://{s3_stability_write_url}",
         compute=False,
         overwrite=True,
-        storage_options=storage_options,
+        storage_options=S3_STORAGE_OPTIONS,
     )
     dask.compute(write)
