@@ -8,7 +8,7 @@ import pytest
 @pytest.fixture(scope="session")
 def s3_stability_url(s3, s3_bucket):
     # Unique, because multiple tests are accessing the bucket
-    stability_url = f"{s3_bucket}/stability-scratch-{uuid.uuid4().hex[:8]}"
+    stability_url = f"{s3_bucket}/stability-scratch-{uuid.uuid4().hex}"
 
     try:
         s3.makedirs(stability_url)
@@ -21,7 +21,7 @@ def s3_stability_url(s3, s3_bucket):
 @pytest.fixture
 def s3_stability_write_url(s3, s3_stability_url):
     # Unique, because multiple tests are accessing the bucket
-    write_url = f"{s3_stability_url}/write-{uuid.uuid4().hex[:8]}"
+    write_url = f"{s3_stability_url}/write-{uuid.uuid4().hex}"
 
     try:
         s3.makedirs(write_url)
