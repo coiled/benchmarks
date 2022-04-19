@@ -29,10 +29,7 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture(scope="session")
 def software():
-    return os.environ.get(
-        "COILED_SOFTWARE_NAME",
-        f"dask-engineering/{os.environ.get('COILED_SOFTWARE_ENV_NAME')}",  # this are the the defaults for each release
-    )
+    return os.environ.get("COILED_SOFTWARE_NAME", "DEFAULT_SOFTWARE_NAME")
 
 
 @pytest.fixture(scope="module")
