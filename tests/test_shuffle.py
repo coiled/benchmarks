@@ -20,7 +20,7 @@ def s3_bucket_name():
 def s3():
     with s3fs.S3FileSystem(
         key=os.environ["AWS_ACCESS_KEY_ID"],
-        secret=os.environ["AWS_ACCESS_KEY_SECRET"],
+        secret=os.environ["AWS_SECRET_ACCESS_KEY"],
         client_kwargs={"region_name": S3_REGION},
     ) as fs:
         yield fs
