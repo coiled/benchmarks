@@ -123,14 +123,14 @@ jobs:
           echo COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME >> $GITHUB_ENV
 
       - name: Build Coiled software environment 2
-        if: ${{ matrix.runtime-version == 'latest' }} && ${{ matrix.os == 'windows-latest' }}
-        shell: cmd /C CALL {0}
+        if: matrix.runtime-version == 'latest' &&  matrix.os == 'windows-latest'
+        shell: pwsh
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
 
       - name: Build Coiled software environment 3
-        if: ${{ matrix.runtime-version == 'latest' }} && ${{ matrix.os != 'windows-latest' }}
+        if: matrix.runtime-version == 'latest' && matrix.os != 'windows-latest'
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
