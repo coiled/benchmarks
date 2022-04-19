@@ -122,7 +122,18 @@ jobs:
           # Put COILED_SOFTWARE_NAME into $GITHUB_ENV so it can be used in subsequent workflow steps
           echo COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME >> $GITHUB_ENV
 
-          coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
+      - name: Build Coiled software environment 2
+        if: ${{ matrix.runtime-version == 'latest' }} && ${{ matrix.os == 'windows-latest' }}
+        shell: pwsh
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+        run: coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
+
+      - name: Build Coiled software environment 3
+        if: ${{ matrix.runtime-version == 'latest' }} && ${{ matrix.os != 'windows-latest' }}
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+        run: coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
 
   #     - name: Run tests
   #       # Want to delete software environment in next step even if tests fail
