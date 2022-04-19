@@ -31,7 +31,7 @@ def pytest_collection_modifyitems(config, items):
 def software():
     return os.environ.get(
         "COILED_SOFTWARE_NAME",
-        "COILED_SOFTWARE_ENV_NAME",  # this are the the defaults for each release
+        f"dask_enginering/{os.environ.get('COILED_SOFTWARE_ENV_NAME')}",  # this are the the defaults for each release
     )
 
 
