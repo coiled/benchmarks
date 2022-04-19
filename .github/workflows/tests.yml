@@ -111,7 +111,8 @@ jobs:
             export EXTRA_OPTIONS=" "
           fi
 
-          python -m pytest $EXTRA_OPTIONS tests
+          # NOTE(sjperkins): Remove specific test_shuffle.py on completion of review
+          python -m pytest $EXTRA_OPTIONS tests/test_shuffle.py
 
       - name: Remove Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}
