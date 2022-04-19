@@ -47,6 +47,7 @@ jobs:
           miniforge-variant: Mambaforge
           use-mamba: true
           python-version: ${{ matrix.python-version }}
+          auto-activate-base: true
 
       - name: Install dependencies
         run: mamba install boa conda-verify jinja2 packaging pytest
@@ -76,7 +77,10 @@ jobs:
         run: which python
       - name: which coiled
         run: which coiled
-      - name: mamba env list
+      - name: mamba env list bash
+        run: mamba env list
+      - name: mamba env list powershell
+        shell: pwsh
         run: mamba env list
       - name: mamba list
         run: mamba list
@@ -88,6 +92,7 @@ jobs:
           mamba env export | grep -E -v '^prefix:.*$'
 
       - name: Build Coiled software environment
+        shell: pwsh
         if: ${{ matrix.runtime-version == 'latest' }}
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
