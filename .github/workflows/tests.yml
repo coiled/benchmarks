@@ -67,8 +67,10 @@ jobs:
       - name: sys.executable
         run: python -c "import sys; print(sys.executable)"
       - name: Coiled version
+        shell: pwsh
         run: coiled --version
       - name: Coiled help
+        shell: pwsh
         run: coiled env create --help
       - name: which python
         run: which python
