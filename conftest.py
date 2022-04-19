@@ -1,5 +1,4 @@
 import os
-import sys
 import uuid
 
 import pytest
@@ -32,7 +31,7 @@ def pytest_collection_modifyitems(config, items):
 def software():
     return os.environ.get(
         "COILED_SOFTWARE_NAME",
-        f"dask-engineering/coiled_dist-py{sys.version_info[0]}{sys.version_info[1]}",
+        "COILED_SOFTWARE_ENV_NAME",  # this are the the defaults for each release
     )
 
 

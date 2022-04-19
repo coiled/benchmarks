@@ -111,7 +111,7 @@ jobs:
             export EXTRA_OPTIONS=" "
           fi
 
-          python -m pytest $EXTRA_OPTIONS tests
+          python -m pytest $EXTRA_OPTIONS tests/test_coiled.py
 
       - name: Remove Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}
