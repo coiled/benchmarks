@@ -11,7 +11,7 @@ S3_REGION = "us-east-1"
 storage_options = {"config_kwargs": {"region_name": S3_REGION}}
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def s3_bucket_name():
     return "S3-dask-io-read-write"
 
