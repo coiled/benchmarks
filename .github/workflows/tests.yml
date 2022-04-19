@@ -84,6 +84,11 @@ jobs:
         run: mamba env list
       - name: mamba list
         run: mamba list
+      - name: mamba env export bash
+        run: mamba env export
+      - name: mamba env export powershell
+        shell: pwsh
+        run: mamba env export
 
       - name: Export environment
         run: |
@@ -92,7 +97,6 @@ jobs:
           mamba env export | grep -E -v '^prefix:.*$'
 
       - name: Build Coiled software environment
-        shell: pwsh
         if: ${{ matrix.runtime-version == 'latest' }}
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
