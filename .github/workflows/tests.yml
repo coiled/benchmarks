@@ -27,8 +27,7 @@ jobs:
       matrix:
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
         python-version: ["3.7", "3.8", "3.9"]
-        # ["latest", "0.0.3"]
-        runtime-version: ["0.0.3"]
+        runtime-version: ["latest", "0.0.3"]
         exclude:
           # FIXME: Building Coiled software environments is currently broken on Windows
           - os: windows-latest
@@ -115,7 +114,7 @@ jobs:
             export DEFAULT_SOFTWARE_NAME=dask-engineering/coiled-runtime-$RUNTIME_VERSION_FORMATTED-py$PYTHON_VERSION_FORMATTED
           fi
 
-          python -m pytest $EXTRA_OPTIONS tests/test_coiled.py
+          python -m pytest $EXTRA_OPTIONS tests
 
       - name: Remove Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}
