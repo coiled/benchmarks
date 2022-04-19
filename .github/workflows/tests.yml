@@ -61,10 +61,10 @@ jobs:
             mamba install -c coiled -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
           fi
     
-      - name: Pip install coiled on windows
       # FIXME: Coiled cli from conda-forge is broken. 
+      - name: Pip install coiled on windows
         run: |
-           if [[ ${{ matrix.runtime-version }} = 'latest' ]] && [[ ${{ matrix.os }} = 'windows-latest' ]]
+          if [[ ${{ matrix.runtime-version }} = 'latest' ]] && [[ ${{ matrix.os }} = 'windows-latest' ]]
           then
             mamba uninstall --force coiled 
             pip install coiled
