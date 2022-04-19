@@ -62,7 +62,7 @@ def small_client(small_cluster):
 
 @pytest.fixture(scope="session")
 def s3_region():
-    return "us-east-1"
+    return "us-east-2"
 
 
 @pytest.fixture(scope="session")
