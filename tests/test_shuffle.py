@@ -51,6 +51,7 @@ def shuffle_dataset(small_client, s3_stability_url, s3_storage_options):
     )
 
 
+@pytest.mark.stability
 def test_shuffle_simple(shuffle_dataset, s3_storage_options, s3_stability_write_url):
     sdf = shuffle_dataset.shuffle(on="x")
     write = sdf.to_parquet(
