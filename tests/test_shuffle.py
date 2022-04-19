@@ -18,25 +18,36 @@ def s3_bucket_name():
 
 @pytest.fixture(scope="session")
 def s3():
-    with s3fs.S3FileSystem(
+    return s3fs.S3FileSystem(
         key=os.environ["AWS_ACCESS_KEY_ID"],
         secret=os.environ["AWS_SECRET_ACCESS_KEY"],
         client_kwargs={"region_name": S3_REGION},
-    ) as fs:
-        yield fs
+    )
 
 
 @pytest.fixture(scope="session")
 def s3_stability_url(s3, s3_bucket_name):
-    dirname = "stability"
+    # Unique, because multiple tests are accessing the bucket
+    stability_url = f"s3://{s3_bucket_name}/stability-{uuid.uuid4().hex[:8]}"
 
     try:
-        s3.mkdir(dirname)
-
-        yield f"s3://{s3_bucket_name}/{dirname}"
+        s3.makedirs(stability_url)
+        yield stability_url
 
     finally:
-        s3.rmdir(dirname)
+        s3.rm(stability_url, recursive=True)
+
+
+@pytest.fixture
+def s3_stability_write_url(s3, s3_stability_url):
+    # Unique, because multiple tests are accessing the bucket
+    write_url = f"{s3_stability_url}/write-{uuid.uuid4().hex[:8]}"
+
+    try:
+        s3.makedirs(write_url)
+        yield write_url
+    finally:
+        s3.rm(write_url, recursive=True)
 
 
 @pytest.fixture
@@ -77,12 +88,8 @@ def shuffle_dataset(small_client, s3_stability_url):
     yield dd.read_parquet(s3_stability_url, storage_options=storage_options)
 
 
-def test_shuffle_simple(shuffle_dataset, s3, s3_stability_url):
+def test_shuffle_simple(shuffle_dataset, write_url):
     sdf = shuffle_dataset.shuffle(on="x")
-    write_url = f"{s3_stability_url}/write-{uuid.uuid4().hex[:8]}"
-
-    s3.makedirs(write_url)
-
     write = sdf.to_parquet(
         write_url,
         compute=False,
