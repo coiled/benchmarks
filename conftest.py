@@ -29,7 +29,9 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture(scope="session")
 def software():
-    return os.environ.get("COILED_SOFTWARE_NAME", "DEFAULT_SOFTWARE_NAME")
+    return os.environ.get(
+        "COILED_SOFTWARE_NAME", os.environ.get("DEFAULT_SOFTWARE_NAME")
+    )
 
 
 @pytest.fixture(scope="module")
