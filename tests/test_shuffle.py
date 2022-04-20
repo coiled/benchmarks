@@ -3,8 +3,9 @@ import dask.dataframe as dd
 import pytest
 
 
-@pytest.fixture
-def shuffle_dataframe(small_client, s3_url_factory, s3_storage_options):
+@pytest.mark.stability
+def test_shuffle_simple(small_client, s3_url_factory, s3_storage_options):
+    write_url = s3_url_factory("shuffle-test-output")
     test_url = s3_url_factory("shuffle-test-data")
 
     # 100ms ~12GB
@@ -23,15 +24,9 @@ def shuffle_dataframe(small_client, s3_url_factory, s3_storage_options):
 
     dask.compute(write)
 
-    yield dd.read_parquet(test_url, storage_options=s3_storage_options)
-
-
-@pytest.mark.stability
-def test_shuffle_simple(shuffle_dataframe, s3_url_factory, s3_storage_options):
-    write_url = s3_url_factory("shuffle-test-output")
-
     # Shuffle test starts here
-    shuffle_df = shuffle_dataframe.shuffle(on="x")
+    shuffle_df = dd.read_parquet(test_url, storage_options=s3_storage_options)
+    shuffle_df = shuffle_df.shuffle(on="x")
     write = shuffle_df.to_parquet(
         write_url,
         overwrite=True,
