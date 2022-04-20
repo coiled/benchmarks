@@ -5,8 +5,11 @@ import pytest
 
 @pytest.mark.stability
 def test_shuffle_simple(small_client, s3_url_factory, s3_storage_options):
-    write_url = s3_url_factory("shuffle-test-output")
-    test_url = s3_url_factory("shuffle-test-data")
+    s3_url = s3_url_factory("shuffle-test-output")
+    write_url = s3_url + "/shuffled.parquet"
+    test_url = s3_url + "/dataset.parquet"
+    # write_url = s3_url_factory("shuffle-test-output")
+    # test_url = s3_url_factory("shuffle-test-data")
 
     # 100ms ~12GB
     # 75ms ~15GB
