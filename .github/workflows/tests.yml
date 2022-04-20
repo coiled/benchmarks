@@ -25,9 +25,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
-        python-version: ["3.7", "3.8", "3.9"]
-        runtime-version: ["latest", "0.0.3"]
+        # NOTE(sjperkins): Revert testing matrix on completion of review
+        os: ["ubuntu-latest"]
+        python-version: ["3.9"]
+        runtime-version: ["latest"]
         exclude:
           # FIXME: Building Coiled software environments is currently broken on Windows
           - os: windows-latest
