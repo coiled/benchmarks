@@ -62,7 +62,7 @@ def small_client(small_cluster):
 
 
 S3_REGION = "us-east-2"
-S3_BUCKET = "dask-io"
+S3_BUCKET = "s3://dask-io"
 
 
 @pytest.fixture(scope="session")
@@ -82,23 +82,16 @@ def s3():
 @pytest.fixture(scope="session")
 def s3_scratch(s3):
     # Ensure that the test-scratch directory exists,
-    # but do NOT reomove it as multiple test runs could be
+    # but do NOT remove it as multiple test runs could be
     # accessing it at the same time
-    stability_url = f"{S3_BUCKET}/test-scratch"
-    s3.mkdirs(stability_url, exist_ok=True)
-    return stability_url
+    scratch_url = f"{S3_BUCKET}/test-scratch"
+    s3.mkdirs(scratch_url, exist_ok=True)
+    return scratch_url
 
 
 @pytest.fixture(scope="function")
-def s3_url_factory(s3, s3_scratch):
-    urls = []
-
-    def factory(prefix="test"):
-        url = f"{s3_scratch}/{prefix}-{uuid.uuid4().hex}"
-        s3.mkdirs(url, exist_ok=False)
-        return f"s3://{url}"
-
-    yield factory
-
-    for url in urls:
-        s3.rm(url, recursive=True)
+def s3_url(s3, s3_scratch, request):
+    url = f"{s3_scratch}/{request.node.name}-{uuid.uuid4().hex}"
+    s3.mkdirs(url, exist_ok=False)
+    yield url
+    s3.rm(url, recursive=True)
