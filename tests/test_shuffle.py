@@ -12,7 +12,7 @@ def test_shuffle_simple(small_client, s3_url_factory, s3_storage_options):
     # 75ms ~15GB
     # 50ms ~23.5GB
     test_df = dask.datasets.timeseries(
-        start="2000-01-01", end="2000-12-31", freq="75ms", partition_freq="1D"
+        start="2000-01-01", end="2000-12-31", freq="50ms", partition_freq="1D"
     )
 
     write = test_df.to_parquet(
