@@ -15,6 +15,7 @@ def test_shuffle_simple(small_client, s3_url_factory, s3_storage_options):
 
     test_df.to_parquet(
         test_url,
+        overwrite=True,
         storage_options=s3_storage_options,
     )
 
@@ -23,5 +24,6 @@ def test_shuffle_simple(small_client, s3_url_factory, s3_storage_options):
     shuffle_df = test_df.shuffle(on="x")
     shuffle_df.to_parquet(
         write_url,
+        overwrite=True,
         storage_options=s3_storage_options,
     )
