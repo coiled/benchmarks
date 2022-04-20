@@ -109,9 +109,6 @@ jobs:
             export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
           else
             export EXTRA_OPTIONS=" "
-            export RUNTIME_VERSION_FORMATTED=$(echo "${{ matrix.runtime-version }}" | sed 's/\./-/g' )
-            export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
-            export DEFAULT_SOFTWARE_NAME=dask-engineering/coiled-runtime-$RUNTIME_VERSION_FORMATTED-py$PYTHON_VERSION_FORMATTED
           fi
 
           python -m pytest $EXTRA_OPTIONS tests

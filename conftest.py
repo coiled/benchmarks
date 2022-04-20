@@ -1,4 +1,8 @@
+import json
 import os
+import shlex
+import subprocess
+import sys
 import uuid
 
 import pytest
@@ -29,8 +33,15 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture(scope="session")
 def software():
+    # get coiled-runtime version formatted for software environment
+    runtime_info = subprocess.check_output(
+        shlex.split("conda list --json coiled-runtime")
+    ).decode()
+    runtime_version_formatted = json.loads(runtime_info)[0]["version"].replace(".", "-")
+
     return os.environ.get(
-        "COILED_SOFTWARE_NAME", os.environ.get("DEFAULT_SOFTWARE_NAME")
+        "COILED_SOFTWARE_NAME",
+        f"dask-engineering/coiled-runtime-{runtime_version_formatted}-py{sys.version_info[0]}{sys.version_info[1]}",
     )
 
 
