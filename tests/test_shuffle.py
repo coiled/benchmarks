@@ -16,9 +16,7 @@ def test_shuffle_simple(small_client):
 
 
 @pytest.mark.stability
-def test_shuffle_parquet(small_client, s3_url_factory, s3_storage_options):
-    s3_url = s3_url_factory("shuffle-test-output")
-
+def test_shuffle_parquet(small_client, s3_url, s3_storage_options):
     # Write synthetic dataset to S3
     # Notes on how `freq` impacts total dataset size:
     #   - 100ms ~12GB
@@ -34,4 +32,7 @@ def test_shuffle_parquet(small_client, s3_url_factory, s3_storage_options):
     shuffled_url = s3_url + "/shuffled.parquet"
     df_shuffled = dd.read_parquet(dataset_url, storage_options=s3_storage_options)
     df_shuffled = df_shuffled.shuffle(on="x")
-    df_shuffled.to_parquet(shuffled_url, storage_options=s3_storage_options)
+    out = df_shuffled.to_parquet(
+        shuffled_url, compute=False, storage_options=s3_storage_options
+    )
+    dask.compute(out)
