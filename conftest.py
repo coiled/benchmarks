@@ -93,12 +93,12 @@ def s3_scratch(s3, s3_bucket):
 
 
 @pytest.fixture(scope="function")
-def s3_url(s3, s3_scratch):
+def s3_url_factory(s3, s3_scratch):
     urls = []
 
     def factory(prefix="test"):
         url = f"{s3_scratch}/{prefix}-{uuid.uuid4().hex}"
-        s3.mkdirs(url)
+        s3.mkdirs(url, exist_ok=False)
         return f"s3://{url}"
 
     yield factory
