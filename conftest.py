@@ -60,9 +60,7 @@ def small_client(small_cluster):
         yield client
 
 
-@pytest.fixture(scope="session")
-def s3_region():
-    return "us-east-2"
+S3_REGION = "us-east-2"
 
 
 @pytest.fixture(scope="session")
@@ -71,14 +69,39 @@ def s3_bucket():
 
 
 @pytest.fixture(scope="session")
-def s3_storage_options(s3_region):
-    return {"config_kwargs": {"region_name": s3_region}}
+def s3_storage_options():
+    return {"config_kwargs": {"region_name": S3_REGION}}
 
 
 @pytest.fixture(scope="session")
-def s3(s3_region):
+def s3():
     return s3fs.S3FileSystem(
         key=os.environ["AWS_ACCESS_KEY_ID"],
         secret=os.environ["AWS_SECRET_ACCESS_KEY"],
-        client_kwargs={"region_name": s3_region},
+        client_kwargs={"region_name": S3_REGION},
     )
+
+
+@pytest.fixture(scope="session")
+def s3_scratch(s3, s3_bucket):
+    # Ensure that the test-scratch directory exists,
+    # but do NOT reomove it as multiple test runs could be
+    # accessing it at the same time
+    stability_url = f"{s3_bucket}/test-scratch"
+    s3.mkdirs(stability_url, exist_ok=True)
+    return stability_url
+
+
+@pytest.fixture(scope="function")
+def s3_url(s3, s3_scratch):
+    urls = []
+
+    def factory(prefix="test"):
+        url = f"{s3_scratch}/{prefix}-{uuid.uuid4().hex}"
+        s3.mkdirs(url)
+        return f"s3://{url}"
+
+    yield factory
+
+    for url in urls:
+        s3.rm(url, recursive=True)
