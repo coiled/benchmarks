@@ -45,6 +45,7 @@ def small_cluster(software, request):
         software=software,
         account="dask-engineering",
         n_workers=10,
+        worker_memory="8 GiB",
         worker_vm_types=["m5.large"],
         scheduler_vm_types=["m5.large"],
     ) as cluster:
