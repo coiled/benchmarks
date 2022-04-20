@@ -61,11 +61,7 @@ def small_client(small_cluster):
 
 
 S3_REGION = "us-east-2"
-
-
-@pytest.fixture(scope="session")
-def s3_bucket():
-    return "dask-io"
+S3_BUCKET = "dask-io"
 
 
 @pytest.fixture(scope="session")
@@ -83,11 +79,11 @@ def s3():
 
 
 @pytest.fixture(scope="session")
-def s3_scratch(s3, s3_bucket):
+def s3_scratch(s3):
     # Ensure that the test-scratch directory exists,
     # but do NOT reomove it as multiple test runs could be
     # accessing it at the same time
-    stability_url = f"{s3_bucket}/test-scratch"
+    stability_url = f"{S3_BUCKET}/test-scratch"
     s3.mkdirs(stability_url, exist_ok=True)
     return stability_url
 
