@@ -3,6 +3,7 @@ import sys
 import uuid
 
 import pytest
+import s3fs
 
 try:
     from coiled.v2 import Cluster
@@ -44,6 +45,7 @@ def small_cluster(software, request):
         software=software,
         account="dask-engineering",
         n_workers=10,
+        worker_memory="8 GiB",
         worker_vm_types=["m5.large"],
         scheduler_vm_types=["m5.large"],
     ) as cluster:
@@ -57,3 +59,46 @@ def small_client(small_cluster):
         client.wait_for_workers(10)
         client.restart()
         yield client
+
+
+S3_REGION = "us-east-2"
+S3_BUCKET = "dask-io"
+
+
+@pytest.fixture(scope="session")
+def s3_storage_options():
+    return {"config_kwargs": {"region_name": S3_REGION}}
+
+
+@pytest.fixture(scope="session")
+def s3():
+    return s3fs.S3FileSystem(
+        key=os.environ["AWS_ACCESS_KEY_ID"],
+        secret=os.environ["AWS_SECRET_ACCESS_KEY"],
+        client_kwargs={"region_name": S3_REGION},
+    )
+
+
+@pytest.fixture(scope="session")
+def s3_scratch(s3):
+    # Ensure that the test-scratch directory exists,
+    # but do NOT reomove it as multiple test runs could be
+    # accessing it at the same time
+    stability_url = f"{S3_BUCKET}/test-scratch"
+    s3.mkdirs(stability_url, exist_ok=True)
+    return stability_url
+
+
+@pytest.fixture(scope="function")
+def s3_url_factory(s3, s3_scratch):
+    urls = []
+
+    def factory(prefix="test"):
+        url = f"{s3_scratch}/{prefix}-{uuid.uuid4().hex}"
+        s3.mkdirs(url, exist_ok=False)
+        return f"s3://{url}"
+
+    yield factory
+
+    for url in urls:
+        s3.rm(url, recursive=True)

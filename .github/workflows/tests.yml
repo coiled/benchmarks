@@ -25,9 +25,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
-        python-version: ["3.7", "3.8", "3.9"]
-        runtime-version: ["latest", "0.0.3"]
+        # NOTE(sjperkins): Revert testing matrix on completion of review
+        os: ["ubuntu-latest"]
+        python-version: ["3.9"]
+        runtime-version: ["latest"]
     
     steps:
       - uses: actions/checkout@v2
@@ -97,6 +98,8 @@ jobs:
         id: tests
         env:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}            
         run: |
           # Ensure we run additional tests when testing the latest coiled-runtime
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
@@ -107,7 +110,8 @@ jobs:
             export EXTRA_OPTIONS=" "
           fi
 
-          python -m pytest $EXTRA_OPTIONS tests
+          # NOTE(sjperkins): Remove specific test_shuffle.py on completion of review
+          python -m pytest -s -vvv $EXTRA_OPTIONS tests/test_shuffle.py
 
       - name: Remove Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}
