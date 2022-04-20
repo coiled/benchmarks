@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.mark.stability
-def test_shuffle_simple(shuffle_dataset, s3_storage_options, s3_url):
+def test_shuffle_simple(small_client, s3_storage_options, s3_url):
     test_url = s3_url("shuffle-test-data")
     write_url = s3_url("shuffle-test-output")
 
