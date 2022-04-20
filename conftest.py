@@ -42,6 +42,8 @@ def software():
         runtime_version_formatted = json.loads(runtime_info)[0]["version"].replace(
             ".", "-"
         )
+    else:
+        runtime_version_formatted = " "
 
     return os.environ.get(
         "COILED_SOFTWARE_NAME",
