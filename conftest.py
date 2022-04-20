@@ -37,7 +37,11 @@ def software():
     runtime_info = subprocess.check_output(
         shlex.split("conda list --json coiled-runtime")
     ).decode()
-    runtime_version_formatted = json.loads(runtime_info)[0]["version"].replace(".", "-")
+
+    if runtime_info != "[]\n":  # when coiled-runtime - we don't get it building latest
+        runtime_version_formatted = json.loads(runtime_info)[0]["version"].replace(
+            ".", "-"
+        )
 
     return os.environ.get(
         "COILED_SOFTWARE_NAME",
