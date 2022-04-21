@@ -32,7 +32,4 @@ def test_shuffle_parquet(small_client, s3_url, s3_storage_options):
     shuffled_url = s3_url + "/shuffled.parquet"
     df_shuffled = dd.read_parquet(dataset_url, storage_options=s3_storage_options)
     df_shuffled = df_shuffled.shuffle(on="x")
-    out = df_shuffled.to_parquet(
-        shuffled_url, compute=False, storage_options=s3_storage_options
-    )
-    dask.compute(out)
+    df_shuffled.to_parquet(shuffled_url, storage_options=s3_storage_options)
