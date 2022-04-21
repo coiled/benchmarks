@@ -33,22 +33,23 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture(scope="session")
 def software():
-    # get coiled-runtime version formatted for software environment
-    runtime_info = subprocess.check_output(
-        shlex.split("conda list --json coiled-runtime")
-    ).decode()
-
     try:
-        runtime_version_formatted = json.loads(runtime_info)[0]["version"].replace(
-            ".", "-"
-        )
-    except Exception:
-        runtime_version_formatted = " "
-
-    return os.environ.get(
-        "COILED_SOFTWARE_NAME",
-        f"dask-engineering/coiled-runtime-{runtime_version_formatted}-py{sys.version_info[0]}{sys.version_info[1]}",
-    )
+        return os.environ["COILED_SOFTWARE_NAME"]
+    except KeyError:
+        # Determine software environment from local `coiled-runtime` version (in installed)
+        out = subprocess.check_output(
+            shlex.split("conda list --json coiled-runtime"), text=True
+        ).rstrip()
+        runtime_info = json.loads(out)
+        if runtime_info:
+            version = runtime_info[0]["version"].replace(".", "-")
+            py_version = f"{sys.version_info[0]}{sys.version_info[1]}"
+            return f"dask-engineering/coiled-runtime-{version}-py{py_version}"
+        else:
+            raise RuntimeError(
+                "Must either specific `COILED_SOFTWARE_NAME` environment variable "
+                "or have `coiled-runtime` installed"
+            )
 
 
 @pytest.fixture(scope="module")
