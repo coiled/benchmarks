@@ -61,7 +61,8 @@ jobs:
         run: |
           # For debugging
           echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
-          mamba env export | grep -E -v '^prefix:.*$'
+          # FIXME: mamba env export returns empty on CI 
+          conda env export | grep -E -v '^prefix:.*$'
 
       - name: Build Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}
