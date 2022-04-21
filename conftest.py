@@ -38,11 +38,11 @@ def software():
         shlex.split("conda list --json coiled-runtime")
     ).decode()
 
-    if runtime_info != "[]\n":  # when coiled-runtime - we don't get it building latest
+    try:
         runtime_version_formatted = json.loads(runtime_info)[0]["version"].replace(
             ".", "-"
         )
-    else:
+    except Exception:
         runtime_version_formatted = " "
 
     return os.environ.get(
