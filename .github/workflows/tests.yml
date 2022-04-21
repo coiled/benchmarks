@@ -25,10 +25,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # NOTE(sjperkins): Revert testing matrix on completion of review
-        os: ["ubuntu-latest"]
-        python-version: ["3.9"]
-        runtime-version: ["latest"]
+        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        python-version: ["3.7", "3.8", "3.9"]
+        runtime-version: ["latest", "0.0.3"]
     
     steps:
       - uses: actions/checkout@v2
@@ -110,8 +109,7 @@ jobs:
             export EXTRA_OPTIONS=" "
           fi
 
-          # NOTE(sjperkins): Remove specific test_shuffle.py on completion of review
-          python -m pytest -s -vvv $EXTRA_OPTIONS tests/test_shuffle.py
+          python -m pytest $EXTRA_OPTIONS tests
 
       - name: Remove Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}
