@@ -16,7 +16,8 @@ def test_shuffle_simple(small_client):
 
 
 @pytest.mark.stability
-def test_shuffle_parquet(small_client, s3_url, s3_storage_options):
+@pytest.mark.parametrize("compute", [True, False])
+def test_shuffle_parquet(small_client, s3_url, s3_storage_options, compute):
     # Write synthetic dataset to S3
     # Notes on how `freq` impacts total dataset size:
     #   - 100ms ~12GB
@@ -31,10 +32,13 @@ def test_shuffle_parquet(small_client, s3_url, s3_storage_options):
     # Test `read_parquet` + `shuffle` + `to_parquet` works
     shuffled_url = s3_url + "/shuffled.parquet"
     df_shuffled = dd.read_parquet(dataset_url, storage_options=s3_storage_options)
-    df_shuffled = df_shuffled.shuffle(on="x")
+    # df_shuffled = df_shuffled.shuffle(on="x")
     # FIXME: Setting `compute=True` below causes the `to_parquet` call
     # to take much, much longer. This is unexpected and we should fix this upstream.
-    result = df_shuffled.to_parquet(
-        shuffled_url, compute=False, storage_options=s3_storage_options
-    )
-    dask.compute(result)
+    if compute:
+        df_shuffled.to_parquet(shuffled_url, storage_options=s3_storage_options)
+    else:
+        result = df_shuffled.to_parquet(
+            shuffled_url, compute=False, storage_options=s3_storage_options
+        )
+        dask.compute(result)
