@@ -9,10 +9,10 @@ import coiled
 import conda.cli.python_api as Conda
 import pytest
 import yaml
+from distributed import Client
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from packaging.requirements import Requirement, SpecifierSet
 from packaging.version import Version
-from distributed import Client
 
 
 def get_conda_installed_versions() -> dict[str, str]:
