@@ -26,7 +26,7 @@ def test_repeated_merge_spill():
             )
 
             i = 1
-            for i in range(4):
+            for i in range(10):
                 client.restart()
                 fs = client.compute((ddf.x + ddf.y).mean())
                 wait(fs, timeout=2 * 60)
