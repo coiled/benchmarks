@@ -53,6 +53,11 @@ def software():
             )
 
 
+@pytest.fixture(scope="session")
+def cluster_kwargs(software):
+    return {"account": "dask-engineering", "software": software}
+
+
 @pytest.fixture(scope="module")
 def small_cluster(software, request):
     module = os.path.basename(request.fspath).split(".")[0]
