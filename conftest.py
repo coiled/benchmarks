@@ -13,6 +13,7 @@ try:
 except ImportError:
     from coiled._beta import ClusterBeta as Cluster
 
+import dask
 from dask.distributed import Client
 
 
@@ -32,8 +33,7 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_latest)
 
 
-@pytest.fixture(scope="session")
-def software():
+def get_software():
     try:
         return os.environ["COILED_SOFTWARE_NAME"]
     except KeyError:
@@ -53,18 +53,19 @@ def software():
             )
 
 
-@pytest.fixture(scope="session")
-def cluster_kwargs(software):
-    return {"account": "dask-engineering", "software": software}
+dask.config.set(
+    {
+        "coiled.account": "dask-engineering",
+        "coiled.software": get_software(),
+    }
+)
 
 
 @pytest.fixture(scope="module")
-def small_cluster(software, request):
+def small_cluster(request):
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
-        software=software,
-        account="dask-engineering",
         n_workers=10,
         worker_memory="8 GiB",
         worker_vm_types=["m5.large"],
