@@ -11,6 +11,7 @@ def test_deadlock(software):
     with coiled.v2.Cluster(
         name=f"test_deadlock-{uuid.uuid4().hex}",
         n_workers=20,
+        account="dask-engineering",
         software=software,
         # software="dask-engineering/florian-deadlock",
         # environ=dict(
