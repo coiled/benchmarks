@@ -2,7 +2,8 @@ import uuid
 
 import coiled.v2
 import dask
-from distributed import Client, wait
+from distributed import Client
+from distributed.metrics import time
 
 
 def test_repeated_merge_spill():
@@ -29,11 +30,36 @@ def test_repeated_merge_spill():
             for i in range(10):
                 client.restart()
                 fs = client.compute((ddf.x + ddf.y).mean())
-                wait(fs, timeout=2 * 60)
+
+                print(f"Iteration {i} Section 1")
+                checkpoint = time()
+
+                for _ in range(0, 2 * 60, 5):
+                    if fs.status == "finished":
+                        break
+                    # We'd like to have seen all workers in the last 5 seconds
+                    workers = list(client.scheduler_info()["workers"].values())
+                    assert all(w["last_seen"] - checkpoint < 5 for w in workers)
+                    checkpoint = time()
+
+                assert fs.status == "finished"
                 del fs
 
                 ddf3 = ddf.merge(ddf2)
                 fs = client.compute((ddf3.x + ddf3.y).mean())
-                wait(fs, timeout=2 * 60)
+
+                print(f"Iteration {i} Section 2")
+                checkpoint = time()
+
+                for _ in range(0, 2 * 60, 5):
+                    if fs.status == "finished":
+                        break
+                    # We'd like to have seen all workers in the last 5 seconds
+                    workers = list(client.scheduler_info()["workers"].values())
+                    assert all(w["last_seen"] - checkpoint < 5 for w in workers)
+                    checkpoint = time()
+
+                assert fs.status == "finished"
                 del fs
+
                 i += 1
