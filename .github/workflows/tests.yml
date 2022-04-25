@@ -60,7 +60,7 @@ jobs:
             python ci/create_latest_runtime_meta.py
             mamba env update --file latest.yaml
           else
-            mamba install -c coiled -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
+            mamba install -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
           fi
 
       - name: Export environment
