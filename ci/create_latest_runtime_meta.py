@@ -1,11 +1,21 @@
 from __future__ import annotations
 
+import json
 import os
 import pathlib
 import sys
+from urllib.request import urlopen
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+
+def get_latest_commit(repository):
+    org, repo = repository.split("/")
+    url = f"https://api.github.com/repos/{org}/{repo}/commits?per_page=1"
+    response = urlopen(url).read()
+    data = json.loads(response.decode())
+    return data[0]["sha"]
 
 
 def main():
@@ -30,8 +40,8 @@ def main():
     if os.environ.get("TEST_UPSTREAM", False):
         dev_req = {
             "pip": [
-                "git+https://github.com/dask/dask",
-                "git+https://github.com/dask/distributed",
+                f"git+https://github.com/dask/dask.git@{get_latest_commit('dask/dask')}",
+                f"git+https://github.com/dask/distributed.git@{get_latest_commit('dask/distributed')}",
             ]
         }
         requirements.append(dev_req)
