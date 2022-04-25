@@ -12,8 +12,9 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 def get_latest_commit(repository):
     org, repo = repository.split("/")
-    url = f"https://api.github.com/repos/{org}/{repo}/commits?per_page=1"
-    response = urlopen(url).read()
+    response = urlopen(
+        f"https://api.github.com/repos/{org}/{repo}/commits?per_page=1"
+    ).read()
     data = json.loads(response.decode())
     return data[0]["sha"]
 
@@ -31,7 +32,6 @@ def main():
     # Ensure Python is pinned to X.Y.Z version currently being used
     python_version = ".".join(map(str, tuple(sys.version_info)[:3]))
     assert sum([req.startswith("python ") for req in requirements]) == 1
-
     for idx, req in enumerate(requirements):
         if req.startswith("python "):
             requirements[idx] = f"python =={python_version}"
