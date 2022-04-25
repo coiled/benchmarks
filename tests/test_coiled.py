@@ -19,3 +19,4 @@ def test_quickstart(small_client):
 
     assert isinstance(result, pd.Series)
     assert not result.empty
+    assert False
