@@ -52,10 +52,7 @@ jobs:
           # If testing the latest `coiled-runtime` then install packages defined in `recipe/meta.yaml`
           # Otherwise, just install directly from the coiled / conda-forge channel
 
-          echo "Commit message is..."
-          echo "${{ github.event.head_commit.message }}"
           COMMIT="${{ github.event.head_commit.message }}"
-          echo "commit is $COMMIT"
           if [[ "$COMMIT" == *"test-upstream"* ]]
           then
             export TEST_UPSTREAM="true"
@@ -65,7 +62,7 @@ jobs:
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
           then
             python ci/create_latest_runtime_meta.py
-            mamba env update -c coiled -c conda-forge --file latest.yaml
+            mamba env update --file latest.yaml
           else
             mamba install -c coiled -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
           fi
