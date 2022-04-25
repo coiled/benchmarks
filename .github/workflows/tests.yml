@@ -1,11 +1,11 @@
 name: Tests
-on:
-  push:
-    branches:
-      - main
-    tags:
-      - '*'
-  pull_request:
+on: [push]
+  # push:
+  #   branches:
+  #     - main
+  #   tags:
+  #     - '*'
+  # pull_request:
 
 # When this workflow is queued, automatically cancel any previous running
 # or pending jobs from the same branch
@@ -25,9 +25,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
-        python-version: ["3.7", "3.8", "3.9"]
+        os: ["ubuntu-latest"]
+        python-version: ["3.9"]
         runtime-version: ["latest", "0.0.3"]
+        # os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        # python-version: ["3.7", "3.8", "3.9"]
+        # runtime-version: ["latest", "0.0.3"]
     
     steps:
       - uses: actions/checkout@v2
@@ -49,10 +52,18 @@ jobs:
           # If testing the latest `coiled-runtime` then install packages defined in `recipe/meta.yaml`
           # Otherwise, just install directly from the coiled / conda-forge channel
 
+          export TEST_UPSTREAM=""
+          echo "Commit message is..."
+          echo "${{ github.event.head_commit.message }}"
+          if [[ ${{ github.event.head_commit.message }} == *"test-upstream"* ]]; then
+            export TEST_UPSTREAM="true"
+            echo "Installed development version of dask and distributed"
+          fi
+
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
           then
             python ci/create_latest_runtime_meta.py
-            mamba install -c coiled -c conda-forge --file latest.txt
+            mamba env update -c coiled -c conda-forge --file latest.yaml
           else
             mamba install -c coiled -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
           fi

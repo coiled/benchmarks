@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import pathlib
 import sys
 
@@ -20,13 +21,20 @@ def main():
     # Ensure Python is pinned to X.Y.Z version currently being used
     python_version = ".".join(map(str, tuple(sys.version_info)[:3]))
     assert sum([req.startswith("python ") for req in requirements]) == 1
+
     for idx, req in enumerate(requirements):
         if req.startswith("python "):
             requirements[idx] = f"python =={python_version}"
 
-    # File compatible with `mamba install --file <...>`
-    with open("latest.txt", "w") as f:
-        f.write("\n".join(requirements))
+    # Optionally install the development version of `dask` and `distributed`
+    if os.environ.get("TEST_UPSTREAM", False):
+        dev_req = {
+            "pip": [
+                "git+https://github.com/dask/dask",
+                "git+https://github.com/dask/distributed",
+            ]
+        }
+        requirements.append(dev_req)
 
     # File compatible with `mamba env create --file <...>`
     env = {"channels": ["coiled", "conda-forge"]}
