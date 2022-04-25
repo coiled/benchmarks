@@ -25,9 +25,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
-        python-version: ["3.7", "3.8", "3.9"]
+        os: ["ubuntu-latest"]
+        python-version: ["3.9"]
         runtime-version: ["latest", "0.0.3"]
+        # os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        # python-version: ["3.7", "3.8", "3.9"]
+        # runtime-version: ["latest", "0.0.3"]
     
     steps:
       - uses: actions/checkout@v2
@@ -47,7 +50,7 @@ jobs:
       - name: Check upstream
         if: github.event_name == 'pull_request' && matrix.runtime-version == 'latest'
         run: |
-          COMMIT="${{ github.event.head_commit.message }}"
+          COMMIT="$(git log -n 1 --pretty=format:%s HEAD^2)"
           if [[ "$COMMIT" == *"test-upstream"* ]]
           then
             export TEST_UPSTREAM="true"
