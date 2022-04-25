@@ -54,7 +54,9 @@ jobs:
 
           echo "Commit message is..."
           echo "${{ github.event.head_commit.message }}"
-          if [[ ${{ github.event.head_commit.message }} == *"test-upstream"* ]]
+          COMMIT="${{ github.event.head_commit.message }}"
+          echo "commit is $COMMIT"
+          if [[ "$COMMIT" == *"test-upstream"* ]]
           then
             export TEST_UPSTREAM="true"
             echo "Installed development version of dask and distributed"
