@@ -1,11 +1,11 @@
 name: Tests
-on: [push]
-  # push:
-  #   branches:
-  #     - main
-  #   tags:
-  #     - '*'
-  # pull_request:
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - '*'
+  pull_request:
 
 # When this workflow is queued, automatically cancel any previous running
 # or pending jobs from the same branch
@@ -25,12 +25,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
-        python-version: ["3.9"]
+        os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        python-version: ["3.7", "3.8", "3.9"]
         runtime-version: ["latest", "0.0.3"]
-        # os: ["ubuntu-latest", "windows-latest", "macos-latest"]
-        # python-version: ["3.7", "3.8", "3.9"]
-        # runtime-version: ["latest", "0.0.3"]
     
     steps:
       - uses: actions/checkout@v2
@@ -56,7 +53,6 @@ jobs:
           if [[ "$COMMIT" == *"test-upstream"* ]]
           then
             export TEST_UPSTREAM="true"
-            echo "Installed development version of dask and distributed"
           fi
 
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
