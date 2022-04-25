@@ -1,4 +1,5 @@
 import uuid
+from time import sleep
 
 import coiled.v2
 import dask
@@ -27,6 +28,8 @@ def test_repeated_merge_spill():
             )
 
             i = 1
+            INTERVAL = 5
+
             for i in range(10):
                 client.restart()
                 fs = client.compute((ddf.x + ddf.y).mean())
@@ -34,13 +37,14 @@ def test_repeated_merge_spill():
                 print(f"Iteration {i} Section 1")
                 checkpoint = time()
 
-                for _ in range(0, 2 * 60, 5):
+                for _ in range(0, 2 * 60, INTERVAL):
                     if fs.status == "finished":
                         break
-                    # We'd like to have seen all workers in the last 5 seconds
+                    # We'd like to have seen all workers in the last INTERVAL seconds
                     workers = list(client.scheduler_info()["workers"].values())
-                    assert all(w["last_seen"] - checkpoint < 5 for w in workers)
+                    assert all(w["last_seen"] - checkpoint < INTERVAL for w in workers)
                     checkpoint = time()
+                    sleep(INTERVAL)
 
                 assert fs.status == "finished"
                 del fs
@@ -51,13 +55,14 @@ def test_repeated_merge_spill():
                 print(f"Iteration {i} Section 2")
                 checkpoint = time()
 
-                for _ in range(0, 2 * 60, 5):
+                for _ in range(0, 2 * 60, INTERVAL):
                     if fs.status == "finished":
                         break
-                    # We'd like to have seen all workers in the last 5 seconds
+                    # We'd like to have seen all workers in the last INTERVAL seconds
                     workers = list(client.scheduler_info()["workers"].values())
-                    assert all(w["last_seen"] - checkpoint < 5 for w in workers)
+                    assert all(w["last_seen"] - checkpoint < INTERVAL for w in workers)
                     checkpoint = time()
+                    sleep(INTERVAL)
 
                 assert fs.status == "finished"
                 del fs
