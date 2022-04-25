@@ -1,20 +1,24 @@
 import json
+import logging
 import os
 import shlex
 import subprocess
 import sys
 import uuid
 
+import dask
 import pytest
 import s3fs
+from dask.distributed import Client
 
 try:
     from coiled.v2 import Cluster
 except ImportError:
     from coiled._beta import ClusterBeta as Cluster
 
-import dask
-from dask.distributed import Client
+
+# So coiled logs can be displayed on test failure
+logging.getLogger("coiled").setLevel(logging.INFO)
 
 
 def pytest_addoption(parser):

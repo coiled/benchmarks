@@ -55,9 +55,9 @@ jobs:
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
           then
             python ci/create_latest_runtime_meta.py
-            mamba install -c coiled -c conda-forge --file latest.txt
+            mamba install -c conda-forge --file latest.txt
           else
-            mamba install -c coiled -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
+            mamba install -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
           fi
 
       - name: Export environment
@@ -127,28 +127,6 @@ jobs:
           then
             python -c "raise Exception('Tests failed. Please see the output from the previous step for more details.')"
           fi
-
-      - name: Build coiled-runtime
-        if: ${{ matrix.runtime-version == 'latest' }}
-        run: |
-          conda mambabuild recipe \
-                --output-folder dist/conda \
-                --no-anaconda-upload
-
-      - name: Upload conda package
-        # Only upload on a single CI build when pushing a tagged commit to `main`
-        if: |
-          matrix.os == 'ubuntu-latest'
-          && matrix.python-version == '3.9'
-          && matrix.runtime-version == 'latest'
-          && github.event_name == 'push'
-          && startsWith(github.ref, 'refs/tags')
-        env:
-          ANACONDA_API_TOKEN: ${{ secrets.COILED_UPLOAD_TOKEN }}
-        run: |
-          # install anaconda for upload
-          mamba install anaconda-client
-          anaconda upload dist/conda/noarch/*.tar.bz2
 
   report:
     name: report
