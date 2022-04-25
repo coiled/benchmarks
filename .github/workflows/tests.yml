@@ -44,17 +44,22 @@ jobs:
       - name: Install dependencies
         run: mamba install boa conda-verify jinja2 packaging pytest
 
-      - name: Install coiled-runtime
+      - name: Check upstream
+        if: github.event_name == 'pull_request' && matrix.runtime-version == 'latest'
         run: |
-          # If testing the latest `coiled-runtime` then install packages defined in `recipe/meta.yaml`
-          # Otherwise, just install directly from the coiled / conda-forge channel
-
           COMMIT="${{ github.event.head_commit.message }}"
           if [[ "$COMMIT" == *"test-upstream"* ]]
           then
             export TEST_UPSTREAM="true"
+            # Put TEST_UPSTREAM into $GITHUB_ENV so it can be used in subsequent workflow steps
+            echo TEST_UPSTREAM=$TEST_UPSTREAM >> $GITHUB_ENV
+            echo "Using development version of dask and distributed"
           fi
 
+      - name: Install coiled-runtime
+        run: |
+          # If testing the latest `coiled-runtime` then install packages defined in `recipe/meta.yaml`
+          # Otherwise, just install directly from the coiled / conda-forge channel
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
           then
             python ci/create_latest_runtime_meta.py
