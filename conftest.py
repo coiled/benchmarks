@@ -37,8 +37,7 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_latest)
 
 
-@pytest.fixture(scope="session")
-def software():
+def get_software():
     try:
         return os.environ["COILED_SOFTWARE_NAME"]
     except KeyError:
@@ -58,19 +57,16 @@ def software():
             )
 
 
-@pytest.fixture(autouse=True)
-def dask_config(software):
-    with dask.config.set(
-        {
-            "coiled.account": "dask-engineering",
-            "coiled.software": software,
-        }
-    ):
-        yield
+dask.config.set(
+    {
+        "coiled.account": "dask-engineering",
+        "coiled.software": get_software(),
+    }
+)
 
 
 @pytest.fixture(scope="module")
-def small_cluster(request, dask_config):
+def small_cluster(request):
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
