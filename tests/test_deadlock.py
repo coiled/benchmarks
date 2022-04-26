@@ -3,7 +3,7 @@ from time import sleep
 
 import coiled.v2
 import dask
-from distributed import Client
+from distributed import Client, wait
 from distributed.metrics import time
 
 
@@ -28,43 +28,37 @@ def test_repeated_merge_spill():
             )
 
             i = 1
-            INTERVAL = 5
+            INTERVAL = 1
 
             for i in range(10):
                 client.restart()
                 fs = client.compute((ddf.x + ddf.y).mean())
 
                 print(f"Iteration {i} Section 1")
-                checkpoint = time()
+                start = time()
 
-                for _ in range(0, 2 * 60, INTERVAL):
-                    if fs.status == "finished":
-                        break
+                while fs.status == "pending" and time() - start < 2 * 60:
                     # We'd like to have seen all workers in the last INTERVAL seconds
                     workers = list(client.scheduler_info()["workers"].values())
-                    assert all(w["last_seen"] - checkpoint < INTERVAL for w in workers)
-                    checkpoint = time()
+                    assert all(w["last_seen"] - time() < INTERVAL for w in workers)
                     sleep(INTERVAL)
 
-                assert fs.status == "finished"
+                wait(fs, timeout=0.1)
                 del fs
 
                 ddf3 = ddf.merge(ddf2)
                 fs = client.compute((ddf3.x + ddf3.y).mean())
 
                 print(f"Iteration {i} Section 2")
-                checkpoint = time()
+                start = time()
 
-                for _ in range(0, 2 * 60, INTERVAL):
-                    if fs.status == "finished":
-                        break
+                while fs.status == "pending" and time() - start < 2 * 60:
                     # We'd like to have seen all workers in the last INTERVAL seconds
                     workers = list(client.scheduler_info()["workers"].values())
-                    assert all(w["last_seen"] - checkpoint < INTERVAL for w in workers)
-                    checkpoint = time()
+                    assert all(w["last_seen"] - time() < INTERVAL for w in workers)
                     sleep(INTERVAL)
 
-                assert fs.status == "finished"
+                wait(fs, timeout=0.1)
                 del fs
 
                 i += 1
