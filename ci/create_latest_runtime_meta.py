@@ -4,7 +4,7 @@ import json
 import os
 import pathlib
 import sys
-from urllib.request import urlopen
+from urllib.request import Request, urlopen
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -12,9 +12,13 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 def get_latest_commit(repository):
     org, repo = repository.split("/")
-    response = urlopen(
-        f"https://api.github.com/repos/{org}/{repo}/commits?per_page=1"
-    ).read()
+    headers = {}
+    if os.environ.get("GITHUB_TOKEN", False):
+        headers = {"Authorization": f"token {os.environ['GITHUB_TOKEN']}"}
+    request = Request(
+        f"https://api.github.com/repos/{org}/{repo}/commits?per_page=1", headers=headers
+    )
+    response = urlopen(request).read()
     data = json.loads(response.decode())
     return data[0]["sha"]
 
