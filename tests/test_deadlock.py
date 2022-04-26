@@ -37,4 +37,3 @@ def test_repeated_merge_spill():
 
                 wait(fs, timeout=2 * 60)
                 del fs
-
