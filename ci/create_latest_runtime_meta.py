@@ -29,7 +29,7 @@ def main():
         f.write("\n".join(requirements))
 
     # File compatible with `mamba env create --file <...>`
-    env = {"channels": ["coiled", "conda-forge"]}
+    env = {"channels": ["conda-forge"]}
     env["dependencies"] = requirements
     with open("latest.yaml", "w") as f:
         yaml.dump(env, f)

@@ -28,10 +28,6 @@ jobs:
         os: ["ubuntu-latest", "windows-latest", "macos-latest"]
         python-version: ["3.7", "3.8", "3.9"]
         runtime-version: ["latest", "0.0.3"]
-        exclude:
-          # FIXME: Building Coiled software environments is currently broken on Windows
-          - os: windows-latest
-            runtime-version: "latest"
     
     steps:
       - uses: actions/checkout@v2
@@ -56,16 +52,17 @@ jobs:
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
           then
             python ci/create_latest_runtime_meta.py
-            mamba install -c coiled -c conda-forge --file latest.txt
+            mamba install -c conda-forge --file latest.txt
           else
-            mamba install -c coiled -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
+            mamba install -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
           fi
 
       - name: Export environment
         run: |
           # For debugging
           echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
-          mamba env export | grep -E -v '^prefix:.*$'
+          # FIXME: mamba env export returns empty on CI 
+          conda env export | grep -E -v '^prefix:.*$'
 
       - name: Build Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}
@@ -101,6 +98,8 @@ jobs:
         id: tests
         env:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}            
         run: |
           # Ensure we run additional tests when testing the latest coiled-runtime
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
@@ -125,28 +124,6 @@ jobs:
           then
             python -c "raise Exception('Tests failed. Please see the output from the previous step for more details.')"
           fi
-
-      - name: Build coiled-runtime
-        if: ${{ matrix.runtime-version == 'latest' }}
-        run: |
-          conda mambabuild recipe \
-                --output-folder dist/conda \
-                --no-anaconda-upload
-
-      - name: Upload conda package
-        # Only upload on a single CI build when pushing a tagged commit to `main`
-        if: |
-          matrix.os == 'ubuntu-latest'
-          && matrix.python-version == '3.9'
-          && matrix.runtime-version == 'latest'
-          && github.event_name == 'push'
-          && startsWith(github.ref, 'refs/tags')
-        env:
-          ANACONDA_API_TOKEN: ${{ secrets.COILED_UPLOAD_TOKEN }}
-        run: |
-          # install anaconda for upload
-          mamba install anaconda-client
-          anaconda upload dist/conda/noarch/*.tar.bz2
 
   report:
     name: report
