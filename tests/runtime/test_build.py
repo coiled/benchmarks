@@ -29,7 +29,7 @@ def get_conda_installed_versions() -> dict[str, str]:
 def get_meta_specifiers() -> dict[str, SpecifierSet]:
     """Get packages version specifiers from `meta.yaml`"""
     env = Environment(
-        loader=FileSystemLoader(pathlib.Path(__file__).parent.parent / "recipe"),
+        loader=FileSystemLoader(pathlib.Path(__file__).parent.parent.parent / "recipe"),
         autoescape=select_autoescape(),
     )
     template = env.get_template("meta.yaml")
