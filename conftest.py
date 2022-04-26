@@ -57,12 +57,15 @@ def get_software():
             )
 
 
-dask.config.set(
-    {
-        "coiled.account": "dask-engineering",
-        "coiled.software": get_software(),
-    }
-)
+@pytest.fixture(autouse=True)
+def dask_config():
+    with dask.config.set(
+        {
+            "coiled.account": "dask-engineering",
+            "coiled.software": get_software(),
+        }
+    ):
+        yield
 
 
 @pytest.fixture(scope="module")
