@@ -1,10 +1,8 @@
 import uuid
-from time import sleep
 
 import coiled.v2
 import dask
 from distributed import Client, wait
-from distributed.metrics import time
 
 
 def test_repeated_merge_spill():
@@ -27,38 +25,15 @@ def test_repeated_merge_spill():
                 partition_freq="2w",
             )
 
-            i = 1
-            INTERVAL = 1
-
-            for i in range(10):
+            for _ in range(10):
                 client.restart()
                 fs = client.compute((ddf.x + ddf.y).mean())
 
-                print(f"Iteration {i} Section 1")
-                start = time()
-
-                while fs.status == "pending" and time() - start < 2 * 60:
-                    # We'd like to have seen all workers in the last INTERVAL seconds
-                    workers = list(client.scheduler_info()["workers"].values())
-                    assert all(w["last_seen"] - time() < INTERVAL for w in workers)
-                    sleep(INTERVAL)
-
-                wait(fs, timeout=0.1)
+                wait(fs, timeout=2 * 60)
                 del fs
 
                 ddf3 = ddf.merge(ddf2)
                 fs = client.compute((ddf3.x + ddf3.y).mean())
 
-                print(f"Iteration {i} Section 2")
-                start = time()
-
-                while fs.status == "pending" and time() - start < 2 * 60:
-                    # We'd like to have seen all workers in the last INTERVAL seconds
-                    workers = list(client.scheduler_info()["workers"].values())
-                    assert all(w["last_seen"] - time() < INTERVAL for w in workers)
-                    sleep(INTERVAL)
-
-                wait(fs, timeout=0.1)
+                wait(fs, timeout=2 * 60)
                 del fs
-
-                i += 1
