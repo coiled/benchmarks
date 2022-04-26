@@ -2,12 +2,12 @@ import uuid
 
 import coiled.v2
 import dask
+import pytest
 from distributed import Client, wait
 
 
+@pytest.mark.skip(reason="https://github.com/dask/distributed/issues/6110")
 def test_repeated_merge_spill():
-    # See https://github.com/dask/distributed/issues/6110
-
     with coiled.v2.Cluster(
         name=f"test_deadlock-{uuid.uuid4().hex}",
         n_workers=20,
