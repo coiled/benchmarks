@@ -1,10 +1,26 @@
 from __future__ import annotations
 
+import json
+import os
 import pathlib
 import sys
+from urllib.request import Request, urlopen
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+
+def get_latest_commit(repository):
+    org, repo = repository.split("/")
+    headers = {}
+    if os.environ.get("GITHUB_TOKEN", False):
+        headers = {"Authorization": f"token {os.environ['GITHUB_TOKEN']}"}
+    request = Request(
+        f"https://api.github.com/repos/{org}/{repo}/commits?per_page=1", headers=headers
+    )
+    response = urlopen(request).read()
+    data = json.loads(response.decode())
+    return data[0]["sha"]
 
 
 def main():
@@ -24,9 +40,15 @@ def main():
         if req.startswith("python "):
             requirements[idx] = f"python =={python_version}"
 
-    # File compatible with `mamba install --file <...>`
-    with open("latest.txt", "w") as f:
-        f.write("\n".join(requirements))
+    # Optionally install the development version of `dask` and `distributed`
+    if os.environ.get("TEST_UPSTREAM", False):
+        dev_req = {
+            "pip": [
+                f"git+https://github.com/dask/dask.git@{get_latest_commit('dask/dask')}",
+                f"git+https://github.com/dask/distributed.git@{get_latest_commit('dask/distributed')}",
+            ]
+        }
+        requirements.append(dev_req)
 
     # File compatible with `mamba env create --file <...>`
     env = {"channels": ["conda-forge"]}
