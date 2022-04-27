@@ -123,7 +123,7 @@ jobs:
             export EXTRA_OPTIONS=" "
           fi
 
-          python -m pytest $EXTRA_OPTIONS tests/test_h2o_benchmark.py
+          python -m pytest $EXTRA_OPTIONS tests/test_h2o_benchmarks.py
 
       - name: Remove Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}
