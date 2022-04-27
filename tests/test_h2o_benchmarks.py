@@ -44,7 +44,7 @@ def ddf(request):
             },
             storage_options={"anon": True},
         )
-    elif request.param.endswith("parquet"):
+    else:
         yield dd.read_parquet(
             request.param, engine="pyarrow", storage_options={"anon": True}
         )
