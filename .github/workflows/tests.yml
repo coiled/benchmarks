@@ -61,7 +61,7 @@ jobs:
 
       - name: Install coiled-runtime
         env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime_version }}
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
