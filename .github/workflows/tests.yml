@@ -57,8 +57,6 @@ jobs:
           fi
 
       - name: Install coiled-runtime
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
           # If testing the latest `coiled-runtime` then install packages defined in `recipe/meta.yaml`
           # Otherwise, just install directly from the coiled / conda-forge channel
