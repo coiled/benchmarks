@@ -13,29 +13,39 @@ import pytest
         "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_single.csv",
         # "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_single.csv",
         # "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_single.csv",
+        "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_parquet/*.parquet",
+        # "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_parquet/*.parquet",
+        # "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_parquet/*.parquet",
     ],
     ids=[
-        "0.5 GB",
-        # "5 GB",
-        # "50 GB",
+        "0.5 GB (csv)",
+        # "5 GB (csv)",
+        # "50 GB (csv)",
+        "0.5 GB (parquet)",
+        # "5 GB (parquet)",
+        # "50 GB (parquet)",
     ],
 )
 def ddf(request):
-    yield dd.read_csv(
-        request.param,
-        dtype={
-            "id1": "category",
-            "id2": "category",
-            "id3": "category",
-            "id4": "Int32",
-            "id5": "Int32",
-            "id6": "Int32",
-            "v1": "Int32",
-            "v2": "Int32",
-            "v3": "float64",
-        },
-        storage_options={"anon": True},
-    )
+
+    if request.param.endswith("csv"):
+        yield dd.read_csv(
+            request.param,
+            dtype={
+                "id1": "category",
+                "id2": "category",
+                "id3": "category",
+                "id4": "Int32",
+                "id5": "Int32",
+                "id6": "Int32",
+                "v1": "Int32",
+                "v2": "Int32",
+                "v3": "float64",
+            },
+            storage_options={"anon": True},
+        )
+    elif request.param.endswith("parquet"):
+        yield dd.read_parquet(request.param, engine="pyarrow")
 
 
 def test_q1(ddf, small_client):
