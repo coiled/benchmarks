@@ -7,6 +7,7 @@ import subprocess
 
 import coiled
 import conda.cli.python_api as Conda
+import dask
 import pytest
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -47,6 +48,10 @@ def get_meta_specifiers() -> dict[str, SpecifierSet]:
 def test_install_dist():
     # Test that versions of packages installed are consistent with those
     # specified in `meta.yaml`
+
+    if Version(dask.__version__).local:
+        pytest.skip("Not valid on upstream build")
+
     meta_specifiers = get_meta_specifiers()
     installed_versions = get_conda_installed_versions()
 

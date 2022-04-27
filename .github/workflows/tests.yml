@@ -47,6 +47,18 @@ jobs:
       - name: Install dependencies
         run: mamba install boa conda-verify jinja2 packaging pytest
 
+      - name: Check upstream
+        if: github.event_name == 'pull_request' && matrix.runtime-version == 'latest'
+        run: |
+          COMMIT="$(git log -n 1 --pretty=format:%s HEAD^2)"
+          if [[ "$COMMIT" == *"test-upstream"* ]]
+          then
+            export TEST_UPSTREAM="true"
+            # Put TEST_UPSTREAM into $GITHUB_ENV so it can be used in subsequent workflow steps
+            echo TEST_UPSTREAM=$TEST_UPSTREAM >> $GITHUB_ENV
+            echo "Using development version of dask and distributed"
+          fi
+
       - name: Install coiled-runtime
         run: bash ci/scripts/install_coiled_runtime.sh
         env:
