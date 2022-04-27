@@ -48,17 +48,9 @@ jobs:
         run: mamba install boa conda-verify jinja2 packaging pytest
 
       - name: Install coiled-runtime
-        run: |
-          # If testing the latest `coiled-runtime` then install packages defined in `recipe/meta.yaml`
-          # Otherwise, just install directly from the coiled / conda-forge channel
-
-          if [[ ${{ matrix.runtime-version }} = 'latest' ]]
-          then
-            python ci/create_latest_runtime_meta.py
-            mamba install -c conda-forge --file latest.txt
-          else
-            mamba install -c conda-forge coiled-runtime=${{ matrix.runtime-version }}
-          fi
+        run: bash ci/scripts/install_coiled_runtime.sh
+        env:
+          RUNTIME_VERSION: ${{ matrix.runtime_version }}
 
       - name: Export environment
         run: |
@@ -67,115 +59,115 @@ jobs:
           # FIXME: mamba env export returns empty on CI 
           conda env export | grep -E -v '^prefix:.*$'
 
-      - name: Build Coiled software environment
-        if: ${{ matrix.runtime-version == 'latest' }}
-        env:
-          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-        run: |
-          # If testing the latest `coiled-runtime`, we need to build a Coiled software environment
-          # that can be used when running tests
+      # - name: Build Coiled software environment
+      #   if: ${{ matrix.runtime-version == 'latest' }}
+      #   env:
+      #     DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+      #   run: |
+      #     # If testing the latest `coiled-runtime`, we need to build a Coiled software environment
+      #     # that can be used when running tests
 
-          # Coiled software environment names can't contain "." or uppercase characters
-          export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
-          export OS_FORMATTED=$(python -c "import os; print(os.environ['RUNNER_OS'].lower())")
-          export REF_NAME_FORMATTED=$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
+      #     # Coiled software environment names can't contain "." or uppercase characters
+      #     export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
+      #     export OS_FORMATTED=$(python -c "import os; print(os.environ['RUNNER_OS'].lower())")
+      #     export REF_NAME_FORMATTED=$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
 
-          export COILED_SOFTWARE_NAME_HEAD=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME
-          export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-$OS_FORMATTED-py$PYTHON_VERSION_FORMATTED
-          if [[ ${{ github.event_name }} = 'pull_request' ]]
-          then
-            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-${{ github.event.number }}-$COILED_SOFTWARE_NAME_TAIL
-          else
-            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
-          fi
+      #     export COILED_SOFTWARE_NAME_HEAD=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME
+      #     export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-$OS_FORMATTED-py$PYTHON_VERSION_FORMATTED
+      #     if [[ ${{ github.event_name }} = 'pull_request' ]]
+      #     then
+      #       export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-${{ github.event.number }}-$COILED_SOFTWARE_NAME_TAIL
+      #     else
+      #       export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
+      #     fi
 
-          echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
-          # Put COILED_SOFTWARE_NAME into $GITHUB_ENV so it can be used in subsequent workflow steps
-          echo COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME >> $GITHUB_ENV
+      #     echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
+      #     # Put COILED_SOFTWARE_NAME into $GITHUB_ENV so it can be used in subsequent workflow steps
+      #     echo COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME >> $GITHUB_ENV
 
-          coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
+      #     coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
 
-      - name: Run coiled runtime tests
-        continue-on-error: true
-        id: runtime_tests
-        env:
-            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}            
-        run: |
-          # Ensure we run additional tests when testing the latest coiled-runtime
-          if [[ ${{ matrix.runtime-version }} = 'latest' ]]
-          then
-            export EXTRA_OPTIONS="--run-latest"
-            export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
-          else
-            export EXTRA_OPTIONS=" "
-          fi
+      # - name: Run coiled runtime tests
+      #   continue-on-error: true
+      #   id: runtime_tests
+      #   env:
+      #       DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+      #       AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+      #       AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}            
+      #   run: |
+      #     # Ensure we run additional tests when testing the latest coiled-runtime
+      #     if [[ ${{ matrix.runtime-version }} = 'latest' ]]
+      #     then
+      #       export EXTRA_OPTIONS="--run-latest"
+      #       export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
+      #     else
+      #       export EXTRA_OPTIONS=" "
+      #     fi
 
-          python -m pytest $EXTRA_OPTIONS tests/runtime
+      #     python -m pytest $EXTRA_OPTIONS tests/runtime
 
-      - name: Run h2o benchmarking tests
-        continue-on-error: true
-        id: h2o_tests
-        env:
-            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}            
-        run: |
-          # Ensure we run additional tests when testing the latest coiled-runtime
-          if [[ ${{ matrix.runtime-version }} = 'latest' ]]
-          then
-            export EXTRA_OPTIONS="--run-latest"
-            export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
-          else
-            export EXTRA_OPTIONS=" "
-          fi
+      # - name: Run h2o benchmarking tests
+      #   continue-on-error: true
+      #   id: h2o_tests
+      #   env:
+      #       DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+      #       AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+      #       AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}            
+      #   run: |
+      #     # Ensure we run additional tests when testing the latest coiled-runtime
+      #     if [[ ${{ matrix.runtime-version }} = 'latest' ]]
+      #     then
+      #       export EXTRA_OPTIONS="--run-latest"
+      #       export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
+      #     else
+      #       export EXTRA_OPTIONS=" "
+      #     fi
 
-          python -m pytest $EXTRA_OPTIONS tests/h2o
+      #     python -m pytest $EXTRA_OPTIONS tests/h2o
 
-      - name: Run stability tests
-        continue-on-error: true
-        id: stability_tests
-        env:
-            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}            
-        run: |
-          # Ensure we run additional tests when testing the latest coiled-runtime
-          if [[ ${{ matrix.runtime-version }} = 'latest' ]]
-          then
-            export EXTRA_OPTIONS="--run-latest"
-            export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
-          else
-            export EXTRA_OPTIONS=" "
-          fi
+      # - name: Run stability tests
+      #   continue-on-error: true
+      #   id: stability_tests
+      #   env:
+      #       DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+      #       AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+      #       AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}            
+      #   run: |
+      #     # Ensure we run additional tests when testing the latest coiled-runtime
+      #     if [[ ${{ matrix.runtime-version }} = 'latest' ]]
+      #     then
+      #       export EXTRA_OPTIONS="--run-latest"
+      #       export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
+      #     else
+      #       export EXTRA_OPTIONS=" "
+      #     fi
 
-          python -m pytest $EXTRA_OPTIONS tests/stability
+      #     python -m pytest $EXTRA_OPTIONS tests/stability
 
 
 
-      - name: Remove Coiled software environment
-        if: ${{ matrix.runtime-version == 'latest' }}
-        env:
-            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-        run: |
-          # Clean up an Coiled software environments we created just for this CI build
-          export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
-          coiled env delete $COILED_SOFTWARE_NAME
-          if [[ ${{ steps.runtime_tests.outcome }} != 'success' ]]
-          then
-            python -c "raise Exception('Runtime Tests failed. Please see the output from the previous step for more details.')"
-          fi
+      # - name: Remove Coiled software environment
+      #   if: ${{ matrix.runtime-version == 'latest' }}
+      #   env:
+      #       DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+      #   run: |
+      #     # Clean up an Coiled software environments we created just for this CI build
+      #     export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
+      #     coiled env delete $COILED_SOFTWARE_NAME
+      #     if [[ ${{ steps.runtime_tests.outcome }} != 'success' ]]
+      #     then
+      #       python -c "raise Exception('Runtime Tests failed. Please see the output from the previous step for more details.')"
+      #     fi
 
-          if [[ ${{ steps.h2o_tests.outcome }} != 'success' ]]
-          then
-            python -c "raise Exception('h2o Tests failed. Please see the output from the previous step for more details.')"
-          fi
+      #     if [[ ${{ steps.h2o_tests.outcome }} != 'success' ]]
+      #     then
+      #       python -c "raise Exception('h2o Tests failed. Please see the output from the previous step for more details.')"
+      #     fi
 
-          if [[ ${{ steps.stability_tests.outcome }} != 'success' ]]
-          then
-            python -c "raise Exception('Stability Tests failed. Please see the output from the previous step for more details.')"
-          fi
+      #     if [[ ${{ steps.stability_tests.outcome }} != 'success' ]]
+      #     then
+      #       python -c "raise Exception('Stability Tests failed. Please see the output from the previous step for more details.')"
+      #     fi
 
 
   report:
