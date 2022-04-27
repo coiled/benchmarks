@@ -60,9 +60,9 @@ jobs:
           fi
 
       - name: Install coiled-runtime
-        run: bash ci/scripts/install_coiled_runtime.sh
         env:
-          RUNTIME_VERSION: ${{ matrix.runtime_version }}
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime_version }}
+        run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
         run: |
