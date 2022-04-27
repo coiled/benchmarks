@@ -30,7 +30,9 @@ jobs:
         runtime-version: ["latest", "0.0.3"]
         include:
           - python-version: "3.9"
-            os: ["windows-latest", "macos-latest"]
+            os: "windows-latest"
+          - python-version: "3.9"
+            os: "macos-latest"
     
     steps:
       - uses: actions/checkout@v2
