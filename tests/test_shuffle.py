@@ -40,3 +40,4 @@ def test_shuffle_parquet(small_client, s3_url, s3_storage_options, compute):
             shuffled_url, compute=False, storage_options=s3_storage_options
         )
         dask.compute(result)
+
