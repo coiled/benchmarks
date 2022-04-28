@@ -297,14 +297,16 @@ jobs:
         run: bash ci/scripts/remove_coiled_env.sh
 
 
-  report_runtime:
-    name: report_runtime
+  report:
+    name: report
     needs: [tests_runtime, tests_benchmarking, tests_stability]
     if: |
       always()
       && github.event_name != 'pull_request'
       && github.repository == 'coiled/coiled-runtime'
-      && needs.tests.result == 'failure'
+      && (needs.tests_runtime.result == 'failure' ||
+          needs.test_benchmarking.result == 'failure' ||
+          needs.test_stability.result == 'failure')
     runs-on: ubuntu-latest
     defaults:
       run:
