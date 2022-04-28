@@ -118,6 +118,8 @@ def s3_scratch(s3):
 @pytest.fixture(scope="function")
 def s3_url(s3, s3_scratch, request):
     url = f"{s3_scratch}/{request.node.name}-{uuid.uuid4().hex}"
+    print(f"Creating {url}")
     s3.mkdirs(url, exist_ok=False)
     yield url
+    print(f"Removing {url}")
     s3.rm(url, recursive=True)
