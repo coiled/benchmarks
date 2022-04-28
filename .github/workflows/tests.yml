@@ -15,7 +15,7 @@ concurrency:
 
 jobs:
   tests_runtime:
-    name: ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    name: Runtime ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     # Required shell entrypoint to have properly activated conda environments
@@ -80,13 +80,14 @@ jobs:
 
       - name: Run Coiled Runtime Tests
         continue-on-error: true
-        id: tests
+        id: test
         env:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
             AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
             COILED_SOFTWARE_NAME: ${{ env.COILED_SOFTWARE_NAME }}
             COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+            TEST_NAME: runtime
         run: |
           # Ensure we run additional tests when testing the latest coiled-runtime
           if [[ $COILED_RUNTIME_VERSION = 'latest' ]]
@@ -108,7 +109,7 @@ jobs:
 
 
   tests_h2o:
-    name: ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    name: H2O ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     # Required shell entrypoint to have properly activated conda environments
@@ -169,6 +170,7 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_EVENT_NUMBER: ${{ github.event.number }}
           PYTHON_VERSION: ${{ matrix.python-version }}
+          TEST_NAME: h2o
         run: bash ci/scripts/build_coiled_env.sh
 
 
@@ -200,7 +202,7 @@ jobs:
         run: bash ci/scripts/remove_coiled_env.sh
 
   tests_stability:
-    name: ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    name: Stability ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     # Required shell entrypoint to have properly activated conda environments
@@ -261,6 +263,7 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_EVENT_NUMBER: ${{ github.event.number }}
           PYTHON_VERSION: ${{ matrix.python-version }}
+          TEST_NAME: stability
         run: bash ci/scripts/build_coiled_env.sh
 
 
