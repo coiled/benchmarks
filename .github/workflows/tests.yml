@@ -25,9 +25,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # os: ["ubuntu-latest", "windows-latest", "macos-latest"]
+        # os: ["ubuntu-latest"]
         # python-version: ["3.7", "3.8", "3.9"]
         # runtime-version: ["latest", "0.0.3"]
+        # include:
+        #   - python-version: "3.9"
+        #     runtime-version: "latest"
+        #     os: "windows-latest"
+        #   - python-version: "3.9"
+        #     runtime-version: "latest"
+        #     os: "macos-latest"
         os: ["ubuntu-latest"]
         python-version: ["3.9"]
         runtime-version: ["latest"]

@@ -3,24 +3,21 @@ from __future__ import annotations
 import json
 import os
 import pathlib
+import shlex
+import subprocess
 import sys
-from urllib.request import Request, urlopen
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from packaging.requirements import Requirement
 
 
-def get_latest_commit(repository):
-    org, repo = repository.split("/")
-    headers = {}
-    if os.environ.get("GITHUB_TOKEN", False):
-        headers = {"Authorization": f"token {os.environ['GITHUB_TOKEN']}"}
-    request = Request(
-        f"https://api.github.com/repos/{org}/{repo}/commits?per_page=1", headers=headers
-    )
-    response = urlopen(request).read()
-    data = json.loads(response.decode())
-    return data[0]["sha"]
+def get_latest_conda_build(package):
+    """Retrieve URL for most recent `package` version on the `dask/label/dev` conda channel"""
+    cmd = f"conda search --json --override-channels -c dask/label/dev {package}"
+    out = subprocess.check_output(shlex.split(cmd), text=True)
+    result = json.loads(out)[package][-1]
+    return result["url"]
 
 
 def main():
@@ -35,24 +32,26 @@ def main():
 
     # Ensure Python is pinned to X.Y.Z version currently being used
     python_version = ".".join(map(str, tuple(sys.version_info)[:3]))
-    assert sum([req.startswith("python ") for req in requirements]) == 1
     for idx, req in enumerate(requirements):
-        if req.startswith("python "):
+        package_name = Requirement(req).name
+        if package_name == "python":
             requirements[idx] = f"python =={python_version}"
 
-    # Optionally install the development version of `dask` and `distributed`
-    if os.environ.get("TEST_UPSTREAM", False):
-        dev_req = {
-            "pip": [
-                f"git+https://github.com/dask/dask.git@{get_latest_commit('dask/dask')}",
-                f"git+https://github.com/dask/distributed.git@{get_latest_commit('dask/distributed')}",
-            ]
-        }
-        requirements.append(dev_req)
+    # Optionally use the development version of `dask` and `distributed`
+    # from `dask/label/dev` conda channel
+    upstream = os.environ.get("TEST_UPSTREAM", False)
+    if upstream:
+        upstream_packages = {"dask", "distributed"}
+        for idx, req in enumerate(requirements):
+            package_name = Requirement(req).name
+            if package_name in upstream_packages:
+                requirements[idx] = get_latest_conda_build(package_name)
 
     # File compatible with `mamba env create --file <...>`
-    env = {"channels": ["conda-forge"]}
-    env["dependencies"] = requirements
+    env = {
+        "channels": ["conda-forge"],
+        "dependencies": requirements,
+    }
     with open("latest.yaml", "w") as f:
         yaml.dump(env, f)
 
