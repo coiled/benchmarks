@@ -109,7 +109,7 @@ jobs:
 
 
   tests_benchmarking:
-    name: H2O ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    name: Benchmarks ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     # Required shell entrypoint to have properly activated conda environments
@@ -191,7 +191,7 @@ jobs:
             export EXTRA_OPTIONS=" "
           fi
 
-          python -m pytest $EXTRA_OPTIONS tests/benchmarking
+          python -m pytest $EXTRA_OPTIONS tests/benchmarks
 
       - name: Remove Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}
