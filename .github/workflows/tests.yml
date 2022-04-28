@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  tests:
+  tests_runtime:
     name: ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -56,15 +56,7 @@ jobs:
 
       - name: Check upstream
         if: github.event_name == 'pull_request' && matrix.runtime-version == 'latest'
-        run: |
-          COMMIT="$(git log -n 1 --pretty=format:%s HEAD^2)"
-          if [[ "$COMMIT" == *"test-upstream"* ]]
-          then
-            export TEST_UPSTREAM="true"
-            # Put TEST_UPSTREAM into $GITHUB_ENV so it can be used in subsequent workflow steps
-            echo TEST_UPSTREAM=$TEST_UPSTREAM >> $GITHUB_ENV
-            echo "Using development version of dask and distributed"
-          fi
+        run: bash ci/scripts/check_upstream.sh
 
       - name: Install coiled-runtime
         env:
@@ -88,19 +80,18 @@ jobs:
 
       - name: Run Coiled Runtime Tests
         continue-on-error: true
-        id: runtime_tests
+        id: tests
         env:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
             AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}  
             COILED_SOFTWARE_NAME: ${{ env.COILED_SOFTWARE_NAME }}
-            COILED_RUNTIME_VERSION: $${{ matrix.runtime-version }}    
+            COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}    
         run: |
           # Ensure we run additional tests when testing the latest coiled-runtime
           if [[ $COILED_RUNTIME_VERSION = 'latest' ]]
           then
             export EXTRA_OPTIONS="--run-latest"
-            export COILED_SOFTWARE_NAME=
           else
             export EXTRA_OPTIONS=" "
           fi
@@ -147,33 +138,22 @@ jobs:
 
 
 
-      # - name: Remove Coiled software environment
-      #   if: ${{ matrix.runtime-version == 'latest' }}
-      #   env:
-      #       DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-      #   run: |
-      #     # Clean up an Coiled software environments we created just for this CI build
-      #     export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
-      #     coiled env delete $COILED_SOFTWARE_NAME
-      #     if [[ ${{ steps.runtime_tests.outcome }} != 'success' ]]
-      #     then
-      #       python -c "raise Exception('Runtime Tests failed. Please see the output from the previous step for more details.')"
-      #     fi
+      - name: Remove Coiled software environment
+        if: ${{ matrix.runtime-version == 'latest' }}
+        env:
+            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+        run: |
+          # Clean up an Coiled software environments we created just for this CI build
+          export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
+          coiled env delete $COILED_SOFTWARE_NAME
+          if [[ ${{ steps.tests.outcome }} != 'success' ]]
+          then
+            python -c "raise Exception('Runtime Tests failed. Please see the output from the previous step for more details.')"
+          fi
 
-      #     if [[ ${{ steps.h2o_tests.outcome }} != 'success' ]]
-      #     then
-      #       python -c "raise Exception('h2o Tests failed. Please see the output from the previous step for more details.')"
-      #     fi
-
-      #     if [[ ${{ steps.stability_tests.outcome }} != 'success' ]]
-      #     then
-      #       python -c "raise Exception('Stability Tests failed. Please see the output from the previous step for more details.')"
-      #     fi
-
-
-  report:
-    name: report
-    needs: tests
+  report_runtime:
+    name: report_runtime
+    needs: tests_runtime
     if: |
       always()
       && github.event_name != 'pull_request'
