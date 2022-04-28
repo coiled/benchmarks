@@ -9,7 +9,7 @@ The Coiled Runtime is a conda metapackage which makes it easy to get started wit
 `coiled-runtime` can be installed with:
 
 ```bash
-conda install -c coiled -c conda-forge coiled-runtime
+conda install -c conda-forge coiled-runtime
 ```
 
 ## Build
@@ -33,19 +33,37 @@ conda install -c conda-forge -c ./dist/conda/ coiled-runtime
 
 ## Release
 
-To issue a new `coiled-runtime` release, update the `coiled-runtime` version specified in `meta.yaml`, then:
+To issue a new `coiled-runtime` release:
+
+1. Locally update the `coiled-runtime` version and package pinnings specified in `recipe/meta.yaml`.
+    - When updating package version pinnings (in particular `dask` and `distributed`)
+      confirm there are no reported large scale stability issues (e.g. deadlocks) or
+      performance regressions on the `dask` / `distributed` issue trackers or offline
+      reports.
+2. Open a pull request to the `coiled-runtime` repository titled "Release X.Y.Z" with these changes
+   (where `X.Y.Z` is replaced with the actual version for the release).
+3. After all CI builds have passed the release pull request can be merged.
+4. Add a new git tag for the release by following the steps below on your local machine:
 
 ```bash
-# Set next version number (matching version on `meta.yml`)
-export RELEASE=x.x.x
+# Pull in changes from the Release X.Y.Z PR
+git checkout main
+git pull origin main
 
-# Create tags
-git commit -m "Release $RELEASE"
+# Set release version number
+export RELEASE=X.Y.Z
+# Create and push release tag
 git tag -a $RELEASE -m "Version $RELEASE"
-
-# Push
-git push upstream main --tags
+git push origin main --tags
 ```
+
+5. Update the `coiled-runtime` package on conda-forge by opening a pull request to the
+   [`coiled-runtime` conda-forge feedstock](https://github.com/conda-forge/coiled-runtime-feedstock)
+   which updates the `coiled-runtime` version and package version pinnings.
+    - Note that pull requests to conda-forge feedstocks must come from a fork.
+    - Reset the build number back to `0` if it isn't already.
+    - For more information on updating conda-forge packages, see the
+      [conda-forge docs](https://conda-forge.org/docs/maintainer/updating_pkgs.html).
 
 ## License
 

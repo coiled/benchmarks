@@ -1,19 +1,24 @@
 import json
+import logging
 import os
 import shlex
 import subprocess
 import sys
 import uuid
 
+import dask
 import pytest
 import s3fs
+from dask.distributed import Client
 
 try:
     from coiled.v2 import Cluster
 except ImportError:
     from coiled._beta import ClusterBeta as Cluster
 
-from dask.distributed import Client
+
+# So coiled logs can be displayed on test failure
+logging.getLogger("coiled").setLevel(logging.INFO)
 
 
 def pytest_addoption(parser):
@@ -32,8 +37,7 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_latest)
 
 
-@pytest.fixture(scope="session")
-def software():
+def get_software():
     try:
         return os.environ["COILED_SOFTWARE_NAME"]
     except KeyError:
@@ -53,13 +57,19 @@ def software():
             )
 
 
+dask.config.set(
+    {
+        "coiled.account": "dask-engineering",
+        "coiled.software": get_software(),
+    }
+)
+
+
 @pytest.fixture(scope="module")
-def small_cluster(software, request):
+def small_cluster(request):
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
-        software=software,
-        account="dask-engineering",
         n_workers=10,
         worker_memory="8 GiB",
         worker_vm_types=["m5.large"],
@@ -107,7 +117,7 @@ def s3_scratch(s3):
 
 @pytest.fixture(scope="function")
 def s3_url(s3, s3_scratch, request):
-    url = f"{s3_scratch}/{request.node.name}-{uuid.uuid4().hex}"
+    url = f"{s3_scratch}/{request.node.originalname}-{uuid.uuid4().hex}"
     s3.mkdirs(url, exist_ok=False)
     yield url
     s3.rm(url, recursive=True)
