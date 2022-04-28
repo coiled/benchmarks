@@ -26,18 +26,15 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
-        python-version: ["3.9"]
-        runtime-version: ["latest"]
-        # os: ["ubuntu-latest"]
-        # python-version: ["3.7", "3.8", "3.9"]
-        # runtime-version: ["latest", "0.0.3"]
-        # include:
-        #   - python-version: "3.9"
-        #     runtime-version: "latest"
-        #     os: "windows-latest"
-        #   - python-version: "3.9"
-        #     runtime-version: "latest"
-        #     os: "macos-latest"
+        python-version: ["3.7", "3.8", "3.9"]
+        runtime-version: ["latest", "0.0.3"]
+        include:
+          - python-version: "3.9"
+            runtime-version: "latest"
+            os: "windows-latest"
+          - python-version: "3.9"
+            runtime-version: "latest"
+            os: "macos-latest"
 
     steps:
       - uses: actions/checkout@v2
@@ -131,7 +128,7 @@ jobs:
             export EXTRA_OPTIONS=" "
           fi
 
-          python -m pytest $EXTRA_OPTIONS tests/test_shuffle.py::test_shuffle_parquet
+          python -m pytest $EXTRA_OPTIONS tests
 
       - name: Remove Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}
