@@ -25,13 +25,20 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # os: ["ubuntu-latest", "windows-latest", "macos-latest"]
-        # python-version: ["3.7", "3.8", "3.9"]
-        # runtime-version: ["latest", "0.0.3"]
         os: ["ubuntu-latest"]
         python-version: ["3.9"]
         runtime-version: ["latest"]
-    
+        # os: ["ubuntu-latest"]
+        # python-version: ["3.7", "3.8", "3.9"]
+        # runtime-version: ["latest", "0.0.3"]
+        # include:
+        #   - python-version: "3.9"
+        #     runtime-version: "latest"
+        #     os: "windows-latest"
+        #   - python-version: "3.9"
+        #     runtime-version: "latest"
+        #     os: "macos-latest"
+
     steps:
       - uses: actions/checkout@v2
         with:
@@ -60,8 +67,6 @@ jobs:
           fi
 
       - name: Install coiled-runtime
-        env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
         run: |
           # If testing the latest `coiled-runtime` then install packages defined in `recipe/meta.yaml`
           # Otherwise, just install directly from the coiled / conda-forge channel
@@ -77,7 +82,7 @@ jobs:
         run: |
           # For debugging
           echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
-          # FIXME: mamba env export returns empty on CI 
+          # FIXME: mamba env export returns empty on CI
           conda env export | grep -E -v '^prefix:.*$'
 
       - name: Build Coiled software environment
@@ -115,7 +120,7 @@ jobs:
         env:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
             AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}            
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
         run: |
           # Ensure we run additional tests when testing the latest coiled-runtime
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
