@@ -76,6 +76,7 @@ jobs:
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           GITHUB_EVENT_NUMBER: ${{ github.event.number }}
           PYTHON_VERSION: ${{ matrix.python-version }}
+          TEST_NAME: runtime
         run: bash ci/scripts/build_coiled_env.sh
 
       - name: Run Coiled Runtime Tests
@@ -87,7 +88,6 @@ jobs:
             AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
             COILED_SOFTWARE_NAME: ${{ env.COILED_SOFTWARE_NAME }}
             COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-            TEST_NAME: runtime
         run: |
           # Ensure we run additional tests when testing the latest coiled-runtime
           if [[ $COILED_RUNTIME_VERSION = 'latest' ]]
