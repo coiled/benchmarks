@@ -70,7 +70,7 @@ def test_read_parquet_split_row_groups(engine: str, small_client: Client) -> Non
     assert not result.not_done
     assert len(result.done) == df.npartitions
     # Use a loop here to show a useful failure message. all will short-circuit
-    # if there are any False values
+    # if there are any False values in case there are a lot of tasks.
     if not all(r.status == "finished" for r in result.done):
         for res in result.done:
             if res.status != "finished":
@@ -90,7 +90,7 @@ def test_read_parquet(engine: str, small_client: Client) -> None:
     assert not result.not_done
     assert len(result.done) == df.npartitions
     # Use a loop here to show a useful failure message. all will short-circuit
-    # if there are any False values
+    # if there are any False values in case there are a lot of tasks.
     if not all(r.status == "finished" for r in result.done):
         for res in result.done:
             if res.status != "finished":
@@ -111,7 +111,7 @@ def test_read_parquet_google_cloud(engine: str, small_client: Client) -> None:
     assert not result.not_done
     assert len(result.done) == df.npartitions
     # Use a loop here to show a useful failure message. all will short-circuit
-    # if there are any False values
+    # if there are any False values in case there are a lot of tasks.
     if not all(r.status == "finished" for r in result.done):
         for res in result.done:
             if res.status != "finished":
@@ -130,7 +130,7 @@ def test_write_parquet(
     assert not result.not_done
     assert len(result.done) == df.npartitions
     # Use a loop here to show a useful failure message. all will short-circuit
-    # if there are any False values
+    # if there are any False values in case there are a lot of tasks.
     if not all(r.status == "finished" for r in result.done):
         for res in result.done:
             if res.status != "finished":

@@ -1,5 +1,6 @@
-import dask.dataframe as dd
 import pandas as pd
+
+import dask.dataframe as dd
 
 
 def test_quickstart(small_client):

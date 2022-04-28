@@ -1,6 +1,7 @@
+import pytest
+
 import dask
 import dask.dataframe as dd
-import pytest
 
 
 @pytest.mark.stability

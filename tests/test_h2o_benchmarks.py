@@ -2,9 +2,10 @@
 h2o-ai benchmark groupby part running on coiled.
 """
 
-import dask.dataframe as dd
 import pandas as pd
 import pytest
+
+import dask.dataframe as dd
 
 
 @pytest.fixture(

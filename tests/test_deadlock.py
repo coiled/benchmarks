@@ -1,8 +1,9 @@
 import uuid
 
+import pytest
+
 import coiled.v2
 import dask
-import pytest
 from distributed import Client, wait
 
 

@@ -1,5 +1,6 @@
-import dask.array as da
 import pytest
+
+import dask.array as da
 
 
 def test_rechunk_in_memory(small_client):
