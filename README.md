@@ -31,6 +31,30 @@ conda build recipe -c conda-forge --output-folder dist/conda --no-anaconda-uploa
 conda install -c conda-forge -c ./dist/conda/ coiled-runtime
 ```
 
+## Test
+
+The `coiled-runtime` test suite can be run locally with the following steps:
+
+1. Ensure your local machine is authenticated to use the `dask-engineering` Coiled account and
+   the Coiled Dask Engineering AWS S3 account.
+2. Create a Python environment and install development dependencies: `pytest`, `jinja2`, and `packaging`
+3. Set up the Coiled software environment to use:
+   - If testing against a custom Coiled software environment, set the `COILED_SOFTWARE_NAME` environment
+     variable to be the name of the software environment (e.g. `export COILED_SOFTWARE_NAME="account/software-name"`)
+   - Otherwise, [install](#install) a supported version of `coiled-runtime`
+4. Run tests with `python -m pytest tests`
+
+Additionally, tests are automatically run on pull requests to this repository.
+See the section below on creating pull requests.
+
+## Contribute
+
+This repository uses GitHub Actions secrets for managing authentication tokens used
+to access resources like Coiled clusters, S3 buckets, etc. However, because GitHub Actions [doesn't
+grant access to secrets for forked repositories](https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow),
+**please submit pull requests directly from the `coiled/coiled-runtime` repository,
+not a personal fork**.
+
 ## Release
 
 To issue a new `coiled-runtime` release:
