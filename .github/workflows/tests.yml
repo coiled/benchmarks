@@ -65,58 +65,39 @@ jobs:
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: bash ci/scripts/export_conda_env.sh
+
+      - name: Build Coiled Software Environment
+        if: ${{ matrix.runtime-version == 'latest' }}
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+          GITHUB_EVENT_NAME: ${{ github.event.name }}
+          GITHUB_EVENT_NUMBER: ${{ github.event.number }}
+        run: bash ci/scripts/build_coiled_env.sh
+
+      - name: Run Coiled Runtime Tests
+        continue-on-error: true
+        id: runtime_tests
+        env:
+            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}  
+            COILED_SOFTWARE_NAME: ${{ env.COILED_SOFTWARE_NAME }}
+            COILED_RUNTIME_VERSION: $${{ matrix.runtime-version }}    
         run: |
-          # For debugging
-          echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
-          # FIXME: mamba env export returns empty on CI 
-          conda env export | grep -E -v '^prefix:.*$'
+          # Ensure we run additional tests when testing the latest coiled-runtime
+          if [[ $COILED_RUNTIME_VERSION = 'latest' ]]
+          then
+            export EXTRA_OPTIONS="--run-latest"
+            export COILED_SOFTWARE_NAME=
+          else
+            export EXTRA_OPTIONS=" "
+          fi
 
-      # - name: Build Coiled software environment
-      #   if: ${{ matrix.runtime-version == 'latest' }}
-      #   env:
-      #     DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-      #   run: |
-      #     # If testing the latest `coiled-runtime`, we need to build a Coiled software environment
-      #     # that can be used when running tests
-
-      #     # Coiled software environment names can't contain "." or uppercase characters
-      #     export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
-      #     export OS_FORMATTED=$(python -c "import os; print(os.environ['RUNNER_OS'].lower())")
-      #     export REF_NAME_FORMATTED=$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
-
-      #     export COILED_SOFTWARE_NAME_HEAD=dask-engineering/coiled-runtime-$GITHUB_EVENT_NAME
-      #     export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-$OS_FORMATTED-py$PYTHON_VERSION_FORMATTED
-      #     if [[ ${{ github.event_name }} = 'pull_request' ]]
-      #     then
-      #       export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-${{ github.event.number }}-$COILED_SOFTWARE_NAME_TAIL
-      #     else
-      #       export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
-      #     fi
-
-      #     echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
-      #     # Put COILED_SOFTWARE_NAME into $GITHUB_ENV so it can be used in subsequent workflow steps
-      #     echo COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME >> $GITHUB_ENV
-
-      #     coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
-
-      # - name: Run coiled runtime tests
-      #   continue-on-error: true
-      #   id: runtime_tests
-      #   env:
-      #       DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-      #       AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-      #       AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}            
-      #   run: |
-      #     # Ensure we run additional tests when testing the latest coiled-runtime
-      #     if [[ ${{ matrix.runtime-version }} = 'latest' ]]
-      #     then
-      #       export EXTRA_OPTIONS="--run-latest"
-      #       export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
-      #     else
-      #       export EXTRA_OPTIONS=" "
-      #     fi
-
-      #     python -m pytest $EXTRA_OPTIONS tests/runtime
+          python -m pytest $EXTRA_OPTIONS tests/runtime
 
       # - name: Run h2o benchmarking tests
       #   continue-on-error: true
