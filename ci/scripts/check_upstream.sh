@@ -1,3 +1,7 @@
+set -o errexit
+set -o nounset
+set -o xtrace
+
 COMMIT="$(git log -n 1 --pretty=format:%s HEAD^2)"
 if [[ "$COMMIT" == *"test-upstream"* ]]
 then
