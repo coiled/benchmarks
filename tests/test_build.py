@@ -6,7 +6,6 @@ import shlex
 import subprocess
 
 import coiled
-import conda.cli.python_api as Conda
 import dask
 import pytest
 import yaml
@@ -15,6 +14,8 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from packaging.requirements import Requirement, SpecifierSet
 from packaging.version import Version
 
+Conda = pytest.importorskip("conda.cli.python_api", reason="Conda is not available")
+pytestmark = Conda
 
 def get_conda_installed_versions() -> dict[str, str]:
     """Get conda list packages in a list, and strip headers"""
