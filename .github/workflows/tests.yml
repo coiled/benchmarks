@@ -37,7 +37,7 @@ jobs:
         #     os: "macos-latest"
         os: ["ubuntu-latest"]
         python-version: ["3.9"]
-        runtime-version: ["latest"]
+        runtime-version: ["latest", "0.0.3"]
 
     steps:
       - uses: actions/checkout@v2
@@ -131,7 +131,7 @@ jobs:
         #     os: "macos-latest"
         os: ["ubuntu-latest"]
         python-version: ["3.9"]
-        runtime-version: ["latest"]
+        runtime-version: ["latest", "0.0.3"]
 
     steps:
       - uses: actions/checkout@v2
@@ -224,7 +224,7 @@ jobs:
         #     os: "macos-latest"
         os: ["ubuntu-latest"]
         python-version: ["3.9"]
-        runtime-version: ["latest"]
+        runtime-version: ["latest", "0.0.3"]
 
     steps:
       - uses: actions/checkout@v2
