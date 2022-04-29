@@ -27,7 +27,8 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.9"]
-        runtime-version: ["latest"]
+    outputs:
+      coiled_software: ${{ steps.build_coiled_software.outputs.coiled_software }}
 
     steps:
       - uses: actions/checkout@v2
@@ -46,7 +47,7 @@ jobs:
 
       - name: Install coiled-runtime
         env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          COILED_RUNTIME_VERSION: "latest"
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Build Coiled Software Environment
@@ -72,9 +73,6 @@ jobs:
 
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
           coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
-
-    outputs:
-      coiled_software: ${{ steps.build_coiled_software.outputs.coiled_software }}
 
   tests_runtime:
     name: Runtime ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
@@ -134,6 +132,7 @@ jobs:
             AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
             COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+            COILED_SOFWARE_NAME: ${{ needs.build_software.outputs.coiled_software }}
         run: bash ci/scripts/run_tests.sh tests/runtime
 
   tests_benchmarking:
@@ -193,6 +192,8 @@ jobs:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
             AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+            COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+            COILED_SOFWARE_NAME: ${{ needs.build_software.outputs.coiled_software }}
         run: bash ci/scripts/run_tests.sh tests/benchmarks
 
   tests_stability:
@@ -252,6 +253,8 @@ jobs:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
             AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+            COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+            COILED_SOFWARE_NAME: ${{ needs.build_software.outputs.coiled_software }}
         run: bash ci/scripts/run_tests.sh tests/stability
 
 
