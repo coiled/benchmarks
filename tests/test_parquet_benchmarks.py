@@ -54,6 +54,7 @@ def read_write_engines():
     )
 
 
+@pytest.mark.super_slow
 def test_read_parquet_split_row_groups(engine: str, small_client: Client) -> None:
     """
     This dataset is ~600 GiB on disk. It has no _metadata. Individual files range from
@@ -97,9 +98,6 @@ def test_read_parquet(engine: str, small_client: Client) -> None:
                 pytest.fail(res.result(), False)
 
 
-@pytest.mark.xfail(
-    reason="gcsfs is not installed in the software environment", strict=True
-)
 def test_read_parquet_google_cloud(engine: str, small_client: Client) -> None:
     """This dataset lives on Google Cloud."""
     df = dd.read_parquet(

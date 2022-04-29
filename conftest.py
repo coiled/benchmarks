@@ -26,6 +26,14 @@ def pytest_addoption(parser):
     parser.addoption(
         "--run-latest", action="store_true", help="Run latest coiled-runtime tests"
     )
+    parser.addoption(
+        "--run-super-slow", action="store_true", help="run super slow tests"
+    )
+
+
+def pytest_runtest_setup(item):
+    if "super_slow" in item.keywords and not item.config.getoption("--run-super-slow"):
+        pytest.skip("need --run-super-slow option to run")
 
 
 def pytest_collection_modifyitems(config, items):
