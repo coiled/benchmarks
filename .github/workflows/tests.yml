@@ -50,6 +50,7 @@ jobs:
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Build Coiled Software Environment
+        id: build_coiled_software
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
@@ -65,16 +66,15 @@ jobs:
           else
             export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
           fi
+
+          # Put COILED_SOFTWARE_NAME into an output variable so it can be used in subsequent workflow jobs
+          echo "::set-output name=coiled_software::$COILED_SOFTWARE_NAME"
+
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
           coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
-          # Put COILED_SOFTWARE_NAME into an environment file so it can be used in subsequent workflow jobs
-          cat <<< "export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME >> $GITHUB_ENV" > set_coiled_software_env.sh
 
-      - name: Upload math result for job 1
-        uses: actions/upload-artifact@v3
-        with:
-          name: coiled_software_env
-          path: set_coiled_software_env.sh
+    outputs:
+      coiled_software: ${{ steps.build_coiled_software.outputs.coiled_software }}
 
   # tests_runtime:
   #   name: Runtime ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
@@ -335,6 +335,9 @@ jobs:
         python-version: ["3.9"]
         runtime-version: ["latest"]
     steps:
+      - name: Print outputs
+        run: echo "${{ needs.build_software.outputs }}"
+
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -354,21 +357,10 @@ jobs:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
         run: bash ci/scripts/install_coiled_runtime.sh
 
-      - name: Get Coiled Software Environment from build artefact
-        uses: actions/download-artifact@v3
-        with:
-          name: coiled_software_env
-
-      - name: Set Coiled Software Environment name
-        shell: bash
-        run: |
-          cat set_coiled_software_env.sh &&
-          bash set_coiled_software_env.sh
-
       - name: Remove Coiled software environment
         if: always() && ${{ matrix.runtime-version == 'latest' }}
         env:
-            COILED_SOFTWARE_NAME: ${{ env.COILED_SOFTWARE_NAME }}
+            COILED_SOFTWARE_NAME: ${{ needs.build_software.outputs.coiled_software }}
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: bash ci/scripts/remove_coiled_env.sh
 
