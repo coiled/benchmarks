@@ -132,7 +132,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: conda-environment-file
-          path: latest.yaml
 
       - name: Install coiled-runtime
         env:
@@ -182,7 +181,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: conda-environment-file
-          path: latest.yaml
 
       - name: Install coiled-runtime
         env:
@@ -242,7 +240,6 @@ jobs:
         uses: actions/download-artifact@v3
         with:
           name: conda-environment-file
-          path: latest.yaml
 
       - name: Install coiled-runtime
         env:
