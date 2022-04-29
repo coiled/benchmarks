@@ -23,6 +23,11 @@ jobs:
         python-version: ["3.9"]
         runtime-version: ["latest"]
 
+    # Required shell entrypoint to have properly activated conda environments
+    defaults:
+      run:
+        shell: bash -l {0}
+
     steps:
       - uses: actions/checkout@v2
         with:

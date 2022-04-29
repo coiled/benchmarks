@@ -7,8 +7,8 @@ set -o xtrace
 
 if [[ "$COILED_RUNTIME_VERSION" = 'latest' ]]
 then
-  mamba run python ci/create_latest_runtime_meta.py
-  mamba env update -n test --file latest.yaml
+  python ci/create_latest_runtime_meta.py
+  mamba env update --file latest.yaml
 else
   mamba install -c conda-forge coiled-runtime=$COILED_RUNTIME_VERSION
 fi
