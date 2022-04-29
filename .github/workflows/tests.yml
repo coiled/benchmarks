@@ -79,7 +79,6 @@ jobs:
     needs: build_software
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
-    # Required shell entrypoint to have properly activated conda environments
     strategy:
       fail-fast: false
       matrix:
@@ -140,7 +139,6 @@ jobs:
     needs: build_software
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
-    # Required shell entrypoint to have properly activated conda environments
     strategy:
       fail-fast: false
       matrix:
@@ -201,7 +199,6 @@ jobs:
     needs: build_software
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
-    # Required shell entrypoint to have properly activated conda environments
     strategy:
       fail-fast: false
       matrix:
@@ -257,40 +254,24 @@ jobs:
             COILED_SOFWARE_NAME: ${{ needs.build_software.outputs.coiled_software }}
         run: bash ci/scripts/run_tests.sh tests/stability
 
-
-
-
-  remove_software:
+  cleanup:
     needs: [build_software, tests_runtime, tests_benchmarking, tests_stability]
-    name: Remove coiled software environment
+    name: Cleanup
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
-      matrix:
-        python-version: ["3.9"]
-        runtime-version: ["latest"]
     steps:
       - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
         with:
-          fetch-depth: 0
+          python-version: "3.9"
 
-      - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-variant: Mambaforge
-          use-mamba: true
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install dependencies
-        run: mamba install boa conda-verify jinja2 packaging pytest
-
-      - name: Install coiled-runtime
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-        run: bash ci/scripts/install_coiled_runtime.sh
+      - name: Install coiled
+        run: python -m pip install coiled
 
       - name: Remove Coiled software environment
-        if: always() && ${{ matrix.runtime-version == 'latest' }}
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: coiled env delete ${{ needs.build_software.outputs.coiled_software }}
