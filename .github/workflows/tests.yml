@@ -124,9 +124,6 @@ jobs:
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          PYTHON_VERSION: ${{ matrix.python-version }}
         run: bash ci/scripts/export_conda_env.sh
 
       - name: Run Coiled Runtime Tests
@@ -137,17 +134,7 @@ jobs:
             AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
             COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-        run: |
-          # Ensure we run additional tests when testing the latest coiled-runtime
-          if [[ $COILED_RUNTIME_VERSION = 'latest' ]]
-          then
-            export EXTRA_OPTIONS="--run-latest"
-            export COILED_SOFTWARE_NAME=${{ needs.build_software.outputs.coiled_software }}
-          else
-            export EXTRA_OPTIONS=" "
-          fi
-
-          python -m pytest $EXTRA_OPTIONS tests/runtime
+        run: bash ci/scripts/run_tests.sh tests/runtime
 
   tests_benchmarking:
     name: Benchmarks ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
@@ -197,9 +184,6 @@ jobs:
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          PYTHON_VERSION: ${{ matrix.python-version }}
         run: bash ci/scripts/export_conda_env.sh
 
       - name: Run benchmarking tests
@@ -209,17 +193,7 @@ jobs:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
             AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-        run: |
-          # Ensure we run additional tests when testing the latest coiled-runtime
-          if [[ ${{ matrix.runtime-version }} = 'latest' ]]
-          then
-            export EXTRA_OPTIONS="--run-latest"
-            export COILED_SOFTWARE_NAME=${{ needs.build_software.outputs.coiled_software }}
-          else
-            export EXTRA_OPTIONS=" "
-          fi
-
-          python -m pytest $EXTRA_OPTIONS tests/benchmarks
+        run: bash ci/scripts/run_tests.sh tests/benchmarks
 
   tests_stability:
     name: Stability ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
@@ -269,9 +243,6 @@ jobs:
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          PYTHON_VERSION: ${{ matrix.python-version }}
         run: bash ci/scripts/export_conda_env.sh
 
       - name: Run stability tests
@@ -281,17 +252,7 @@ jobs:
             DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
             AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
             AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-        run: |
-          # Ensure we run additional tests when testing the latest coiled-runtime
-          if [[ ${{ matrix.runtime-version }} = 'latest' ]]
-          then
-            export EXTRA_OPTIONS="--run-latest"
-            export COILED_SOFTWARE_NAME=${{ needs.build_software.outputs.coiled_software }}
-          else
-            export EXTRA_OPTIONS=" "
-          fi
-
-          python -m pytest $EXTRA_OPTIONS tests/stability
+        run: bash ci/scripts/run_tests.sh tests/stability
 
 
 
