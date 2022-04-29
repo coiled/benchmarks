@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+import dask
 import dask.dataframe as dd
 from dask import datasets
 from dask.distributed import wait
@@ -61,11 +62,18 @@ def test_read_parquet_split_row_groups(engine: str, small_client: Client) -> Non
     a few hundred MiB to a few GiB on disk, with varying numbers of row groups per file.
     This means we need to use `split_row_groups=True` to avoid too-large partitions.
     """
+    kwargs: dict[str, bool | None] = {"split_row_groups": True}
+    dask_version = tuple(
+        int(v) for v in dask.__version__.split("+")[0].split(".", maxsplit=2)
+    )
+    if dask_version >= (2022, 4, 2):
+        kwargs["parquet_file_extension"] = None
+    else:
+        kwargs["require_extension"] = False
     df = dd.read_parquet(
         "s3://daylight-openstreetmap/parquet/osm_elements/release=v1.10/**",
         engine=engine,
-        require_extension=False,
-        split_row_groups=True,
+        **kwargs,
     )
     result = wait(df.persist())
     assert not result.not_done
