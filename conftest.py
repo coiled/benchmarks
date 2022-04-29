@@ -6,9 +6,10 @@ import subprocess
 import sys
 import uuid
 
-import dask
 import pytest
 import s3fs
+
+import dask
 from dask.distributed import Client
 
 try:
