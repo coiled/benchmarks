@@ -68,6 +68,7 @@ jobs:
           echo "::set-output name=coiled_software::$COILED_SOFTWARE_NAME"
 
           # Create conda environment.yaml file for the latest software environment
+          mamba install coiled
           python ci/create_latest_runtime_meta.py
 
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
