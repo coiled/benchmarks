@@ -76,257 +76,226 @@ jobs:
     outputs:
       coiled_software: ${{ steps.build_coiled_software.outputs.coiled_software }}
 
-  # tests_runtime:
-  #   name: Runtime ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-  #   needs: coiled_software
-  #   runs-on: ${{ matrix.os }}
-  #   timeout-minutes: 120
-  #   # Required shell entrypoint to have properly activated conda environments
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       # os: ["ubuntu-latest"]
-  #       # python-version: ["3.7", "3.8", "3.9"]
-  #       # runtime-version: ["latest", "0.0.3"]
-  #       # include:
-  #       #   - python-version: "3.9"
-  #       #     runtime-version: "latest"
-  #       #     os: "windows-latest"
-  #       #   - python-version: "3.9"
-  #       #     runtime-version: "latest"
-  #       #     os: "macos-latest"
-  #       os: ["ubuntu-latest"]
-  #       python-version: ["3.9"]
-  #       runtime-version: ["latest", "0.0.3"]
+  tests_runtime:
+    name: Runtime ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    needs: build_software
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    # Required shell entrypoint to have properly activated conda environments
+    strategy:
+      fail-fast: false
+      matrix:
+        # os: ["ubuntu-latest"]
+        # python-version: ["3.7", "3.8", "3.9"]
+        # runtime-version: ["latest", "0.0.3"]
+        # include:
+        #   - python-version: "3.9"
+        #     runtime-version: "latest"
+        #     os: "windows-latest"
+        #   - python-version: "3.9"
+        #     runtime-version: "latest"
+        #     os: "macos-latest"
+        os: ["ubuntu-latest"]
+        python-version: ["3.9"]
+        runtime-version: ["latest", "0.0.3"]
 
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-  #     - name: Set up environment
-  #       uses: conda-incubator/setup-miniconda@v2
-  #       with:
-  #         miniforge-variant: Mambaforge
-  #         use-mamba: true
-  #         python-version: ${{ matrix.python-version }}
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: ${{ matrix.python-version }}
 
-  #     - name: Install dependencies
-  #       run: mamba install boa conda-verify jinja2 packaging pytest
+      - name: Install dependencies
+        run: mamba install boa conda-verify jinja2 packaging pytest
 
-  #     - name: Check upstream
-  #       if: github.event_name == 'pull_request' && matrix.runtime-version == 'latest'
-  #       run: bash ci/scripts/check_upstream.sh
+      - name: Check upstream
+        if: github.event_name == 'pull_request' && matrix.runtime-version == 'latest'
+        run: bash ci/scripts/check_upstream.sh
 
-  #     - name: Install coiled-runtime
-  #       env:
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #       run: bash ci/scripts/install_coiled_runtime.sh
+      - name: Install coiled-runtime
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: bash ci/scripts/install_coiled_runtime.sh
 
-  #     - name: Export environment
-  #       env:
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #         PYTHON_VERSION: ${{ matrix.python-version }}
-  #       run: bash ci/scripts/export_conda_env.sh
+      - name: Export environment
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: bash ci/scripts/export_conda_env.sh
 
-  #     - name: Run Coiled Runtime Tests
-  #       continue-on-error: true
-  #       id: test
-  #       env:
-  #           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-  #           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-  #           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-  #           COILED_SOFTWARE_NAME: ${{ env.COILED_SOFTWARE_NAME }}
-  #           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #       run: |
-  #         # Ensure we run additional tests when testing the latest coiled-runtime
-  #         if [[ $COILED_RUNTIME_VERSION = 'latest' ]]
-  #         then
-  #           export EXTRA_OPTIONS="--run-latest"
-  #         else
-  #           export EXTRA_OPTIONS=" "
-  #         fi
+      - name: Run Coiled Runtime Tests
+        continue-on-error: true
+        id: test
+        env:
+            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+            COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: |
+          # Ensure we run additional tests when testing the latest coiled-runtime
+          if [[ $COILED_RUNTIME_VERSION = 'latest' ]]
+          then
+            export EXTRA_OPTIONS="--run-latest"
+            export COILED_SOFTWARE_NAME=${{ needs.build_software.outputs.coiled_software }}
+          else
+            export EXTRA_OPTIONS=" "
+          fi
 
-  #         python -m pytest $EXTRA_OPTIONS tests/runtime
+          python -m pytest $EXTRA_OPTIONS tests/runtime
 
-  # tests_benchmarking:
-  #   name: Benchmarks ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-  #   runs-on: ${{ matrix.os }}
-  #   timeout-minutes: 120
-  #   # Required shell entrypoint to have properly activated conda environments
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       # os: ["ubuntu-latest"]
-  #       # python-version: ["3.7", "3.8", "3.9"]
-  #       # runtime-version: ["latest", "0.0.3"]
-  #       # include:
-  #       #   - python-version: "3.9"
-  #       #     runtime-version: "latest"
-  #       #     os: "windows-latest"
-  #       #   - python-version: "3.9"
-  #       #     runtime-version: "latest"
-  #       #     os: "macos-latest"
-  #       os: ["ubuntu-latest"]
-  #       python-version: ["3.9"]
-  #       runtime-version: ["latest", "0.0.3"]
+  tests_benchmarking:
+    name: Benchmarks ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    # Required shell entrypoint to have properly activated conda environments
+    strategy:
+      fail-fast: false
+      matrix:
+        # os: ["ubuntu-latest"]
+        # python-version: ["3.7", "3.8", "3.9"]
+        # runtime-version: ["latest", "0.0.3"]
+        # include:
+        #   - python-version: "3.9"
+        #     runtime-version: "latest"
+        #     os: "windows-latest"
+        #   - python-version: "3.9"
+        #     runtime-version: "latest"
+        #     os: "macos-latest"
+        os: ["ubuntu-latest"]
+        python-version: ["3.9"]
+        runtime-version: ["latest", "0.0.3"]
 
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-  #     - name: Set up environment
-  #       uses: conda-incubator/setup-miniconda@v2
-  #       with:
-  #         miniforge-variant: Mambaforge
-  #         use-mamba: true
-  #         python-version: ${{ matrix.python-version }}
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: ${{ matrix.python-version }}
 
-  #     - name: Install dependencies
-  #       run: mamba install boa conda-verify jinja2 packaging pytest
+      - name: Install dependencies
+        run: mamba install boa conda-verify jinja2 packaging pytest
 
-  #     - name: Check upstream
-  #       if: github.event_name == 'pull_request' && matrix.runtime-version == 'latest'
-  #       run: bash ci/scripts/check_upstream.sh
+      - name: Check upstream
+        if: github.event_name == 'pull_request' && matrix.runtime-version == 'latest'
+        run: bash ci/scripts/check_upstream.sh
 
-  #     - name: Install coiled-runtime
-  #       env:
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #       run: bash ci/scripts/install_coiled_runtime.sh
+      - name: Install coiled-runtime
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: bash ci/scripts/install_coiled_runtime.sh
 
-  #     - name: Export environment
-  #       env:
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #         PYTHON_VERSION: ${{ matrix.python-version }}
-  #       run: bash ci/scripts/export_conda_env.sh
+      - name: Export environment
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: bash ci/scripts/export_conda_env.sh
 
-  #     - name: Build Coiled Software Environment
-  #       if: ${{ matrix.runtime-version == 'latest' }}
-  #       env:
-  #         DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-  #         GITHUB_EVENT_NAME: ${{ github.event_name }}
-  #         GITHUB_EVENT_NUMBER: ${{ github.event.number }}
-  #         PYTHON_VERSION: ${{ matrix.python-version }}
-  #         TEST_NAME: benchmarking
-  #       run: bash ci/scripts/build_coiled_env.sh
+      - name: Run benchmarking tests
+        continue-on-error: true
+        id: benchmarking_tests
+        env:
+            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+        run: |
+          # Ensure we run additional tests when testing the latest coiled-runtime
+          if [[ ${{ matrix.runtime-version }} = 'latest' ]]
+          then
+            export EXTRA_OPTIONS="--run-latest"
+            export COILED_SOFTWARE_NAME=${{ needs.build_software.outputs.coiled_software }}
+          else
+            export EXTRA_OPTIONS=" "
+          fi
 
+          python -m pytest $EXTRA_OPTIONS tests/benchmarks
 
-  #     - name: Run benchmarking tests
-  #       continue-on-error: true
-  #       id: benchmarking_tests
-  #       env:
-  #           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-  #           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-  #           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-  #       run: |
-  #         # Ensure we run additional tests when testing the latest coiled-runtime
-  #         if [[ ${{ matrix.runtime-version }} = 'latest' ]]
-  #         then
-  #           export EXTRA_OPTIONS="--run-latest"
-  #           export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
-  #         else
-  #           export EXTRA_OPTIONS=" "
-  #         fi
+  tests_stability:
+    name: Stability ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    # Required shell entrypoint to have properly activated conda environments
+    strategy:
+      fail-fast: false
+      matrix:
+        # os: ["ubuntu-latest"]
+        # python-version: ["3.7", "3.8", "3.9"]
+        # runtime-version: ["latest", "0.0.3"]
+        # include:
+        #   - python-version: "3.9"
+        #     runtime-version: "latest"
+        #     os: "windows-latest"
+        #   - python-version: "3.9"
+        #     runtime-version: "latest"
+        #     os: "macos-latest"
+        os: ["ubuntu-latest"]
+        python-version: ["3.9"]
+        runtime-version: ["latest", "0.0.3"]
 
-  #         python -m pytest $EXTRA_OPTIONS tests/benchmarks
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-  #     - name: Remove Coiled software environment
-  #       if: ${{ matrix.runtime-version == 'latest' }}
-  #       env:
-  #           COILED_SOFTWARE_NAME: ${{ env.COILED_SOFTWARE_NAME }}
-  #           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-  #           OUTCOME: ${{ steps.benchmarking_tests.outcome }}
-  #       run: bash ci/scripts/remove_coiled_env.sh
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: ${{ matrix.python-version }}
 
-  # tests_stability:
-  #   name: Stability ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-  #   runs-on: ${{ matrix.os }}
-  #   timeout-minutes: 120
-  #   # Required shell entrypoint to have properly activated conda environments
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       # os: ["ubuntu-latest"]
-  #       # python-version: ["3.7", "3.8", "3.9"]
-  #       # runtime-version: ["latest", "0.0.3"]
-  #       # include:
-  #       #   - python-version: "3.9"
-  #       #     runtime-version: "latest"
-  #       #     os: "windows-latest"
-  #       #   - python-version: "3.9"
-  #       #     runtime-version: "latest"
-  #       #     os: "macos-latest"
-  #       os: ["ubuntu-latest"]
-  #       python-version: ["3.9"]
-  #       runtime-version: ["latest", "0.0.3"]
+      - name: Install dependencies
+        run: mamba install boa conda-verify jinja2 packaging pytest
 
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
+      - name: Check upstream
+        if: github.event_name == 'pull_request' && matrix.runtime-version == 'latest'
+        run: bash ci/scripts/check_upstream.sh
 
-  #     - name: Set up environment
-  #       uses: conda-incubator/setup-miniconda@v2
-  #       with:
-  #         miniforge-variant: Mambaforge
-  #         use-mamba: true
-  #         python-version: ${{ matrix.python-version }}
+      - name: Install coiled-runtime
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: bash ci/scripts/install_coiled_runtime.sh
 
-  #     - name: Install dependencies
-  #       run: mamba install boa conda-verify jinja2 packaging pytest
+      - name: Export environment
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          PYTHON_VERSION: ${{ matrix.python-version }}
+        run: bash ci/scripts/export_conda_env.sh
 
-  #     - name: Check upstream
-  #       if: github.event_name == 'pull_request' && matrix.runtime-version == 'latest'
-  #       run: bash ci/scripts/check_upstream.sh
+      - name: Run stability tests
+        continue-on-error: true
+        id: stability_tests
+        env:
+            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+            AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+            AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+        run: |
+          # Ensure we run additional tests when testing the latest coiled-runtime
+          if [[ ${{ matrix.runtime-version }} = 'latest' ]]
+          then
+            export EXTRA_OPTIONS="--run-latest"
+            export COILED_SOFTWARE_NAME=${{ needs.build_software.outputs.coiled_software }}
+          else
+            export EXTRA_OPTIONS=" "
+          fi
 
-  #     - name: Install coiled-runtime
-  #       env:
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #       run: bash ci/scripts/install_coiled_runtime.sh
-
-  #     - name: Export environment
-  #       env:
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #         PYTHON_VERSION: ${{ matrix.python-version }}
-  #       run: bash ci/scripts/export_conda_env.sh
-
-  #     - name: Build Coiled Software Environment
-  #       if: ${{ matrix.runtime-version == 'latest' }}
-  #       env:
-  #         DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-  #         GITHUB_EVENT_NAME: ${{ github.event_name }}
-  #         GITHUB_EVENT_NUMBER: ${{ github.event.number }}
-  #         PYTHON_VERSION: ${{ matrix.python-version }}
-  #         TEST_NAME: stability
-  #       run: bash ci/scripts/build_coiled_env.sh
-
-
-  #     - name: Run stability tests
-  #       continue-on-error: true
-  #       id: stability_tests
-  #       env:
-  #           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-  #           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-  #           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-  #       run: |
-  #         # Ensure we run additional tests when testing the latest coiled-runtime
-  #         if [[ ${{ matrix.runtime-version }} = 'latest' ]]
-  #         then
-  #           export EXTRA_OPTIONS="--run-latest"
-  #           export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
-  #         else
-  #           export EXTRA_OPTIONS=" "
-  #         fi
-
-  #         python -m pytest $EXTRA_OPTIONS tests/stability
+          python -m pytest $EXTRA_OPTIONS tests/stability
 
 
 
 
   remove_software:
-    # needs: [tests_runtime, tests_benchmarking, tests_stability]
-    needs: build_software
+    needs: [build_software, tests_runtime, tests_benchmarking, tests_stability]
     name: Remove coiled software environment
     runs-on: ubuntu-latest
     strategy:
@@ -335,9 +304,6 @@ jobs:
         python-version: ["3.9"]
         runtime-version: ["latest"]
     steps:
-      - name: Print outputs
-        run: echo "${{ needs.build_software.outputs }}"
-
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
@@ -359,10 +325,7 @@ jobs:
 
       - name: Remove Coiled software environment
         if: always() && ${{ matrix.runtime-version == 'latest' }}
-        env:
-            COILED_SOFTWARE_NAME: ${{ needs.build_software.outputs.coiled_software }}
-            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-        run: bash ci/scripts/remove_coiled_env.sh
+        run: coiled env delete ${{ needs.build_software.outputs.coiled_software }}
 
   # report:
   #   name: report
