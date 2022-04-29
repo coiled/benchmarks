@@ -31,6 +31,7 @@ jobs:
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
         with:
+          activate-environment: test
           miniforge-variant: Mambaforge
           use-mamba: true
           python-version: ${{ matrix.python-version }}
@@ -330,13 +331,16 @@ jobs:
   remove_software:
     # needs: [tests_runtime, tests_benchmarking, tests_stability]
     needs: build_software
+    name: Remove coiled software environment
     runs-on: ubuntu-latest
     steps:
-      - name: Download math result for job 1
+      - name: Get Coiled Software Environment from build artefact
         uses: actions/download-artifact@v3
         with:
           name: coiled_software_env
-      - shell: bash
+
+      - name: Set Coiled Software Environment name
+        shell: bash
         run: source set_coiled_software_env.sh
 
       - name: Remove Coiled software environment
