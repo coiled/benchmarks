@@ -88,7 +88,7 @@ jobs:
           echo "::set-output name=coiled_software::$COILED_SOFTWARE_NAME"
           # Workaround for GitHub Actions outputs not supporting multiline strings
           # https://github.com/actions/toolkit/issues/403
-          export ENV_FILE="${ENV_FILE//$'\n'/'%0A'}"
+          export ENV_FILE="${ENV_FILE//$'\n'/<newline>}"
           echo "::set-output name=env_file::$ENV_FILE"
 
 
