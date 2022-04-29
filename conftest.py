@@ -17,8 +17,6 @@ except ImportError:
     from coiled._beta import ClusterBeta as Cluster
 
 
-raise ValueError("asdfV")
-
 # So coiled logs can be displayed on test failure
 logging.getLogger("coiled").setLevel(logging.INFO)
 
