@@ -86,6 +86,9 @@ jobs:
 
           # Put COILED_SOFTWARE_NAME and ENV_FILE into an output variable so it can be used in subsequent workflow jobs
           echo "::set-output name=coiled_software::$COILED_SOFTWARE_NAME"
+          # Workaround for GitHub Actions outputs not supporting multiline strings
+          # https://github.com/actions/toolkit/issues/403
+          export ENV_FILE="${ENV_FILE//$'\n'/'%0A'}"
           echo "::set-output name=env_file::$ENV_FILE"
 
 
