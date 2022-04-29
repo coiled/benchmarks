@@ -52,10 +52,9 @@ jobs:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
-          export OS_FORMATTED=$(python -c "import os; print(os.environ['RUNNER_OS'].lower())")
           export REF_NAME_FORMATTED=$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
           export COILED_SOFTWARE_NAME_HEAD=dask-engineering/coiled-runtime-${{ github.event_name }}
-          export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-$OS_FORMATTED-py$PYTHON_VERSION_FORMATTED
+          export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-py$PYTHON_VERSION_FORMATTED
 
           if [[ ${{ github.event_name }} = 'pull_request' ]]
           then
