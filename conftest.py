@@ -6,6 +6,7 @@ import subprocess
 import sys
 import uuid
 
+import coiled
 import dask
 import pytest
 import s3fs
@@ -35,6 +36,9 @@ def pytest_collection_modifyitems(config, items):
     for item in items:
         if "latest_runtime" in item.keywords:
             item.add_marker(skip_latest)
+
+
+UNIQUE_ID = uuid.uuid4().hex[:8]
 
 
 def get_software():
@@ -69,7 +73,7 @@ dask.config.set(
 def small_cluster(request):
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
-        name=f"{module}-{uuid.uuid4().hex[:8]}",
+        name=f"{module}-{UNIQUE_ID}",
         n_workers=10,
         worker_memory="8 GiB",
         worker_vm_types=["m5.large"],
@@ -79,12 +83,13 @@ def small_cluster(request):
 
 
 @pytest.fixture
-def small_client(small_cluster):
+def small_client(small_cluster, request):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
         client.restart()
-        yield client
+        with coiled.performance_report(f"{request.node.originalname}-{UNIQUE_ID}.html"):
+            yield client
 
 
 S3_REGION = "us-east-2"
@@ -117,7 +122,7 @@ def s3_scratch(s3):
 
 @pytest.fixture(scope="function")
 def s3_url(s3, s3_scratch, request):
-    url = f"{s3_scratch}/{request.node.originalname}-{uuid.uuid4().hex}"
+    url = f"{s3_scratch}/{request.node.originalname}-{UNIQUE_ID}"
     s3.mkdirs(url, exist_ok=False)
     yield url
     s3.rm(url, recursive=True)
