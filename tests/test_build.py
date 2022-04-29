@@ -10,6 +10,7 @@ import conda.cli.python_api as Conda
 import dask
 import pytest
 import yaml
+from distributed import Client
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from packaging.requirements import Requirement, SpecifierSet
 from packaging.version import Version
@@ -74,3 +75,20 @@ def test_latest_coiled():
     v_latest = Version(result["coiled"][-1]["version"])
 
     assert v_installed == v_latest
+
+
+def conda_name(package):
+    if package == "msgpack":
+        return "msgpack-python"
+    elif package == "blosc":
+        return "python-blosc"
+    return package
+
+
+def test_version_warning_packages():
+    meta_specifiers = get_meta_specifiers()
+    with Client() as client:
+        info = client.get_versions()
+        packages = info["client"]["packages"].keys()
+        packages = [conda_name(p) for p in packages]
+        assert all(p in meta_specifiers for p in packages)
