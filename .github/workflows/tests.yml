@@ -28,6 +28,7 @@ jobs:
         python-version: ["3.9"]
     outputs:
       coiled_software: ${{ steps.build_coiled_software.outputs.coiled_software }}
+      env_file: ${{ steps.build_coiled_software.outputs.env_file }}
 
     steps:
       - uses: actions/checkout@v2
@@ -44,7 +45,18 @@ jobs:
 
       - name: Check upstream
         if: github.event_name == 'pull_request'
-        run: bash ci/scripts/check_upstream.sh
+        run: |
+          COMMIT="$(git log -n 1 --pretty=format:%s HEAD^2)"
+          if [[ "$COMMIT" == *"test-upstream"* ]]
+          then
+            export TEST_UPSTREAM="true"
+          else
+            export TEST_UPSTREAM="false"
+          fi
+          echo $TEST_UPSTREAM
+
+          # Put TEST_UPSTREAM into $GITHUB_ENV so it can be used in subsequent workflow steps
+          echo TEST_UPSTREAM=$TEST_UPSTREAM >> $GITHUB_ENV
 
       - name: Build Coiled Software Environment
         id: build_coiled_software
@@ -64,14 +76,17 @@ jobs:
           fi
 
           # Create conda environment.yaml file for the latest software environment
-          mamba install coiled
           python ci/create_latest_runtime_meta.py
+          export ENV_FILE=$(cat latest.yaml)
+          echo "Using conda environment file:\n$ENV_FILE"
 
+          mamba install coiled
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
           coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
 
-          # Put COILED_SOFTWARE_NAME into an output variable so it can be used in subsequent workflow jobs
+          # Put COILED_SOFTWARE_NAME and ENV_FILE into an output variable so it can be used in subsequent workflow jobs
           echo "::set-output name=coiled_software::$COILED_SOFTWARE_NAME"
+          echo "::set-output name=env_file::$ENV_FILE"
 
 
   runtime:
@@ -112,6 +127,7 @@ jobs:
       - name: Install coiled-runtime
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          ENV_FILE: ${{ needs.software.outputs.env_file }}
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
@@ -155,6 +171,7 @@ jobs:
       - name: Install coiled-runtime
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          ENV_FILE: ${{ needs.software.outputs.env_file }}
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
@@ -208,6 +225,7 @@ jobs:
       - name: Install coiled-runtime
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          ENV_FILE: ${{ needs.software.outputs.env_file }}
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment

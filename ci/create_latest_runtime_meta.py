@@ -6,6 +6,7 @@ import pathlib
 import shlex
 import subprocess
 import sys
+from distutils.util import strtobool
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -39,7 +40,7 @@ def main():
 
     # Optionally use the development version of `dask` and `distributed`
     # from `dask/label/dev` conda channel
-    upstream = os.environ.get("TEST_UPSTREAM", False)
+    upstream = strtobool(os.environ.get("TEST_UPSTREAM", "false"))
     if upstream:
         upstream_packages = {"dask", "distributed"}
         for idx, req in enumerate(requirements):
