@@ -20,7 +20,7 @@ defaults:
 
 jobs:
   software:
-    name: Create Coiled Software Environment
+    name: Setup
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -75,7 +75,7 @@ jobs:
 
 
   runtime:
-    name: Runtime ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    name: Runtime - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
     needs: software
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -128,7 +128,7 @@ jobs:
         run: bash ci/scripts/run_tests.sh tests/runtime
 
   benchmarks:
-    name: Benchmarks ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    name: Benchmarks - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
     needs: software
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -171,7 +171,7 @@ jobs:
         run: bash ci/scripts/run_tests.sh tests/benchmarks
 
   stability:
-    name: Stability ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    name: Stability - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
     needs: software
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
