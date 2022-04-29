@@ -68,7 +68,7 @@ jobs:
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
           coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
           # Put COILED_SOFTWARE_NAME into an environment file so it can be used in subsequent workflow jobs
-          cat <<< "COILED_SOFTWARE=$COILED_SOFTWARE" > set_coiled_software_env.sh
+          cat <<< "export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME >> $GITHUB_ENV" > set_coiled_software_env.sh
 
       - name: Upload math result for job 1
         uses: actions/upload-artifact@v3
@@ -361,7 +361,9 @@ jobs:
 
       - name: Set Coiled Software Environment name
         shell: bash
-        run: source set_coiled_software_env.sh
+        run: |
+          cat set_coiled_software_env.sh &&
+          bash set_coiled_software_env.sh
 
       - name: Remove Coiled software environment
         if: always() && ${{ matrix.runtime-version == 'latest' }}
