@@ -1,0 +1,7 @@
+channels:
+  - conda-forge
+dependencies:
+  - jinja2
+  - packaging
+  - pytest
+  - python

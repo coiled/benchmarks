@@ -12,4 +12,4 @@ else
   unset COILED_SOFTWARE_NAME
 fi
 
-python -m pytest $EXTRA_OPTIONS tests/runtime "$@"
+python -m pytest $EXTRA_OPTIONS "$@"
