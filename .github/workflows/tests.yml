@@ -129,6 +129,7 @@ jobs:
           environment-file: ci/environment.yml
 
       - name: Download environment file
+        if: matrix.runtime-version == 'latest'
         uses: actions/download-artifact@v3
         with:
           name: conda-environment-file
@@ -178,6 +179,7 @@ jobs:
           environment-file: ci/environment.yml
 
       - name: Download environment file
+        if: matrix.runtime-version == 'latest'
         uses: actions/download-artifact@v3
         with:
           name: conda-environment-file
@@ -237,6 +239,7 @@ jobs:
           environment-file: ci/environment.yml
 
       - name: Download environment file
+        if: matrix.runtime-version == 'latest'
         uses: actions/download-artifact@v3
         with:
           name: conda-environment-file
