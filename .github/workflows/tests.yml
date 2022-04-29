@@ -61,9 +61,9 @@ jobs:
 
           if [[ ${{ github.event_name }} = 'pull_request' ]]
           then
-            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$TEST_NAME-${{ github.event.number }}-$COILED_SOFTWARE_NAME_TAIL
+            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-${{ github.event.number }}-$COILED_SOFTWARE_NAME_TAIL
           else
-            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$TEST_NAME-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
+            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
           fi
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
           coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
