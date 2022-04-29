@@ -77,19 +77,20 @@ jobs:
 
           # Create conda environment.yaml file for the latest software environment
           python ci/create_latest_runtime_meta.py
-          export ENV_FILE="$(cat latest.yaml)"
-          echo "Using conda environment file:\n$ENV_FILE"
+          cat latest.yaml
 
           mamba install coiled
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
           coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
 
-          # Put COILED_SOFTWARE_NAME and ENV_FILE into an output variable so it can be used in subsequent workflow jobs
+          # Put COILED_SOFTWARE_NAME into an output variable so it can be used in subsequent workflow jobs
           echo "::set-output name=coiled_software::$COILED_SOFTWARE_NAME"
-          # Workaround for GitHub Actions outputs not supporting multiline strings
-          # https://github.com/actions/toolkit/issues/403
-          export ENV_FILE="${ENV_FILE//$'\n'/<newline>}"
-          echo "::set-output name=env_file::$ENV_FILE"
+
+      - name: Upload environment file
+        uses: actions/upload-artifact@v3
+        with:
+          name: conda-environment-file
+          path: latest.yaml
 
 
   runtime:
@@ -126,6 +127,12 @@ jobs:
           use-mamba: true
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
+
+      - name: Download environment file
+        uses: actions/download-artifact@v3
+        with:
+          name: conda-environment-file
+          path: latest.yaml
 
       - name: Install coiled-runtime
         env:
@@ -170,6 +177,12 @@ jobs:
           use-mamba: true
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
+
+      - name: Download environment file
+        uses: actions/download-artifact@v3
+        with:
+          name: conda-environment-file
+          path: latest.yaml
 
       - name: Install coiled-runtime
         env:
@@ -224,6 +237,12 @@ jobs:
           use-mamba: true
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
+
+      - name: Download environment file
+        uses: actions/download-artifact@v3
+        with:
+          name: conda-environment-file
+          path: latest.yaml
 
       - name: Install coiled-runtime
         env:
