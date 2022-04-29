@@ -63,15 +63,16 @@ jobs:
             export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
           fi
 
-          # Put COILED_SOFTWARE_NAME into an output variable so it can be used in subsequent workflow jobs
-          echo "::set-output name=coiled_software::$COILED_SOFTWARE_NAME"
-
           # Create conda environment.yaml file for the latest software environment
           mamba install coiled
           python ci/create_latest_runtime_meta.py
 
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
           coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
+
+          # Put COILED_SOFTWARE_NAME into an output variable so it can be used in subsequent workflow jobs
+          echo "::set-output name=coiled_software::$COILED_SOFTWARE_NAME"
+
 
   runtime:
     name: Runtime ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
@@ -224,6 +225,7 @@ jobs:
 
   cleanup:
     needs: [software, runtime, benchmarks, stability]
+    if: always()
     name: Cleanup
     runs-on: ubuntu-latest
     strategy:
