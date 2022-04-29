@@ -77,7 +77,7 @@ jobs:
 
           # Create conda environment.yaml file for the latest software environment
           python ci/create_latest_runtime_meta.py
-          export ENV_FILE=$(cat latest.yaml)
+          export ENV_FILE="$(cat latest.yaml)"
           echo "Using conda environment file:\n$ENV_FILE"
 
           mamba install coiled
