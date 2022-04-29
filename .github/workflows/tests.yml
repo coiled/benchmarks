@@ -4,7 +4,7 @@ on:
     branches:
       - main
     tags:
-      - '*'
+      - "*"
   pull_request:
 
 # When this workflow is queued, automatically cancel any previous running
@@ -49,7 +49,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: mamba install boa conda-verify jinja2 packaging pytest
+        run: mamba install boa conda-verify jinja2 packaging pytest fastparquet
 
       - name: Check upstream
         if: github.event_name == 'pull_request' && matrix.runtime-version == 'latest'
@@ -115,9 +115,9 @@ jobs:
         continue-on-error: ${{ matrix.runtime-version == 'latest' }}
         id: tests
         env:
-            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-            AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-            AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
         run: |
           # Ensure we run additional tests when testing the latest coiled-runtime
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
@@ -133,7 +133,7 @@ jobs:
       - name: Remove Coiled software environment
         if: ${{ matrix.runtime-version == 'latest' }}
         env:
-            DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
           # Clean up an Coiled software environments we created just for this CI build
           export COILED_SOFTWARE_NAME=${{ env.COILED_SOFTWARE_NAME }}
