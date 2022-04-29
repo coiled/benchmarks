@@ -13,6 +13,12 @@ concurrency:
   group: ${{ github.ref }}
   cancel-in-progress: true
 
+defaults:
+  # Required shell entrypoint to have properly activated conda environments
+  run:
+    shell: bash -l {0}
+
+
 jobs:
   build_software:
     name: Create Coiled Software Environment
@@ -23,11 +29,6 @@ jobs:
         python-version: ["3.9"]
         runtime-version: ["latest"]
 
-    # Required shell entrypoint to have properly activated conda environments
-    defaults:
-      run:
-        shell: bash -l {0}
-
     steps:
       - uses: actions/checkout@v2
         with:
@@ -36,7 +37,6 @@ jobs:
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
         with:
-          activate-environment: test
           miniforge-variant: Mambaforge
           use-mamba: true
           python-version: ${{ matrix.python-version }}
@@ -82,9 +82,6 @@ jobs:
   #   runs-on: ${{ matrix.os }}
   #   timeout-minutes: 120
   #   # Required shell entrypoint to have properly activated conda environments
-  #   defaults:
-  #     run:
-  #       shell: bash -l {0}
   #   strategy:
   #     fail-fast: false
   #     matrix:
@@ -157,9 +154,6 @@ jobs:
   #   runs-on: ${{ matrix.os }}
   #   timeout-minutes: 120
   #   # Required shell entrypoint to have properly activated conda environments
-  #   defaults:
-  #     run:
-  #       shell: bash -l {0}
   #   strategy:
   #     fail-fast: false
   #     matrix:
@@ -250,9 +244,6 @@ jobs:
   #   runs-on: ${{ matrix.os }}
   #   timeout-minutes: 120
   #   # Required shell entrypoint to have properly activated conda environments
-  #   defaults:
-  #     run:
-  #       shell: bash -l {0}
   #   strategy:
   #     fail-fast: false
   #     matrix:
@@ -338,7 +329,31 @@ jobs:
     needs: build_software
     name: Remove coiled software environment
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9"]
+        runtime-version: ["latest"]
     steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: ${{ matrix.python-version }}
+
+      # - name: Install dependencies
+      #   run: mamba install boa conda-verify jinja2 packaging pytest
+
+      - name: Install coiled-runtime
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: bash ci/scripts/install_coiled_runtime.sh
+
       - name: Get Coiled Software Environment from build artefact
         uses: actions/download-artifact@v3
         with:
