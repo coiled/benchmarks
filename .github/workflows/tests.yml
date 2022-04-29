@@ -288,6 +288,8 @@ jobs:
 
       - name: Remove Coiled software environment
         if: always() && ${{ matrix.runtime-version == 'latest' }}
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: coiled env delete ${{ needs.build_software.outputs.coiled_software }}
 
   report:
