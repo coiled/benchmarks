@@ -141,7 +141,6 @@ jobs:
       - name: Install coiled-runtime
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          TEST_UPSTREAM: ${{ needs.software.outputs.test_upstream }}
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
@@ -155,6 +154,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
           COILED_SOFWARE_NAME: ${{ needs.software.outputs.coiled_software }}
+          TEST_UPSTREAM: ${{ needs.software.outputs.test_upstream }}
         run: bash ci/scripts/run_tests.sh tests/runtime
 
   benchmarks:
