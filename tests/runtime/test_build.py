@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import shlex
 import subprocess
+from distutils.util import strtobool
 
 import coiled
 import conda.cli.python_api as Conda
@@ -50,7 +52,9 @@ def test_install_dist():
     # Test that versions of packages installed are consistent with those
     # specified in `meta.yaml`
 
-    if Version(dask.__version__).local:
+    if Version(dask.__version__).local or strtobool(
+        os.environ.get("TEST_UPSTREAM", "false")
+    ):
         pytest.skip("Not valid on upstream build")
 
     meta_specifiers = get_meta_specifiers()

@@ -28,7 +28,7 @@ jobs:
         python-version: ["3.9"]
     outputs:
       coiled_software: ${{ steps.build_coiled_software.outputs.coiled_software }}
-      env_file: ${{ steps.build_coiled_software.outputs.env_file }}
+      test_upstream: ${{ steps.build_coiled_software.outputs.test_upstream }}
 
     steps:
       - uses: actions/checkout@v2
@@ -57,6 +57,9 @@ jobs:
 
           # Put TEST_UPSTREAM into $GITHUB_ENV so it can be used in subsequent workflow steps
           echo TEST_UPSTREAM=$TEST_UPSTREAM >> $GITHUB_ENV
+
+          # Put TEST_UPSTREAM into an output variable so it can be used in subsequent workflow jobs
+          echo "::set-output name=test_upstream::$TEST_UPSTREAM"
 
       - name: Build Coiled Software Environment
         id: build_coiled_software
@@ -137,7 +140,7 @@ jobs:
       - name: Install coiled-runtime
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          ENV_FILE: ${{ needs.software.outputs.env_file }}
+          TEST_UPSTREAM: ${{ needs.software.outputs.test_upstream }}
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
@@ -187,7 +190,6 @@ jobs:
       - name: Install coiled-runtime
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          ENV_FILE: ${{ needs.software.outputs.env_file }}
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
@@ -211,19 +213,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # os: ["ubuntu-latest"]
-        # python-version: ["3.7", "3.8", "3.9"]
-        # runtime-version: ["latest", "0.0.3"]
-        # include:
-        #   - python-version: "3.9"
-        #     runtime-version: "latest"
-        #     os: "windows-latest"
-        #   - python-version: "3.9"
-        #     runtime-version: "latest"
-        #     os: "macos-latest"
         os: ["ubuntu-latest"]
-        python-version: ["3.9"]
+        python-version: ["3.7", "3.8", "3.9"]
         runtime-version: ["latest", "0.0.3"]
+        include:
+          - python-version: "3.9"
+            runtime-version: "latest"
+            os: "windows-latest"
+          - python-version: "3.9"
+            runtime-version: "latest"
+            os: "macos-latest"
 
     steps:
       - uses: actions/checkout@v2
@@ -247,7 +246,6 @@ jobs:
       - name: Install coiled-runtime
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          ENV_FILE: ${{ needs.software.outputs.env_file }}
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
