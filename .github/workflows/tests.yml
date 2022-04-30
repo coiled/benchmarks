@@ -28,7 +28,7 @@ jobs:
         python-version: ["3.9"]
     outputs:
       coiled_software: ${{ steps.build_coiled_software.outputs.coiled_software }}
-      test_upstream: ${{ steps.build_coiled_software.outputs.test_upstream }}
+      test_upstream: ${{ steps.check_upstream.outputs.test_upstream }}
 
     steps:
       - uses: actions/checkout@v2
@@ -44,6 +44,7 @@ jobs:
           environment-file: ci/environment.yml
 
       - name: Check upstream
+        id: check_upstream
         if: github.event_name == 'pull_request'
         run: |
           COMMIT="$(git log -n 1 --pretty=format:%s HEAD^2)"
