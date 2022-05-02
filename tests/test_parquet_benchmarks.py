@@ -62,7 +62,10 @@ def test_read_parquet_split_row_groups(engine: str, small_client: Client) -> Non
     a few hundred MiB to a few GiB on disk, with varying numbers of row groups per file.
     This means we need to use `split_row_groups=True` to avoid too-large partitions.
     """
-    kwargs: dict[str, bool | None] = {"split_row_groups": True}
+    kwargs: dict[str, bool | None | dict[str, bool]] = {
+        "split_row_groups": True,
+        "storage_options": {"anon": True},
+    }
     dask_version = tuple(
         int(v) for v in dask.__version__.split("+")[0].split(".", maxsplit=2)
     )
@@ -94,6 +97,7 @@ def test_read_parquet(engine: str, small_client: Client) -> None:
     df = dd.read_parquet(
         "s3://anaconda-package-data/conda/hourly/",
         engine=engine,
+        storage_options={"anon": True},
     )
     result = wait(df.persist())
     assert not result.not_done
@@ -129,8 +133,13 @@ def test_write_parquet(
     read_engine: str, write_engine: str, small_client: Client, s3_url: str
 ) -> None:
     df = datasets.timeseries()
-    df.to_parquet(s3_url, engine=write_engine, write_metadata_file=False)
-    df2 = dd.read_parquet(s3_url, engine=read_engine)
+    df.to_parquet(
+        s3_url,
+        engine=write_engine,
+        write_metadata_file=False,
+        storage_options={"anon": True},
+    )
+    df2 = dd.read_parquet(s3_url, engine=read_engine, storage_options={"anon": True})
 
     result = wait(df2.persist())
     assert not result.not_done
