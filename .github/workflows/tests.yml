@@ -7,6 +7,10 @@ on:
       - '*'
   pull_request:
 
+  schedule:
+    # Runs "at 1am UTC on Mondays" (see https://crontab.guru)
+    - cron: '0 1 * * 1'
+
 # When this workflow is queued, automatically cancel any previous running
 # or pending jobs from the same branch
 concurrency:
@@ -45,10 +49,10 @@ jobs:
 
       - name: Check upstream
         id: check_upstream
-        if: github.event_name == 'pull_request'
+        if: github.event_name == 'pull_request' || github.event_name == 'schedule'
         run: |
           COMMIT="$(git log -n 1 --pretty=format:%s HEAD^2)"
-          if [[ "$COMMIT" == *"test-upstream"* ]]
+          if [[ "$COMMIT" == *"test-upstream"* || ${{ github.event_name }} == "schedule" ]]
           then
             export TEST_UPSTREAM="true"
           else
