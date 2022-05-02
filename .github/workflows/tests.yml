@@ -45,7 +45,6 @@ jobs:
           environment-file: ci/environment.yml
 
       - name: Check upstream
-        if: github.event_name == 'pull_request' || github.event_name == 'schedule'
         run: |
           COMMIT="$(git log -n 1 --pretty=format:%s HEAD^2)"
           if [[ "$COMMIT" == *"test-upstream"* || ${{ github.event_name }} == "schedule" ]]
