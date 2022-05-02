@@ -8,8 +8,8 @@ on:
   pull_request:
 
   schedule:
-    # Runs "at 1am UTC on Mondays" (see https://crontab.guru)
-    - cron: '0 1 * * 1'
+    # Runs "at every 15th minute UTC on Mondays" (see https://crontab.guru)
+    - cron: '*/15 * * * 1'
 
 # When this workflow is queued, automatically cancel any previous running
 # or pending jobs from the same branch
