@@ -8,7 +8,7 @@ then
   export EXTRA_OPTIONS="--run-latest"
   # Construct latest software environment name
   export PYTHON_VERSION_FORMATTED=$(python -c "import sys; print(f'{sys.version_info[0]}{sys.version_info[1]}')")
-  export COILED_SOFWARE_NAME=$COILED_SOFWARE_NAME-py$PYTHON_VERSION_FORMATTED
+  export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME-py$PYTHON_VERSION_FORMATTED
 else
   export EXTRA_OPTIONS=" "
   unset COILED_SOFTWARE_NAME
