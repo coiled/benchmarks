@@ -53,7 +53,7 @@ def main():
         "channels": ["conda-forge"],
         "dependencies": requirements,
     }
-    with open(f"latest-py{sys.version_info[0]}.{sys.version_info[1]}.yaml", "w") as f:
+    with open("latest.yaml", "w") as f:
         yaml.dump(env, f)
 
 

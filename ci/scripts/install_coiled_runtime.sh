@@ -7,8 +7,12 @@ set -o xtrace
 
 if [[ "$COILED_RUNTIME_VERSION" = 'latest' ]]
 then
-  cat $ENV_FILE
-  mamba env update --file $ENV_FILE
+  cat latest.yaml
+  mamba env update --file latest.yaml
 else
   mamba install -c conda-forge coiled-runtime=$COILED_RUNTIME_VERSION
 fi
+
+# For debugging
+echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
+mamba env export | grep -E -v '^prefix:.*$'
