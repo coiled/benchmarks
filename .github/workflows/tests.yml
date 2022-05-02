@@ -112,19 +112,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # os: ["ubuntu-latest"]
-        # python-version: ["3.7", "3.8", "3.9"]
-        # runtime-version: ["latest", "0.0.3"]
-        # include:
-        #   - python-version: "3.9"
-        #     runtime-version: "latest"
-        #     os: "windows-latest"
-        #   - python-version: "3.9"
-        #     runtime-version: "latest"
-        #     os: "macos-latest"
         os: ["ubuntu-latest"]
-        python-version: ["3.9"]
+        python-version: ["3.7", "3.8", "3.9"]
         runtime-version: ["latest", "0.0.3"]
+        include:
+          - python-version: "3.9"
+            runtime-version: "latest"
+            os: "windows-latest"
+          - python-version: "3.9"
+            runtime-version: "latest"
+            os: "macos-latest"
 
     steps:
       - uses: actions/checkout@v2
@@ -284,7 +281,10 @@ jobs:
       - name: Remove Coiled software environment
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-        run: coiled env delete $(cat software_name.txt)
+        run: |
+        export SOFTWARE_NAME=$(cat software_name.txt)
+        echo "Deleting $SOFTWARE_NAME"
+        coiled env delete $SOFTWARE_NAME
 
   report:
     name: report
