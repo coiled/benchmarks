@@ -45,7 +45,6 @@ jobs:
           environment-file: ci/environment.yml
 
       - name: Check upstream
-        id: check_upstream
         if: github.event_name == 'pull_request' || github.event_name == 'schedule'
         run: |
           COMMIT="$(git log -n 1 --pretty=format:%s HEAD^2)"
@@ -53,6 +52,12 @@ jobs:
           then
             export TEST_UPSTREAM="true"
           else
+            export TEST_UPSTREAM="false"
+          fi
+
+          # Always skip upstream CI on Python 3.7 as `dask` + `distributed` have dropped support
+          if [[ ${{ matrix.python-version }} == "3.7" ]]
+          then
             export TEST_UPSTREAM="false"
           fi
           echo $TEST_UPSTREAM
@@ -64,7 +69,6 @@ jobs:
           echo $TEST_UPSTREAM > test_upstream.txt
 
       - name: Build Coiled Software Environment
-        id: build_coiled_software
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
