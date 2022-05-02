@@ -282,9 +282,9 @@ jobs:
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
-        export SOFTWARE_NAME=$(cat software_name.txt)
-        echo "Deleting $SOFTWARE_NAME"
-        coiled env delete $SOFTWARE_NAME
+          export SOFTWARE_NAME=$(cat software_name.txt)
+          echo "Deleting $SOFTWARE_NAME"
+          coiled env delete $SOFTWARE_NAME
 
   report:
     name: report
