@@ -29,7 +29,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.9"]
+        python-version: ["3.7", "3.8", "3.9"]
     outputs:
       coiled_software: ${{ steps.build_coiled_software.outputs.coiled_software }}
       test_upstream: ${{ steps.check_upstream.outputs.test_upstream }}
@@ -74,7 +74,7 @@ jobs:
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
           export REF_NAME_FORMATTED=$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
           export COILED_SOFTWARE_NAME_HEAD=dask-engineering/coiled-runtime-${{ github.event_name }}
-          export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-py$PYTHON_VERSION_FORMATTED
+          export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID
 
           if [[ ${{ github.event_name }} = 'pull_request' ]]
           then
@@ -85,11 +85,12 @@ jobs:
 
           # Create conda environment.yaml file for the latest software environment
           python ci/create_latest_runtime_meta.py
-          cat latest.yaml
+          export ENV_FILE="latest-py${{ matrix.python-version }}.yaml"
+          cat $ENV_FILE
 
           mamba install coiled
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
-          coiled env create --name $COILED_SOFTWARE_NAME --conda latest.yaml
+          coiled env create --name $COILED_SOFTWARE_NAME-py$PYTHON_VERSION_FORMATTED --conda $ENV_FILE
 
           # Put COILED_SOFTWARE_NAME into an output variable so it can be used in subsequent workflow jobs
           echo "::set-output name=coiled_software::$COILED_SOFTWARE_NAME"
@@ -97,9 +98,8 @@ jobs:
       - name: Upload environment file
         uses: actions/upload-artifact@v3
         with:
-          name: conda-environment-file
-          path: latest.yaml
-
+          name: conda-environment-file-py${{ matrix.python-version }}
+          path: latest-py${{ matrix.python-version }}.yaml
 
   runtime:
     name: Runtime - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
@@ -140,11 +140,12 @@ jobs:
         if: matrix.runtime-version == 'latest'
         uses: actions/download-artifact@v3
         with:
-          name: conda-environment-file
+          name: conda-environment-file-py${{ matrix.python-version }}
 
       - name: Install coiled-runtime
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          ENV_FILE: latest-py${{ matrix.python-version }}.yaml
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
@@ -190,11 +191,12 @@ jobs:
         if: matrix.runtime-version == 'latest'
         uses: actions/download-artifact@v3
         with:
-          name: conda-environment-file
+          name: conda-environment-file-py${{ matrix.python-version }}
 
       - name: Install coiled-runtime
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          ENV_FILE: latest-py${{ matrix.python-version }}.yaml
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
@@ -246,11 +248,12 @@ jobs:
         if: matrix.runtime-version == 'latest'
         uses: actions/download-artifact@v3
         with:
-          name: conda-environment-file
+          name: conda-environment-file-py${{ matrix.python-version }}
 
       - name: Install coiled-runtime
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          ENV_FILE: latest-py${{ matrix.python-version }}.yaml
         run: bash ci/scripts/install_coiled_runtime.sh
 
       - name: Export environment
@@ -273,6 +276,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
+      matrix:
+        python-version: ["3.7", "3.8", "3.9"]
     steps:
       - uses: actions/checkout@v2
 
@@ -287,7 +292,13 @@ jobs:
       - name: Remove Coiled software environment
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-        run: coiled env delete ${{ needs.software.outputs.coiled_software }}
+          COILED_SOFWARE_NAME: ${{ needs.software.outputs.coiled_software }}
+        run: |
+          # Construct latest software environment name
+          export PYTHON_VERSION_FORMATTED=$(python -c "import sys; print(f'{sys.version_info[0]}{sys.version_info[1]}')")
+          export COILED_SOFWARE_NAME=$COILED_SOFWARE_NAME-py$PYTHON_VERSION_FORMATTED
+
+          coiled env delete $COILED_SOFWARE_NAME
 
   report:
     name: report
