@@ -9,7 +9,7 @@ on:
 
   schedule:
     # Runs "at every 15th minute UTC on Mondays" (see https://crontab.guru)
-    - cron: '*/15 * * * 1'
+    - cron: '*/15 * * * 2'
 
 # When this workflow is queued, automatically cancel any previous running
 # or pending jobs from the same branch
@@ -113,15 +113,8 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
-        python-version: ["3.7", "3.8", "3.9"]
+        python-version: ["3.9"]
         runtime-version: ["latest", "0.0.3"]
-        include:
-          - python-version: "3.9"
-            runtime-version: "latest"
-            os: "windows-latest"
-          - python-version: "3.9"
-            runtime-version: "latest"
-            os: "macos-latest"
 
     steps:
       - uses: actions/checkout@v2
