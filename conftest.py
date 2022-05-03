@@ -75,7 +75,7 @@ dask.config.set(
 
 
 @pytest.fixture(scope="module")
-def small_cluster(request):
+def small_cluster(request, event_loop):
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
