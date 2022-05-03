@@ -46,7 +46,14 @@ jobs:
 
       - name: Check upstream
         run: |
-          COMMIT="$(git log -n 1 --pretty=format:%s HEAD^2)"
+          if [[ ${{ github.event_name }} == "pull_request" ]]
+          then
+              export REF="HEAD^2"
+          else
+              export REF="HEAD"
+          fi
+
+          COMMIT="$(git log -n 1 --pretty=format:%s $REF)"
           if [[ "$COMMIT" == *"test-upstream"* || ${{ github.event_name }} == "schedule" ]]
           then
             export TEST_UPSTREAM="true"
