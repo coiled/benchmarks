@@ -6,15 +6,14 @@ on:
     tags:
       - '*'
   pull_request:
-
   schedule:
-    # Runs "at every 15th minute UTC on Mondays" (see https://crontab.guru)
-    - cron: '*/15 * * * 2'
+    # Runs "At minute 1 on Sunday" (see https://crontab.guru)
+    - cron: "1 * * * SUN"
 
-# When this workflow is queued, automatically cancel any previous running
-# or pending jobs from the same branch
 concurrency:
-  group: ${{ github.ref }}
+  # Include `github.event_name` to avoid pushes to `main` and
+  # scheduled jobs canceling one another
+  group: ${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:
