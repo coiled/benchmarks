@@ -6,11 +6,10 @@ import subprocess
 import sys
 import uuid
 
-import coiled
 import dask
 import pytest
 import s3fs
-from dask.distributed import Client
+from dask.distributed import Client, performance_report
 
 try:
     from coiled.v2 import Cluster
@@ -83,13 +82,15 @@ def small_cluster(request):
 
 
 @pytest.fixture
-def small_client(small_cluster, request):
+def small_client(small_cluster, s3, s3_report_url, request, tmp_path):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
         client.restart()
-        with coiled.performance_report(f"{request.node.originalname}-{UNIQUE_ID}.html"):
+        local_file = str(tmp_path / "preformance-report.html")
+        with performance_report(local_file):
             yield client
+        s3.put(local_file, s3_report_url + f"/{request.node.originalname}.html")
 
 
 S3_REGION = "us-east-2"
@@ -118,6 +119,16 @@ def s3_scratch(s3):
     scratch_url = f"{S3_BUCKET}/test-scratch"
     s3.mkdirs(scratch_url, exist_ok=True)
     return scratch_url
+
+
+@pytest.fixture(scope="session")
+def s3_report_url(s3, s3_scratch):
+    # Ensure that the test-scratch directory exists,
+    # but do NOT remove it as multiple test runs could be
+    # accessing it at the same time
+    report_url = f"{s3_scratch}/performance-reports/{UNIQUE_ID}"
+    s3.mkdirs(report_url, exist_ok=True)
+    return report_url
 
 
 @pytest.fixture(scope="function")
