@@ -1,15 +1,18 @@
 from __future__ import annotations
 
 import json
+import os
 import pathlib
 import shlex
 import subprocess
+from distutils.util import strtobool
 
 import coiled
 import conda.cli.python_api as Conda
 import dask
 import pytest
 import yaml
+from distributed import Client
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from packaging.requirements import Requirement, SpecifierSet
 from packaging.version import Version
@@ -30,7 +33,7 @@ def get_conda_installed_versions() -> dict[str, str]:
 def get_meta_specifiers() -> dict[str, SpecifierSet]:
     """Get packages version specifiers from `meta.yaml`"""
     env = Environment(
-        loader=FileSystemLoader(pathlib.Path(__file__).parent.parent / "recipe"),
+        loader=FileSystemLoader(pathlib.Path(__file__).parent.parent.parent / "recipe"),
         autoescape=select_autoescape(),
     )
     template = env.get_template("meta.yaml")
@@ -49,7 +52,9 @@ def test_install_dist():
     # Test that versions of packages installed are consistent with those
     # specified in `meta.yaml`
 
-    if Version(dask.__version__).local:
+    if Version(dask.__version__).local or strtobool(
+        os.environ.get("TEST_UPSTREAM", "false")
+    ):
         pytest.skip("Not valid on upstream build")
 
     meta_specifiers = get_meta_specifiers()
@@ -74,3 +79,20 @@ def test_latest_coiled():
     v_latest = Version(result["coiled"][-1]["version"])
 
     assert v_installed == v_latest
+
+
+def conda_name(package):
+    if package == "msgpack":
+        return "msgpack-python"
+    elif package == "blosc":
+        return "python-blosc"
+    return package
+
+
+def test_version_warning_packages():
+    meta_specifiers = get_meta_specifiers()
+    with Client() as client:
+        info = client.get_versions()
+        packages = info["client"]["packages"].keys()
+        packages = [conda_name(p) for p in packages]
+        assert all(p in meta_specifiers for p in packages)
