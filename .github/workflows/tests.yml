@@ -1,10 +1,10 @@
 name: Tests
 on:
   push:
-    # branches:
-    #   - main
-    # tags:
-    #   - '*'
+    branches:
+      - main
+    tags:
+      - '*'
   pull_request:
   schedule:
     # Runs "At minute 1 on Sunday" (see https://crontab.guru)
