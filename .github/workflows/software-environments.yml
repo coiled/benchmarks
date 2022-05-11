@@ -5,6 +5,7 @@ on:
     branches: main
     paths:
       - environments/**
+  pull_request:
 
 jobs:
   build:
@@ -40,4 +41,4 @@ jobs:
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
           export COILED_SOFTWARE_ENV_NAME=coiled-runtime-$RUNTIME_VERSION_FORMATTED-py$PYTHON_VERSION_FORMATTED
 
-          coiled env create --name dask-engineering/$COILED_SOFTWARE_ENV_NAME --conda environments/$COILED_SOFTWARE_ENV_NAME.yml
+          coiled env create --name coiled/$COILED_SOFTWARE_ENV_NAME --conda environments/$COILED_SOFTWARE_ENV_NAME.yml
