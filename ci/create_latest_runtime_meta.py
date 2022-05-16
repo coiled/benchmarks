@@ -41,20 +41,26 @@ def main():
     # Optionally use the development version of `dask` and `distributed`
     # from `dask/label/dev` conda channel
     upstream = strtobool(os.environ.get("TEST_UPSTREAM", "false"))
-    if upstream:
+    pre_release = strtobool(os.environ.get("PRE_RELEASE", "false"))
+    if upstream or pre_release:
         upstream_packages = {"dask", "distributed"}
         for idx, req in enumerate(requirements):
             package_name = Requirement(req).name
             if package_name in upstream_packages:
                 requirements[idx] = get_latest_conda_build(package_name)
 
-    # File compatible with `mamba env create --file <...>`
-    env = {
-        "channels": ["conda-forge"],
-        "dependencies": requirements,
-    }
-    with open("latest.yaml", "w") as f:
-        yaml.dump(env, f)
+    if pre_release:
+        with open("pre_release.yaml", "w") as f:
+            yaml.dump(meta, f)
+
+    else:
+        # File compatible with `mamba env create --file <...>`
+        env = {
+            "channels": ["conda-forge"],
+            "dependencies": requirements,
+        }
+        with open("latest.yaml", "w") as f:
+            yaml.dump(env, f)
 
 
 if __name__ == "__main__":
