@@ -25,6 +25,7 @@ def test_quickstart_parquet(small_client):
     ddf = dd.read_parquet(
         "s3://nyc-tlc/trip data/yellow_tripdata_2019-*.parquet",
         columns=["passenger_count", "tip_amount"],
+        storage_options={"anon": True},
     ).persist()
 
     result = ddf.groupby("passenger_count").tip_amount.mean().compute()
