@@ -50,6 +50,12 @@ jobs:
           # Put PRE_RELEASE into $GITHUB_ENV so it can be used in subsequent workflow steps
           echo PRE_RELEASE=$PRE_RELEASE >> $GITHUB_ENV
 
+          # suffix for nightly package versions
+          export VERSION_SUFFIX=a`date +%y%m%d`
+
+          # Put VERSION_SUFFIX into $GITHUB_ENV so it can be used in subsequent workflow steps
+          echo VERSION_SUFFIX=$VERSION_SUFFIX >> $GITHUB_ENV
+
           # Create pre-release.yaml file
           python ci/create_latest_runtime_meta.py
           export RECIPE_FILE=pre_release/meta.yaml
@@ -59,12 +65,6 @@ jobs:
           echo RECIPE_FILE=$RECIPE_FILE >> $GITHUB_ENV
       - name: Build conda package
         run: |
-          # suffix for nightly package versions
-          export VERSION_SUFFIX=a`date +%y%m%d`
-
-          # Put VERSION_SUFFIX into $GITHUB_ENV so it can be used in subsequent workflow steps
-          echo VERSION_SUFFIX=$VERSION_SUFFIX >> $GITHUB_ENV
-
           conda mambabuild $RECIPE_FILE\
                 --output-folder pre_release/conda \
                 --no-anaconda-upload
