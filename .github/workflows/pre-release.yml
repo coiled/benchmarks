@@ -35,6 +35,7 @@ jobs:
           miniforge-variant: Mambaforge
           use-mamba: true
           python-version: 3.9
+          environment-file: ci/environment.yml
       - name: Install dependencies
         run: |
           mamba install boa conda-verify
