@@ -50,7 +50,8 @@ def main():
                 requirements[idx] = get_latest_conda_build(package_name)
 
     if pre_release:
-        with open("pre_release.yaml", "w") as f:
+        meta["package"]["version"] = os.environ.get("VERSION_SUFFIX")
+        with open("meta.yaml", "w") as f:
             yaml.dump(meta, f)
 
     else:
