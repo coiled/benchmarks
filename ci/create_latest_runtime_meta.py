@@ -61,7 +61,6 @@ def main():
         meta_ord = OrderedDict()
 
         meta_ord["package"] = meta["package"]
-        meta_ord["source"] = meta["source"]
         meta_ord["build"] = meta["build"]
         meta_ord["requirement"] = meta["requirements"]
         meta_ord["test"] = meta["test"]
