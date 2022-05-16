@@ -52,7 +52,7 @@ jobs:
 
           # Create pre-release.yaml file
           python ci/create_latest_runtime_meta.py
-          export RECIPE_FILE=pre-release.yaml
+          export RECIPE_FILE=pre_release.yaml
           cat $RECIPE_FILE
 
           # Put RECIPE_FILE into $GITHUB_ENV so it can be used in subsequent workflow steps
