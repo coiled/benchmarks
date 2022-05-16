@@ -51,7 +51,8 @@ def main():
 
     if pre_release:
         meta["package"]["version"] = os.environ.get("VERSION_SUFFIX")
-        with open("meta.yaml", "w") as f:
+        os.mkdir("pre_release")
+        with open("pre_release/meta.yaml", "w") as f:
             yaml.dump(meta, f)
 
     else:
