@@ -60,6 +60,7 @@ jobs:
           #build teh package
           conda mambabuild recipe/\
                 --output-folder pre_release/conda \
+                --channel dask/label/dev \
                 --no-anaconda-upload
         
           ls pre_release/conda/noarch/
