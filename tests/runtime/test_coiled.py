@@ -2,9 +2,9 @@ import dask.dataframe as dd
 import pandas as pd
 
 
-def test_quickstart(small_client):
+def test_quickstart_csv(small_client):
     ddf = dd.read_csv(
-        "s3://nyc-tlc/trip data/yellow_tripdata_2019-*.csv",
+        "s3://nyc-tlc/csv_backup/yellow_tripdata_2019-*.csv",
         dtype={
             "payment_type": "UInt8",
             "VendorID": "UInt8",
@@ -13,6 +13,19 @@ def test_quickstart(small_client):
         },
         storage_options={"anon": True},
         blocksize="16 MiB",
+    ).persist()
+
+    result = ddf.groupby("passenger_count").tip_amount.mean().compute()
+
+    assert isinstance(result, pd.Series)
+    assert not result.empty
+
+
+def test_quickstart_parquet(small_client):
+    ddf = dd.read_parquet(
+        "s3://nyc-tlc/trip data/yellow_tripdata_2019-*.parquet",
+        columns=["passenger_count", "tip_amount"],
+        storage_options={"anon": True},
     ).persist()
 
     result = ddf.groupby("passenger_count").tip_amount.mean().compute()
