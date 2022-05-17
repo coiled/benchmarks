@@ -55,7 +55,7 @@ jobs:
           export DISTRIBUTED_VERSION=${arr_dist[1]}
 
           # suffix for nightly package versions
-          export VERSION_SUFFIX=a`date +%y%m%d`
+          export VERSION_SUFFIX=a`date +%y%m%d%H%M`
 
           #build teh package
           conda mambabuild recipe/\
@@ -63,7 +63,6 @@ jobs:
                 --channel dask/label/dev \
                 --no-anaconda-upload
         
-          ls pre_release/conda/noarch/
       # - name: Upload conda package
       #   env:
       #     ANACONDA_API_TOKEN: ${{ secrets.COILED_UPLOAD_TOKEN}}
