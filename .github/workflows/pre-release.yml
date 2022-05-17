@@ -42,30 +42,23 @@ jobs:
           which python
           pip list
           mamba list
-      - name: Get updated meta
+      - name: Build conda package
         run: |
-          # set os env
-          export PRE_RELEASE="true"
+          # conda search for the latest dask pre-release
+          arr_dask=($(conda search --override-channels -c dask/label/dev dask | tail -n 1))
+          # extract dask pre-release version / build
+          export DASK_VERSION=${arr_dask[1]}
 
-          # Put PRE_RELEASE into $GITHUB_ENV so it can be used in subsequent workflow steps
-          echo PRE_RELEASE=$PRE_RELEASE >> $GITHUB_ENV
+          # conda search for the latest distributed pre-release
+          arr_dist=($(conda search --override-channels -c dask/label/dev distributed | tail -n 1))
+          # extract distributed pre-release version / build
+          export DISTRIBUTED_VERSION=${arr_dist[1]}
 
           # suffix for nightly package versions
           export VERSION_SUFFIX=a`date +%y%m%d`
 
-          # Put VERSION_SUFFIX into $GITHUB_ENV so it can be used in subsequent workflow steps
-          echo VERSION_SUFFIX=$VERSION_SUFFIX >> $GITHUB_ENV
-
-          # Create pre-release.yaml file
-          python ci/create_latest_runtime_meta.py
-          export RECIPE_FILE=pre_release/meta.yaml
-          cat $RECIPE_FILE
-
-          # Put RECIPE_FILE into $GITHUB_ENV so it can be used in subsequent workflow steps
-          echo RECIPE_FILE=$RECIPE_FILE >> $GITHUB_ENV
-      - name: Build conda package
-        run: |
-          conda mambabuild $RECIPE_FILE\
+          #build teh package
+          conda mambabuild recipe/\
                 --output-folder pre_release/conda \
                 --no-anaconda-upload
         
