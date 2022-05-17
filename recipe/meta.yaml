@@ -1,5 +1,5 @@
 {% set name = "coiled-runtime" %}
-{% set version = 0.0.3 | join('.') + environ.get('VERSION_SUFFIX', '') %}
+{% set version = "0.0.3" + environ.get("VERSION_SUFFIX", '') %}
 {% set dask_version = environ.get("DASK_VERSION", "2022.1.0") %}
 {% set distributed_version = environ.get("DISTRIBUTED_VERSION", "2022.1.0") %}
 
@@ -12,7 +12,7 @@ source:
 
 build:
   noarch: python
-  number: 2
+  number: 0
 
 requirements:
   host:
