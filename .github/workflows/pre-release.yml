@@ -1,7 +1,6 @@
 name: Pre-release upload
 
 on:
-  pull_request:
   schedule:
     # Runs at 00:01 every day.
     - cron: "1 0 * * *"
