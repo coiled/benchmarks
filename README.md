@@ -14,10 +14,11 @@ conda install -c conda-forge coiled-runtime
 
 **Nightly builds**
   
-If you are interested in installing a nightly version of the coiled-runtime:
+`coiled-runtime` has nightly conda packages for testing purposes.
+You can install a nightly version of `coiled-runtime` with:
 
 ```bash
-conda install -c coiled/label/dev -c dask/label/dev  coiled-runtime 
+conda install -c coiled/label/dev -c dask/label/dev coiled-runtime 
 ```
 
 ## Build

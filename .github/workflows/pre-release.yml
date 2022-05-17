@@ -56,7 +56,7 @@ jobs:
           # suffix for nightly package versions
           export VERSION_SUFFIX=a`date +%y%m%d%H%M`
 
-          #build teh package
+          # Build nightly `coiled-runtime` package
           conda mambabuild recipe/\
                 --output-folder pre_release/conda \
                 --channel dask/label/dev \
