@@ -37,7 +37,7 @@ def get_meta_specifiers() -> dict[str, SpecifierSet]:
         autoescape=select_autoescape(),
     )
     template = env.get_template("meta.yaml")
-    meta = yaml.safe_load(template.render())
+    meta = yaml.safe_load(template.render(environ=os.environ))
 
     meta_specifiers = {}
     for req in meta["requirements"]["run"]:
