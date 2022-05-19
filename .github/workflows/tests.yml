@@ -196,7 +196,7 @@ jobs:
 
   stability:
     name: Stability - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-    needs: software
+    #needs: software
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
