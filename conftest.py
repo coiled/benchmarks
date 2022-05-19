@@ -64,12 +64,14 @@ dask.config.set(
     }
 )
 
+ID = uuid.uuid4().hex[:8]
+
 
 @pytest.fixture(scope="module")
 def small_cluster(request):
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
-        name=f"{module}-{uuid.uuid4().hex[:8]}",
+        name=f"{module}-{ID}",
         n_workers=10,
         worker_memory="8 GiB",
         worker_vm_types=["m5.large"],
