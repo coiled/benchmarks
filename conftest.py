@@ -88,7 +88,7 @@ def small_client(small_cluster):
 
 
 S3_REGION = "us-east-2"
-S3_BUCKET = "s3://dask-io"
+S3_BUCKET = "s3://coiled-runtime-ci"
 
 
 @pytest.fixture(scope="session")
