@@ -297,7 +297,7 @@ jobs:
 
   report:
     name: report
-    needs: [runtime, benchmarks, stability]
+    needs: [stability] #[runtime, benchmarks, stability]
     if: |
       always()
       && github.event_name != 'pull_request'
