@@ -89,6 +89,7 @@ def small_client(small_cluster, s3, s3_scratch, s3_cluster_dump_url):
             yield client
         except Exception:
             cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
+            print(f"{cluster_dump=}")
             if cluster_dump:
                 print(f"Cluster state dump can be found at: {s3_cluster_dump_url}")
                 client.dump_cluster_state(s3_cluster_dump_url)
