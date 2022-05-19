@@ -93,8 +93,7 @@ def small_client(small_cluster, s3, s3_scratch, s3_cluster_dump_url):
             if cluster_dump:
                 print(f"Cluster state dump can be found at: {s3_cluster_dump_url}")
                 client.dump_cluster_state(s3_cluster_dump_url)
-            else:
-                pass
+            raise
 
 
 S3_REGION = "us-east-2"
