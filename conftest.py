@@ -5,6 +5,7 @@ import shlex
 import subprocess
 import sys
 import uuid
+from distutils.util import strtobool
 
 import dask
 import pytest
@@ -79,12 +80,20 @@ def small_cluster(request):
 
 
 @pytest.fixture
-def small_client(small_cluster):
+def small_client(small_cluster, s3, s3_scratch, s3_cluster_dump_url):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
         client.restart()
-        yield client
+        try:
+            yield client
+        except Exception:
+            cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
+            if cluster_dump:
+                print(f"Cluster state dump can be found at: {s3_cluster_dump_url}")
+                client.dump_cluster_state(s3_cluster_dump_url)
+            else:
+                pass
 
 
 S3_REGION = "us-east-2"
@@ -121,3 +130,13 @@ def s3_url(s3, s3_scratch, request):
     s3.mkdirs(url, exist_ok=False)
     yield url
     s3.rm(url, recursive=True)
+
+
+@pytest.fixture(scope="session")
+def s3_cluster_dump_url(s3, s3_scratch):
+    # Ensure that the test-scratch directory exists,
+    # but do NOT remove it as multiple test runs could be
+    # accessing it at the same time
+    dump_url = f"{s3_scratch}/cluster_dumps/{uuid.uuid4().hex}"
+    s3.mkdirs(dump_url, exist_ok=True)
+    return dump_url

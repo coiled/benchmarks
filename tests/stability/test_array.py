@@ -11,3 +11,7 @@ def test_rechunk_in_memory(small_client):
 def test_rechunk_out_of_memory(small_client):
     x = da.random.random((100000, 100000))
     x.rechunk((50000, 20)).rechunk((20, 50000)).sum().compute()
+
+
+def test_dump(small_client):
+    raise Exception
