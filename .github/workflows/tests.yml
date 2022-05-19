@@ -263,7 +263,7 @@ jobs:
           bash ci/scripts/run_tests.sh tests/stability/test_array.py::test_dump
 
   cleanup:
-    needs: [software, runtime, benchmarks, stability]
+    needs: [software, stability] #[software, runtime, benchmarks, stability]
     if: always()
     name: Cleanup
     runs-on: ubuntu-latest
