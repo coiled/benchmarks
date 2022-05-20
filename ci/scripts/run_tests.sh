@@ -13,4 +13,6 @@ else
   unset COILED_SOFTWARE_NAME
 fi
 
+echo $CLUSTER_DUMP
+
 python -m pytest $EXTRA_OPTIONS "$@"
