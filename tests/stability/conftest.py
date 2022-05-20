@@ -3,7 +3,7 @@ import pytest
 
 def pytest_collection_modifyitems(config, items):
     # Ensure stability tests use spot instances by default
-    marker = pytest.mark.backend_options(spot=True)
+    marker = pytest.mark.backend_options(spot=True, spot_on_demand_fallback=True)
     for item in items:
         # Add a module-level `spot=True` backend option marker if one doesn't already exist
         module = item.parent
