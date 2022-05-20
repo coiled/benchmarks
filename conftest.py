@@ -80,7 +80,7 @@ def small_cluster(request):
 
 
 @pytest.fixture
-def small_client(small_cluster, s3, s3_scratch, s3_cluster_dump_url):
+def small_client(small_cluster, s3_cluster_dump_url, s3_storage_options):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
@@ -91,8 +91,9 @@ def small_client(small_cluster, s3, s3_scratch, s3_cluster_dump_url):
             cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
             print(f"{cluster_dump=}")
             if cluster_dump:
-                print(f"Cluster state dump can be found at: {s3_cluster_dump_url}")
-                client.dump_cluster_state(s3_cluster_dump_url)
+                dump_path = os.path.join(s3_cluster_dump_url, small_cluster.name)
+                print(f"Cluster state dump can be found at: {dump_path}")
+                client.dump_cluster_state(dump_path, **s3_storage_options)
             raise
 
 
@@ -134,9 +135,6 @@ def s3_url(s3, s3_scratch, request):
 
 @pytest.fixture(scope="session")
 def s3_cluster_dump_url(s3, s3_scratch):
-    # Ensure that the test-scratch directory exists,
-    # but do NOT remove it as multiple test runs could be
-    # accessing it at the same time
-    dump_url = f"{s3_scratch}/cluster_dumps/{uuid.uuid4().hex}"
+    dump_url = f"{s3_scratch}/cluster_dumps"
     s3.mkdirs(dump_url, exist_ok=True)
     return dump_url
