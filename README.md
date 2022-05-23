@@ -37,7 +37,7 @@ conda install -c conda-forge conda-build
 conda build recipe -c conda-forge --output-folder dist/conda --no-anaconda-upload
 
 # Install the built `coiled-runtime` metapackage
-conda install -c conda-forge -c ./dist/conda/ coiled-runtime
+conda install -c ./dist/conda/ coiled-runtime
 ```
 
 ## Test
@@ -50,6 +50,7 @@ The `coiled-runtime` test suite can be run locally with the following steps:
    - `coiled-runtime`
    - `conda`
    - `pytest`
+   - `pytest-timeout`
    - `jinja2`
    - `packaging`
 3. (Optional) If testing against an unreleased version of `coiled-runtime`,
