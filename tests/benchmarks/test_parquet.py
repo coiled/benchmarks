@@ -43,7 +43,11 @@ def test_read_hive_partitioned_data():
         backend_options={"region": "us-west-2"},
     ) as cluster:
         with distributed.Client(cluster):
-            ddf = dd.read_parquet("s3://ookla-open-data/parquet/**fixed_tiles.parquet")
+            ddf = dd.read_parquet(
+                "s3://ookla-open-data/parquet/**fixed_tiles.parquet",
+                engine="pyarrow",
+                storage_options={"anon": True},
+            )
 
             # The data is already partitioned by year and quarter, but it doesn't
             # fit Dask's partitioning scheme well since we don't support multiindexes.
