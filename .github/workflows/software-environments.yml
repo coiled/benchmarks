@@ -5,8 +5,6 @@ on:
     branches: main
     paths:
       - environments/**
-  # TODO: Remove `pull_request` event before merging
-  pull_request:
 
 jobs:
   build:
