@@ -10,7 +10,7 @@ on:
 
 jobs:
   build:
-    name: Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    name: Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}, ${{ matrix.server }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
