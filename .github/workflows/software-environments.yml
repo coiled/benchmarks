@@ -34,7 +34,7 @@ jobs:
       - name: Install Coiled
         run: python -m pip install coiled
 
-      - name: Create Runtime ${{ matrix.runtime-version }} Python ${{ matrix.python-version }} software environment
+      - name: Create Runtime ${{ matrix.runtime-version }} Python ${{ matrix.python-version }} ${{ matrix.server }} software environment
         env:
           DASK_COILED__SERVER: ${{ matrix.server }}
           DASK_COILED__TOKEN: ${{ secrets[matrix.token-name] }}
