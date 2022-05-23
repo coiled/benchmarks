@@ -11,10 +11,7 @@ import pytest
 import s3fs
 from dask.distributed import Client
 
-try:
-    from coiled.v2 import Cluster
-except ImportError:
-    from coiled._beta import ClusterBeta as Cluster
+from coiled import Cluster
 
 
 # So coiled logs can be displayed on test failure
@@ -41,6 +38,7 @@ def get_software():
     try:
         return os.environ["COILED_SOFTWARE_NAME"]
     except KeyError:
+        print("Got keyerror")
         # Determine software environment from local `coiled-runtime` version (in installed)
         out = subprocess.check_output(
             shlex.split("conda list --json coiled-runtime"), text=True
@@ -72,8 +70,9 @@ def small_cluster(request):
         name=f"{module}-{uuid.uuid4().hex[:8]}",
         n_workers=10,
         worker_memory="8 GiB",
-        worker_vm_types=["m5.large"],
+        # worker_vm_types=["m5.large"],
         scheduler_vm_types=["m5.large"],
+        # software=get_software()
     ) as cluster:
         yield cluster
 
