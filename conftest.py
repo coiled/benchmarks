@@ -9,10 +9,8 @@ import uuid
 import dask
 import pytest
 import s3fs
-from dask.distributed import Client
-
 from coiled import Cluster
-
+from dask.distributed import Client
 
 # So coiled logs can be displayed on test failure
 logging.getLogger("coiled").setLevel(logging.INFO)
