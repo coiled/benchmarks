@@ -71,7 +71,7 @@ def small_cluster(request):
         worker_memory="8 GiB",
         worker_vm_types=["m5.large"],
         scheduler_vm_types=["m5.large"],
-        software=get_software()
+        software=get_software(),
     ) as cluster:
         yield cluster
 
