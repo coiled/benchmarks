@@ -25,7 +25,7 @@ logging.getLogger("coiled").setLevel(logging.INFO)
 def pytest_addoption(parser):
     # Workaround for https://github.com/pytest-dev/pytest-xdist/issues/620
     if threading.current_thread() is not threading.main_thread():
-        os.exit(1)
+        os._exit(1)
 
     parser.addoption(
         "--run-latest", action="store_true", help="Run latest coiled-runtime tests"
