@@ -12,6 +12,15 @@ The Coiled Runtime is a conda metapackage which makes it easy to get started wit
 conda install -c conda-forge coiled-runtime
 ```
 
+**Nightly builds**
+  
+`coiled-runtime` has nightly conda packages for testing purposes.
+You can install a nightly version of `coiled-runtime` with:
+
+```bash
+conda install -c coiled/label/dev -c dask/label/dev coiled-runtime 
+```
+
 ## Build
 
 To build and install `coiled-runtime` locally, use the following steps:

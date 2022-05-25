@@ -50,7 +50,7 @@ def get_software():
         if runtime_info:
             version = runtime_info[0]["version"].replace(".", "-")
             py_version = f"{sys.version_info[0]}{sys.version_info[1]}"
-            return f"dask-engineering/coiled-runtime-{version}-py{py_version}"
+            return f"coiled/coiled-runtime-{version}-py{py_version}"
         else:
             raise RuntimeError(
                 "Must either specific `COILED_SOFTWARE_NAME` environment variable "
@@ -97,7 +97,7 @@ def small_client(small_cluster):
 
 
 S3_REGION = "us-east-2"
-S3_BUCKET = "s3://dask-io"
+S3_BUCKET = "s3://coiled-runtime-ci"
 
 
 @pytest.fixture(scope="session")
