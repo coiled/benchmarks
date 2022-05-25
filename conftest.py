@@ -5,6 +5,7 @@ import os
 import shlex
 import subprocess
 import sys
+import threading
 import uuid
 
 import dask
@@ -60,6 +61,8 @@ def get_software():
 
 @pytest.fixture(scope="session")
 def event_loop():
+    if threading.current_thread() is not threading.main_thread():
+        os.exit(1)
     # same as pytest-asyncio event_loop, but session-scoped
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
@@ -75,7 +78,7 @@ dask.config.set(
 
 
 @pytest.fixture(scope="module")
-def small_cluster(request, event_loop):
+def small_cluster(request):
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
