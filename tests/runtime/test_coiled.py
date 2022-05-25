@@ -1,8 +1,6 @@
 import dask.dataframe as dd
 import pandas as pd
 import pytest
-import xgboost as xgb
-from dask_ml.model_selection import train_test_split
 
 
 def test_quickstart_csv(small_client):
@@ -39,8 +37,10 @@ def test_quickstart_parquet(small_client):
 
 @pytest.mark.timeout(600)
 def test_xgboost_distributed_training(small_client):
-    print(small_client)
-    print(small_client.dashboard_link)
+    # `coiled-runtime=0.0.3` doesn't contain `xgboost` or `dask_ml`
+    xgb = pytest.importorskip("xgboost")
+    dask_ml = pytest.importorskip("dask_ml")
+
     ddf = dd.read_parquet(
         "s3://coiled-datasets/synthetic-data/synth-reg-104GB.parquet",
         storage_options={"anon": True},
@@ -50,7 +50,7 @@ def test_xgboost_distributed_training(small_client):
 
     # Create the train-test split
     X, y = ddf.iloc[:, :-1], ddf["target"]
-    X_train, X_test, y_train, y_test = train_test_split(
+    X_train, X_test, y_train, y_test = dask_ml.model_selection.train_test_split(
         X, y, test_size=0.3, shuffle=True, random_state=21
     )
 
