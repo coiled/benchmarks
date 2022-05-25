@@ -5,7 +5,6 @@ dependencies:
   - jinja2
   - packaging
   - pytest
-  - pytest-asyncio
   - pytest-xdist
   - python
   - pyyaml

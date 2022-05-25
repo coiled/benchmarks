@@ -1,4 +1,3 @@
-import asyncio
 import json
 import logging
 import os
@@ -24,6 +23,10 @@ logging.getLogger("coiled").setLevel(logging.INFO)
 
 
 def pytest_addoption(parser):
+    # Workaround for https://github.com/pytest-dev/pytest-xdist/issues/620
+    if threading.current_thread() is not threading.main_thread():
+        os.exit(1)
+
     parser.addoption(
         "--run-latest", action="store_true", help="Run latest coiled-runtime tests"
     )
@@ -57,18 +60,6 @@ def get_software():
                 "Must either specific `COILED_SOFTWARE_NAME` environment variable "
                 "or have `coiled-runtime` installed"
             )
-
-
-@pytest.fixture(scope="session")
-def event_loop():
-    # Workaround for https://github.com/pytest-dev/pytest-xdist/issues/620
-    if threading.current_thread() is not threading.main_thread():
-        os.exit(1)
-
-    # same as pytest-asyncio event_loop, but session-scoped
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
 
 dask.config.set(
