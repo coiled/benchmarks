@@ -61,8 +61,10 @@ def get_software():
 
 @pytest.fixture(scope="session")
 def event_loop():
+    # Workaround for https://github.com/pytest-dev/pytest-xdist/issues/620
     if threading.current_thread() is not threading.main_thread():
         os.exit(1)
+
     # same as pytest-asyncio event_loop, but session-scoped
     loop = asyncio.get_event_loop_policy().new_event_loop()
     yield loop
