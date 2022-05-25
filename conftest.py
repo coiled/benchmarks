@@ -10,6 +10,7 @@ import dask
 import pytest
 import s3fs
 from dask.distributed import Client
+from toolz import merge
 
 try:
     from coiled.v2 import Cluster
@@ -67,6 +68,10 @@ dask.config.set(
 
 @pytest.fixture(scope="module")
 def small_cluster(request):
+    # Extract `backend_options` for cluster from `backend_options` markers
+    backend_options = merge(
+        m.kwargs for m in request.node.iter_markers(name="backend_options")
+    )
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
@@ -74,6 +79,7 @@ def small_cluster(request):
         worker_memory="8 GiB",
         worker_vm_types=["m5.large"],
         scheduler_vm_types=["m5.large"],
+        backend_options=backend_options,
     ) as cluster:
         yield cluster
 
