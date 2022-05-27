@@ -10,7 +10,6 @@ import uuid
 import dask
 import pytest
 import s3fs
-
 from dask.distributed import Client, performance_report
 from toolz import merge
 
