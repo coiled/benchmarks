@@ -25,7 +25,7 @@ requirements:
     - coiled
     - nodejs ==17.9.0
     - nb_conda_kernels ==2.3.1
-    - numpy ==1.22.4
+    - numpy ==1.21.6
     - pandas ==1.4.2
     - dask =={{ dask_version }}
     - distributed =={{ distributed_version }}
