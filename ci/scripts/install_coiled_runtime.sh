@@ -13,6 +13,9 @@ else
   mamba install -c conda-forge coiled-runtime=$COILED_RUNTIME_VERSION
 fi
 
+# TODO: Remove before merging
+pip install xgboost==1.6.1
+
 # For debugging
 echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
 mamba env export | grep -E -v '^prefix:.*$'
