@@ -12,6 +12,15 @@ The Coiled Runtime is a conda metapackage which makes it easy to get started wit
 conda install -c conda-forge coiled-runtime
 ```
 
+**Nightly builds**
+  
+`coiled-runtime` has nightly conda packages for testing purposes.
+You can install a nightly version of `coiled-runtime` with:
+
+```bash
+conda install -c coiled/label/dev -c dask/label/dev coiled-runtime 
+```
+
 ## Build
 
 To build and install `coiled-runtime` locally, use the following steps:
@@ -37,12 +46,8 @@ The `coiled-runtime` test suite can be run locally with the following steps:
 
 1. Ensure your local machine is authenticated to use the `dask-engineering` Coiled account and
    the Coiled Dask Engineering AWS S3 account.
-2. Create a Python environment and install development dependencies:
-   - `coiled-runtime`
-   - `conda`
-   - `pytest`
-   - `jinja2`
-   - `packaging`
+2. Create a Python environment and install development dependencies as
+   specified in `ci/environment.yml`.
 3. (Optional) If testing against an unreleased version of `coiled-runtime`,
    create a Coiled software with the unreleased `coiled-runtime` installed
    and set a local `COILED_SOFTWARE_NAME` environment variable to the name

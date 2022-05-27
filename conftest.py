@@ -4,12 +4,15 @@ import os
 import shlex
 import subprocess
 import sys
+import threading
 import uuid
 
 import dask
 import pytest
 import s3fs
+
 from dask.distributed import Client, performance_report
+from toolz import merge
 
 try:
     from coiled.v2 import Cluster
@@ -22,6 +25,10 @@ logging.getLogger("coiled").setLevel(logging.INFO)
 
 
 def pytest_addoption(parser):
+    # Workaround for https://github.com/pytest-dev/pytest-xdist/issues/620
+    if threading.current_thread() is not threading.main_thread():
+        os._exit(1)
+
     parser.addoption(
         "--run-latest", action="store_true", help="Run latest coiled-runtime tests"
     )
@@ -52,7 +59,7 @@ def get_software():
         if runtime_info:
             version = runtime_info[0]["version"].replace(".", "-")
             py_version = f"{sys.version_info[0]}{sys.version_info[1]}"
-            return f"dask-engineering/coiled-runtime-{version}-py{py_version}"
+            return f"coiled/coiled-runtime-{version}-py{py_version}"
         else:
             raise RuntimeError(
                 "Must either specific `COILED_SOFTWARE_NAME` environment variable "
@@ -70,6 +77,10 @@ dask.config.set(
 
 @pytest.fixture(scope="module")
 def small_cluster(request):
+    # Extract `backend_options` for cluster from `backend_options` markers
+    backend_options = merge(
+        m.kwargs for m in request.node.iter_markers(name="backend_options")
+    )
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
         name=f"{module}-{UNIQUE_ID}",
@@ -77,6 +88,7 @@ def small_cluster(request):
         worker_memory="8 GiB",
         worker_vm_types=["m5.large"],
         scheduler_vm_types=["m5.large"],
+        backend_options=backend_options,
     ) as cluster:
         yield cluster
 
@@ -94,7 +106,7 @@ def small_client(small_cluster, s3, s3_report_url, request, tmp_path):
 
 
 S3_REGION = "us-east-2"
-S3_BUCKET = "s3://dask-io"
+S3_BUCKET = "s3://coiled-runtime-ci"
 
 
 @pytest.fixture(scope="session")
