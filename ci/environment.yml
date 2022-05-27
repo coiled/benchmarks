@@ -6,5 +6,6 @@ dependencies:
   - packaging
   - pytest
   - pytest-timeout
+  - pytest-xdist
   - python
   - pyyaml
