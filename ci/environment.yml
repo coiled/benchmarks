@@ -1,0 +1,10 @@
+channels:
+  - conda-forge
+dependencies:
+  - conda
+  - jinja2
+  - packaging
+  - pytest
+  - pytest-xdist
+  - python
+  - pyyaml

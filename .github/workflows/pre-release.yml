@@ -1,0 +1,71 @@
+name: Pre-release upload
+
+on:
+  schedule:
+    # Runs at 00:01 every day.
+    - cron: "1 0 * * *"
+
+concurrency:
+  # Include `github.event_name` to avoid pushes to `main` and
+  # scheduled jobs canceling one another
+  group: nightly-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  # Required shell entrypoint to have properly activated conda environments
+  run:
+    shell: bash -l {0}
+
+jobs:
+  build:
+    name: Build and upload
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up python
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: 3.9
+          environment-file: ci/environment.yml
+      - name: Install dependencies
+        run: |
+          mamba install boa conda-verify
+          which python
+          pip list
+          mamba list
+      - name: Build conda package
+        run: |
+          # conda search for the latest dask pre-release
+          arr_dask=($(conda search --override-channels -c dask/label/dev dask | tail -n 1))
+          # extract dask pre-release version / build
+          export DASK_VERSION=${arr_dask[1]}
+
+          # conda search for the latest distributed pre-release
+          arr_dist=($(conda search --override-channels -c dask/label/dev distributed | tail -n 1))
+          # extract distributed pre-release version / build
+          export DISTRIBUTED_VERSION=${arr_dist[1]}
+
+          # suffix for nightly package versions
+          export VERSION_SUFFIX=a`date +%y%m%d%H%M`
+
+          # Build nightly `coiled-runtime` package
+          conda mambabuild recipe/\
+                --output-folder pre_release/conda \
+                --channel dask/label/dev \
+                --no-anaconda-upload
+        
+      - name: Upload conda package
+        env:
+          ANACONDA_API_TOKEN: ${{ secrets.COILED_UPLOAD_TOKEN}}
+        run: |
+          # install anaconda for upload
+          mamba install anaconda-client
+          anaconda upload --label dev pre_release/conda/noarch/*.tar.bz2
