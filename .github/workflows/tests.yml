@@ -115,6 +115,7 @@ jobs:
         os: ["ubuntu-latest"]
         python-version: ["3.9"]
         runtime-version: ["latest", "0.0.3"]
+        run: [1, 2, 3, 4, 5]
 
     steps:
       - uses: actions/checkout@v2
@@ -160,6 +161,7 @@ jobs:
         os: ["ubuntu-latest"]
         python-version: ["3.9"]
         runtime-version: ["latest", "0.0.3"]
+        run: [1, 2, 3, 4, 5]
 
     steps:
       - uses: actions/checkout@v2
@@ -205,6 +207,7 @@ jobs:
         os: ["ubuntu-latest"]
         python-version: ["3.8", "3.9", "3.10"]
         runtime-version: ["latest", "0.0.3"]
+        run: [1, 2, 3, 4, 5]
         include:
           - python-version: "3.9"
             runtime-version: "latest"
