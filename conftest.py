@@ -90,22 +90,33 @@ def small_cluster(request):
         yield cluster
 
 
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # execute all other hooks to obtain the report object
+    outcome = yield
+    rep = outcome.get_result()
+
+    # set a report attribute for each phase of a call, which can
+    # be "setup", "call", "teardown"
+
+    setattr(item, "rep_" + rep.when, rep)
+
+
 @pytest.fixture
-def small_client(small_cluster, s3_cluster_dump_url, s3_storage_options):
+def small_client(small_cluster, s3_cluster_dump_url, s3_storage_options, request):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
         client.restart()
-        try:
-            yield client
-        except Exception:
-            cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
-            print(f"{cluster_dump=}")
-            if cluster_dump:
-                dump_path = os.path.join(s3_cluster_dump_url, small_cluster.name)
-                print(f"Cluster state dump can be found at: {dump_path}")
-                client.dump_cluster_state(dump_path, **s3_storage_options)
-            raise
+
+        yield client
+
+        cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
+        print(f"{cluster_dump=}")
+        if cluster_dump and request.node.rep_call.failed:
+            dump_path = os.path.join(s3_cluster_dump_url, small_cluster.name)
+            print(f"Cluster state dump can be found at: {dump_path}")
+            client.dump_cluster_state(dump_path, **s3_storage_options)
 
 
 S3_REGION = "us-east-2"
