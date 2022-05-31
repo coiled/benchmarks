@@ -46,12 +46,8 @@ The `coiled-runtime` test suite can be run locally with the following steps:
 
 1. Ensure your local machine is authenticated to use the `dask-engineering` Coiled account and
    the Coiled Dask Engineering AWS S3 account.
-2. Create a Python environment and install development dependencies:
-   - `coiled-runtime`
-   - `conda`
-   - `pytest`
-   - `jinja2`
-   - `packaging`
+2. Create a Python environment and install development dependencies as
+   specified in `ci/environment.yml`.
 3. (Optional) If testing against an unreleased version of `coiled-runtime`,
    create a Coiled software with the unreleased `coiled-runtime` installed
    and set a local `COILED_SOFTWARE_NAME` environment variable to the name

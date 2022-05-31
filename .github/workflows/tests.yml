@@ -7,13 +7,13 @@ on:
       - '*'
   pull_request:
   schedule:
-    # Runs "At 00:01 on Sunday" (see https://crontab.guru)
-    - cron: "1 0 * * SUN"
+    # Runs "At 00:01" (see https://crontab.guru)
+    - cron: "1 0 * * *"
 
 concurrency:
   # Include `github.event_name` to avoid pushes to `main` and
   # scheduled jobs canceling one another
-  group: ${{ github.event_name }}-${{ github.ref }}
+  group: tests-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:

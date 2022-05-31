@@ -4,6 +4,7 @@ import os
 import shlex
 import subprocess
 import sys
+import threading
 import uuid
 from distutils.util import strtobool
 
@@ -11,6 +12,7 @@ import dask
 import pytest
 import s3fs
 from dask.distributed import Client
+from toolz import merge
 
 try:
     from coiled.v2 import Cluster
@@ -23,6 +25,10 @@ logging.getLogger("coiled").setLevel(logging.INFO)
 
 
 def pytest_addoption(parser):
+    # Workaround for https://github.com/pytest-dev/pytest-xdist/issues/620
+    if threading.current_thread() is not threading.main_thread():
+        os._exit(1)
+
     parser.addoption(
         "--run-latest", action="store_true", help="Run latest coiled-runtime tests"
     )
@@ -68,6 +74,10 @@ dask.config.set(
 
 @pytest.fixture(scope="module")
 def small_cluster(request):
+    # Extract `backend_options` for cluster from `backend_options` markers
+    backend_options = merge(
+        m.kwargs for m in request.node.iter_markers(name="backend_options")
+    )
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
@@ -75,6 +85,7 @@ def small_cluster(request):
         worker_memory="8 GiB",
         worker_vm_types=["m5.large"],
         scheduler_vm_types=["m5.large"],
+        backend_options=backend_options,
     ) as cluster:
         yield cluster
 
