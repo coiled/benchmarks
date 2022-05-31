@@ -22,204 +22,13 @@ defaults:
     shell: bash -l {0}
 
 jobs:
-  # software:
-  #   name: Setup
-  #   runs-on: ubuntu-latest
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       python-version: ["3.8"] #["3.8", "3.9", "3.10"]
-
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Set up environment
-  #       uses: conda-incubator/setup-miniconda@v2
-  #       with:
-  #         miniforge-variant: Mambaforge
-  #         use-mamba: true
-  #         python-version: ${{ matrix.python-version }}
-  #         environment-file: ci/environment.yml
-
-  #     - name: Check upstream
-  #       run: |
-  #         if [[ ${{ github.event_name }} == "pull_request" ]]
-  #         then
-  #             export REF="HEAD^2"
-  #         else
-  #             export REF="HEAD"
-  #         fi
-
-  #         COMMIT="$(git log -n 1 --pretty=format:%s $REF)"
-  #         if [[ "$COMMIT" == *"test-upstream"* || ${{ github.event_name }} == "schedule" ]]
-  #         then
-  #           export TEST_UPSTREAM="true"
-  #         else
-  #           export TEST_UPSTREAM="false"
-  #         fi
-
-  #         # Put TEST_UPSTREAM into $GITHUB_ENV so it can be used in subsequent workflow steps
-  #         echo $TEST_UPSTREAM
-  #         echo TEST_UPSTREAM=$TEST_UPSTREAM >> $GITHUB_ENV
-
-  #         # Put TEST_UPSTREAM into a file so it can be downloaded in subsequent workflow jobs
-  #         echo $TEST_UPSTREAM > test_upstream.txt
-
-  #     - name: Build Coiled Software Environment
-  #       env:
-  #         DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-  #       run: |
-  #         export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
-  #         export REF_NAME_FORMATTED=$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
-  #         export COILED_SOFTWARE_NAME_HEAD=dask-engineering/coiled-runtime-${{ github.event_name }}
-  #         export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-py$PYTHON_VERSION_FORMATTED
-
-  #         if [[ ${{ github.event_name }} = 'pull_request' ]]
-  #         then
-  #           export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-${{ github.event.number }}-$COILED_SOFTWARE_NAME_TAIL
-  #         else
-  #           export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
-  #         fi
-
-  #         # Create conda environment.yaml file for the latest software environment
-  #         python ci/create_latest_runtime_meta.py
-  #         export ENV_FILE=latest.yaml
-  #         cat $ENV_FILE
-
-  #         mamba install coiled
-  #         echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
-  #         coiled env create --name $COILED_SOFTWARE_NAME --conda $ENV_FILE
-
-  #         # Put COILED_SOFTWARE_NAME into a file so it can be downloaded in subsequent workflow jobs
-  #         echo $COILED_SOFTWARE_NAME > software_name.txt
-
-  #     - name: Upload environment file
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: software-environment-py${{ matrix.python-version }}
-  #         path: |
-  #           latest.yaml
-  #           software_name.txt
-  #           test_upstream.txt
-
-  # runtime:
-  #   name: Runtime - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-  #   needs: software
-  #   runs-on: ${{ matrix.os }}
-  #   timeout-minutes: 120
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os: ["ubuntu-latest"]
-  #       python-version: ["3.9"]
-  #       runtime-version: ["latest", "0.0.3"]
-
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Set up environment
-  #       uses: conda-incubator/setup-miniconda@v2
-  #       with:
-  #         miniforge-variant: Mambaforge
-  #         use-mamba: true
-  #         python-version: ${{ matrix.python-version }}
-  #         environment-file: ci/environment.yml
-
-  #     - name: Download software environment assets
-  #       if: matrix.runtime-version == 'latest'
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: software-environment-py${{ matrix.python-version }}
-
-  #     - name: Install coiled-runtime
-  #       env:
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #       run: source ci/scripts/install_coiled_runtime.sh
-
-  #     - name: Run Coiled Runtime Tests
-  #       id: test
-  #       env:
-  #         DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-  #         AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #       run: bash ci/scripts/run_tests.sh tests/runtime
-
-  # benchmarks:
-  #   name: Benchmarks - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-  #   needs: software
-  #   runs-on: ${{ matrix.os }}
-  #   timeout-minutes: 120
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os: ["ubuntu-latest"]
-  #       python-version: ["3.9"]
-  #       runtime-version: ["latest", "0.0.3"]
-
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
-
-  #     - name: Set up environment
-  #       uses: conda-incubator/setup-miniconda@v2
-  #       with:
-  #         miniforge-variant: Mambaforge
-  #         use-mamba: true
-  #         python-version: ${{ matrix.python-version }}
-  #         environment-file: ci/environment.yml
-
-  #     - name: Download software environment assets
-  #       if: matrix.runtime-version == 'latest'
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: software-environment-py${{ matrix.python-version }}
-
-  #     - name: Install coiled-runtime
-  #       env:
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #       run: source ci/scripts/install_coiled_runtime.sh
-
-  #     - name: Run benchmarking tests
-  #       id: benchmarking_tests
-  #       env:
-  #         DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-  #         AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #       run: bash ci/scripts/run_tests.sh tests/benchmarks
-
-  stability:
-    name: Stability - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-    #needs: software
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
+  software:
+    name: Setup
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
-        python-version: ["3.8"] #["3.8", "3.9", "3.10"]
-        runtime-version: ["0.0.3"] #["latest", "0.0.3"]
-        # include:
-        #   - python-version: "3.9"
-        #     runtime-version: "latest"
-        #     os: "windows-latest"
-        #   - python-version: "3.9"
-        #     runtime-version: "latest"
-        #     os: "macos-latest"
-        #   - python-version: "3.7"
-        #     runtime-version: "0.0.3"
-        #     os: "ubuntu-latest"
-        # exclude:
-        #   # `coiled-runtime=0.0.3` pins to a version of Dask
-        #   # that doesn't support Python 3.10
-        #   - python-version: "3.10"
-        #     runtime-version: "0.0.3"
+        python-version: ["3.8", "3.9", "3.10"]
 
     steps:
       - uses: actions/checkout@v2
@@ -234,11 +43,202 @@ jobs:
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
-      # - name: Download software environment assets
-      #   if: matrix.runtime-version == 'latest'
-      #   uses: actions/download-artifact@v3
-      #   with:
-      #     name: software-environment-py${{ matrix.python-version }}
+      - name: Check upstream
+        run: |
+          if [[ ${{ github.event_name }} == "pull_request" ]]
+          then
+              export REF="HEAD^2"
+          else
+              export REF="HEAD"
+          fi
+
+          COMMIT="$(git log -n 1 --pretty=format:%s $REF)"
+          if [[ "$COMMIT" == *"test-upstream"* || ${{ github.event_name }} == "schedule" ]]
+          then
+            export TEST_UPSTREAM="true"
+          else
+            export TEST_UPSTREAM="false"
+          fi
+
+          # Put TEST_UPSTREAM into $GITHUB_ENV so it can be used in subsequent workflow steps
+          echo $TEST_UPSTREAM
+          echo TEST_UPSTREAM=$TEST_UPSTREAM >> $GITHUB_ENV
+
+          # Put TEST_UPSTREAM into a file so it can be downloaded in subsequent workflow jobs
+          echo $TEST_UPSTREAM > test_upstream.txt
+
+      - name: Build Coiled Software Environment
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+        run: |
+          export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
+          export REF_NAME_FORMATTED=$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
+          export COILED_SOFTWARE_NAME_HEAD=dask-engineering/coiled-runtime-${{ github.event_name }}
+          export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-py$PYTHON_VERSION_FORMATTED
+
+          if [[ ${{ github.event_name }} = 'pull_request' ]]
+          then
+            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-${{ github.event.number }}-$COILED_SOFTWARE_NAME_TAIL
+          else
+            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
+          fi
+
+          # Create conda environment.yaml file for the latest software environment
+          python ci/create_latest_runtime_meta.py
+          export ENV_FILE=latest.yaml
+          cat $ENV_FILE
+
+          mamba install coiled
+          echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
+          coiled env create --name $COILED_SOFTWARE_NAME --conda $ENV_FILE
+
+          # Put COILED_SOFTWARE_NAME into a file so it can be downloaded in subsequent workflow jobs
+          echo $COILED_SOFTWARE_NAME > software_name.txt
+
+      - name: Upload environment file
+        uses: actions/upload-artifact@v3
+        with:
+          name: software-environment-py${{ matrix.python-version }}
+          path: |
+            latest.yaml
+            software_name.txt
+            test_upstream.txt
+
+  runtime:
+    name: Runtime - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    needs: software
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.9"]
+        runtime-version: ["latest", "0.0.3"]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: ${{ matrix.python-version }}
+          environment-file: ci/environment.yml
+
+      - name: Download software environment assets
+        if: matrix.runtime-version == 'latest'
+        uses: actions/download-artifact@v3
+        with:
+          name: software-environment-py${{ matrix.python-version }}
+
+      - name: Install coiled-runtime
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: source ci/scripts/install_coiled_runtime.sh
+
+      - name: Run Coiled Runtime Tests
+        id: test
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: bash ci/scripts/run_tests.sh tests/runtime
+
+  benchmarks:
+    name: Benchmarks - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    needs: software
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.9"]
+        runtime-version: ["latest", "0.0.3"]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: ${{ matrix.python-version }}
+          environment-file: ci/environment.yml
+
+      - name: Download software environment assets
+        if: matrix.runtime-version == 'latest'
+        uses: actions/download-artifact@v3
+        with:
+          name: software-environment-py${{ matrix.python-version }}
+
+      - name: Install coiled-runtime
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: source ci/scripts/install_coiled_runtime.sh
+
+      - name: Run benchmarking tests
+        id: benchmarking_tests
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: bash ci/scripts/run_tests.sh tests/benchmarks
+
+  stability:
+    name: Stability - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    needs: software
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.8", "3.9", "3.10"]
+        runtime-version: ["latest", "0.0.3"]
+        include:
+          - python-version: "3.9"
+            runtime-version: "latest"
+            os: "windows-latest"
+          - python-version: "3.9"
+            runtime-version: "latest"
+            os: "macos-latest"
+          - python-version: "3.7"
+            runtime-version: "0.0.3"
+            os: "ubuntu-latest"
+        exclude:
+          # `coiled-runtime=0.0.3` pins to a version of Dask
+          # that doesn't support Python 3.10
+          - python-version: "3.10"
+            runtime-version: "0.0.3"
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: ${{ matrix.python-version }}
+          environment-file: ci/environment.yml
+
+      - name: Download software environment assets
+        if: matrix.runtime-version == 'latest'
+        uses: actions/download-artifact@v3
+        with:
+          name: software-environment-py${{ matrix.python-version }}
 
       - name: Install coiled-runtime
         env:
@@ -253,7 +253,9 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
         run: |
-          if [[ ${{ github.event_name }} == "pull_request" ]]
+          # run only on latest as cluster_dump to s3 was merged after dask = 2022.1.0
+          if [[ ${{ github.event_name }} == "pull_request" ]] &&
+          matrix.runtime-version == 'latest'
           then
               export CLUSTER_DUMP="true"
           else
@@ -264,14 +266,14 @@ jobs:
           bash ci/scripts/run_tests.sh tests/stability/test_array.py::test_dump
 
   cleanup:
-    needs: [stability] #[software, runtime, benchmarks, stability]
+    needs: [software, runtime, benchmarks, stability]
     if: always()
     name: Cleanup
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8"] #["3.8", "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
     steps:
       - uses: actions/checkout@v2
 
@@ -298,7 +300,7 @@ jobs:
 
   report:
     name: report
-    needs: [stability] #[runtime, benchmarks, stability]
+    needs: [runtime, benchmarks, stability]
     if: |
       always()
       && github.event_name != 'pull_request'

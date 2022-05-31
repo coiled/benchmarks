@@ -90,6 +90,8 @@ def small_cluster(request):
         yield cluster
 
 
+# this code was taken from pytest docs
+# https://docs.pytest.org/en/latest/example/simple.html#making-test-result-information-available-in-fixtures
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
 def pytest_runtest_makereport(item, call):
     # execute all other hooks to obtain the report object
@@ -112,7 +114,7 @@ def small_client(small_cluster, s3_cluster_dump_url, request):
         yield client
 
         cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
-        print(f"{cluster_dump=}")
+
         if cluster_dump and request.node.rep_call.failed:
             dump_path = os.path.join(s3_cluster_dump_url, small_cluster.name)
             print(f"Cluster state dump can be found at: {dump_path}")
