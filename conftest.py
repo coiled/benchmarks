@@ -103,7 +103,7 @@ def pytest_runtest_makereport(item, call):
 
 
 @pytest.fixture
-def small_client(small_cluster, s3_cluster_dump_url, s3_storage_options, request):
+def small_client(small_cluster, s3_cluster_dump_url, request):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
@@ -116,7 +116,7 @@ def small_client(small_cluster, s3_cluster_dump_url, s3_storage_options, request
         if cluster_dump and request.node.rep_call.failed:
             dump_path = os.path.join(s3_cluster_dump_url, small_cluster.name)
             print(f"Cluster state dump can be found at: {dump_path}")
-            client.dump_cluster_state(dump_path, **s3_storage_options)
+            client.dump_cluster_state(dump_path)
 
 
 S3_REGION = "us-east-2"
