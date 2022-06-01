@@ -4,6 +4,7 @@ Parquet-related benchmarks.
 import uuid
 
 import dask.dataframe as dd
+import dask.datasets
 import distributed
 import pandas
 import pytest
@@ -68,3 +69,20 @@ def test_read_hive_partitioned_data(parquet_client):
     distributed.wait(ddf2)
     # Enable once we have dask>=2022.3.0
     # ddf2.divisions = ddf2.compute_current_divisions()
+
+
+def test_write_wide_data(parquet_client, s3_url):
+    # Write a ~700 partition, ~200 GB dataset with a lot of columns
+    ddf = dask.datasets.timeseries(
+        dtypes={
+            **{f"name-{i}": str for i in range(25)},
+            **{f"price-{i}": float for i in range(25)},
+            **{f"id-{i}": int for i in range(25)},
+            **{f"cat-{i}": "category" for i in range(25)},
+        },
+        start="2021-01-01",
+        end="2021-02-01",
+        freq="10ms",
+        partition_freq="1H",
+    )
+    ddf.to_parquet(s3_url + "/wide-data/")
