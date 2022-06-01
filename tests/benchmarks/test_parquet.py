@@ -6,6 +6,7 @@ import uuid
 import dask.dataframe as dd
 import dask.datasets
 import distributed
+import fsspec
 import pandas
 import pytest
 from coiled.v2 import Cluster
@@ -86,3 +87,23 @@ def test_write_wide_data(parquet_client, s3_url):
         partition_freq="1H",
     )
     ddf.to_parquet(s3_url + "/wide-data/")
+
+
+@pytest.mark.parametrize("kind", ("s3fs", "pandas", "dask"))
+def test_s3_ec2_throughput(parquet_client, kind):
+    # Test throughput for downloading and parsing a ~500 MB file
+    path = (
+        "s3://coiled-runtime-ci/ookla-open-data/"
+        "type=fixed/year=2022/quarter=1/2022-01-01_performance_fixed_tiles.parquet"
+    )
+    if kind == "s3fs":
+
+        def load(path):
+            with fsspec.open(path) as f:
+                f.read()
+
+        parquet_client.submit(load, path)
+    elif kind == "pandas":
+        parquet_client.submit(pandas.read_parquet, path, engine="pyarrow")
+    elif kind == "dask":
+        distributed.wait(dd.read_parquet(path, engine="pyarrow").persist())
