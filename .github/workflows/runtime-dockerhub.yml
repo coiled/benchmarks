@@ -5,7 +5,7 @@ on:
     branches: main
     paths:
       - environments/**
-  pull_request: main   # only to test while developing    
+  pull_request: # only to test while developing
 
 jobs:
   build:
