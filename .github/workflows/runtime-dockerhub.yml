@@ -2,10 +2,10 @@ name: Build docker image and deploy
 
 on:
   push:
-    branches: "main"
+    branches: main
     paths:
       - environments/**
-  pull_request: "main"   # only to test while developing    
+  pull_request: main   # only to test while developing    
 
 jobs:
   build:
