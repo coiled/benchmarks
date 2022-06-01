@@ -19,13 +19,11 @@ def test_read_spark_generated_data():
         n_workers=25,
         worker_vm_types=["m5.large"],
         scheduler_vm_types=["m5.large"],
-        backend_options={"region": "us-east-1"},
     ) as cluster:
         with distributed.Client(cluster):
             ddf = dd.read_parquet(
-                "s3://aws-roda-hcls-datalake/thousandgenomes_dragen/var_partby_samples/NA21**.parquet",
+                "s3://coiled-runtime-ci/thousandgenomes_dragen/var_partby_samples/NA21**.parquet",
                 engine="pyarrow",
-                storage_options={"anon": True},
                 index="sample_id",
             )
             ddf.groupby(ddf.index).first().compute()
@@ -37,16 +35,14 @@ def test_read_hive_partitioned_data():
     """
     with Cluster(
         f"ookla-{uuid.uuid4().hex[:8]}",
-        n_workers=15,
+        n_workers=25,
         worker_vm_types=["m5.xlarge"],
         scheduler_vm_types=["m5.xlarge"],
-        backend_options={"region": "us-west-2"},
     ) as cluster:
         with distributed.Client(cluster):
             ddf = dd.read_parquet(
-                "s3://ookla-open-data/parquet/**fixed_tiles.parquet",
+                "s3://coiled-runtime-ci/ookla-open-data/type=fixed/**.parquet",
                 engine="pyarrow",
-                storage_options={"anon": True},
             )
 
             # The data is already partitioned by year and quarter, but it doesn't
@@ -65,4 +61,5 @@ def test_read_hive_partitioned_data():
 
             ddf2 = ddf.map_partitions(get_period, meta=get_period(ddf._meta)).persist()
             distributed.wait(ddf2)
-            ddf2.divisions = ddf2.compute_current_divisions()
+            # Enable once we have dask>=2022.3.0
+            # ddf2.divisions = ddf2.compute_current_divisions()
