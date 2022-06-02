@@ -26,4 +26,4 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: coiledci/${{ matrix.image }}:latest
+          tags: coiled/${{ matrix.image }}:latest
