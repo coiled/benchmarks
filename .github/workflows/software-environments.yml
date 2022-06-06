@@ -5,7 +5,6 @@ on:
     branches: main
     paths:
       - environments/**
-  pull_request: # only to test while developing
 
 jobs:
   build:
@@ -16,12 +15,12 @@ jobs:
       matrix:
         python-version: ["3.7", "3.8", "3.9"]
         runtime-version: ["0.0.3"]
-        # server: ["https://cloud.coiled.io", "https://staging.coiledhq.com"]
-        # include:
-        #   - server: "https://cloud.coiled.io"
-        #     token-name: COILED_BENCHMARK_BOT_TOKEN
-        #   - server: "https://staging.coiledhq.com"
-        #     token-name: COILED_STAGING_BENCHMARK_BOT_TOKEN
+        server: ["https://cloud.coiled.io", "https://staging.coiledhq.com"]
+        include:
+          - server: "https://cloud.coiled.io"
+            token-name: COILED_BENCHMARK_BOT_TOKEN
+          - server: "https://staging.coiledhq.com"
+            token-name: COILED_STAGING_BENCHMARK_BOT_TOKEN
 
     steps:
       - name: Checkout source
@@ -34,9 +33,9 @@ jobs:
         run: python -m pip install coiled
 
       - name: Create Runtime ${{ matrix.runtime-version }} Python ${{ matrix.python-version }} ${{ matrix.server }} software environment
-        # env:
-        #   DASK_COILED__SERVER: ${{ matrix.server }}
-        #   DASK_COILED__TOKEN: ${{ secrets[matrix.token-name] }}
+        env:
+          DASK_COILED__SERVER: ${{ matrix.server }}
+          DASK_COILED__TOKEN: ${{ secrets[matrix.token-name] }}
         run: |
           # Coiled software environment names can't contain "." or uppercase characters
           export RUNTIME_VERSION_FORMATTED=$(echo "${{ matrix.runtime-version }}" | sed 's/\./-/g' )
