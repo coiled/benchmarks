@@ -59,5 +59,5 @@ jobs:
         uses: docker/build-push-action@v3
         with:
           push: true
-          tags: coiled/$COILED_SOFTWARE_ENV_NAME:0.0.3
-          build-args: ENV_FILENAME=$COILED_SOFTWARE_ENV_NAME
+          tags: coiled/${{ env.COILED_SOFTWARE_ENV_NAME }}:0.0.3
+          build-args: ENV_FILENAME=${{ env.COILED_SOFTWARE_ENV_NAME }}
