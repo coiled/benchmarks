@@ -5,10 +5,10 @@ on:
       - main
     tags:
       - '*'
-  # pull_request:
-  # schedule:
-  #   # Runs "At 00:01" (see https://crontab.guru)
-  #   - cron: "1 0 * * *"
+  pull_request:
+  schedule:
+    # Runs "At 00:01" (see https://crontab.guru)
+    - cron: "1 0 * * *"
 
 concurrency:
   # Include `github.event_name` to avoid pushes to `main` and
