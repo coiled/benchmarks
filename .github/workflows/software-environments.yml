@@ -18,8 +18,9 @@ jobs:
         runtime-version: ["0.0.3"]
         server: ["https://cloud.coiled.io", "https://staging.coiledhq.com"]
         include:
-          - server: "https://cloud.coiled.io"
-            token-name: COILED_BENCHMARK_BOT_TOKEN
+          # uncomment once tested on staging
+          # - server: "https://cloud.coiled.io"
+          #   token-name: COILED_BENCHMARK_BOT_TOKEN
           - server: "https://staging.coiledhq.com"
             token-name: COILED_STAGING_BENCHMARK_BOT_TOKEN
 
