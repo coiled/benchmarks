@@ -34,6 +34,10 @@ def test_read_spark_generated_data(parquet_client):
     """
     Read a ~15 GB subset of a ~800 GB spark-generated
     open dataset on AWS.
+
+    The dataset was copied from AWS open data on 2022-05-25
+    https://registry.opendata.aws/1000-genomes-data-lakehouse-ready/
+    Citation: https://www.nature.com/articles/s41467-018-08148-z
     """
     ddf = dd.read_parquet(
         "s3://coiled-runtime-ci/thousandgenomes_dragen/var_partby_samples/NA21**.parquet",
@@ -46,6 +50,9 @@ def test_read_spark_generated_data(parquet_client):
 def test_read_hive_partitioned_data(parquet_client):
     """
     Read a dataset partitioned by year and quarter.
+
+    The dataset was copied from AWS open data on 2022-05-25
+    https://registry.opendata.aws/speedtest-global-performance/
     """
     ddf = dd.read_parquet(
         "s3://coiled-runtime-ci/ookla-open-data/type=fixed/**.parquet",
@@ -68,8 +75,6 @@ def test_read_hive_partitioned_data(parquet_client):
 
     ddf2 = ddf.map_partitions(get_period, meta=get_period(ddf._meta)).persist()
     distributed.wait(ddf2)
-    # Enable once we have dask>=2022.3.0
-    # ddf2.divisions = ddf2.compute_current_divisions()
 
 
 def test_write_wide_data(parquet_client, s3_url):
