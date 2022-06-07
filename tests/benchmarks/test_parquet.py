@@ -11,12 +11,14 @@ import pandas
 import pytest
 from coiled.v2 import Cluster
 
+N_WORKERS = 15
+
 
 @pytest.fixture(scope="module")
 def parquet_cluster():
     with Cluster(
         f"parquet-{uuid.uuid4().hex[:8]}",
-        n_workers=15,
+        n_workers=N_WORKERS,
         worker_vm_types=["m5.xlarge"],
         scheduler_vm_types=["m5.xlarge"],
     ) as cluster:
@@ -26,6 +28,8 @@ def parquet_cluster():
 @pytest.fixture(scope="module")
 def parquet_client(parquet_cluster):
     with distributed.Client(parquet_cluster) as client:
+        parquet_cluster.scale(N_WORKERS)
+        parquet_cluster.wait_for_workers(N_WORKERS)
         client.restart()
         yield client
 
