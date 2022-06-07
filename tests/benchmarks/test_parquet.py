@@ -29,7 +29,7 @@ def parquet_cluster():
 def parquet_client(parquet_cluster):
     with distributed.Client(parquet_cluster) as client:
         parquet_cluster.scale(N_WORKERS)
-        parquet_cluster.wait_for_workers(N_WORKERS)
+        client.wait_for_workers(N_WORKERS)
         client.restart()
         yield client
 
