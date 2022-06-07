@@ -16,7 +16,7 @@ jobs:
       matrix:
         python-version: ["3.7", "3.8", "3.9"]
         runtime-version: ["0.0.3"]
-        server: ["https://cloud.coiled.io", "https://staging.coiledhq.com"]
+        server: ["https://staging.coiledhq.com"] #, "https://cloud.coiled.io"]
         include:
           # uncomment once tested on staging
           # - server: "https://cloud.coiled.io"
