@@ -95,7 +95,7 @@ def test_write_wide_data(parquet_client, s3_url):
 
 
 @pytest.mark.parametrize("kind", ("s3fs", "pandas", "dask"))
-def test_s3_ec2_throughput(parquet_client, kind):
+def test_download_throughput(parquet_client, kind):
     # Test throughput for downloading and parsing a ~500 MB file
     path = (
         "s3://coiled-runtime-ci/ookla-open-data/"
