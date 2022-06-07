@@ -5,6 +5,7 @@ on:
     branches: main
     paths:
       - environments/**
+  pull_request: #to test if work, remove after testing
 
 jobs:
   build:
@@ -32,17 +33,12 @@ jobs:
       - name: Install Coiled
         run: python -m pip install coiled
 
-      - name: Create Runtime ${{ matrix.runtime-version }} Python ${{ matrix.python-version }} ${{ matrix.server }} software environment
-        env:
-          DASK_COILED__SERVER: ${{ matrix.server }}
-          DASK_COILED__TOKEN: ${{ secrets[matrix.token-name] }}
+      - name: Create Runtime software environment environment variables
         run: |
           # Coiled software environment names can't contain "." or uppercase characters
           export RUNTIME_VERSION_FORMATTED=$(echo "${{ matrix.runtime-version }}" | sed 's/\./-/g' )
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
           export COILED_SOFTWARE_ENV_NAME=coiled-runtime-$RUNTIME_VERSION_FORMATTED-py$PYTHON_VERSION_FORMATTED
-
-          coiled env create --name coiled/$COILED_SOFTWARE_ENV_NAME --conda environments/$COILED_SOFTWARE_ENV_NAME.yml
           
           # Put COILED_SOFTWARE_ENV_NAME into $GITHUB_ENV so it can be used in subsequent workflow steps
           echo $COILED_SOFTWARE_ENV_NAME
@@ -60,3 +56,10 @@ jobs:
           push: true
           tags: coiled/coiled-runtime:${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           build-args: ENV_FILENAME=${{ env.COILED_SOFTWARE_ENV_NAME }}
+
+      - name: Create Runtime ${{ matrix.runtime-version }} Python ${{ matrix.python-version }} ${{ matrix.server }} software environment
+        env:
+          DASK_COILED__SERVER: ${{ matrix.server }}
+          DASK_COILED__TOKEN: ${{ secrets[matrix.token-name] }}
+        run: |
+          coiled env create --name coiled/${{ env.COILED_SOFTWARE_ENV_NAME }} --container coiled/coiled-runtime:${{ matrix.runtime-version }}-py${{ matrix.python-version }}
