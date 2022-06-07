@@ -5,6 +5,7 @@ on:
     branches: main
     paths:
       - environments/**
+  pull_request:
 
 jobs:
   build:
