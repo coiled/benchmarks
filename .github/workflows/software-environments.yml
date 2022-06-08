@@ -99,4 +99,4 @@ jobs:
           DASK_COILED__SERVER: ${{ matrix.server }}
           DASK_COILED__TOKEN: ${{ secrets[matrix.token-name] }}
         run: |
-          coiled env create --name dask-engineering/${{ env.COILED_SOFTWARE_ENV_NAME }} --container coiled/coiled-runtime:${{ matrix.runtime-version }}-py${{ matrix.python-version }}_TEST
+          coiled env create --name dask-engineering/${{ env.COILED_SOFTWARE_ENV_NAME }} --container coiled/coiled-runtime:${{ matrix.runtime-version }}-py${{ matrix.python-version }}
