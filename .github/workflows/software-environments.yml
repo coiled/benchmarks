@@ -29,7 +29,6 @@ jobs:
             token-name: COILED_BENCHMARK_BOT_TOKEN
           # - server: "https://staging.coiledhq.com"
           #   token-name: COILED_STAGING_BENCHMARK_BOT_TOKEN
-          - on-cron: false
             python-version: "3.7"
             runtime-version: "0.0.3"
         exclude:
@@ -38,7 +37,10 @@ jobs:
           - python-version: "3.10"
             runtime-version: "0.0.3"
           - on-cron: true
-            runtime-version: "0.0.3" 
+            runtime-version: "0.0.3"
+          - on-cron: true
+            python-version: "3.7"
+   
 
     steps:
       - name: Checkout source
@@ -63,7 +65,7 @@ jobs:
       
       - name: Replace nightly version on env file
         run: |
-            if [[ ${{ matrix.runtime-version }} == 'nightly' ]]
+            if [[ ${{ matrix.runtime-version }} == nightly ]]
             then
               # conda search for the coiled-runtime latest nightly
               arr_nightly=($(conda search --override-channels -c coiled/label/dev coiled-runtime | tail -n 1))
