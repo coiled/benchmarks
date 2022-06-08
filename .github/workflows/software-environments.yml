@@ -57,7 +57,7 @@ jobs:
           echo $COILED_SOFTWARE_ENV_NAME
           echo COILED_SOFTWARE_ENV_NAME=$COILED_SOFTWARE_ENV_NAME >> $GITHUB_ENV
       
-      - name: Find and Replace nightly
+      - name: Replace nightly version on env file
         if: matrix.runtime-version == "nightly"
         run: |
             # conda search for the coiled-runtime latest nightly
@@ -66,12 +66,17 @@ jobs:
             # extract coiled-runtime nightly version / build
             export RUNTIME_NIGHTLY_VERSION=${arr_nightly[1]}
             echo "Latest coiled-runtime nightly version $RUNTIME_NIGHTLY_VERSION"
-
+        
+            # Put RUNTIME_NIGHTLY_VERSION into $GITHUB_ENV so it can be used in subsequent workflow steps
+            echo RUNTIME_NIGHTLY_VERSION=$RUNTIME_NIGHTLY_VERSION >> $GITHUB_ENV
+          
+      - name: Find and Replace nightly
+        if: matrix.runtime-version == "nightly"
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           include: "environments/coiled-runtime-nightly-*.yml"
           find: "coiled-runtime"
-          replace: "coiled-runtime=$RUNTIME_NIGHTLY_VERSION"
+          replace: "coiled-runtime=${{ env.RUNTIME_NIGHTLY_VERSION }}"
 
       - name: Login to DockerHub
         uses: docker/login-action@v2
