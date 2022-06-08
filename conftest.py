@@ -81,9 +81,8 @@ def small_cluster(request):
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
         n_workers=10,
-        worker_memory="8 GiB",
-        worker_vm_types=["m5.large"],
-        scheduler_vm_types=["m5.large"],
+        worker_vm_types=["t3.large"],
+        scheduler_vm_types=["t3.large"],
         backend_options=backend_options,
     ) as cluster:
         yield cluster
