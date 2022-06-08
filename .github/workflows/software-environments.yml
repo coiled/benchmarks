@@ -39,7 +39,6 @@ jobs:
             runtime-version: "0.0.3"
           - on-cron: true
             runtime-version: "0.0.3"
-            python-version: "*"
    
 
     steps:
