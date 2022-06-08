@@ -29,9 +29,9 @@ jobs:
             token-name: COILED_BENCHMARK_BOT_TOKEN
           # - server: "https://staging.coiledhq.com"
           #   token-name: COILED_STAGING_BENCHMARK_BOT_TOKEN
-          - on-cron: false
-            python-version: "3.7"
-            runtime-version: "0.0.3"
+          # - on-cron: false #this is not working, commenting for now
+          #   python-version: "3.7"
+          #   runtime-version: "0.0.3"
         exclude:
           # `coiled-runtime=0.0.3` pins to a version of Dask
           # that doesn't support Python 3.10
@@ -39,7 +39,7 @@ jobs:
             runtime-version: "0.0.3"
           - on-cron: true
             runtime-version: "0.0.3"
-
+            python-version: "3.7"
    
 
     steps:
