@@ -111,8 +111,10 @@ def test_download_throughput(parquet_client, kind):
             with fsspec.open(path) as f:
                 f.read()
 
-        parquet_client.submit(load, path)
+        distributed.wait(parquet_client.submit(load, path))
     elif kind == "pandas":
-        parquet_client.submit(pandas.read_parquet, path, engine="pyarrow")
+        distributed.wait(
+            parquet_client.submit(pandas.read_parquet, path, engine="pyarrow")
+        )
     elif kind == "dask":
         distributed.wait(dd.read_parquet(path, engine="pyarrow").persist())
