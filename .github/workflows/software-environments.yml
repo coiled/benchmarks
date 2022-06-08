@@ -60,7 +60,7 @@ jobs:
           echo COILED_SOFTWARE_ENV_NAME=$COILED_SOFTWARE_ENV_NAME >> $GITHUB_ENV
       
       - name: Replace nightly version on env file
-        if: matrix.runtime-version == "nightly"
+        if: matrix.runtime-version == 'nightly'
         run: |
             # conda search for the coiled-runtime latest nightly
             arr_nightly=($(conda search --override-channels -c coiled/label/dev coiled-runtime | tail -n 1))
