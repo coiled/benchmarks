@@ -29,9 +29,9 @@ jobs:
             token-name: COILED_BENCHMARK_BOT_TOKEN
           # - server: "https://staging.coiledhq.com"
           #   token-name: COILED_STAGING_BENCHMARK_BOT_TOKEN
-          - python-version: "3.7"
+          - on-cron: false
+            python-version: "3.7"
             runtime-version: "0.0.3"
-            on-cron: false
         exclude:
           # `coiled-runtime=0.0.3` pins to a version of Dask
           # that doesn't support Python 3.10
@@ -63,7 +63,7 @@ jobs:
       
       - name: Replace nightly version on env file
         run: |
-            if [[ ${{ matrix.runtime-version }} == "nightly" ]]
+            if [[ ${{ matrix.runtime-version }} == 'nightly' ]]
             then
               # conda search for the coiled-runtime latest nightly
               arr_nightly=($(conda search --override-channels -c coiled/label/dev coiled-runtime | tail -n 1))
