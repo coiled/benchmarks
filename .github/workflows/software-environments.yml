@@ -71,13 +71,15 @@ jobs:
               
               # extract coiled-runtime nightly version / build
               export RUNTIME_NIGHTLY_VERSION=${arr_nightly[1]}
-              echo "Latest coiled-runtime nightly version $RUNTIME_NIGHTLY_VERSION"
+              export RUNTIME_NIGHTLY_VERSION_FORMATTED=$(echo $RUNTIME_NIGHTLY_VERSION | sed 's/\./-/g' )
+              echo "Latest coiled-runtime nightly version $RUNTIME_NIGHTLY_VERSION and formatted name $RUNTIME_NIGHTLY_VERSION_FORMATTED"
             else
               export RUNTIME_NIGHTLY_VERSION=""
             fi
         
-            # Put RUNTIME_NIGHTLY_VERSION into $GITHUB_ENV so it can be used in subsequent workflow steps
+            # Put RUNTIME_NIGHTLY_VERSION and RUNTIME_NIGHTLY_VERSION_FORMATTED into $GITHUB_ENV so it can be used in subsequent workflow steps
             echo RUNTIME_NIGHTLY_VERSION=$RUNTIME_NIGHTLY_VERSION >> $GITHUB_ENV
+            echo RUNTIME_NIGHTLY_VERSION_FORMATTED=$RUNTIME_NIGHTLY_VERSION_FORMATTED >> $GITHUB_ENV
           
       - name: Find and Replace nightly
         if: matrix.runtime-version == 'nightly'
@@ -105,4 +107,4 @@ jobs:
           DASK_COILED__SERVER: ${{ matrix.server }}
           DASK_COILED__TOKEN: ${{ secrets[matrix.token-name] }}
         run: |
-          coiled env create --name dask-engineering/${{ env.COILED_SOFTWARE_ENV_NAME }}${{ env.RUNTIME_NIGHTLY_VERSION }}  --container coiled/coiled-runtime:${{ matrix.runtime-version }}${{ env.RUNTIME_NIGHTLY_VERSION }}-py${{ matrix.python-version }}
+          coiled env create --name dask-engineering/${{ env.COILED_SOFTWARE_ENV_NAME }}${{ env.RUNTIME_NIGHTLY_VERSION_FORMATTED }}  --container coiled/coiled-runtime:${{ matrix.runtime-version }}${{ env.RUNTIME_NIGHTLY_VERSION }}-py${{ matrix.python-version }}
