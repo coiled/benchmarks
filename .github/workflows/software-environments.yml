@@ -5,6 +5,10 @@ on:
     branches: main
     paths:
       - environments/**
+  pull_request: #For testing purposes
+  schedule:
+    # Runs at 01:00 am every day 1 hour after nightly release.
+    - cron: "0 1 * * *"
 
 jobs:
   build:
@@ -13,14 +17,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.7", "3.8", "3.9"]
-        runtime-version: ["0.0.3"]
-        server: ["https://cloud.coiled.io", "https://staging.coiledhq.com"]
+        python-version: ["3.8", "3.9", "3.10"]
+        on-cron:  github.event_name == "pull_request" #"schedule"
+        runtime-version: ["0.0.3", "nightly"]
+        server: ["https://cloud.coiled.io"] #, "https://staging.coiledhq.com"]
         include:
           - server: "https://cloud.coiled.io"
             token-name: COILED_BENCHMARK_BOT_TOKEN
-          - server: "https://staging.coiledhq.com"
-            token-name: COILED_STAGING_BENCHMARK_BOT_TOKEN
+          # - server: "https://staging.coiledhq.com"
+          #   token-name: COILED_STAGING_BENCHMARK_BOT_TOKEN
+          - python-version: "3.7"
+            runtime-version: "0.0.3"
+        exclude:
+          # `coiled-runtime=0.0.3` pins to a version of Dask
+          # that doesn't support Python 3.10
+          - python-version: "3.10"
+            runtime-version: "0.0.3"
+          - on-cron: true
+            runtime-version: "0.0.3" 
 
     steps:
       - name: Checkout source
@@ -42,6 +56,22 @@ jobs:
           # Put COILED_SOFTWARE_ENV_NAME into $GITHUB_ENV so it can be used in subsequent workflow steps
           echo $COILED_SOFTWARE_ENV_NAME
           echo COILED_SOFTWARE_ENV_NAME=$COILED_SOFTWARE_ENV_NAME >> $GITHUB_ENV
+      
+      - name: Find and Replace nightly
+        if: matrix.runtime-version == "nightly"
+        run: |
+            # conda search for the coiled-runtime latest nightly
+            arr_nightly=($(conda search --override-channels -c coiled/label/dev coiled-runtime | tail -n 1))
+            
+            # extract coiled-runtime nightly version / build
+            export RUNTIME_NIGHTLY_VERSION=${arr_nightly[1]}
+            echo "Latest coiled-runtime nightly version $RUNTIME_NIGHTLY_VERSION"
+
+        uses: jacobtomlinson/gha-find-replace@v2
+        with:
+          include: "environments/coiled-runtime-nightly-*.yml"
+          find: "coiled-runtime"
+          replace: "coiled-runtime=$RUNTIME_NIGHTLY_VERSION"
 
       - name: Login to DockerHub
         uses: docker/login-action@v2
@@ -61,4 +91,4 @@ jobs:
           DASK_COILED__SERVER: ${{ matrix.server }}
           DASK_COILED__TOKEN: ${{ secrets[matrix.token-name] }}
         run: |
-          coiled env create --name coiled/${{ env.COILED_SOFTWARE_ENV_NAME }} --container coiled/coiled-runtime:${{ matrix.runtime-version }}-py${{ matrix.python-version }}
+          coiled env create --name dask_engineering/${{ env.COILED_SOFTWARE_ENV_NAME }} --container coiled/coiled-runtime:${{ matrix.runtime-version }}-py${{ matrix.python-version }}_TEST
