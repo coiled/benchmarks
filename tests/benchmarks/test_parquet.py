@@ -63,22 +63,7 @@ def test_read_hive_partitioned_data(parquet_client):
         engine="pyarrow",
     )
 
-    # The data is already partitioned by year and quarter, but it doesn't
-    # fit Dask's partitioning scheme well since we don't support multiindexes.
-    # This is a lot of work to set the index for something that is already
-    # partitioned! We also go around dask's set_index, which does a huge amount
-    # of extra work, and even takes down instances.
-    def get_period(df):
-        return df.set_index(
-            pandas.PeriodIndex(
-                df.year.astype(str) + "Q" + df.quarter.astype(str),
-                freq="Q",
-                name="period",
-            )
-        )
-
-    ddf2 = ddf.map_partitions(get_period, meta=get_period(ddf._meta)).persist()
-    distributed.wait(ddf2)
+    ddf.groupby(["year", "quarter"]).first().compute()
 
 
 def test_write_wide_data(parquet_client, s3_url):
