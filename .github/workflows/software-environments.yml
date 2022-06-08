@@ -9,6 +9,8 @@ on:
   schedule:
     # Runs at 01:00 am every day 1 hour after nightly release.
     - cron: "0 1 * * *"
+  workflow_dispatch:
+
 
 jobs:
   build:

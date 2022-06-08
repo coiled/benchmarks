@@ -295,7 +295,7 @@ jobs:
       && github.event_name != 'pull_request'
       && github.repository == 'coiled/coiled-runtime'
       && (needs.runtime.result == 'failure' ||
-          needs.benchmarking.result == 'failure' ||
+          needs.benchmarks.result == 'failure' ||
           needs.stability.result == 'failure')
     runs-on: ubuntu-latest
     defaults:
