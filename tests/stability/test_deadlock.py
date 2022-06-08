@@ -5,6 +5,7 @@ import dask
 from distributed import Client, wait
 
 
+@pytest.mark.latest_runtime
 def test_repeated_merge_spill():
     with coiled.v2.Cluster(
         name=f"test_deadlock-{uuid.uuid4().hex}",
