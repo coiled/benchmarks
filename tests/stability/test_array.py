@@ -13,9 +13,9 @@ def test_rechunk_out_of_memory(small_client):
     x.rechunk((50000, 20)).rechunk((20, 50000)).sum().compute()
 
 
-def test_dump_1(small_client):
+def test_dump(small_client):
     raise Exception
 
 
-def test_dump_2(small_client):
+def test_other_dump(small_client):
     raise Exception
