@@ -68,7 +68,7 @@ jobs:
           tags: coiled/coiled-runtime:nightly-${{ env.RUNTIME_NIGHTLY_VERSION }}-py${{ matrix.python-version }}
           build-args: ENV_FILENAME=${{ env.ENV_FILENAME }}
 
-      - name: Create Runtime ${{ env.RUNTIME_NIGHTLY_VERSION}} Python ${{ matrix.python-version }} ${{ matrix.server }} software environment
+      - name: Create Runtime ${{ env.RUNTIME_NIGHTLY_VERSION}}, Python ${{ matrix.python-version }}, Server ${{ matrix.server }} software environment
         env:
           DASK_COILED__SERVER: ${{ matrix.server }}
           DASK_COILED__TOKEN: ${{ secrets[matrix.token-name] }}
