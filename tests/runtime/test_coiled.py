@@ -4,14 +4,13 @@ import pandas as pd
 
 def test_quickstart_csv(small_client):
     ddf = dd.read_csv(
-        "s3://nyc-tlc/csv_backup/yellow_tripdata_2019-*.csv",
+        "s3://coiled-runtime-ci/nyc-tlc/yellow_tripdata_2019_csv/yellow_tripdata_2019-*.csv",
         dtype={
             "payment_type": "UInt8",
             "VendorID": "UInt8",
             "passenger_count": "UInt8",
             "RatecodeID": "UInt8",
         },
-        storage_options={"anon": True},
         blocksize="16 MiB",
     ).persist()
 
@@ -23,9 +22,8 @@ def test_quickstart_csv(small_client):
 
 def test_quickstart_parquet(small_client):
     ddf = dd.read_parquet(
-        "s3://nyc-tlc/trip data/yellow_tripdata_2019-*.parquet",
+        "s3://coiled-runtime-ci/nyc-tlc/yellow_tripdata_2019_parquet/yellow_tripdata_2019-*.parquet",
         columns=["passenger_count", "tip_amount"],
-        storage_options={"anon": True},
     ).persist()
 
     result = ddf.groupby("passenger_count").tip_amount.mean().compute()
