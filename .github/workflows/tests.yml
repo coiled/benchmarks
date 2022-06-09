@@ -254,13 +254,10 @@ jobs:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
         run: |
           # run only on latest as cluster_dump to s3 was merged after dask = 2022.1.0
-          if [[ ${{ github.event_name }} == "pull_request" && ${{ matrix.runtime-version }} == 'latest' ]]       
+          if [[ ${{ matrix.runtime-version }} != '0.0.3' ]]
           then
               export CLUSTER_DUMP="true"
-          else
-              export CLUSTER_DUMP="false"
           fi
-          echo $CLUSTER_DUMP
 
           bash ci/scripts/run_tests.sh tests/stability/test_array.py::test_dump
 
