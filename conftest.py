@@ -20,6 +20,9 @@ except ImportError:
     from coiled._beta import ClusterBeta as Cluster
 
 
+logger = logging.getLogger("coiled-runtime")
+logger.setLevel(logging.INFO)
+
 # So coiled logs can be displayed on test failure
 logging.getLogger("coiled").setLevel(logging.INFO)
 
@@ -117,7 +120,7 @@ def small_client(small_cluster, s3_cluster_dump_url, s3_storage_options, request
 
         if cluster_dump and request.node.rep_call.failed:
             dump_path = os.path.join(s3_cluster_dump_url, small_cluster.name)
-            print(f"Cluster state dump can be found at: {dump_path}")
+            logger.error(f"Cluster state dump can be found at: {dump_path}")
             client.dump_cluster_state(dump_path, **s3_storage_options)
 
 
