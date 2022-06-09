@@ -8,7 +8,7 @@ on:
 concurrency:
   # Include `github.event_name` to avoid pushes to `main` and
   # scheduled jobs canceling one another
-  group: ${{ github.event_name }}-${{ github.ref }}
+  group: nightly-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:
