@@ -25,7 +25,7 @@ def parquet_cluster():
         yield cluster
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def parquet_client(parquet_cluster, upload_performance_report):
     with distributed.Client(parquet_cluster) as client:
         parquet_cluster.scale(N_WORKERS)
