@@ -119,7 +119,9 @@ def small_client(small_cluster, s3_cluster_dump_url, s3_storage_options, request
         cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
 
         if cluster_dump and request.node.rep_call.failed:
-            dump_path = f"{s3_cluster_dump_url}/{small_cluster.name}"
+            dump_path = (
+                f"{s3_cluster_dump_url}/{small_cluster.name}/{request.node.name}"
+            )
             logger.error(f"Cluster state dump can be found at: {dump_path}")
             client.dump_cluster_state(dump_path, **s3_storage_options)
 
