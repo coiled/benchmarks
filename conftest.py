@@ -92,15 +92,13 @@ def small_cluster(request):
 
 
 @pytest.fixture
-def small_client(small_cluster, s3, s3_report_url, request, tmp_path):
+def small_client(small_cluster, upload_performance_report):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
         client.restart()
-        local_file = str(tmp_path / "preformance-report.html")
-        with performance_report(local_file):
-            yield client
-        s3.put(local_file, s3_report_url + f"/{request.node.originalname}.html")
+        yield client
+        upload_performance_report(client)
 
 
 S3_REGION = "us-east-2"
@@ -133,7 +131,7 @@ def s3_scratch(s3):
 
 @pytest.fixture(scope="session")
 def s3_report_url(s3, s3_scratch):
-    # Ensure that the test-scratch directory exists,
+    # Ensure that the performance-reports directory exists,
     # but do NOT remove it as multiple test runs could be
     # accessing it at the same time
     report_url = f"{s3_scratch}/performance-reports/{UNIQUE_ID}"
@@ -147,3 +145,14 @@ def s3_url(s3, s3_scratch, request):
     s3.mkdirs(url, exist_ok=False)
     yield url
     s3.rm(url, recursive=True)
+
+
+@pytest.fixture
+def upload_performance_report(tmp_path, request, s3, s3_report_url):
+    def func(client):
+        local_file = str(tmp_path / "preformance-report.html")
+        with performance_report(local_file):
+            yield client
+        s3.put(local_file, s3_report_url + f"/{request.node.originalname}.html")
+
+    return func

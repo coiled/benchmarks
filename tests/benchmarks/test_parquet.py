@@ -26,12 +26,13 @@ def parquet_cluster():
 
 
 @pytest.fixture(scope="module")
-def parquet_client(parquet_cluster):
+def parquet_client(parquet_cluster, upload_performance_report):
     with distributed.Client(parquet_cluster) as client:
         parquet_cluster.scale(N_WORKERS)
         client.wait_for_workers(N_WORKERS)
         client.restart()
         yield client
+        upload_performance_report(client)
 
 
 def test_read_spark_generated_data(parquet_client):
