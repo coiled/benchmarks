@@ -132,11 +132,8 @@ S3_BUCKET = "s3://coiled-runtime-ci"
 
 @pytest.fixture(scope="session")
 def s3_storage_options():
-    # add "auto_mkdir": False until this is fixed
-    # https://github.com/fsspec/filesystem_spec/issues/974
     return {
         "config_kwargs": {"region_name": S3_REGION},
-        "auto_mkdir": False,
         "key": os.environ["AWS_ACCESS_KEY_ID"],
         "secret": os.environ["AWS_SECRET_ACCESS_KEY"],
     }
