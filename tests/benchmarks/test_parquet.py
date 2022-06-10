@@ -31,8 +31,8 @@ def parquet_client(parquet_cluster, upload_performance_report):
         parquet_cluster.scale(N_WORKERS)
         client.wait_for_workers(N_WORKERS)
         client.restart()
-        yield client
-        upload_performance_report(client)
+        with upload_performance_report():
+            yield client
 
 
 def test_read_spark_generated_data(parquet_client):

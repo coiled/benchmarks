@@ -1,3 +1,4 @@
+import contextlib
 import json
 import logging
 import os
@@ -122,11 +123,10 @@ def small_client(
         client.wait_for_workers(10)
         client.restart()
 
-        yield client
-        upload_performance_report(client)
+        with upload_performance_report():
+            yield client
 
         cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
-
         if cluster_dump and request.node.rep_call.failed:
             dump_path = (
                 f"{s3_cluster_dump_url}/{small_cluster.name}/{request.node.name}"
@@ -143,16 +143,16 @@ S3_BUCKET = "s3://coiled-runtime-ci"
 def s3_storage_options():
     return {
         "config_kwargs": {"region_name": S3_REGION},
-        "key": os.environ["AWS_ACCESS_KEY_ID"],
-        "secret": os.environ["AWS_SECRET_ACCESS_KEY"],
+        # "key": os.environ["AWS_ACCESS_KEY_ID"],
+        # "secret": os.environ["AWS_SECRET_ACCESS_KEY"],
     }
 
 
 @pytest.fixture(scope="session")
 def s3():
     return s3fs.S3FileSystem(
-        key=os.environ["AWS_ACCESS_KEY_ID"],
-        secret=os.environ["AWS_SECRET_ACCESS_KEY"],
+        # key=os.environ["AWS_ACCESS_KEY_ID"],
+        # secret=os.environ["AWS_SECRET_ACCESS_KEY"],
         client_kwargs={"region_name": S3_REGION},
     )
 
@@ -187,13 +187,14 @@ def s3_url(s3, s3_scratch, request):
 
 @pytest.fixture
 def upload_performance_report(tmp_path, request, s3, s3_report_url):
-    def func(client):
+    @contextlib.contextmanager
+    def _upload_performance_report():
         local_file = str(tmp_path / "preformance-report.html")
         with performance_report(local_file):
-            yield client
+            yield
         s3.put(local_file, s3_report_url + f"/{request.node.originalname}.html")
 
-    return func
+    return _upload_performance_report
 
 
 @pytest.fixture(scope="session")
