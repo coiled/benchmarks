@@ -6,6 +6,7 @@ import subprocess
 import sys
 import threading
 import uuid
+from distutils.util import strtobool
 
 import dask
 import pytest
@@ -18,6 +19,9 @@ try:
 except ImportError:
     from coiled._beta import ClusterBeta as Cluster
 
+
+logger = logging.getLogger("coiled-runtime")
+logger.setLevel(logging.INFO)
 
 # So coiled logs can be displayed on test failure
 logging.getLogger("coiled").setLevel(logging.INFO)
@@ -88,13 +92,37 @@ def small_cluster(request):
         yield cluster
 
 
+# this code was taken from pytest docs
+# https://docs.pytest.org/en/latest/example/simple.html#making-test-result-information-available-in-fixtures
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # execute all other hooks to obtain the report object
+    outcome = yield
+    rep = outcome.get_result()
+
+    # set a report attribute for each phase of a call, which can
+    # be "setup", "call", "teardown"
+
+    setattr(item, "rep_" + rep.when, rep)
+
+
 @pytest.fixture
-def small_client(small_cluster):
+def small_client(small_cluster, s3_cluster_dump_url, s3_storage_options, request):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
         client.restart()
+
         yield client
+
+        cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
+
+        if cluster_dump and request.node.rep_call.failed:
+            dump_path = (
+                f"{s3_cluster_dump_url}/{small_cluster.name}/{request.node.name}"
+            )
+            logger.error(f"Cluster state dump can be found at: {dump_path}")
+            client.dump_cluster_state(dump_path, **s3_storage_options)
 
 
 S3_REGION = "us-east-2"
@@ -103,7 +131,11 @@ S3_BUCKET = "s3://coiled-runtime-ci"
 
 @pytest.fixture(scope="session")
 def s3_storage_options():
-    return {"config_kwargs": {"region_name": S3_REGION}}
+    return {
+        "config_kwargs": {"region_name": S3_REGION},
+        "key": os.environ["AWS_ACCESS_KEY_ID"],
+        "secret": os.environ["AWS_SECRET_ACCESS_KEY"],
+    }
 
 
 @pytest.fixture(scope="session")
@@ -131,3 +163,10 @@ def s3_url(s3, s3_scratch, request):
     s3.mkdirs(url, exist_ok=False)
     yield url
     s3.rm(url, recursive=True)
+
+
+@pytest.fixture(scope="session")
+def s3_cluster_dump_url(s3, s3_scratch):
+    dump_url = f"{s3_scratch}/cluster_dumps"
+    s3.mkdirs(dump_url, exist_ok=True)
+    return dump_url

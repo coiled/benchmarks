@@ -252,7 +252,14 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-        run: bash ci/scripts/run_tests.sh tests/stability
+        run: |
+          # run only on latest as cluster_dump to s3 was merged after dask = 2022.1.0
+          if [[ ${{ matrix.runtime-version }} != '0.0.3' ]]
+          then
+              export CLUSTER_DUMP="true"
+          fi
+
+          bash ci/scripts/run_tests.sh tests/stability
 
   cleanup:
     needs: [software, runtime, benchmarks, stability]
