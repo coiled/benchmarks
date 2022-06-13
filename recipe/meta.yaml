@@ -1,7 +1,7 @@
 {% set name = "coiled-runtime" %}
 {% set version = "0.0.4" + environ.get("VERSION_SUFFIX", '') %}
-{% set dask_version = environ.get("DASK_VERSION", "2022.5.2") %}
-{% set distributed_version = environ.get("DISTRIBUTED_VERSION", "2022.5.2") %}
+{% set dask_version = environ.get("DASK_VERSION", "2022.6.0") %}
+{% set distributed_version = environ.get("DISTRIBUTED_VERSION", "2022.6.0") %}
 
 package:
   name: {{ name|lower }}
