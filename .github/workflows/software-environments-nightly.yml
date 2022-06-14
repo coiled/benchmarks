@@ -1,4 +1,4 @@
-name: Create software environments
+name: Create nightly Coiled software environments
 
 on:
   schedule:
