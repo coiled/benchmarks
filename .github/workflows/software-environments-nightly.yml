@@ -73,4 +73,4 @@ jobs:
           DASK_COILED__SERVER: ${{ matrix.server }}
           DASK_COILED__TOKEN: ${{ secrets[matrix.token-name] }}
         run: |
-          coiled env create --name coiled/${{ env.COILED_SOFTWARE_ENV_NAME }} --container coiled/coiled-runtime:nightly-${{ env.RUNTIME_NIGHTLY_VERSION }}-py${{ matrix.python-version }}
+          coiled env create --name coiled/${{ env.COILED_SOFTWARE_ENV_NAME }} --container coiled/coiled-runtime:nightly-${{ env.RUNTIME_NIGHTLY_VERSION }}-py${{ matrix.python-version }} --force-rebuild
