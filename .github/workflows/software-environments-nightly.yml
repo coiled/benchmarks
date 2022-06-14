@@ -48,7 +48,7 @@ jobs:
           echo ENV_FILENAME=$ENV_FILENAME >> $GITHUB_ENV
           echo RUNTIME_NIGHTLY_VERSION=$RUNTIME_NIGHTLY_VERSION >> $GITHUB_ENV 
       
-      - name: Find and Replace nightly
+      - name: Pin latest nightly coiled-runtime
         uses: jacobtomlinson/gha-find-replace@v2
         with:
           include: "environments/coiled-runtime-nightly-*.yml"
