@@ -33,7 +33,7 @@ jobs:
       - name: Install Coiled
         run: python -m pip install coiled
 
-      - name: Create Runtime software environment environment variables
+      - name: Create environment variables
         run: |
           # Coiled software environment names can't contain "." or uppercase characters
           export RUNTIME_VERSION_FORMATTED=$(echo "${{ matrix.runtime-version }}" | sed 's/\./-/g' )
