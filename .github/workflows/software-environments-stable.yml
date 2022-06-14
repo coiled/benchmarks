@@ -1,4 +1,4 @@
-name: Create software environments
+name: Create Coiled software environments
 
 on:
   push:
