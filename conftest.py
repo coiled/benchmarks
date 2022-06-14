@@ -192,7 +192,9 @@ def upload_performance_report(tmp_path, request, s3, s3_report_url):
         local_file = str(tmp_path / "preformance-report.html")
         with performance_report(local_file):
             yield
-        s3.put(local_file, s3_report_url + f"/{request.node.originalname}.html")
+        remote_file = s3_report_url + f"/{request.node.originalname}.html"
+        logger.info(f"Performance report available at: {remote_file}")
+        s3.put(local_file, remote_file)
 
     return _upload_performance_report
 
