@@ -49,6 +49,7 @@ requirements:
     - toolz ==0.11.2
     - python-blosc ==1.10.2
     - zict ==2.2.0
+    - openssl >1.1.0g
 
 test:
   imports:
