@@ -1,3 +1,4 @@
+import contextlib
 import json
 import logging
 import os
@@ -113,16 +114,10 @@ def small_client(small_cluster, s3_cluster_dump_url, s3_storage_options, request
         client.wait_for_workers(10)
         client.restart()
 
-        yield client
-
-        cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
-
-        if cluster_dump and request.node.rep_call.failed:
-            dump_path = (
-                f"{s3_cluster_dump_url}/{small_cluster.name}/{request.node.name}"
-            )
-            logger.error(f"Cluster state dump can be found at: {dump_path}")
-            client.dump_cluster_state(dump_path, **s3_storage_options)
+        with upload_cluster_dump(
+            client, small_cluster, request, s3, s3_cluster_dump_url
+        ):
+            yield client
 
 
 S3_REGION = "us-east-2"
@@ -170,3 +165,21 @@ def s3_cluster_dump_url(s3, s3_scratch):
     dump_url = f"{s3_scratch}/cluster_dumps"
     s3.mkdirs(dump_url, exist_ok=True)
     return dump_url
+
+
+@pytest.fixture
+def upload_cluster_dump(
+    client, cluster, request, s3_cluster_dump_url, s3_storage_options
+):
+    @contextlib.contextmanager
+    def _upload_cluster_dump(
+        client, cluster, request, s3_cluster_dump_url, s3_storage_options
+    ):
+        cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
+
+        if cluster_dump and request.node.rep_call.failed:
+            dump_path = f"{s3_cluster_dump_url}/{cluster.name}/{request.node.name}"
+            logger.error(f"Cluster state dump can be found at: {dump_path}")
+            client.dump_cluster_state(dump_path, **s3_storage_options)
+
+        return _upload_cluster_dump
