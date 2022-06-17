@@ -115,7 +115,7 @@ def small_client(small_cluster, s3_cluster_dump_url, s3_storage_options, request
         client.restart()
 
         with upload_cluster_dump(
-            client, small_cluster, request, s3, s3_cluster_dump_url
+            client, small_cluster, request, s3_cluster_dump_url, s3_storage_options
         ):
             yield client
 
