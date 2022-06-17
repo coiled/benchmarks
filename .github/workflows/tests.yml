@@ -259,7 +259,7 @@ jobs:
               export CLUSTER_DUMP="true"
           fi
 
-          bash ci/scripts/run_tests.sh tests/stability/test_array.py::test_dump
+          bash ci/scripts/run_tests.sh tests/stability/test_deadlock.py
 
   cleanup:
     needs: [software, stability] #[software, runtime, benchmarks, stability]
