@@ -12,7 +12,7 @@ from distutils.util import strtobool
 import dask
 import pytest
 import s3fs
-from dask.distributed import Client
+from dask.distributed import Client, LocalCluster
 from toolz import merge
 
 try:
@@ -166,9 +166,15 @@ def s3_cluster_dump_url(s3, s3_scratch):
 
 
 @pytest.fixture
-def upload_cluster_dump(
-    client, cluster, request, s3_cluster_dump_url, s3_storage_options
-):
+def local_client(upload_cluster_dump):
+    with LocalCluster() as cluster:
+        with Client(cluster) as client:
+            with upload_cluster_dump(client, cluster):
+                yield client
+
+
+@pytest.fixture
+def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
     @contextlib.contextmanager
     def _upload_cluster_dump(client, cluster):
         yield
