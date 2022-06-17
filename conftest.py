@@ -12,7 +12,7 @@ from distutils.util import strtobool
 import dask
 import pytest
 import s3fs
-from dask.distributed import Client, LocalCluster
+from dask.distributed import Client
 from toolz import merge
 
 try:
@@ -165,12 +165,14 @@ def s3_cluster_dump_url(s3, s3_scratch):
     return dump_url
 
 
-@pytest.fixture
-def local_client(upload_cluster_dump):
-    with LocalCluster() as cluster:
-        with Client(cluster) as client:
-            with upload_cluster_dump(client, cluster):
-                yield client
+# #Use this fixture to use when testing locally
+# from dask.distributed import LocalCluster
+# @pytest.fixture
+# def local_client(upload_cluster_dump):
+#     with LocalCluster() as cluster:
+#         with Client(cluster) as client:
+#             with upload_cluster_dump(client, cluster):
+#                 yield client
 
 
 @pytest.fixture
