@@ -114,7 +114,7 @@ jobs:
       matrix:
         os: ["ubuntu-latest"]
         python-version: ["3.9"]
-        runtime-version: ["latest", "0.0.3", "0.0.4"]
+        runtime-version: ["latest", "0.0.3"]
 
     steps:
       - uses: actions/checkout@v2
@@ -159,7 +159,7 @@ jobs:
       matrix:
         os: ["ubuntu-latest"]
         python-version: ["3.9"]
-        runtime-version: ["latest", "0.0.3", "0.0.4"]
+        runtime-version: ["latest", "0.0.3"]
 
     steps:
       - uses: actions/checkout@v2
@@ -204,7 +204,7 @@ jobs:
       matrix:
         os: ["ubuntu-latest"]
         python-version: ["3.8", "3.9", "3.10"]
-        runtime-version: ["latest", "0.0.3", "0.0.4"]
+        runtime-version: ["latest", "0.0.3"]
         include:
           - python-version: "3.9"
             runtime-version: "latest"
