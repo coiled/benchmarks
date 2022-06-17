@@ -108,15 +108,13 @@ def pytest_runtest_makereport(item, call):
 
 
 @pytest.fixture
-def small_client(small_cluster, s3_cluster_dump_url, s3_storage_options, request):
+def small_client(small_cluster, upload_cluster_dump):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
         client.restart()
 
-        with upload_cluster_dump(
-            client, small_cluster, request, s3_cluster_dump_url, s3_storage_options
-        ):
+        with upload_cluster_dump(client, small_cluster):
             yield client
 
 
@@ -172,9 +170,8 @@ def upload_cluster_dump(
     client, cluster, request, s3_cluster_dump_url, s3_storage_options
 ):
     @contextlib.contextmanager
-    def _upload_cluster_dump(
-        client, cluster, request, s3_cluster_dump_url, s3_storage_options
-    ):
+    def _upload_cluster_dump(client, cluster):
+        yield
         cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
 
         if cluster_dump and request.node.rep_call.failed:
@@ -182,4 +179,4 @@ def upload_cluster_dump(
             logger.error(f"Cluster state dump can be found at: {dump_path}")
             client.dump_cluster_state(dump_path, **s3_storage_options)
 
-        return _upload_cluster_dump
+    yield _upload_cluster_dump
