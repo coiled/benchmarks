@@ -93,20 +93,6 @@ def small_cluster(request):
         yield cluster
 
 
-# this code was taken from pytest docs
-# https://docs.pytest.org/en/latest/example/simple.html#making-test-result-information-available-in-fixtures
-@pytest.hookimpl(tryfirst=True, hookwrapper=True)
-def pytest_runtest_makereport(item, call):
-    # execute all other hooks to obtain the report object
-    outcome = yield
-    rep = outcome.get_result()
-
-    # set a report attribute for each phase of a call, which can
-    # be "setup", "call", "teardown"
-
-    setattr(item, "rep_" + rep.when, rep)
-
-
 @pytest.fixture
 def small_client(small_cluster, upload_cluster_dump):
     with Client(small_cluster) as client:
@@ -173,6 +159,19 @@ def s3_cluster_dump_url(s3, s3_scratch):
 #         with Client(cluster) as client:
 #             with upload_cluster_dump(client, cluster):
 #                 yield client
+
+# this code was taken from pytest docs
+# https://docs.pytest.org/en/latest/example/simple.html#making-test-result-information-available-in-fixtures
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # execute all other hooks to obtain the report object
+    outcome = yield
+    rep = outcome.get_result()
+
+    # set a report attribute for each phase of a call, which can
+    # be "setup", "call", "teardown"
+
+    setattr(item, "rep_" + rep.when, rep)
 
 
 @pytest.fixture
