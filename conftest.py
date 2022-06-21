@@ -151,15 +151,6 @@ def s3_cluster_dump_url(s3, s3_scratch):
     return dump_url
 
 
-# #Use this fixture to use when testing locally
-# from dask.distributed import LocalCluster
-# @pytest.fixture
-# def local_client(upload_cluster_dump):
-#     with LocalCluster() as cluster:
-#         with Client(cluster) as client:
-#             with upload_cluster_dump(client, cluster):
-#                 yield client
-
 # this code was taken from pytest docs
 # https://docs.pytest.org/en/latest/example/simple.html#making-test-result-information-available-in-fixtures
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
@@ -178,12 +169,19 @@ def pytest_runtest_makereport(item, call):
 def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
     @contextlib.contextmanager
     def _upload_cluster_dump(client, cluster):
-        yield
-        cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
-
-        if cluster_dump and request.node.rep_call.failed:
-            dump_path = f"{s3_cluster_dump_url}/{cluster.name}/{request.node.name}"
-            logger.error(f"Cluster state dump can be found at: {dump_path}")
-            client.dump_cluster_state(dump_path, **s3_storage_options)
+        failed = False
+        # the code below is a workaround to make cluster dumps work with clients in fixtures
+        # and outside fixtures.
+        try:
+            yield
+        except Exception:
+            failed = True
+            raise
+        finally:
+            cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
+            if cluster_dump and (failed or request.node.rep_call.failed):
+                dump_path = f"{s3_cluster_dump_url}/{cluster.name}/{request.node.name}"
+                logger.error(f"Cluster state dump can be found at: {dump_path}")
+                client.dump_cluster_state(dump_path, **s3_storage_options)
 
     yield _upload_cluster_dump
