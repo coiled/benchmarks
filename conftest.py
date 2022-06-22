@@ -174,7 +174,7 @@ def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
         # and outside fixtures.
         try:
             yield
-        except Exception:
+        except:  # noqa: E722
             failed = True
             raise
         finally:
