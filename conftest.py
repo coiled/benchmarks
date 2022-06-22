@@ -179,6 +179,7 @@ def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
             raise
         finally:
             cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
+            logger.error(f"Print failed var for testing purposes, failed=: {failed}")
             if cluster_dump and (failed or request.node.rep_call.failed):
                 dump_path = f"{s3_cluster_dump_url}/{cluster.name}/{request.node.name}"
                 logger.error(f"Cluster state dump can be found at: {dump_path}")
