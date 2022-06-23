@@ -28,7 +28,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8"] #, "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
 
     steps:
       - uses: actions/checkout@v2
@@ -104,95 +104,95 @@ jobs:
             software_name.txt
             test_upstream.txt
 
-  # runtime:
-  #   name: Runtime - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-  #   needs: software
-  #   runs-on: ${{ matrix.os }}
-  #   timeout-minutes: 120
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os: ["ubuntu-latest"]
-  #       python-version: ["3.9"]
-  #       runtime-version: ["latest", "0.0.3"]
+  runtime:
+    name: Runtime - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    needs: software
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.9"]
+        runtime-version: ["latest", "0.0.3"]
 
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-  #     - name: Set up environment
-  #       uses: conda-incubator/setup-miniconda@v2
-  #       with:
-  #         miniforge-variant: Mambaforge
-  #         use-mamba: true
-  #         python-version: ${{ matrix.python-version }}
-  #         environment-file: ci/environment.yml
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: ${{ matrix.python-version }}
+          environment-file: ci/environment.yml
 
-  #     - name: Download software environment assets
-  #       if: matrix.runtime-version == 'latest'
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: software-environment-py${{ matrix.python-version }}
+      - name: Download software environment assets
+        if: matrix.runtime-version == 'latest'
+        uses: actions/download-artifact@v3
+        with:
+          name: software-environment-py${{ matrix.python-version }}
 
-  #     - name: Install coiled-runtime
-  #       env:
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #       run: source ci/scripts/install_coiled_runtime.sh
+      - name: Install coiled-runtime
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: source ci/scripts/install_coiled_runtime.sh
 
-  #     - name: Run Coiled Runtime Tests
-  #       id: test
-  #       env:
-  #         DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-  #         AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #       run: bash ci/scripts/run_tests.sh tests/runtime
+      - name: Run Coiled Runtime Tests
+        id: test
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: bash ci/scripts/run_tests.sh tests/runtime
 
-  # benchmarks:
-  #   name: Benchmarks - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-  #   needs: software
-  #   runs-on: ${{ matrix.os }}
-  #   timeout-minutes: 120
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       os: ["ubuntu-latest"]
-  #       python-version: ["3.9"]
-  #       runtime-version: ["latest", "0.0.3"]
+  benchmarks:
+    name: Benchmarks - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    needs: software
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.9"]
+        runtime-version: ["latest", "0.0.3"]
 
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-  #     - name: Set up environment
-  #       uses: conda-incubator/setup-miniconda@v2
-  #       with:
-  #         miniforge-variant: Mambaforge
-  #         use-mamba: true
-  #         python-version: ${{ matrix.python-version }}
-  #         environment-file: ci/environment.yml
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: ${{ matrix.python-version }}
+          environment-file: ci/environment.yml
 
-  #     - name: Download software environment assets
-  #       if: matrix.runtime-version == 'latest'
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: software-environment-py${{ matrix.python-version }}
+      - name: Download software environment assets
+        if: matrix.runtime-version == 'latest'
+        uses: actions/download-artifact@v3
+        with:
+          name: software-environment-py${{ matrix.python-version }}
 
-  #     - name: Install coiled-runtime
-  #       env:
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #       run: source ci/scripts/install_coiled_runtime.sh
+      - name: Install coiled-runtime
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: source ci/scripts/install_coiled_runtime.sh
 
-  #     - name: Run benchmarking tests
-  #       id: benchmarking_tests
-  #       env:
-  #         DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-  #         AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-  #       run: bash ci/scripts/run_tests.sh tests/benchmarks
+      - name: Run benchmarking tests
+        id: benchmarking_tests
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: bash ci/scripts/run_tests.sh tests/benchmarks
 
   stability:
     name: Stability - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
@@ -203,23 +203,23 @@ jobs:
       fail-fast: false
       matrix:
         os: ["ubuntu-latest"]
-        python-version: ["3.8"] #, "3.9", "3.10"]
-        runtime-version: ["latest"] #, "0.0.3"]
-        # include:
-        #   - python-version: "3.9"
-        #     runtime-version: "latest"
-        #     os: "windows-latest"
-        #   - python-version: "3.9"
-        #     runtime-version: "latest"
-        #     os: "macos-latest"
-        #   - python-version: "3.7"
-        #     runtime-version: "0.0.3"
-        #     os: "ubuntu-latest"
-        # exclude:
-        #   # `coiled-runtime=0.0.3` pins to a version of Dask
-        #   # that doesn't support Python 3.10
-        #   - python-version: "3.10"
-        #     runtime-version: "0.0.3"
+        python-version: ["3.8", "3.9", "3.10"]
+        runtime-version: ["latest", "0.0.3"]
+        include:
+          - python-version: "3.9"
+            runtime-version: "latest"
+            os: "windows-latest"
+          - python-version: "3.9"
+            runtime-version: "latest"
+            os: "macos-latest"
+          - python-version: "3.7"
+            runtime-version: "0.0.3"
+            os: "ubuntu-latest"
+        exclude:
+          # `coiled-runtime=0.0.3` pins to a version of Dask
+          # that doesn't support Python 3.10
+          - python-version: "3.10"
+            runtime-version: "0.0.3"
 
     steps:
       - uses: actions/checkout@v2
@@ -259,17 +259,17 @@ jobs:
               export CLUSTER_DUMP="true"
           fi
 
-          bash ci/scripts/run_tests.sh tests/stability/test_deadlock.py
+          bash ci/scripts/run_tests.sh tests/stability
 
   cleanup:
-    needs: [software, stability] #[software, runtime, benchmarks, stability]
+    needs: [software, runtime, benchmarks, stability]
     if: always()
     name: Cleanup
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8"] #, "3.9", "3.10"]
+        python-version: ["3.8", "3.9", "3.10"]
     steps:
       - uses: actions/checkout@v2
 
@@ -294,38 +294,38 @@ jobs:
           echo "Deleting $SOFTWARE_NAME"
           coiled env delete $SOFTWARE_NAME
 
-  # report:
-  #   name: report
-  #   needs: [runtime, benchmarks, stability]
-  #   if: |
-  #     always()
-  #     && github.event_name != 'pull_request'
-  #     && github.repository == 'coiled/coiled-runtime'
-  #     && (needs.runtime.result == 'failure' ||
-  #         needs.benchmarks.result == 'failure' ||
-  #         needs.stability.result == 'failure')
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       shell: bash
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Report failures
-  #       uses: actions/github-script@v3
-  #       with:
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         script: |
-  #           const title = "⚠️ CI failed ⚠️"
-  #           const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-  #           const issue_body = `[Workflow Run URL](${workflow_url})`
-  #           const variables = {
-  #               owner: context.repo.owner,
-  #               name: context.repo.repo,
-  #               creator: "github-actions[bot]"
-  #           }
-  #           github.issues.create({
-  #               owner: variables.owner,
-  #               repo: variables.name,
-  #               body: issue_body,
-  #               title: title,
-  #           })
+  report:
+    name: report
+    needs: [runtime, benchmarks, stability]
+    if: |
+      always()
+      && github.event_name != 'pull_request'
+      && github.repository == 'coiled/coiled-runtime'
+      && (needs.runtime.result == 'failure' ||
+          needs.benchmarks.result == 'failure' ||
+          needs.stability.result == 'failure')
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v2
+      - name: Report failures
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const title = "⚠️ CI failed ⚠️"
+            const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+            const issue_body = `[Workflow Run URL](${workflow_url})`
+            const variables = {
+                owner: context.repo.owner,
+                name: context.repo.repo,
+                creator: "github-actions[bot]"
+            }
+            github.issues.create({
+                owner: variables.owner,
+                repo: variables.name,
+                body: issue_body,
+                title: title,
+            })
