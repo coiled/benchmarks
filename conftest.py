@@ -174,19 +174,19 @@ def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
         # and outside fixtures.
         try:
             yield
-        except:  # noqa: E722
+        except Exception:
             failed = True
             raise
         finally:
+            # we need this for tests that are not using the client fixture
+            # for those cases request.node.rep_call.failed can't be access.
             try:
-                # we need this for tests that are not using the client fixture
-                # for those cases request.node.rep_call.failed can't be access.
-                failed_req = request.node.rep_call.failed
+                failed = request.node.rep_call.failed
             except AttributeError:
-                failed_req = False
+                failed = False
 
             cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
-            if cluster_dump and (failed or failed_req):
+            if cluster_dump and failed:
                 dump_path = f"{s3_cluster_dump_url}/{cluster.name}/{request.node.name}"
                 logger.error(f"Cluster state dump can be found at: {dump_path}")
                 client.dump_cluster_state(dump_path, **s3_storage_options)
