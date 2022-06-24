@@ -20,28 +20,28 @@ def test_repeated_merge_spill(upload_cluster_dump, upload_performance_report):
     ) as cluster:
         with Client(cluster) as client:
             with upload_cluster_dump(client, cluster):
-                with upload_performance_report():
-                    raise Exception
-                    ddf = dask.datasets.timeseries(
-                        "2020",
-                        "2025",
-                        partition_freq="2w",
-                    )
-                    ddf2 = dask.datasets.timeseries(
-                        "2020",
-                        "2023",
-                        partition_freq="2w",
-                    )
+                # with upload_performance_report():
+                raise Exception
+                ddf = dask.datasets.timeseries(
+                    "2020",
+                    "2025",
+                    partition_freq="2w",
+                )
+                ddf2 = dask.datasets.timeseries(
+                    "2020",
+                    "2023",
+                    partition_freq="2w",
+                )
 
-                    for _ in range(10):
-                        client.restart()
-                        fs = client.compute((ddf.x + ddf.y).mean())
+                for _ in range(10):
+                    client.restart()
+                    fs = client.compute((ddf.x + ddf.y).mean())
 
-                        wait(fs, timeout=2 * 60)
-                        del fs
+                    wait(fs, timeout=2 * 60)
+                    del fs
 
-                        ddf3 = ddf.merge(ddf2)
-                        fs = client.compute((ddf3.x + ddf3.y).mean())
+                    ddf3 = ddf.merge(ddf2)
+                    fs = client.compute((ddf3.x + ddf3.y).mean())
 
-                        wait(fs, timeout=2 * 60)
-                        del fs
+                    wait(fs, timeout=2 * 60)
+                    del fs
