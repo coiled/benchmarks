@@ -14,14 +14,21 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.7", "3.8", "3.9"]
-        runtime-version: ["0.0.3"]
+        python-version: ["3.8", "3.9", "3.10"]
+        runtime-version: ["0.0.3", "0.0.4"]
         server: ["https://cloud.coiled.io", "https://staging.coiledhq.com"]
         include:
           - server: "https://cloud.coiled.io"
             token-name: COILED_BENCHMARK_BOT_TOKEN
           - server: "https://staging.coiledhq.com"
             token-name: COILED_STAGING_BENCHMARK_BOT_TOKEN
+          - python-version: "3.7"
+            runtime-version: "0.0.3"
+        exclude:
+          # `coiled-runtime=0.0.3` pins to a version of Dask
+          # that doesn't support Python 3.10
+          - python-version: "3.10"
+            runtime-version: "0.0.3"
 
     steps:
       - name: Checkout source

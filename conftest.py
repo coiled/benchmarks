@@ -96,43 +96,16 @@ def small_cluster(request):
         yield cluster
 
 
-# this code was taken from pytest docs
-# https://docs.pytest.org/en/latest/example/simple.html#making-test-result-information-available-in-fixtures
-@pytest.hookimpl(tryfirst=True, hookwrapper=True)
-def pytest_runtest_makereport(item, call):
-    # execute all other hooks to obtain the report object
-    outcome = yield
-    rep = outcome.get_result()
-
-    # set a report attribute for each phase of a call, which can
-    # be "setup", "call", "teardown"
-
-    setattr(item, "rep_" + rep.when, rep)
-
-
 @pytest.fixture
-def small_client(
-    small_cluster,
-    s3_cluster_dump_url,
-    s3_storage_options,
-    request,
-    upload_performance_report,
-):
+def small_client(small_cluster, upload_cluster_dump, upload_performance_report):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
         client.restart()
 
-        with upload_performance_report():
-            yield client
-
-        cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
-        if cluster_dump and request.node.rep_call.failed:
-            dump_path = (
-                f"{s3_cluster_dump_url}/{small_cluster.name}/{request.node.name}"
-            )
-            logger.error(f"Cluster state dump can be found at: {dump_path}")
-            client.dump_cluster_state(dump_path, **s3_storage_options)
+        with upload_cluster_dump(client, small_cluster):
+            with upload_performance_report():
+                yield client
 
 
 S3_REGION = "us-east-2"
@@ -204,3 +177,46 @@ def s3_cluster_dump_url(s3, s3_scratch):
     dump_url = f"{s3_scratch}/cluster_dumps"
     s3.mkdirs(dump_url, exist_ok=True)
     return dump_url
+
+
+# this code was taken from pytest docs
+# https://docs.pytest.org/en/latest/example/simple.html#making-test-result-information-available-in-fixtures
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    # execute all other hooks to obtain the report object
+    outcome = yield
+    rep = outcome.get_result()
+
+    # set a report attribute for each phase of a call, which can
+    # be "setup", "call", "teardown"
+
+    setattr(item, "rep_" + rep.when, rep)
+
+
+@pytest.fixture
+def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
+    @contextlib.contextmanager
+    def _upload_cluster_dump(client, cluster):
+        failed = False
+        # the code below is a workaround to make cluster dumps work with clients in fixtures
+        # and outside fixtures.
+        try:
+            yield
+        except Exception:
+            failed = True
+            raise
+        else:
+            # we need this for tests that are not using the client fixture
+            # for those cases request.node.rep_call.failed can't be access.
+            try:
+                failed = request.node.rep_call.failed
+            except AttributeError:
+                failed = False
+
+        cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
+        if cluster_dump and failed:
+            dump_path = f"{s3_cluster_dump_url}/{cluster.name}/{request.node.name}"
+            logger.error(f"Cluster state dump can be found at: {dump_path}")
+            client.dump_cluster_state(dump_path, **s3_storage_options)
+
+    yield _upload_cluster_dump
