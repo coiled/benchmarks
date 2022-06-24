@@ -102,7 +102,6 @@ def small_client(small_cluster, upload_cluster_dump, upload_performance_report):
         small_cluster.scale(10)
         client.wait_for_workers(10)
         client.restart()
-
         with upload_cluster_dump(client, small_cluster):
             with upload_performance_report():
                 yield client
@@ -169,7 +168,7 @@ def upload_performance_report(tmp_path, request, s3, s3_report_url):
         logger.warning(f"Performance report available at: {remote_file}")
         s3.put(local_file, remote_file)
 
-    return _upload_performance_report
+    yield _upload_performance_report
 
 
 @pytest.fixture(scope="session")
