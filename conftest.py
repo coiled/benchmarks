@@ -162,11 +162,11 @@ def s3_url(s3, s3_scratch, request):
 def upload_performance_report(tmp_path, request, s3, s3_report_url):
     @contextlib.contextmanager
     def _upload_performance_report():
-        local_file = str(tmp_path / "preformance-report.html")
+        local_file = str(tmp_path / "performance-report.html")
         with performance_report(local_file):
             yield
         remote_file = s3_report_url + f"/{request.node.originalname}.html"
-        logger.info(f"Performance report available at: {remote_file}")
+        logger.warning(f"Performance report available at: {remote_file}")
         s3.put(local_file, remote_file)
 
     return _upload_performance_report
