@@ -21,6 +21,7 @@ def test_repeated_merge_spill(upload_cluster_dump, upload_performance_report):
         with Client(cluster) as client:
             with upload_cluster_dump(client, cluster):
                 with upload_performance_report():
+                    raise Exception
                     ddf = dask.datasets.timeseries(
                         "2020",
                         "2025",
