@@ -19,8 +19,8 @@ def test_repeated_merge_spill(upload_cluster_dump, upload_performance_report):
         worker_vm_types=["t3.medium"],
     ) as cluster:
         with Client(cluster) as client:
-            with upload_performance_report():
-                with upload_cluster_dump(client, cluster):
+            with upload_cluster_dump(client, cluster):
+                with upload_performance_report():
                     raise Exception
                     ddf = dask.datasets.timeseries(
                         "2020",
