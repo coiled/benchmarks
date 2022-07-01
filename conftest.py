@@ -1,4 +1,5 @@
 import contextlib
+import datetime
 import json
 import logging
 import os
@@ -6,6 +7,7 @@ import shlex
 import subprocess
 import sys
 import threading
+import time
 import uuid
 from distutils.util import strtobool
 
@@ -20,6 +22,10 @@ try:
 except ImportError:
     from coiled._beta import ClusterBeta as Cluster
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import Session
+
+from benchmark import Base, TestRun
 
 logger = logging.getLogger("coiled-runtime")
 logger.setLevel(logging.INFO)
@@ -74,6 +80,48 @@ dask.config.set(
         "coiled.software": get_software(),
     }
 )
+
+
+@pytest.fixture(scope="session")
+def benchmark_db_engine():
+    engine = create_engine("sqlite:///benchmark.db", future=True)
+    Base.metadata.create_all(engine)
+    yield engine
+
+
+@pytest.fixture(scope="function")
+def benchmark_db_session(benchmark_db_engine):
+    with Session(benchmark_db_engine, future=True) as session, session.begin():
+        yield session
+
+
+@pytest.fixture(scope="function")
+def test_run_benchmark(benchmark_db_session, request, testrun_uid):
+    node = request.node
+    run = TestRun(
+        name=node.name, session_id=testrun_uid, originalname=node.originalname
+    )
+    yield run
+
+    if rep := getattr(request.node, "rep_setup", None):
+        run.setup_outcome = rep.outcome
+    if rep := getattr(request.node, "rep_call", None):
+        run.call_outcome = rep.outcome
+    if rep := getattr(request.node, "rep_teardown", None):
+        run.teardown_outcome = rep.outcome
+
+    benchmark_db_session.add(run)
+    benchmark_db_session.commit()
+
+
+@pytest.fixture(scope="function")
+def benchmark_time(test_run_benchmark):
+    start = time.time()
+    yield
+    end = time.time()
+    test_run_benchmark.duration = end - start
+    test_run_benchmark.start = datetime.datetime.utcfromtimestamp(start)
+    test_run_benchmark.end = datetime.datetime.utcfromtimestamp(end)
 
 
 @pytest.fixture(scope="module")
