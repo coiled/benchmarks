@@ -33,13 +33,13 @@ def get_test_source():
 source = get_test_source()
 
 
-def make_timeseries(originalname, df):
+def make_timeseries(originalname, df, field):
     return (
         altair.Chart(df, width=512, height=256)
         .mark_line()
         .encode(
             x=altair.X("start:T"),
-            y=altair.Y("duration:Q"),
+            y=altair.Y(f"{field}:Q"),
             color=altair.Color("name:N")
             if len(df.name.unique()) > 1
             else altair.Undefined,
@@ -49,18 +49,23 @@ def make_timeseries(originalname, df):
 
 
 def make_test_report(originalname, df):
-    chart = make_timeseries(originalname, df)
-    code = panel.pane.Markdown(f"```python\n{source[originalname]}\n```")
-    return panel.Tabs(
-        ("Timeseries", chart),
-        ("Source", code),
-    )
+    fields = {"duration": "Wall Clock"}
+    tabs = []
+    print(originalname)
+    for field, label in fields.items():
+        chart = make_timeseries(originalname, df, field)
+        tabs.append((label, chart))
+
+    if originalname in source:
+        code = panel.pane.Markdown(f"```python\n{source[originalname]}\n```")
+        tabs.append(("Source", code))
+    return panel.Tabs(*tabs)
 
 
-df = pandas.read_sql_table("test_run", engine)
-grouped = df.groupby("originalname")
-panes = [make_test_report(name, grouped.get_group(name)) for name in grouped.groups]
-panes = panes * 4
-flex = panel.FlexBox(*panes)
+if __name__ == "__main__":
+    df = pandas.read_sql_table("test_run", engine)
+    grouped = df.groupby("originalname")
+    panes = [make_test_report(name, grouped.get_group(name)) for name in grouped.groups]
+    flex = panel.FlexBox(*panes)
 
-flex.save("test.html", resources=INLINE)
+    flex.save("benchmarks.html", resources=INLINE)

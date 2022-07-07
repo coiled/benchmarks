@@ -25,7 +25,7 @@ except ImportError:
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
-from benchmark import Base, TestRun
+from benchmark import TestRun
 
 logger = logging.getLogger("coiled-runtime")
 logger.setLevel(logging.INFO)
@@ -85,7 +85,9 @@ dask.config.set(
 @pytest.fixture(scope="session")
 def benchmark_db_engine():
     engine = create_engine("sqlite:///benchmark.db", future=True)
-    Base.metadata.create_all(engine)
+    # Note: we don't create tables here, instead it should be the responsibility
+    # of alembic to make sure that the database is ready-to-go.
+    # Base.metadata.create_all(engine)
     yield engine
 
 
