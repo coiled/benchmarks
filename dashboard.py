@@ -38,7 +38,7 @@ def make_timeseries(originalname, df, field):
     if len(df.name.unique()) > 1:
         kwargs["color"] = altair.Color("name:N")
     return (
-        altair.Chart(df, width=512, height=256)
+        altair.Chart(df, width=600, height=256)
         .mark_line()
         .encode(
             x=altair.X("start:T"),
@@ -46,6 +46,7 @@ def make_timeseries(originalname, df, field):
             **kwargs,
         )
         .properties(title=originalname)
+        .configure(autosize="fit")
     )
 
 
@@ -60,7 +61,12 @@ def make_test_report(originalname, df):
         tabs.append((label, chart))
 
     if originalname in source:
-        code = panel.pane.Markdown(f"```python\n{source[originalname]}\n```", width=512)
+        code = panel.pane.Markdown(
+            f"```python\n{source[originalname]}\n```",
+            width=600,
+            height=384,
+            style={"overflow": "auto"},
+        )
         tabs.append(("Source", code))
     return panel.Tabs(*tabs, margin=12, width=600)
 
