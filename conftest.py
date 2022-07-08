@@ -92,6 +92,19 @@ dask.config.set(
 
 DB_NAME = "benchmark.db"
 
+if os.environ.get("GITHUB_SERVER_URL"):
+    WORKFLOW_URL = "/".join(
+        [
+            os.environ.get("GITHUB_SERVER_URL", ""),
+            os.environ.get("GITHUB_REPOSITORY", ""),
+            "actions",
+            "runs",
+            os.environ.get("GITHUB_RUN_ID", ""),
+        ]
+    )
+else:
+    WORKFLOW_URL = None
+
 
 @pytest.fixture(scope="session")
 def benchmark_db_engine(pytestconfig):
@@ -132,7 +145,12 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
     else:
         node = request.node
         run = TestRun(
-            name=node.name, session_id=testrun_uid, originalname=node.originalname
+            session_id=testrun_uid,
+            name=node.name,
+            originalname=node.originalname,
+            dask_version=dask.__version__,
+            coiled_runtime=dask.config.get("coiled.software"),
+            ci_run_url=WORKFLOW_URL,
         )
         yield run
 

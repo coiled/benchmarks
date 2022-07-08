@@ -18,6 +18,13 @@ class TestRun(Base):
     call_outcome = Column(String, nullable=True)
     teardown_outcome = Column(String, nullable=True)
 
+    # Runtime data
+    coiled_runtime = Column(String, nullable=True)
+    dask_version = Column(String, nullable=True)
+
+    # CI runner data
+    ci_run_url = Column(String, nullable=True)
+
     # Wall clock data
     start = Column(DateTime, nullable=True)
     end = Column(DateTime, nullable=True)

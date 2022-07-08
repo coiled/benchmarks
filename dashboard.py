@@ -34,15 +34,25 @@ source = get_test_source()
 
 
 def make_timeseries(originalname, df, field):
+    df = df.fillna({"ci_run_url": "https://github.com/coiled/coiled-runtime"})
     kwargs = {}
     if len(df.name.unique()) > 1:
         kwargs["color"] = altair.Color("name:N")
     return (
         altair.Chart(df, width=600, height=256)
-        .mark_line()
+        .mark_line(point=True)
         .encode(
             x=altair.X("start:T"),
             y=altair.Y(f"{field}:Q"),
+            href=altair.Href("ci_run_url:N"),
+            tooltip=[
+                altair.Tooltip("name:N", title="Test Name"),
+                altair.Tooltip("call_outcome:N", title="Test Outcome"),
+                altair.Tooltip("coiled_runtime:N", title="Coiled Runtime"),
+                altair.Tooltip("dask_version:N", title="Dask"),
+                altair.Tooltip("duration:Q", title="Duration"),
+                altair.Tooltip("ci_run_url:N", title="CI Run URL"),
+            ],
             **kwargs,
         )
         .properties(title=originalname)
