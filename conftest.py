@@ -22,7 +22,7 @@ try:
 except ImportError:
     from coiled._beta import ClusterBeta as Cluster
 
-from sqlalchemy import create_engine
+import sqlalchemy
 from sqlalchemy.orm import Session
 
 from benchmark import TestRun
@@ -85,15 +85,29 @@ dask.config.set(
 )
 
 
+# ############################################### #
+#            BENCHMARKING RELATED                 #
+# ############################################### #
+
+DB_NAME = "benchmark.db"
+
+
 @pytest.fixture(scope="session")
 def benchmark_db_engine(pytestconfig):
     if not pytestconfig.getoption("--benchmark"):
         yield
     else:
-        engine = create_engine("sqlite:///benchmark.db", future=True)
-        # Note: we don't create tables here, instead it should be the responsibility
-        # of alembic to make sure that the database is ready-to-go.
-        # Base.metadata.create_all(engine)
+        engine = sqlalchemy.create_engine(f"sqlite:///{DB_NAME}", future=True)
+
+        # Create the db if it does not exist already.
+        if not os.path.exists(DB_NAME):
+            with engine.connect() as conn:
+                conn.execute(sqlalchemy.text("VACUUM"))
+
+        # Run migrations: TODO: Make work with xdist
+        p = subprocess.run(["alembic", "upgrade", "head"])
+        p.check_returncode()
+
         yield engine
 
 
