@@ -12,6 +12,7 @@ import uuid
 from distutils.util import strtobool
 
 import dask
+import filelock
 import pytest
 import s3fs
 from dask.distributed import Client
@@ -100,13 +101,17 @@ def benchmark_db_engine(pytestconfig):
         engine = sqlalchemy.create_engine(f"sqlite:///{DB_NAME}", future=True)
 
         # Create the db if it does not exist already.
-        if not os.path.exists(DB_NAME):
-            with engine.connect() as conn:
-                conn.execute(sqlalchemy.text("VACUUM"))
+        with filelock.FileLock(DB_NAME + ".lock"):
+            if not os.path.exists(DB_NAME):
+                with engine.connect() as conn:
+                    conn.execute(sqlalchemy.text("VACUUM"))
 
-        # Run migrations: TODO: Make work with xdist
-        p = subprocess.run(["alembic", "upgrade", "head"])
-        p.check_returncode()
+        # Run migrations if we are not up-to-date.
+        with filelock.FileLock(DB_NAME + ".lock"):
+            current = subprocess.check_output(["alembic", "current"], text=True)
+            if "(head)" not in current:
+                p = subprocess.run(["alembic", "upgrade", "head"])
+                p.check_returncode()
 
         yield engine
 
