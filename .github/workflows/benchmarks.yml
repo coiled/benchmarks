@@ -1,0 +1,177 @@
+name: Benchmarks 
+on:
+  push:
+    branches:
+      - main
+      - custom-dashboarding
+  workflow_dispatch:
+
+concurrency:
+  # Fairly strict concurrency rule to avoid stepping on benchmark db.
+  # Could eventually replace with a real db in coiled, RDS, or litestream
+  group: benchmarks
+  cancel-in-progress: true
+
+defaults:
+  # Required shell entrypoint to have properly activated conda environments
+  run:
+    shell: bash -l {0}
+
+jobs:
+  software:
+    name: Setup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9"]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: ${{ matrix.python-version }}
+          environment-file: ci/environment.yml
+
+      - name: Build Coiled Software Environment
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+        run: |
+          export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
+          export REF_NAME_FORMATTED=$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
+          export COILED_SOFTWARE_NAME_HEAD=dask-engineering/coiled-runtime-benchmark-${{ github.event_name }}
+          export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-py$PYTHON_VERSION_FORMATTED
+
+          if [[ ${{ github.event_name }} = 'pull_request' ]]
+          then
+            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-${{ github.event.number }}-$COILED_SOFTWARE_NAME_TAIL
+          else
+            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
+          fi
+
+          # Create conda environment.yaml file for the latest software environment
+          python ci/create_latest_runtime_meta.py
+          export ENV_FILE=latest.yaml
+          cat $ENV_FILE
+
+          mamba install coiled
+          echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
+          coiled env create --name $COILED_SOFTWARE_NAME --conda $ENV_FILE
+
+          # Put COILED_SOFTWARE_NAME into a file so it can be downloaded in subsequent workflow jobs
+          echo $COILED_SOFTWARE_NAME > software_name.txt
+
+      - name: Upload environment file
+        uses: actions/upload-artifact@v3
+        with:
+          name: software-environment-py${{ matrix.python-version }}
+          path: |
+            latest.yaml
+            software_name.txt
+            test_upstream.txt
+
+  benchmarks:
+    name: Benchmarks - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+    needs: software
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+        python-version: ["3.9"]
+        runtime-version: ["0.0.4"]
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: ${{ matrix.python-version }}
+          environment-file: ci/environment.yml
+
+      - name: Download software environment assets
+        if: matrix.runtime-version == 'latest'
+        uses: actions/download-artifact@v3
+        with:
+          name: software-environment-py${{ matrix.python-version }}
+
+      - name: Install coiled-runtime
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: source ci/scripts/install_coiled_runtime.sh
+
+      - name: Download benchmark db
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
+          DB_NAME: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+        run: |
+          aws s3 cp s3://coiled-runtime-ci/benchmarks/$DB_NAME .
+
+      - name: Run benchmarks 
+        id: benchmark_tests
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          DB_NAME: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+        run: |
+          bash ci/scripts/run_tests.sh tests/benchmarks/test_parquet.py --benchmark
+
+      - name: Upload benchmark db
+        if: >
+          always() &&
+          (steps.benchmark_tests.outcome == 'success' || steps.benchmark_tests.outcome == 'failure')
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
+          DB_NAME: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+        run: |
+          aws s3 cp $DB_NAME s3://coiled-runtime-ci/benchmarks/
+
+  cleanup:
+    needs: [software, benchmarks]
+    name: Cleanup
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.9"]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python
+        uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install coiled
+        run: python -m pip install coiled
+
+      - name: Download software environment assets
+        uses: actions/download-artifact@v3
+        with:
+          name: software-environment-py${{ matrix.python-version }}
+
+      - name: Remove Coiled software environment
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+        run: |
+          export SOFTWARE_NAME=$(cat software_name.txt)
+          echo "Deleting $SOFTWARE_NAME"
+          coiled env delete $SOFTWARE_NAME

@@ -90,7 +90,7 @@ dask.config.set(
 #            BENCHMARKING RELATED                 #
 # ############################################### #
 
-DB_NAME = "benchmark.db"
+DB_NAME = os.environ.get("DB_NAME", "benchmark.db")
 
 if os.environ.get("GITHUB_SERVER_URL"):
     WORKFLOW_URL = "/".join(
