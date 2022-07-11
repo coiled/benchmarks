@@ -14,6 +14,11 @@ from coiled.v2 import Cluster
 N_WORKERS = 15
 
 
+@pytest.fixture(autouse=True)
+def parquet_benchmark_fixture(benchmark_time):
+    yield
+
+
 @pytest.fixture(scope="module")
 def parquet_cluster():
     with Cluster(
