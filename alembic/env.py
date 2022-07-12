@@ -1,9 +1,10 @@
+import os
 from logging.config import fileConfig
 
 from sqlalchemy import engine_from_config, pool
 
 from alembic import context
-from benchmark import Base
+from benchmark_schema import Base
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
@@ -22,6 +23,10 @@ target_metadata = Base.metadata
 # can be acquired:
 # my_important_option = config.get_main_option("my_important_option")
 # ... etc.
+
+# Set the database name from the DB_NAME environment variable
+ENGINE_URL = f"sqlite:///{os.environ.get('DB_NAME', 'benchmark.db')}"
+config.set_main_option("sqlalchemy.url", ENGINE_URL)
 
 
 def run_migrations_offline() -> None:

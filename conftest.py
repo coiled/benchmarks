@@ -26,7 +26,7 @@ except ImportError:
 import sqlalchemy
 from sqlalchemy.orm import Session
 
-from benchmark import TestRun
+from benchmark_schema import TestRun
 
 logger = logging.getLogger("coiled-runtime")
 logger.setLevel(logging.INFO)
@@ -107,20 +107,24 @@ else:
 
 
 @pytest.fixture(scope="session")
-def benchmark_db_engine(pytestconfig):
+def benchmark_db_engine(pytestconfig, tmp_path_factory):
     if not pytestconfig.getoption("--benchmark"):
         yield
     else:
         engine = sqlalchemy.create_engine(f"sqlite:///{DB_NAME}", future=True)
 
+        # get the temp directory shared by all workers
+        root_tmp_dir = tmp_path_factory.getbasetemp().parent
+        lock = root_tmp_dir / (DB_NAME + ".lock")
+
         # Create the db if it does not exist already.
-        with filelock.FileLock(DB_NAME + ".lock"):
+        with filelock.FileLock(lock):
             if not os.path.exists(DB_NAME):
                 with engine.connect() as conn:
                     conn.execute(sqlalchemy.text("VACUUM"))
 
         # Run migrations if we are not up-to-date.
-        with filelock.FileLock(DB_NAME + ".lock"):
+        with filelock.FileLock(lock):
             current = subprocess.check_output(["alembic", "current"], text=True)
             if "(head)" not in current:
                 p = subprocess.run(["alembic", "upgrade", "head"])

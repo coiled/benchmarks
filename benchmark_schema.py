@@ -39,3 +39,7 @@ class TestRun(Base):
     disk_spill_time = Column(Float, nullable=True)
     serializing_time = Column(Float, nullable=True)
     transfer_time = Column(Float, nullable=True)
+
+    # Artifacts
+    performance_report_url = Column(String, nullable=True)
+    cluster_dump_url = Column(String, nullable=True)

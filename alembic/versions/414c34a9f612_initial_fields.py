@@ -1,8 +1,8 @@
 """Initial fields
 
-Revision ID: 1633d11d7e07
+Revision ID: 414c34a9f612
 Revises: 
-Create Date: 2022-07-11 14:59:48.983053
+Create Date: 2022-07-12 13:52:26.763217
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '1633d11d7e07'
+revision = '414c34a9f612'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -38,6 +38,8 @@ def upgrade() -> None:
     sa.Column('disk_spill_time', sa.Float(), nullable=True),
     sa.Column('serializing_time', sa.Float(), nullable=True),
     sa.Column('transfer_time', sa.Float(), nullable=True),
+    sa.Column('performance_report_url', sa.String(), nullable=True),
+    sa.Column('cluster_dump_url', sa.String(), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
     # ### end Alembic commands ###
