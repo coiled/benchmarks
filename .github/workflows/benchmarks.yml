@@ -119,7 +119,7 @@ jobs:
           AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
           DB_NAME: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
         run: |
-          aws s3 cp s3://coiled-runtime-ci/benchmarks/$DB_NAME .
+          aws s3 cp s3://coiled-runtime-ci/benchmarks/$DB_NAME . || true
 
       - name: Run benchmarks 
         id: benchmark_tests

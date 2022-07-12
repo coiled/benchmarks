@@ -1,6 +1,7 @@
 import glob
 import importlib
 import inspect
+import os
 
 import altair
 import pandas
@@ -10,14 +11,20 @@ from bokeh.resources import INLINE
 
 panel.extension("vega")
 
-engine = sqlalchemy.create_engine("sqlite:///benchmark.db")
-
 
 def get_test_source():
+    """
+    Crawl the tests directory and try to grab code for each test on a best-effort
+    basis. This relies on the tests being importable from this script, so the
+    environment should be similar enough that that is possible.
+
+    TODO: this will fail if there are multiple tests with the same name,
+    """
     source: dict[str, str] = {}
     files = glob.glob("tests/**/test_*.py", recursive=True)
     for f in files:
         try:
+            # Fragile!
             mod = importlib.import_module(f.replace("/", ".")[: -len(".py")])
             tests = [a for a in dir(mod) if a.startswith("test_")]
             for test in tests:
@@ -34,6 +41,18 @@ source = get_test_source()
 
 
 def make_timeseries(originalname, df, field):
+    """
+    Make a single timeseries altair chart for a given test.
+
+    originalname: str
+        The name of the test without any fixture or other modifications.
+
+    df: pandas.DataFrame
+        A dataframe with the test data in it.
+
+    field: str
+        The name of the field to chart in the timeseries.
+    """
     df = df.fillna({"ci_run_url": "https://github.com/coiled/coiled-runtime"})
     kwargs = {}
     if len(df.name.unique()) > 1:
@@ -61,6 +80,15 @@ def make_timeseries(originalname, df, field):
 
 
 def make_test_report(originalname, df):
+    """
+    Make a tab panel for a single test.
+
+    originalname: str
+        The name of the test without any fixture or other modifications.
+
+    df: pandas.DataFrame
+        A dataframe with the test data in it.
+    """
     fields = {"duration": "Wall Clock"}
     tabs = []
     for field, label in fields.items():
@@ -82,9 +110,12 @@ def make_test_report(originalname, df):
 
 
 if __name__ == "__main__":
+    engine = sqlalchemy.create_engine(
+        f"sqlite:///{os.environ.get('DB_NAME', 'benchmark.db')}"
+    )
     df = pandas.read_sql_table("test_run", engine)
     grouped = df.groupby("originalname")
     panes = [make_test_report(name, grouped.get_group(name)) for name in grouped.groups]
-    flex = panel.FlexBox(*panes, align_items="start", justify_content="space-between")
+    flex = panel.FlexBox(*panes, align_items="start", justify_content="start")
 
     flex.save("benchmarks.html", resources=INLINE)
