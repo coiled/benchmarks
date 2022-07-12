@@ -11,5 +11,3 @@ dependencies:
   - sqlalchemy
   - alembic
   - filelock
-  - altair
-  - bokeh

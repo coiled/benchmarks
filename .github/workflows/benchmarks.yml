@@ -25,7 +25,6 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.9"]
-
     steps:
       - uses: actions/checkout@v2
         with:
@@ -175,3 +174,41 @@ jobs:
           export SOFTWARE_NAME=$(cat software_name.txt)
           echo "Deleting $SOFTWARE_NAME"
           coiled env delete $SOFTWARE_NAME
+
+  static-site:
+    needs: benchmarks
+    name: Build static dashboards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: "3.9"
+          environment-file: ci/environment-dashboard.yml
+
+      - name: Generate dashboards
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
+        run: |
+          aws s3 sync --include="benchmark*.db" s3://coiled-runtime-ci/benchmarks/ benchmarks/
+          for FILE in benchmarks/*.db
+          do
+            python dashboard.py $FILE
+          done
+
+          mkdir static
+          mv benchmarks/*.html static/
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@4.1.7
+        with:
+          branch: gh-pages
+          folder: static

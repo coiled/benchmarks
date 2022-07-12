@@ -2,6 +2,7 @@ import glob
 import importlib
 import inspect
 import os
+import sys
 
 import altair
 import pandas
@@ -110,12 +111,13 @@ def make_test_report(originalname, df):
 
 
 if __name__ == "__main__":
-    engine = sqlalchemy.create_engine(
-        f"sqlite:///{os.environ.get('DB_NAME', 'benchmark.db')}"
+    DB_NAME = (
+        sys.argv[1] if len(sys.argv) > 1 else os.environ.get("DB_NAME", "benchmark.db")
     )
+    engine = sqlalchemy.create_engine(f"sqlite:///{DB_NAME}")
     df = pandas.read_sql_table("test_run", engine)
     grouped = df.groupby("originalname")
     panes = [make_test_report(name, grouped.get_group(name)) for name in grouped.groups]
     flex = panel.FlexBox(*panes, align_items="start", justify_content="start")
 
-    flex.save("benchmarks.html", resources=INLINE)
+    flex.save(DB_NAME[: -len(".db")] + ".html", resources=INLINE)
