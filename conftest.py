@@ -15,7 +15,8 @@ import dask
 import filelock
 import pytest
 import s3fs
-from dask.distributed import Client
+from distributed import Client
+from distributed.diagnostics.memory_sampler import MemorySampler
 from toolz import merge
 
 try:
@@ -182,6 +183,28 @@ def benchmark_time(test_run_benchmark):
         test_run_benchmark.end = datetime.datetime.utcfromtimestamp(end)
 
 
+@pytest.fixture(scope="function")
+def sample_memory(test_run_benchmark):
+    @contextlib.contextmanager
+    def _sample_memory(client):
+        sampler = MemorySampler()
+        label = uuid.uuid4().hex[:8]
+        with sampler.sample(label, client=client, measure="process"):
+            yield
+
+        df = sampler.to_pandas()
+        if test_run_benchmark:
+            test_run_benchmark.average_memory = df[label].mean()
+            test_run_benchmark.peak_memory = df[label].max()
+
+    yield _sample_memory
+
+
+# ############################################### #
+#        END BENCHMARKING RELATED                 #
+# ############################################### #
+
+
 @pytest.fixture(scope="module")
 def small_cluster(request):
     # Extract `backend_options` for cluster from `backend_options` markers
@@ -200,14 +223,15 @@ def small_cluster(request):
 
 
 @pytest.fixture
-def small_client(small_cluster, upload_cluster_dump):
+def small_client(small_cluster, upload_cluster_dump, sample_memory):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
         client.restart()
 
         with upload_cluster_dump(client, small_cluster):
-            yield client
+            with sample_memory(client):
+                yield client
 
 
 S3_REGION = "us-east-2"
