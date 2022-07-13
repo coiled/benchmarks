@@ -7,6 +7,11 @@ import pandas as pd
 import pytest
 
 
+@pytest.fixture(autouse=True)
+def parquet_benchmark_fixture(benchmark_time):
+    yield
+
+
 @pytest.fixture(
     scope="module",
     params=[
