@@ -14,6 +14,7 @@ class TestRun(Base):
     session_id = Column(String, nullable=False)
     name = Column(String, nullable=False)
     originalname = Column(String, nullable=False)
+    path = Column(String, nullable=True)
     setup_outcome = Column(String, nullable=True)
     call_outcome = Column(String, nullable=True)
     teardown_outcome = Column(String, nullable=True)

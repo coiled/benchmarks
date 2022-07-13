@@ -3,6 +3,7 @@ import datetime
 import json
 import logging
 import os
+import pathlib
 import shlex
 import subprocess
 import sys
@@ -34,6 +35,8 @@ logger.setLevel(logging.INFO)
 
 # So coiled logs can be displayed on test failure
 logging.getLogger("coiled").setLevel(logging.INFO)
+
+TEST_DIR = pathlib.Path("./tests").absolute()
 
 
 def pytest_addoption(parser):
@@ -153,6 +156,7 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
             session_id=testrun_uid,
             name=node.name,
             originalname=node.originalname,
+            path=str(node.path.relative_to(TEST_DIR)),
             dask_version=dask.__version__,
             coiled_runtime=dask.config.get("coiled.software"),
             ci_run_url=WORKFLOW_URL,
