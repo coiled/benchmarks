@@ -80,7 +80,7 @@ def make_timeseries(originalname, df, spec):
     )
 
 
-def make_test_report(originalname, df):
+def make_test_report(group_keys, df):
     """
     Make a tab panel for a single test.
 
@@ -90,6 +90,8 @@ def make_test_report(originalname, df):
     df: pandas.DataFrame
         A dataframe with the test data in it.
     """
+    path, originalname = group_keys
+
     ChartSpec = collections.namedtuple("ChartSpec", ["field", "scale", "label"])
     specs = [
         ChartSpec("duration", 1, "Wall Clock (s)"),
@@ -105,7 +107,7 @@ def make_test_report(originalname, df):
         chart = make_timeseries(originalname, df2, s)
         tabs.append((s.label, chart))
 
-    sourcename = df.path.iloc[0] + "::" + originalname
+    sourcename = path + "::" + originalname
     if sourcename in source:
         code = panel.pane.Markdown(
             f"```python\n{source[sourcename]}\n```",
@@ -123,8 +125,10 @@ if __name__ == "__main__":
     )
     engine = sqlalchemy.create_engine(f"sqlite:///{DB_NAME}")
     df = pandas.read_sql_table("test_run", engine)
-    grouped = df.groupby("originalname")
+    grouped = df.sort_values(["path", "originalname"]).groupby(["path", "originalname"])
     panes = [make_test_report(name, grouped.get_group(name)) for name in grouped.groups]
     flex = panel.FlexBox(*panes, align_items="start", justify_content="start")
 
-    flex.save(DB_NAME[: -len(".db")] + ".html", resources=INLINE)
+    dirname, basename = os.path.split(DB_NAME)
+    name, _ = os.path.splitext(basename)
+    flex.save(os.path.join(dirname, name) + ".html", title=name, resources=INLINE)
