@@ -1,8 +1,8 @@
-"""Initial table
+"""initial table
 
-Revision ID: db73854b00e5
-Revises: 
-Create Date: 2022-07-13 16:34:48.629031
+Revision ID: 38941c06b85f
+Revises:
+Create Date: 2022-07-15 13:00:48.805890
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'db73854b00e5'
+revision = '38941c06b85f'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -29,6 +29,8 @@ def upgrade() -> None:
     sa.Column('teardown_outcome', sa.String(), nullable=True),
     sa.Column('coiled_runtime', sa.String(), nullable=True),
     sa.Column('dask_version', sa.String(), nullable=True),
+    sa.Column('python_version', sa.String(), nullable=True),
+    sa.Column('platform', sa.String(), nullable=True),
     sa.Column('ci_run_url', sa.String(), nullable=True),
     sa.Column('start', sa.DateTime(), nullable=True),
     sa.Column('end', sa.DateTime(), nullable=True),

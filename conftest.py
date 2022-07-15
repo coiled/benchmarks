@@ -159,6 +159,8 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
             path=str(node.path.relative_to(TEST_DIR)),
             dask_version=dask.__version__,
             coiled_runtime=dask.config.get("coiled.software"),
+            python_version=".".join(map(str, sys.version_info)),
+            platform=sys.platform,
             ci_run_url=WORKFLOW_URL,
         )
         yield run

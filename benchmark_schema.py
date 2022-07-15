@@ -22,6 +22,8 @@ class TestRun(Base):
     # Runtime data
     coiled_runtime = Column(String, nullable=True)
     dask_version = Column(String, nullable=True)
+    python_version = Column(String, nullable=True)
+    platform = Column(String, nullable=True)
 
     # CI runner data
     ci_run_url = Column(String, nullable=True)
