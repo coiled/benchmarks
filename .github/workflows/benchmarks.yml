@@ -10,7 +10,7 @@ concurrency:
   # Fairly strict concurrency rule to avoid stepping on benchmark db.
   # Could eventually replace with a real db in coiled, RDS, or litestream
   group: benchmarks
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 defaults:
   # Required shell entrypoint to have properly activated conda environments
@@ -62,7 +62,7 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          name: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
   process-results:
     needs: benchmarks
@@ -72,13 +72,25 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
+      - uses: actions/setup-python@v4
+
+      - name: Install dependencies
+        run: pip install alembic
+
       - uses: actions/download-artifact@v3
         with:
           path: benchmarks
 
-      - name: Display structure of downloaded files
-        run: ls -R
-        working-directory: benchmarks
+      - name: Combine benchmarks
+        run: |
+          ls -lhR benchmarks
+          bash ci/scripts/combine-dbs.sh
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark.db
+          path: benchmark.db
 
   static-site:
     if: false

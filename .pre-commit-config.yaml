@@ -2,10 +2,8 @@ repos:
   -   repo: https://github.com/pre-commit/pre-commit-hooks
       rev: v4.3.0
       hooks:
-        - id: trailing-whitespace
         - id: check-yaml
           exclude: recipe/meta.yaml
-        - id: end-of-file-fixer
   -   repo: https://github.com/pycqa/isort
       rev: 5.10.1
       hooks:
