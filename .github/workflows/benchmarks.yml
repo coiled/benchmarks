@@ -64,6 +64,7 @@ jobs:
         with:
           name: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+
   process-results:
     needs: benchmarks
     name: Combine separate benchmark results
@@ -81,12 +82,30 @@ jobs:
         with:
           path: benchmarks
 
+      - name: Download benchmark db
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
+          DB_NAME: benchmark.db
+        run: |
+          aws s3 cp s3://coiled-runtime-ci/benchmarks/$DB_NAME . || true
+
       - name: Combine benchmarks
         run: |
           ls -lhR benchmarks
           bash ci/scripts/combine-dbs.sh
 
-      - name: Upload benchmark results
+      - name: Upload benchmark db
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
+          DB_NAME: benchmark.db
+        run: |
+          aws s3 cp $DB_NAME s3://coiled-runtime-ci/benchmarks/
+
+      - name: Upload benchmark results as artifact
         uses: actions/upload-artifact@v3
         with:
           name: benchmark.db
