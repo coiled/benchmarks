@@ -3,6 +3,7 @@ import glob
 import importlib
 import inspect
 import os
+import pathlib
 import sys
 
 import altair
@@ -125,10 +126,20 @@ if __name__ == "__main__":
     )
     engine = sqlalchemy.create_engine(f"sqlite:///{DB_NAME}")
     df = pandas.read_sql_table("test_run", engine)
-    grouped = df.sort_values(["path", "originalname"]).groupby(["path", "originalname"])
-    panes = [make_test_report(name, grouped.get_group(name)) for name in grouped.groups]
-    flex = panel.FlexBox(*panes, align_items="start", justify_content="start")
+    df = df.assign(software=df.coiled_runtime.str.rsplit("/", n=1).str[-1])
+    by_software = df.groupby("software")
+    for sw_name in by_software.groups:
+        by_test = (
+            df[df.software == sw_name]
+            .sort_values(["path", "originalname"])
+            .groupby(["path", "originalname"])
+        )
+        panes = [
+            make_test_report(test_name, by_test.get_group(test_name))
+            for test_name in by_test.groups
+        ]
+        flex = panel.FlexBox(*panes, align_items="start", justify_content="start")
 
-    dirname, basename = os.path.split(DB_NAME)
-    name, _ = os.path.splitext(basename)
-    flex.save(os.path.join(dirname, name) + ".html", title=name, resources=INLINE)
+        static = pathlib.Path("static")
+        static.mkdir(exist_ok=True)
+        flex.save(static.joinpath(sw_name + ".html"), title=sw_name, resources=INLINE)
