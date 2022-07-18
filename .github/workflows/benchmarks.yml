@@ -50,7 +50,7 @@ jobs:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
         run: |
-          bash ci/scripts/run_tests.sh tests/benchmarks/test_coiled.py::test_sample_memory --benchmark
+          bash ci/scripts/run_tests.sh tests/benchmarks --benchmark
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
