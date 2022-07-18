@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-      - custom-dashboarding
   workflow_dispatch:
 
 defaults:
