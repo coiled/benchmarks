@@ -62,7 +62,7 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_latest)
 
 
-def get_software():
+def get_coiled_runtime():
     try:
         return os.environ["COILED_SOFTWARE_NAME"]
     except KeyError:
@@ -85,7 +85,7 @@ def get_software():
 dask.config.set(
     {
         "coiled.account": "dask-engineering",
-        "coiled.software": get_software(),
+        "coiled.software": get_coiled_runtime(),
     }
 )
 
@@ -148,6 +148,12 @@ def benchmark_db_session(benchmark_db_engine):
 
 @pytest.fixture(scope="function")
 def test_run_benchmark(benchmark_db_session, request, testrun_uid):
+    software = dask.config.get("coiled.software")
+    upstream = strtobool(os.environ.get("TEST_UPSTREAM", "false"))
+    # This feels fragile
+    if upstream:
+        software = software.replace("latest", "upstream")
+
     if not benchmark_db_session:
         yield
     else:
@@ -158,7 +164,7 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
             originalname=node.originalname,
             path=str(node.path.relative_to(TEST_DIR)),
             dask_version=dask.__version__,
-            coiled_runtime=dask.config.get("coiled.software"),
+            coiled_runtime=software,
             python_version=".".join(map(str, sys.version_info)),
             platform=sys.platform,
             ci_run_url=WORKFLOW_URL,
