@@ -69,7 +69,7 @@ def make_timeseries(originalname, df, spec):
             tooltip=[
                 altair.Tooltip("name:N", title="Test Name"),
                 altair.Tooltip("call_outcome:N", title="Test Outcome"),
-                altair.Tooltip("coiled_runtime:N", title="Coiled Runtime"),
+                altair.Tooltip("coiled_runtime_version:N", title="Coiled Runtime"),
                 altair.Tooltip("dask_version:N", title="Dask"),
                 altair.Tooltip("duration:Q", title="Duration"),
                 altair.Tooltip("ci_run_url:N", title="CI Run URL"),
@@ -126,12 +126,19 @@ if __name__ == "__main__":
     )
     engine = sqlalchemy.create_engine(f"sqlite:///{DB_NAME}")
     df = pandas.read_sql_table("test_run", engine)
-    df = df.assign(software=df.coiled_runtime.str.rsplit("/", n=1).str[-1])
-    by_software = df.groupby("software")
-    for sw_name in by_software.groups:
-        print(f"Generating dashboard for {sw_name}")
+    df = df.assign(
+        runtime=(
+            "coiled-"
+            + df.coiled_runtime_version
+            + "-py"
+            + df.python_version.str.split(".", n=2).str[:2].str.join(".")
+        )
+    )
+    runtimes = list(df.runtime.unique())
+    for runtime in runtimes:
+        print(f"Generating dashboard for {runtime}")
         by_test = (
-            df[df.software == sw_name]
+            df[df.runtime == runtime]
             .sort_values(["path", "originalname"])
             .groupby(["path", "originalname"])
         )
@@ -143,4 +150,4 @@ if __name__ == "__main__":
 
         static = pathlib.Path("static")
         static.mkdir(exist_ok=True)
-        flex.save(static.joinpath(sw_name + ".html"), title=sw_name, resources=INLINE)
+        flex.save(static.joinpath(runtime + ".html"), title=runtime, resources=INLINE)
