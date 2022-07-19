@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import collections
 import glob
 import importlib
@@ -41,7 +43,7 @@ def get_test_source():
 source = get_test_source()
 
 
-def make_timeseries(originalname, df, spec):
+def make_timeseries(originalname, df, spec) -> altair.Chart | None:
     """
     Make a single timeseries altair chart for a given test.
 
@@ -54,7 +56,12 @@ def make_timeseries(originalname, df, spec):
     spec: ChartSpec
         Data for how to render the timeseries
     """
+    df = df[~df[spec.field].isna() & ~df.start.isna()]
+    if not len(df):
+        return None
+    df = df.assign(**{spec.field: df[spec.field] / spec.scale})
     df = df.fillna({"ci_run_url": "https://github.com/coiled/coiled-runtime"})
+    print(df.path)
     path = df.path.iloc[0]
     kwargs = {}
     if len(df.name.unique()) > 1:
@@ -101,11 +108,9 @@ def make_test_report(group_keys, df):
     ]
     tabs = []
     for s in specs:
-        df2 = df[~df[s.field].isna()]
-        df2[s.field] = df2[s.field] / s.scale
-        if not len(df2):
+        chart = make_timeseries(originalname, df, s)
+        if not chart:
             continue
-        chart = make_timeseries(originalname, df2, s)
         tabs.append((s.label, chart))
 
     sourcename = path + "::" + originalname
@@ -125,7 +130,7 @@ if __name__ == "__main__":
         sys.argv[1] if len(sys.argv) > 1 else os.environ.get("DB_NAME", "benchmark.db")
     )
     engine = sqlalchemy.create_engine(f"sqlite:///{DB_NAME}")
-    df = pandas.read_sql_table("test_run", engine)
+    df = pandas.read_sql("select * from test_run where platform = 'linux'", engine)
     df = df.assign(
         runtime=(
             "coiled-"
@@ -150,4 +155,6 @@ if __name__ == "__main__":
 
         static = pathlib.Path("static")
         static.mkdir(exist_ok=True)
-        flex.save(static.joinpath(runtime + ".html"), title=runtime, resources=INLINE)
+        flex.save(
+            str(static.joinpath(runtime + ".html")), title=runtime, resources=INLINE
+        )
