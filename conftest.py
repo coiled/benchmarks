@@ -62,7 +62,24 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_latest)
 
 
-def get_coiled_runtime():
+def get_coiled_runtime_version():
+    if strtobool(os.environ.get("TEST_UPSTREAM", "false")):
+        return "upstream"
+    try:
+        return os.environ["COILED_RUNTIME_VERSION"]
+    except KeyError:
+        # Determine software environment from local `coiled-runtime` version (in installed)
+        out = subprocess.check_output(
+            shlex.split("conda list --json coiled-runtime"), text=True
+        ).rstrip()
+        runtime_info = json.loads(out)
+        if runtime_info:
+            return runtime_info[0]["version"]
+        else:
+            return "latest"
+
+
+def get_coiled_software_name():
     try:
         return os.environ["COILED_SOFTWARE_NAME"]
     except KeyError:
@@ -85,9 +102,11 @@ def get_coiled_runtime():
 dask.config.set(
     {
         "coiled.account": "dask-engineering",
-        "coiled.software": get_coiled_runtime(),
+        "coiled.software": get_coiled_software_name(),
     }
 )
+
+COILED_RUNTIME_VERSION = get_coiled_runtime_version()
 
 
 # ############################################### #
@@ -148,12 +167,6 @@ def benchmark_db_session(benchmark_db_engine):
 
 @pytest.fixture(scope="function")
 def test_run_benchmark(benchmark_db_session, request, testrun_uid):
-    software = dask.config.get("coiled.software")
-    upstream = strtobool(os.environ.get("TEST_UPSTREAM", "false"))
-    # This feels fragile
-    if upstream:
-        software = software.replace("latest", "upstream")
-
     if not benchmark_db_session:
         yield
     else:
@@ -164,7 +177,8 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
             originalname=node.originalname,
             path=str(node.path.relative_to(TEST_DIR)),
             dask_version=dask.__version__,
-            coiled_runtime=software,
+            coiled_runtime_version=COILED_RUNTIME_VERSION,
+            coiled_software_name=dask.config.get("coiled.software"),
             python_version=".".join(map(str, sys.version_info)),
             platform=sys.platform,
             ci_run_url=WORKFLOW_URL,

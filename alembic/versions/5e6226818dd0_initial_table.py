@@ -1,8 +1,8 @@
-"""initial table
+"""Initial table
 
-Revision ID: 38941c06b85f
-Revises:
-Create Date: 2022-07-15 13:00:48.805890
+Revision ID: 5e6226818dd0
+Revises: 
+Create Date: 2022-07-18 18:04:19.200634
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '38941c06b85f'
+revision = '5e6226818dd0'
 down_revision = None
 branch_labels = None
 depends_on = None
@@ -27,7 +27,8 @@ def upgrade() -> None:
     sa.Column('setup_outcome', sa.String(), nullable=True),
     sa.Column('call_outcome', sa.String(), nullable=True),
     sa.Column('teardown_outcome', sa.String(), nullable=True),
-    sa.Column('coiled_runtime', sa.String(), nullable=True),
+    sa.Column('coiled_runtime_version', sa.String(), nullable=True),
+    sa.Column('coiled_software_name', sa.String(), nullable=True),
     sa.Column('dask_version', sa.String(), nullable=True),
     sa.Column('python_version', sa.String(), nullable=True),
     sa.Column('platform', sa.String(), nullable=True),
