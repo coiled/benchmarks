@@ -129,6 +129,7 @@ if __name__ == "__main__":
     df = df.assign(software=df.coiled_runtime.str.rsplit("/", n=1).str[-1])
     by_software = df.groupby("software")
     for sw_name in by_software.groups:
+        print(f"Generating dashboard for {sw_name}")
         by_test = (
             df[df.software == sw_name]
             .sort_values(["path", "originalname"])

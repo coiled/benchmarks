@@ -57,6 +57,83 @@ The `coiled-runtime` test suite can be run locally with the following steps:
 Additionally, tests are automatically run on pull requests to this repository.
 See the section below on creating pull requests.
 
+## Benchmarking
+
+The `coiled-runtime` test suite contains a series of pytest fixtures which enable
+benchmarking metrics to be collected and stored for historical and regression analysis.
+By default, these metrics are not collected and stored, but they can be enabled
+by including the `--benchmark` flag in your pytest invocation.
+
+From a high level, here is how the benchmarking works:
+
+* Data from individual test runs are collected and stored in a local sqlite database.
+  The schema for this database is stored in `benchmark_schema.py`
+* The local sqlite databases are appended to a global historical record, stored in S3.
+* The historical data can be analyzed using any of a number of tools.
+  `dashboard.py` creates a set of static HTML documents showing historical data for the tests.
+
+### Running the benchmarks locally
+
+You can collect benchmarking data by running pytest with the `--benchmark` flag.
+This will create a local `benchmark.db` sqlite file in the root of the repository.
+If you run a test suite multiple times with benchmarking,
+the data will be appended do the database.
+
+You can compare with historical data by downloading the global database from S3 first:
+
+```bash
+aws s3 cp s3://coiled-runtime-ci/benchmarks/benchmark.db ./benchmark.db
+pytest --benchmark
+```
+
+### Changing the benchmark schema
+
+You can add, remove, or modify columns by editing the SQLAlchemy schema in `benchmark_schema.py`.
+However, if you have a database of historical data, then the schemas of the new and old data will not match.
+In order to account for this, you must provide a migration for the data and commit it to the repository.
+We use `alembic` to manage SQLAlchemy migrations.
+In the simple case of simply adding or removing a column to the schema, you can do the following:
+
+```bash
+# First, edit the `benchmark_schema.py`
+
+alembic revision --autogenerate -m "Description of migration"
+git add alembic/versions/name_of_new_migration.py
+git commit -m "Added a new migration"
+```
+
+Migrations are automatically applied in the pytest runs, so you needn't run them yourself.
+
+### Using the benchmark fixtures
+
+We have a number of pytest fixtures defined which can be used to automatically track certain metrics in the benchmark database.
+They are summarized here:
+
+**`benchmark_db_engine`**: The SQLAlchemy engine for the benchmark sqlite database. You can control the database name with the environment variable `DB_NAME`, which defaults to `benchmark.db`. Most tests shouldn't need to include this fixture directly.
+
+**`benchmark_db_session`**: The SQLAlchemy session for a given test. Most tests shouldn't need to include this fixture directly.
+
+**`test_run_benchmark`**: The SQLAlchemy ORM object for a given test. By including this fixutre in a test (or another fixture that includes it) you trigger the test being written to the benchmark database. This fixture includes data common to all tests, including python version, test name, and the test outcome.
+
+**`benchmark_time`**: Include this fixture to measure the wall clock time.
+
+**`sample_memory`**: This fixture yields a context manager which takes a distributed `Client` object, and records peak and average memory usage for the cluster within the context:
+```python
+def test_something(sample_memory):
+    with Client() as client:
+        with sample_memory(client):
+            client.submit(expensive_function)
+```
+
+Writing a new benchmark fixture would generally look like:
+1. Requesting the `test_run_benchmark` fixture, which yields an ORM object.
+1. Doing whatever setup work you need.
+1. `yield`ing to the test
+1. Collecting whatever information you need after the test is done.
+1. Setting the appropriate attributes on the ORM object.
+
+The `benchmark_time` fixture provides a fairly simple example.
+
 ## Contribute
 
 This repository uses GitHub Actions secrets for managing authentication tokens used

@@ -18,7 +18,6 @@ if [[ $BENCHMARK = 'true' ]]
 then
   EXTRA_OPTIONS="$EXTRA_OPTIONS --benchmark"
 fi
-echo $EXTRA_OPTIONS
 
 python -m pytest -n 10 --dist loadscope $EXTRA_OPTIONS "$@"
 
