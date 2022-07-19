@@ -185,11 +185,14 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
         )
         yield run
 
-        if rep := getattr(request.node, "rep_setup", None):
+        rep = getattr(request.node, "rep_setup", None)
+        if rep:
             run.setup_outcome = rep.outcome
-        if rep := getattr(request.node, "rep_call", None):
+        rep = getattr(request.node, "rep_call", None)
+        if rep:
             run.call_outcome = rep.outcome
-        if rep := getattr(request.node, "rep_teardown", None):
+        rep = getattr(request.node, "rep_teardown", None)
+        if rep:
             run.teardown_outcome = rep.outcome
 
         benchmark_db_session.add(run)
