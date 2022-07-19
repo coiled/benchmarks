@@ -67,13 +67,6 @@ jobs:
           # Put TEST_UPSTREAM into a file so it can be downloaded in subsequent workflow jobs
           echo $TEST_UPSTREAM > test_upstream.txt
 
-          # Maybe mark that we want to benchmark
-          # if [[ ${{ github.ref }} == "refs/heads/main" ]]
-          if [[ ${{ github.event_name }} == "pull_request" ]]
-          then
-            echo BENCHMARK=true >> $GITHUB_ENV
-          fi
-
       - name: Build Coiled Software Environment
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
@@ -172,6 +165,10 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
+      - name: Maybe mark for benchmarking
+        if: always() # && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        run: echo BENCHMARK=true >> $GITHUB_ENV
 
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
