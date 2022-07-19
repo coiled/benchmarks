@@ -77,7 +77,7 @@ From a high level, here is how the benchmarking works:
 You can collect benchmarking data by running pytest with the `--benchmark` flag.
 This will create a local `benchmark.db` sqlite file in the root of the repository.
 If you run a test suite multiple times with benchmarking,
-the data will be appended do the database.
+the data will be appended to the database.
 
 You can compare with historical data by downloading the global database from S3 first:
 

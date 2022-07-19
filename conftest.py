@@ -252,7 +252,7 @@ def small_cluster(request):
 
 
 @pytest.fixture
-def small_client(small_cluster, upload_cluster_dump, sample_memory):
+def small_client(small_cluster, upload_cluster_dump, sample_memory, benchmark_time):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
