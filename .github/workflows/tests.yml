@@ -121,6 +121,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Maybe mark for benchmarking
+        if: always() # && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        run: echo BENCHMARK=true >> $GITHUB_ENV
+
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -147,7 +151,15 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          DB_NAME: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
         run: bash ci/scripts/run_tests.sh tests/runtime
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        if: always() # && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        with:
+          name: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
+          path: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
   benchmarks:
     name: Benchmarks - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
@@ -238,6 +250,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Maybe mark for benchmarking
+        if: always() # && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        run: echo BENCHMARK=true >> $GITHUB_ENV
+
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -264,6 +280,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          DB_NAME: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
         run: |
           # run only on latest as cluster_dump to s3 was merged after dask = 2022.1.0
           if [[ ${{ matrix.runtime-version }} != '0.0.3' ]]
@@ -272,6 +289,13 @@ jobs:
           fi
 
           bash ci/scripts/run_tests.sh tests/stability
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        if: always() # && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        with:
+          name: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
+          path: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
   cleanup:
     needs: [software, runtime, benchmarks, stability]
@@ -343,7 +367,7 @@ jobs:
             })
 
   process-results:
-    needs: benchmarks
+    needs: [runtime, benchmarks, stability]
     name: Combine separate benchmark results
     if: always() # && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
     runs-on: ubuntu-latest
