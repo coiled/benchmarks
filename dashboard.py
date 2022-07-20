@@ -61,13 +61,12 @@ def make_timeseries(originalname, df, spec) -> altair.Chart | None:
         return None
     df = df.assign(**{spec.field: df[spec.field] / spec.scale})
     df = df.fillna({"ci_run_url": "https://github.com/coiled/coiled-runtime"})
-    print(df.path)
     path = df.path.iloc[0]
     kwargs = {}
     if len(df.name.unique()) > 1:
         kwargs["color"] = altair.Color("name:N")
     return (
-        altair.Chart(df, width=600, height=256)
+        altair.Chart(df, width=800, height=256)
         .mark_line(point=True)
         .encode(
             x=altair.X("start:T"),
@@ -117,12 +116,12 @@ def make_test_report(group_keys, df):
     if sourcename in source:
         code = panel.pane.Markdown(
             f"```python\n{source[sourcename]}\n```",
-            width=600,
+            width=800,
             height=384,
             style={"overflow": "auto"},
         )
         tabs.append(("Source", code))
-    return panel.Tabs(*tabs, margin=12, width=600)
+    return panel.Tabs(*tabs, margin=12, width=800)
 
 
 if __name__ == "__main__":
@@ -137,24 +136,30 @@ if __name__ == "__main__":
             + df.coiled_runtime_version
             + "-py"
             + df.python_version.str.split(".", n=2).str[:2].str.join(".")
-        )
+        ),
+        category=df.path.str.split("/", n=1).str[0],
     )
     runtimes = list(df.runtime.unique())
     for runtime in runtimes:
         print(f"Generating dashboard for {runtime}")
-        by_test = (
-            df[df.runtime == runtime]
-            .sort_values(["path", "originalname"])
-            .groupby(["path", "originalname"])
-        )
-        panes = [
-            make_test_report(test_name, by_test.get_group(test_name))
-            for test_name in by_test.groups
-        ]
-        flex = panel.FlexBox(*panes, align_items="start", justify_content="start")
+        categories = df[df.runtime == runtime].category.unique()
+        tabs = []
+        for category in categories:
+            by_test = (
+                df[(df.runtime == runtime) & (df.category == category)]
+                .sort_values(["path", "originalname"])
+                .groupby(["path", "originalname"])
+            )
+            panes = [
+                make_test_report(test_name, by_test.get_group(test_name))
+                for test_name in by_test.groups
+            ]
+            flex = panel.FlexBox(*panes, align_items="start", justify_content="start")
+            tabs.append((category.title(), flex))
+        doc = panel.Tabs(*tabs, margin=12)
 
         static = pathlib.Path("static")
         static.mkdir(exist_ok=True)
-        flex.save(
+        doc.save(
             str(static.joinpath(runtime + ".html")), title=runtime, resources=INLINE
         )
