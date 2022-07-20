@@ -56,7 +56,7 @@ def make_timeseries(originalname, df, spec) -> altair.Chart | None:
     spec: ChartSpec
         Data for how to render the timeseries
     """
-    df = df[~df[spec.field].isna() & ~df.start.isna()]
+    df = df.dropna(subset=[spec.field, "start"])
     if not len(df):
         return None
     df = df.assign(**{spec.field: df[spec.field] / spec.scale})
