@@ -2,15 +2,18 @@ import pytest
 import time
 import uuid
 
-import dask.array as da
 from coiled.v2 import Cluster
 from dask.distributed import Client, Event, Semaphore
 
+
 @pytest.mark.stability
 @pytest.mark.parametrize("minimum", (0, 1))
-@pytest.mark.parametrize("scatter", (False, pytest.param(True, marks=[pytest.mark.xfail("dask/distributed#6686")])))
+@pytest.mark.parametrize(
+    "scatter",
+    (False, pytest.param(True, marks=[pytest.mark.xfail("dask/distributed#6686")])),
+)
 def test_scale_up_on_task_load(minimum, scatter):
-     with Cluster(
+    with Cluster(
         name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
         n_workers=minimum,
         worker_vm_types=["t3.medium"],
@@ -18,7 +21,7 @@ def test_scale_up_on_task_load(minimum, scatter):
         with Client(cluster) as client:
             assert len(cluster.observed) == minimum
             adapt = cluster.adapt(minimum=minimum, maximum=10)
-            time.sleep(adapt.interval * 2.1) # Ensure enough time for system to adapt 
+            time.sleep(adapt.interval * 2.1)  # Ensure enough time for system to adapt
             assert len(adapt.log) == 0
             ev_fan_out = Event(name="fan-out", client=client)
 
@@ -64,16 +67,24 @@ def test_adapt_to_changing_workload(minimum: int):
             sem_fan_out = Semaphore(name="fan-out", max_leases=fan_out_size)
             ev_fan_out = Event(name="fan-out", client=client)
 
-            fan_out = client.map(clog, range(fan_out_size), ev=ev_fan_out, sem=sem_fan_out)
+            fan_out = client.map(
+                clog, range(fan_out_size), ev=ev_fan_out, sem=sem_fan_out
+            )
 
             reduction = client.submit(sum, fan_out)
             sem_barrier = Semaphore(name="barrier", max_leases=1)
             ev_barrier = Event(name="barrier", client=client)
             barrier = client.submit(clog, reduction, ev=ev_barrier, sem=sem_barrier)
-            
+
             sem_final_fan_out = Semaphore(name="final-fan-out", max_leases=fan_out_size)
             ev_final_fan_out = Event(name="final-fan-out", client=client)
-            final_fan_out = client.map(clog, range(fan_out_size), ev=ev_final_fan_out, sem=sem_final_fan_out, barrier=barrier)
+            final_fan_out = client.map(
+                clog,
+                range(fan_out_size),
+                ev=ev_final_fan_out,
+                sem=sem_final_fan_out,
+                barrier=barrier,
+            )
 
             # Scale up to maximum
             client.wait_for_workers(n_workers=maximum, timeout=300)
@@ -90,7 +101,7 @@ def test_adapt_to_changing_workload(minimum: int):
             assert adapt.log[-1][1]["status"] == "down"
             # Do not take longer than 5 minutes to scale down
             assert end - start < 300
-            
+
             ev_barrier.set()
             # Scale up to maximum again
             client.wait_for_workers(n_workers=maximum, timeout=300)
