@@ -128,6 +128,9 @@ if __name__ == "__main__":
     DB_NAME = (
         sys.argv[1] if len(sys.argv) > 1 else os.environ.get("DB_NAME", "benchmark.db")
     )
+    static = pathlib.Path("static")
+    static.mkdir(exist_ok=True)
+
     engine = sqlalchemy.create_engine(f"sqlite:///{DB_NAME}")
     df = pandas.read_sql("select * from test_run where platform = 'linux'", engine)
     df = df.assign(
@@ -139,6 +142,7 @@ if __name__ == "__main__":
         ),
         category=df.path.str.split("/", n=1).str[0],
     )
+
     runtimes = list(df.runtime.unique())
     for runtime in runtimes:
         print(f"Generating dashboard for {runtime}")
@@ -158,8 +162,14 @@ if __name__ == "__main__":
             tabs.append((category.title(), flex))
         doc = panel.Tabs(*tabs, margin=12)
 
-        static = pathlib.Path("static")
-        static.mkdir(exist_ok=True)
         doc.save(
             str(static.joinpath(runtime + ".html")), title=runtime, resources=INLINE
         )
+    index = """# Coiled Runtime Benchmarks\n\n"""
+    index += "\n\n".join([f"[{r}](./{r}.html)" for r in reversed(sorted(runtimes))])
+    index = panel.pane.Markdown(index, width=800)
+    index.save(
+        str(static.joinpath("index.html")),
+        title="Coiled Runtime Benchmarks",
+        resources=INLINE,
+    )
