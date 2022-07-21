@@ -199,7 +199,7 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
         benchmark_db_session.commit()
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 def benchmark_time(test_run_benchmark):
     if not test_run_benchmark:
         yield

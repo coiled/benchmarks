@@ -1,12 +1,6 @@
 import uuid
 
-import pytest
 from coiled import Cluster
-
-
-@pytest.fixture(autouse=True)
-def parquet_benchmark_fixture(benchmark_time):
-    yield
 
 
 def test_default_cluster_spinup_time(request):
