@@ -122,7 +122,7 @@ jobs:
           fetch-depth: 0
 
       - name: Maybe mark for benchmarking
-        if: always() # && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         run: echo BENCHMARK=true >> $GITHUB_ENV
 
       - name: Set up environment
@@ -156,7 +156,7 @@ jobs:
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
-        if: always() # && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         with:
           name: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
@@ -179,7 +179,7 @@ jobs:
           fetch-depth: 0
 
       - name: Maybe mark for benchmarking
-        if: always() # && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         run: echo BENCHMARK=true >> $GITHUB_ENV
 
       - name: Set up environment
@@ -213,7 +213,7 @@ jobs:
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
-        if: always() # && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         with:
           name: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
@@ -251,7 +251,7 @@ jobs:
           fetch-depth: 0
 
       - name: Maybe mark for benchmarking
-        if: always() # && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         run: echo BENCHMARK=true >> $GITHUB_ENV
 
       - name: Set up environment
@@ -292,7 +292,7 @@ jobs:
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
-        if: always() # && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         with:
           name: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
@@ -369,7 +369,7 @@ jobs:
   process-results:
     needs: [runtime, benchmarks, stability]
     name: Combine separate benchmark results
-    if: always() # && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+    if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
     runs-on: ubuntu-latest
     concurrency:
       # Fairly strict concurrency rule to avoid stepping on benchmark db.
