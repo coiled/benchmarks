@@ -13,6 +13,7 @@ import uuid
 from distutils.util import strtobool
 
 import dask
+import distributed
 import filelock
 import pytest
 import s3fs
@@ -177,6 +178,7 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
             originalname=node.originalname,
             path=str(node.path.relative_to(TEST_DIR)),
             dask_version=dask.__version__,
+            distributed_version=distributed.__version__,
             coiled_runtime_version=COILED_RUNTIME_VERSION,
             coiled_software_name=dask.config.get("coiled.software"),
             python_version=".".join(map(str, sys.version_info)),
