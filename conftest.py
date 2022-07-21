@@ -68,7 +68,7 @@ def get_coiled_runtime_version():
     try:
         return os.environ["COILED_RUNTIME_VERSION"]
     except KeyError:
-        # Determine software environment from local `coiled-runtime` version (in installed)
+        # Determine software environment from local `coiled-runtime` version (if installed)
         out = subprocess.check_output(
             shlex.split("conda list --json coiled-runtime"), text=True
         ).rstrip()
