@@ -42,7 +42,7 @@ def test_scale_up_on_task_load(minimum, scatter):
             futures = client.map(clog, numbers, ev=ev_fan_out)
 
             # Scale up within 5 minutes
-            client.wait_for_workers(n_workers=maximum, timeout=300)
+            client.wait_for_workers(n_workers=maximum, timeout=360)
             assert len(adapt.log) <= 2
             assert adapt.log[-1][1] == {"status": "up", "n": maximum}
             ev_fan_out.set()
@@ -93,7 +93,7 @@ def test_adapt_to_changing_workload(minimum: int):
             )
 
             # Scale up to maximum
-            client.wait_for_workers(n_workers=maximum, timeout=300)
+            client.wait_for_workers(n_workers=maximum, timeout=420)
             assert len(cluster.observed) == maximum
             assert adapt.log[-1][1]["status"] == "up"
 
@@ -105,12 +105,11 @@ def test_adapt_to_changing_workload(minimum: int):
             end = time.monotonic()
             assert len(cluster.observed) == 1
             assert adapt.log[-1][1]["status"] == "down"
-            # Do not take longer than 5 minutes to scale down
-            assert end - start < 300
+            assert end - start < 420
 
             ev_barrier.set()
             # Scale up to maximum again
-            client.wait_for_workers(n_workers=maximum, timeout=300)
+            client.wait_for_workers(n_workers=maximum, timeout=420)
             while len(cluster.observed) < maximum:
                 time.sleep(0.1)
             assert len(cluster.observed) == maximum
@@ -126,8 +125,7 @@ def test_adapt_to_changing_workload(minimum: int):
             end = time.monotonic()
             assert len(cluster.observed) == minimum
             assert adapt.log[-1][1]["status"] == "down"
-            # Do not take longer than 5 minutes to scale down
-            assert end - start < 300
+            assert end - start < 420
 
 
 @pytest.mark.stability
