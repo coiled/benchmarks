@@ -38,12 +38,12 @@ class TestRun(Base):
     average_memory = Column(Float, nullable=True)
     peak_memory = Column(Float, nullable=True)
 
-    # Timing data
+    # Timing data (Note: this is not yet collected)
     compute_time = Column(Float, nullable=True)
     disk_spill_time = Column(Float, nullable=True)
     serializing_time = Column(Float, nullable=True)
     transfer_time = Column(Float, nullable=True)
 
-    # Artifacts
+    # Artifacts (Note: this is not yet collected)
     performance_report_url = Column(String, nullable=True)
     cluster_dump_url = Column(String, nullable=True)
