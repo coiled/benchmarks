@@ -143,37 +143,37 @@ def test_adapt_to_memory_intensive_workload(minimum):
             assert len(adapt.log) == 0
 
             def memory_intensive_preprocessing():
-                matrix = da.random.random((48000, 48000))
-                rechunked = matrix.rechunk((matrix.shape[0], 200)).rechunk(
-                    (200, matrix.shape[1])
-                )
+                matrix = da.random.random((50000, 50000), chunks=(50000, 100))
+                rechunked = matrix.rechunk((100, 50000))
                 reduction = rechunked.sum()
                 return reduction
 
             @delayed
-            def clog(x, ev: Event):
-                ev.wait()
+            def clog(x, ev_start: Event, ev_barrier: Event):
+                ev_start.set()
+                ev_barrier.wait()
                 return x
 
-            def compute_intensive_barrier_task(data, ev: Event):
-                barrier = clog(data, ev)
+            def compute_intensive_barrier_task(
+                data, ev_start: Event, ev_barrier: Event
+            ):
+                barrier = clog(data, ev_start, ev_barrier)
                 return barrier
 
             def memory_intensive_postprocessing(data):
-                matrix = da.random.random((48000, 48000))
+                matrix = da.random.random((50000, 50000), chunks=(50000, 100))
                 matrix = matrix + da.from_delayed(data, shape=(1,), dtype="float")
-                rechunked = matrix.rechunk((matrix.shape[0], 200)).rechunk(
-                    (200, matrix.shape[1])
-                )
+                rechunked = matrix.rechunk((100, 50000))
                 reduction = rechunked.sum()
                 return reduction
 
+            ev_scale_down = Event(name="scale_down", client=client)
             ev_barrier = Event(name="barrier", client=client)
 
             fut = client.compute(
                 memory_intensive_postprocessing(
                     compute_intensive_barrier_task(
-                        memory_intensive_preprocessing(), ev_barrier
+                        memory_intensive_preprocessing(), ev_scale_down, ev_barrier
                     )
                 )
             )
@@ -183,6 +183,7 @@ def test_adapt_to_memory_intensive_workload(minimum):
             assert len(cluster.observed) == maximum
             assert adapt.log[-1][1]["status"] == "up"
 
+            ev_scale_down.wait()
             # Scale down to a single worker on barrier task
             start = time.monotonic()
             while len(cluster.observed) > 1:
