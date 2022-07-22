@@ -419,6 +419,7 @@ jobs:
 
   static-site:
     needs: process-results
+    if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
     name: Build static dashboards
     runs-on: ubuntu-latest
     steps:
