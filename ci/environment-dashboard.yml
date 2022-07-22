@@ -1,0 +1,12 @@
+channels:
+  - conda-forge
+dependencies:
+  - pytest
+  - python=3.9
+  - sqlalchemy=1.4
+  - altair=4.2
+  - bokeh
+  - panel=0.13
+  - coiled
+  - dask
+  - distributed

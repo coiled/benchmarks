@@ -121,6 +121,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Maybe mark for benchmarking
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        run: echo BENCHMARK=true >> $GITHUB_ENV
+
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -147,7 +151,15 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          DB_NAME: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
         run: bash ci/scripts/run_tests.sh tests/runtime
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        with:
+          name: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
+          path: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
   benchmarks:
     name: Benchmarks - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
@@ -165,6 +177,10 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
+
+      - name: Maybe mark for benchmarking
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        run: echo BENCHMARK=true >> $GITHUB_ENV
 
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
@@ -192,7 +208,15 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          DB_NAME: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
         run: bash ci/scripts/run_tests.sh tests/benchmarks
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        with:
+          name: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
+          path: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
   stability:
     name: Stability - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
@@ -226,6 +250,10 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Maybe mark for benchmarking
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        run: echo BENCHMARK=true >> $GITHUB_ENV
+
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -252,6 +280,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          DB_NAME: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
         run: |
           # run only on latest as cluster_dump to s3 was merged after dask = 2022.1.0
           if [[ ${{ matrix.runtime-version }} != '0.0.3' ]]
@@ -260,6 +289,13 @@ jobs:
           fi
 
           bash ci/scripts/run_tests.sh tests/stability
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        with:
+          name: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
+          path: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
   cleanup:
     needs: [software, runtime, benchmarks, stability]
@@ -329,3 +365,85 @@ jobs:
                 body: issue_body,
                 title: title,
             })
+
+  process-results:
+    needs: [runtime, benchmarks, stability]
+    name: Combine separate benchmark results
+    if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+    runs-on: ubuntu-latest
+    concurrency:
+      # Fairly strict concurrency rule to avoid stepping on benchmark db.
+      # Could eventually replace with a real db in coiled, RDS, or litestream
+      group: process-benchmarks
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-python@v4
+
+      - name: Install dependencies
+        run: pip install alembic
+
+      - uses: actions/download-artifact@v3
+        with:
+          path: benchmarks
+
+      - name: Download benchmark db
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
+          DB_NAME: benchmark.db
+        run: |
+          aws s3 cp s3://coiled-runtime-ci/benchmarks/$DB_NAME . || true
+
+      - name: Combine benchmarks
+        run: |
+          ls -lhR benchmarks
+          bash ci/scripts/combine-dbs.sh
+
+      - name: Upload benchmark db
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
+          DB_NAME: benchmark.db
+        run: |
+          aws s3 cp $DB_NAME s3://coiled-runtime-ci/benchmarks/
+
+      - name: Upload benchmark results as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark.db
+          path: benchmark.db
+
+  static-site:
+    needs: process-results
+    name: Build static dashboards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: benchmark.db
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: "3.9"
+          environment-file: ci/environment-dashboard.yml
+
+      - name: Generate dashboards
+        run: |
+          python dashboard.py
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@4.1.7
+        with:
+          branch: gh-pages
+          folder: static
