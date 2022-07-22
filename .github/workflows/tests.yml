@@ -419,6 +419,7 @@ jobs:
 
   static-site:
     needs: process-results
+    # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
     if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
     name: Build static dashboards
     runs-on: ubuntu-latest
