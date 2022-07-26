@@ -169,8 +169,8 @@ def test_adapt_to_memory_intensive_workload(minimum):
             assert len(adapt.log) == 0
 
             def memory_intensive_preprocessing():
-                matrix = da.random.random((50000, 50000), chunks=(50000, 100))
-                rechunked = matrix.rechunk((100, 50000))
+                matrix = da.random.random((40000, 40000), chunks=(40000, 500))
+                rechunked = matrix.rechunk((500, 40000))
                 reduction = rechunked.sum()
                 return reduction
 
@@ -187,9 +187,9 @@ def test_adapt_to_memory_intensive_workload(minimum):
                 return barrier
 
             def memory_intensive_postprocessing(data):
-                matrix = da.random.random((50000, 50000), chunks=(50000, 100))
+                matrix = da.random.random((40000, 40000), chunks=(40000, 500))
                 matrix = matrix + da.from_delayed(data, shape=(1,), dtype="float")
-                rechunked = matrix.rechunk((100, 50000))
+                rechunked = matrix.rechunk((500, 40000))
                 reduction = rechunked.sum()
                 return reduction
 
