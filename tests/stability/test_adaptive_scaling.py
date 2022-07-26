@@ -24,6 +24,7 @@ def test_scale_up_on_task_load(minimum, scatter):
         name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
         n_workers=minimum,
         worker_vm_types=["t3.medium"],
+        wait_for_workers=True,
     ) as cluster:
         with Client(cluster) as client:
             assert len(cluster.observed) == minimum
@@ -63,6 +64,7 @@ def test_adapt_to_changing_workload(minimum: int):
         name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
         n_workers=5,
         worker_vm_types=["t3.medium"],
+        wait_for_workers=True,
     ) as cluster:
         with Client(cluster) as client:
             adapt = cluster.adapt(minimum=minimum, maximum=maximum)
@@ -159,6 +161,7 @@ def test_adapt_to_memory_intensive_workload(minimum):
         name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
         n_workers=minimum,
         worker_vm_types=["t3.medium"],
+        wait_for_workers=True,
     ) as cluster:
         with Client(cluster) as client:
             assert len(cluster.observed) == minimum
