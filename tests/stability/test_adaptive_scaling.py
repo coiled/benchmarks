@@ -7,6 +7,7 @@ from coiled.v2 import Cluster
 from dask import delayed
 from dask.distributed import Client, Event, Semaphore, wait
 
+TIMEOUT_THRESHOLD = 600 # 10 minutes
 
 @pytest.mark.stability
 @pytest.mark.parametrize("minimum", (0, 1))
@@ -41,12 +42,16 @@ def test_scale_up_on_task_load(minimum, scatter):
 
             futures = client.map(clog, numbers, ev=ev_fan_out)
 
-            # Scale up within 5 minutes
-            client.wait_for_workers(n_workers=maximum, timeout=360)
+            end = time.monotonic()
+            client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
+            start = time.monotonic()
+            duration = end - start
+            assert duration < 360
             assert len(adapt.log) <= 2
             assert adapt.log[-1][1] == {"status": "up", "n": maximum}
             ev_fan_out.set()
             client.gather(futures)
+            return duration
 
 
 @pytest.mark.stability
@@ -93,7 +98,11 @@ def test_adapt_to_changing_workload(minimum: int):
             )
 
             # Scale up to maximum
-            client.wait_for_workers(n_workers=maximum, timeout=420)
+            start = time.monotonic()
+            client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
+            end = time.monotonic()
+            duration_first_scale_up = end - start
+            assert duration_first_scale_up < 420
             assert len(cluster.observed) == maximum
             assert adapt.log[-1][1]["status"] == "up"
 
@@ -101,17 +110,22 @@ def test_adapt_to_changing_workload(minimum: int):
             # Scale down to a single worker
             start = time.monotonic()
             while len(cluster.observed) > 1:
+                if time.monotonic() - start >= TIMEOUT_THRESHOLD:
+                    raise TimeoutError()
                 time.sleep(0.1)
             end = time.monotonic()
+            duration_first_scale_down = end - start
+            assert duration_first_scale_down < 420
             assert len(cluster.observed) == 1
             assert adapt.log[-1][1]["status"] == "down"
-            assert end - start < 420
 
             ev_barrier.set()
             # Scale up to maximum again
-            client.wait_for_workers(n_workers=maximum, timeout=420)
-            while len(cluster.observed) < maximum:
-                time.sleep(0.1)
+            start = time.monotonic()
+            client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
+            end = time.monotonic()
+            duration_second_scale_up = end - start
+            assert duration_second_scale_up < 420
             assert len(cluster.observed) == maximum
             assert adapt.log[-1][1]["status"] == "up"
 
@@ -121,11 +135,20 @@ def test_adapt_to_changing_workload(minimum: int):
             # Scale down to minimum
             start = time.monotonic()
             while len(cluster.observed) > minimum:
+                if time.monotonic() - start >= TIMEOUT_THRESHOLD:
+                    raise TimeoutError()
                 time.sleep(0.1)
             end = time.monotonic()
+            duration_second_scale_down = end - start
+            assert duration_second_scale_down < 420
             assert len(cluster.observed) == minimum
             assert adapt.log[-1][1]["status"] == "down"
-            assert end - start < 420
+            return (
+                duration_first_scale_up,
+                duration_first_scale_down,
+                duration_second_scale_up,
+                duration_second_scale_down,
+            )
 
 
 @pytest.mark.stability
@@ -179,7 +202,11 @@ def test_adapt_to_memory_intensive_workload(minimum):
             )
 
             # Scale up to maximum on preprocessing
-            client.wait_for_workers(n_workers=maximum, timeout=360)
+            start = time.monotonic()
+            client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
+            end = time.monotonic()
+            duration_first_scale_up = end - start
+            assert duration_first_scale_up < 420
             assert len(cluster.observed) == maximum
             assert adapt.log[-1][1]["status"] == "up"
 
@@ -187,16 +214,23 @@ def test_adapt_to_memory_intensive_workload(minimum):
             # Scale down to a single worker on barrier task
             start = time.monotonic()
             while len(cluster.observed) > 1:
+                if time.monotonic() - start >= TIMEOUT_THRESHOLD:
+                    raise TimeoutError()
                 time.sleep(0.1)
             end = time.monotonic()
+            duration_first_scale_down = end - start
+            assert duration_first_scale_down < 420
             assert len(cluster.observed) == 1
             assert adapt.log[-1][1]["status"] == "down"
-            assert end - start < 420
 
             ev_barrier.set()
 
             # Scale up to maximum on postprocessing
-            client.wait_for_workers(n_workers=maximum, timeout=360)
+            start = time.monotonic()
+            client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
+            end = time.monotonic()
+            duration_second_scale_up = end - start
+            assert duration_second_scale_up < 420
             assert len(cluster.observed) == maximum
             assert adapt.log[-1][1]["status"] == "up"
 
@@ -206,8 +240,17 @@ def test_adapt_to_memory_intensive_workload(minimum):
             # Scale down to minimum
             start = time.monotonic()
             while len(cluster.observed) > minimum:
+                if time.monotonic() - start >= TIMEOUT_THRESHOLD:
+                    raise TimeoutError()
                 time.sleep(0.1)
             end = time.monotonic()
+            duration_second_scale_down = end - start
+            assert duration_second_scale_down < 420
             assert len(cluster.observed) == minimum
             assert adapt.log[-1][1]["status"] == "down"
-            assert end - start < 420
+            return (
+                duration_first_scale_up,
+                duration_first_scale_down,
+                duration_second_scale_up,
+                duration_second_scale_down,
+            )
