@@ -7,7 +7,8 @@ from coiled.v2 import Cluster
 from dask import delayed
 from dask.distributed import Client, Event, Semaphore, wait
 
-TIMEOUT_THRESHOLD = 600 # 10 minutes
+TIMEOUT_THRESHOLD = 600  # 10 minutes
+
 
 @pytest.mark.stability
 @pytest.mark.parametrize("minimum", (0, 1))
@@ -153,6 +154,9 @@ def test_adapt_to_changing_workload(minimum: int):
             )
 
 
+@pytest.mark.skip(
+    reason="The test behavior is unreliable and may lead to very long runtime (see: coiled-runtime#211)"
+)
 @pytest.mark.stability
 @pytest.mark.parametrize("minimum", (0, 1))
 def test_adapt_to_memory_intensive_workload(minimum):
@@ -219,7 +223,7 @@ def test_adapt_to_memory_intensive_workload(minimum):
 
             ev_barrier.set()
             wait(fut)
-            fut = memory_intensive_processing()
+            fut = client.compute(memory_intensive_processing())
 
             # Scale up to maximum on postprocessing
             start = time.monotonic()
