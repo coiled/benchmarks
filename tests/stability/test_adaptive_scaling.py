@@ -168,7 +168,6 @@ def test_adapt_to_memory_intensive_workload(minimum):
         wait_for_workers=True,
     ) as cluster:
         with Client(cluster) as client:
-            assert len(cluster.observed) == minimum
             adapt = cluster.adapt(minimum=minimum, maximum=maximum)
             assert len(adapt.log) == 0
 
