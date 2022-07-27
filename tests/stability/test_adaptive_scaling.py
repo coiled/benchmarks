@@ -28,7 +28,6 @@ def test_scale_up_on_task_load(minimum, scatter):
         wait_for_workers=True,
     ) as cluster:
         with Client(cluster) as client:
-            assert len(cluster.observed) == minimum
             adapt = cluster.adapt(minimum=minimum, maximum=maximum)
             time.sleep(adapt.interval * 2.1)  # Ensure enough time for system to adapt
             assert len(adapt.log) == 0
