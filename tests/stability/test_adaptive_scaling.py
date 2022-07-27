@@ -168,7 +168,7 @@ def test_adapt_to_memory_intensive_workload(minimum):
             adapt = cluster.adapt(minimum=minimum, maximum=maximum)
             assert len(adapt.log) == 0
 
-            def memory_intensive_preprocessing():
+            def memory_intensive_processing():
                 matrix = da.random.random((40000, 40000), chunks=(40000, 500))
                 rechunked = matrix.rechunk((500, 40000))
                 reduction = rechunked.sum()
@@ -186,21 +186,12 @@ def test_adapt_to_memory_intensive_workload(minimum):
                 barrier = clog(data, ev_start, ev_barrier)
                 return barrier
 
-            def memory_intensive_postprocessing(data):
-                matrix = da.random.random((40000, 40000), chunks=(40000, 500))
-                matrix = matrix + da.from_delayed(data, shape=(1,), dtype="float")
-                rechunked = matrix.rechunk((500, 40000))
-                reduction = rechunked.sum()
-                return reduction
-
             ev_scale_down = Event(name="scale_down", client=client)
             ev_barrier = Event(name="barrier", client=client)
 
             fut = client.compute(
-                memory_intensive_postprocessing(
-                    compute_intensive_barrier_task(
-                        memory_intensive_preprocessing(), ev_scale_down, ev_barrier
-                    )
+                compute_intensive_barrier_task(
+                    memory_intensive_processing(), ev_scale_down, ev_barrier
                 )
             )
 
@@ -209,7 +200,7 @@ def test_adapt_to_memory_intensive_workload(minimum):
             client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
             end = time.monotonic()
             duration_first_scale_up = end - start
-            assert duration_first_scale_up < 420
+            assert duration_first_scale_up < 420, duration_first_scale_up
             assert len(cluster.observed) == maximum
             assert adapt.log[-1][1]["status"] == "up"
 
@@ -222,18 +213,20 @@ def test_adapt_to_memory_intensive_workload(minimum):
                 time.sleep(0.1)
             end = time.monotonic()
             duration_first_scale_down = end - start
-            assert duration_first_scale_down < 420
+            assert duration_first_scale_down < 420, duration_first_scale_down
             assert len(cluster.observed) == 1
             assert adapt.log[-1][1]["status"] == "down"
 
             ev_barrier.set()
+            wait(fut)
+            fut = memory_intensive_processing()
 
             # Scale up to maximum on postprocessing
             start = time.monotonic()
             client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
             end = time.monotonic()
             duration_second_scale_up = end - start
-            assert duration_second_scale_up < 420
+            assert duration_second_scale_up < 420, duration_second_scale_up
             assert len(cluster.observed) == maximum
             assert adapt.log[-1][1]["status"] == "up"
 
@@ -248,7 +241,7 @@ def test_adapt_to_memory_intensive_workload(minimum):
                 time.sleep(0.1)
             end = time.monotonic()
             duration_second_scale_down = end - start
-            assert duration_second_scale_down < 420
+            assert duration_second_scale_down < 420, duration_second_scale_down
             assert len(cluster.observed) == minimum
             assert adapt.log[-1][1]["status"] == "down"
             return (
