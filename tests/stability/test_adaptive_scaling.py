@@ -11,7 +11,7 @@ TIMEOUT_THRESHOLD = 1800  # 10 minutes
 
 
 @pytest.mark.stability
-@pytest.mark.parametrize("minimum", (0, 1))
+@pytest.mark.parametrize("minimum,threshold", [(0, 240), (1, 120)])
 @pytest.mark.parametrize(
     "scatter",
     (
@@ -19,7 +19,10 @@ TIMEOUT_THRESHOLD = 1800  # 10 minutes
         pytest.param(True, marks=[pytest.mark.xfail(reason="dask/distributed#6686")]),
     ),
 )
-def test_scale_up_on_task_load(minimum, scatter):
+def test_scale_up_on_task_load(minimum, threshold, scatter):
+    """Tests that adaptive scaling reacts in a reasonable amount of time to 
+    an increased task load and scales up.
+    """
     maximum = 10
     with Cluster(
         name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
@@ -47,7 +50,7 @@ def test_scale_up_on_task_load(minimum, scatter):
             client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
             start = time.monotonic()
             duration = end - start
-            assert duration < 360
+            assert duration < threshold, duration
             assert len(adapt.log) <= 2
             assert adapt.log[-1][1] == {"status": "up", "n": maximum}
             ev_fan_out.set()
@@ -58,6 +61,10 @@ def test_scale_up_on_task_load(minimum, scatter):
 @pytest.mark.stability
 @pytest.mark.parametrize("minimum", (0, 1))
 def test_adapt_to_changing_workload(minimum: int):
+    """Tests that adaptive scaling reacts within a reasonable amount of time to 
+    a varying task load and scales up or down. This also asserts that no recomputation 
+    is caused by the scaling.
+    """
     maximum = 10
     fan_out_size = 100
     with Cluster(
@@ -70,33 +77,50 @@ def test_adapt_to_changing_workload(minimum: int):
             adapt = cluster.adapt(minimum=minimum, maximum=maximum)
             assert len(adapt.log) == 0
 
+            @delayed
             def clog(x: int, ev: Event, sem: Semaphore, **kwargs) -> int:
                 # Ensure that no recomputation happens by decrementing a countdown on a semaphore
-                acquired = sem.acquire(timeout=0.1)
-                assert acquired is True
+                acquired = sem.acquire(timeout=1)
+                assert acquired is True, "Could not acquire semaphore, likely recomputation happened."
                 ev.wait()
                 return x
 
+            def workload(
+                fan_out_size,
+                ev_fan_out,
+                sem_fan_out,
+                ev_barrier,
+                sem_barrier,
+                ev_final_fan_out,
+                sem_final_fan_out,
+            ):
+                fan_out = [
+                    clog(i, ev=ev_fan_out, sem=sem_fan_out) for i in range(fan_out_size)
+                ]
+                barrier = clog(delayed(sum)(fan_out), ev=ev_barrier, sem=sem_barrier)
+                final_fan_out = [
+                    clog(i, ev=ev_final_fan_out, sem=sem_final_fan_out, barrier=barrier)
+                    for i in range(fan_out_size)
+                ]
+                return final_fan_out
+
             sem_fan_out = Semaphore(name="fan-out", max_leases=fan_out_size)
             ev_fan_out = Event(name="fan-out", client=client)
-
-            fut = client.map(
-                clog, range(fan_out_size), ev=ev_fan_out, sem=sem_fan_out
-            )
-
-            fut = client.submit(sum, fut)
             sem_barrier = Semaphore(name="barrier", max_leases=1)
             ev_barrier = Event(name="barrier", client=client)
-            fut = client.submit(clog, fut, ev=ev_barrier, sem=sem_barrier)
-
             sem_final_fan_out = Semaphore(name="final-fan-out", max_leases=fan_out_size)
             ev_final_fan_out = Event(name="final-fan-out", client=client)
-            fut = client.map(
-                clog,
-                range(fan_out_size),
-                ev=ev_final_fan_out,
-                sem=sem_final_fan_out,
-                barrier=fut,
+
+            fut = client.compute(
+                workload(
+                    fan_out_size=fan_out_size,
+                    ev_fan_out=ev_fan_out,
+                    sem_fan_out=sem_fan_out,
+                    ev_barrier=ev_barrier,
+                    sem_barrier=sem_barrier,
+                    ev_final_fan_out=ev_final_fan_out,
+                    sem_final_fan_out=sem_final_fan_out,
+                )
             )
 
             # Scale up to maximum
@@ -104,7 +128,7 @@ def test_adapt_to_changing_workload(minimum: int):
             client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
             end = time.monotonic()
             duration_first_scale_up = end - start
-            assert duration_first_scale_up < 420
+            assert duration_first_scale_up < 120
             assert len(cluster.observed) == maximum
             assert adapt.log[-1][1]["status"] == "up"
 
@@ -117,7 +141,7 @@ def test_adapt_to_changing_workload(minimum: int):
                 time.sleep(0.1)
             end = time.monotonic()
             duration_first_scale_down = end - start
-            assert duration_first_scale_down < 420
+            assert duration_first_scale_down < 330
             assert len(cluster.observed) == 1
             assert adapt.log[-1][1]["status"] == "down"
 
@@ -127,7 +151,7 @@ def test_adapt_to_changing_workload(minimum: int):
             client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
             end = time.monotonic()
             duration_second_scale_up = end - start
-            assert duration_second_scale_up < 420
+            assert duration_second_scale_up < 120
             assert len(cluster.observed) == maximum
             assert adapt.log[-1][1]["status"] == "up"
 
@@ -143,7 +167,7 @@ def test_adapt_to_changing_workload(minimum: int):
                 time.sleep(0.1)
             end = time.monotonic()
             duration_second_scale_down = end - start
-            assert duration_second_scale_down < 420
+            assert duration_second_scale_down < 330
             assert len(cluster.observed) == minimum
             assert adapt.log[-1][1]["status"] == "down"
             return (
@@ -160,6 +184,10 @@ def test_adapt_to_changing_workload(minimum: int):
 @pytest.mark.stability
 @pytest.mark.parametrize("minimum", (0, 1))
 def test_adapt_to_memory_intensive_workload(minimum):
+    """Tests that adaptive scaling reacts within a reasonable amount of time to a varying task and memory load.
+    
+    Note: This tests currently results in spilling and very long runtimes.
+    """
     maximum = 10
     with Cluster(
         name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
