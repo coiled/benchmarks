@@ -7,7 +7,7 @@ from coiled.v2 import Cluster
 from dask import delayed
 from dask.distributed import Client, Event, Semaphore, wait
 
-TIMEOUT_THRESHOLD = 600  # 10 minutes
+TIMEOUT_THRESHOLD = 1800  # 10 minutes
 
 
 @pytest.mark.stability
@@ -80,23 +80,23 @@ def test_adapt_to_changing_workload(minimum: int):
             sem_fan_out = Semaphore(name="fan-out", max_leases=fan_out_size)
             ev_fan_out = Event(name="fan-out", client=client)
 
-            fan_out = client.map(
+            fut = client.map(
                 clog, range(fan_out_size), ev=ev_fan_out, sem=sem_fan_out
             )
 
-            reduction = client.submit(sum, fan_out)
+            fut = client.submit(sum, fut)
             sem_barrier = Semaphore(name="barrier", max_leases=1)
             ev_barrier = Event(name="barrier", client=client)
-            barrier = client.submit(clog, reduction, ev=ev_barrier, sem=sem_barrier)
+            fut = client.submit(clog, fut, ev=ev_barrier, sem=sem_barrier)
 
             sem_final_fan_out = Semaphore(name="final-fan-out", max_leases=fan_out_size)
             ev_final_fan_out = Event(name="final-fan-out", client=client)
-            final_fan_out = client.map(
+            fut = client.map(
                 clog,
                 range(fan_out_size),
                 ev=ev_final_fan_out,
                 sem=sem_final_fan_out,
-                barrier=barrier,
+                barrier=fut,
             )
 
             # Scale up to maximum
@@ -132,7 +132,8 @@ def test_adapt_to_changing_workload(minimum: int):
             assert adapt.log[-1][1]["status"] == "up"
 
             ev_final_fan_out.set()
-            client.gather(final_fan_out)
+            client.gather(fut)
+            del fut
 
             # Scale down to minimum
             start = time.monotonic()
