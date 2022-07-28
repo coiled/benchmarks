@@ -20,7 +20,7 @@ TIMEOUT_THRESHOLD = 1800  # 10 minutes
     ),
 )
 def test_scale_up_on_task_load(minimum, threshold, scatter):
-    """Tests that adaptive scaling reacts in a reasonable amount of time to 
+    """Tests that adaptive scaling reacts in a reasonable amount of time to
     an increased task load and scales up.
     """
     maximum = 10
@@ -61,8 +61,8 @@ def test_scale_up_on_task_load(minimum, threshold, scatter):
 @pytest.mark.stability
 @pytest.mark.parametrize("minimum", (0, 1))
 def test_adapt_to_changing_workload(minimum: int):
-    """Tests that adaptive scaling reacts within a reasonable amount of time to 
-    a varying task load and scales up or down. This also asserts that no recomputation 
+    """Tests that adaptive scaling reacts within a reasonable amount of time to
+    a varying task load and scales up or down. This also asserts that no recomputation
     is caused by the scaling.
     """
     maximum = 10
@@ -81,7 +81,9 @@ def test_adapt_to_changing_workload(minimum: int):
             def clog(x: int, ev: Event, sem: Semaphore, **kwargs) -> int:
                 # Ensure that no recomputation happens by decrementing a countdown on a semaphore
                 acquired = sem.acquire(timeout=1)
-                assert acquired is True, "Could not acquire semaphore, likely recomputation happened."
+                assert (
+                    acquired is True
+                ), "Could not acquire semaphore, likely recomputation happened."
                 ev.wait()
                 return x
 
@@ -185,7 +187,7 @@ def test_adapt_to_changing_workload(minimum: int):
 @pytest.mark.parametrize("minimum", (0, 1))
 def test_adapt_to_memory_intensive_workload(minimum):
     """Tests that adaptive scaling reacts within a reasonable amount of time to a varying task and memory load.
-    
+
     Note: This tests currently results in spilling and very long runtimes.
     """
     maximum = 10
