@@ -77,7 +77,7 @@ def make_timeseries(originalname, df, spec) -> altair.Chart | None:
                 altair.Tooltip("call_outcome:N", title="Test Outcome"),
                 altair.Tooltip("coiled_runtime_version:N", title="Coiled Runtime"),
                 altair.Tooltip("dask_version:N", title="Dask"),
-                altair.Tooltip("duration:Q", title="Duration"),
+                altair.Tooltip(f"{spec.field}:Q", title=spec.label),
                 altair.Tooltip("ci_run_url:N", title="CI Run URL"),
             ],
             **kwargs,
