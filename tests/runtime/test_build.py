@@ -1,14 +1,15 @@
 from __future__ import annotations
 
+import importlib.metadata
 import json
 import os
 import pathlib
 import shlex
 import subprocess
+import sys
 from distutils.util import strtobool
 
 import coiled
-import conda.cli.python_api as Conda
 import dask
 import pytest
 import yaml
@@ -18,14 +19,22 @@ from packaging.requirements import Requirement, SpecifierSet
 from packaging.version import Version
 
 
-def get_conda_installed_versions() -> dict[str, str]:
-    """Get conda list packages in a list, and strip headers"""
-    conda_list = Conda.run_command(Conda.Commands.LIST)[0].split("\n")[3:-1]
-
+def get_installed_versions(packages) -> dict[str, str]:
     package_versions = {}
-    for line in conda_list:
-        name, version, *_ = line.split()
-        package_versions[name] = version
+    for package in packages:
+        # Not on PyPI
+        if package in ("nb_conda_kernels", "python-graphviz"):
+            continue
+        # Python and openssl system packages
+        if package == "python":
+            version = ".".join(map(str, sys.version_info[:3]))
+        elif package == "openssl":
+            import ssl
+
+            version = ssl.OPENSSL_VERSION.split(" ")[1]
+        else:
+            version = importlib.metadata.version(package)
+        package_versions[package] = version
 
     return package_versions
 
@@ -47,6 +56,22 @@ def get_meta_specifiers() -> dict[str, SpecifierSet]:
     return meta_specifiers
 
 
+_conda_to_pip_names = {
+    "msgpack-python": "msgpack",
+    "python-blosc": "blosc",
+}
+
+_pip_to_conda_names = {v: k for k, v in _conda_to_pip_names.items()}
+
+
+def pip_to_conda_name(package):
+    return _pip_to_conda_names.get(package, package)
+
+
+def conda_to_pip_name(package):
+    return _conda_to_pip_names.get(package, package)
+
+
 @pytest.mark.latest_runtime
 def test_install_dist():
     # Test that versions of packages installed are consistent with those
@@ -58,12 +83,22 @@ def test_install_dist():
         pytest.skip("Not valid on upstream build")
 
     meta_specifiers = get_meta_specifiers()
-    installed_versions = get_conda_installed_versions()
+    packages = [conda_to_pip_name(p) for p in meta_specifiers.keys()]
+    installed_versions = get_installed_versions(packages)
 
-    assert all(
-        specifier.contains(installed_versions[package])
-        for package, specifier in meta_specifiers.items()
-    )
+    # Find and store package version mismatches
+    mismatches = []
+    for package in installed_versions:
+        conda_name = pip_to_conda_name(package)
+        specifier = meta_specifiers[conda_name]
+        installed_version = installed_versions[package]
+        if specifier.contains(installed_version):
+            continue
+        else:
+            mismatches.append((package, specifier, installed_version))
+
+    if mismatches:
+        raise RuntimeError(mismatches)
 
 
 @pytest.mark.latest_runtime
@@ -81,18 +116,10 @@ def test_latest_coiled():
     assert v_installed == v_latest
 
 
-def conda_name(package):
-    if package == "msgpack":
-        return "msgpack-python"
-    elif package == "blosc":
-        return "python-blosc"
-    return package
-
-
 def test_version_warning_packages():
     meta_specifiers = get_meta_specifiers()
     with Client() as client:
         info = client.get_versions()
         packages = info["client"]["packages"].keys()
-        packages = [conda_name(p) for p in packages]
+        packages = [pip_to_conda_name(p) for p in packages]
         assert all(p in meta_specifiers for p in packages)
