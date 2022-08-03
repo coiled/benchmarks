@@ -22,9 +22,6 @@ from packaging.version import Version
 def get_installed_versions(packages) -> dict[str, str]:
     package_versions = {}
     for package in packages:
-        # Not on PyPI
-        if package in ("nb_conda_kernels", "python-graphviz"):
-            continue
         # Python and openssl system packages
         if package == "python":
             version = ".".join(map(str, sys.version_info[:3]))

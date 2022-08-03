@@ -28,8 +28,6 @@ def get_requirements():
     requirements["msgpack"] = requirements.pop("msgpack-python")
 
     # Exclude packages not available on PyPI
-    del requirements["python-graphviz"]
-    del requirements["nb_conda_kernels"]
     del requirements["openssl"]
 
     # Get Python version requirements (also not included on PyPI)
