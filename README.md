@@ -51,7 +51,7 @@ The `coiled-runtime` test suite can be run locally with the following steps:
 2. Create a Python environment and install development dependencies as
    specified in `ci/environment.yml`.
 3. (Optional) If testing against an unreleased version of `coiled-runtime`,
-   create a Coiled software with the unreleased `coiled-runtime` installed
+   create a Coiled software environment with the unreleased `coiled-runtime` installed
    and set a local `COILED_SOFTWARE_NAME` environment variable to the name
    of the software environment (e.g. `export COILED_SOFTWARE_NAME="account/software-name"`)
 4. Run tests with `python -m pytest tests`
