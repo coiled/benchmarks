@@ -122,7 +122,7 @@ jobs:
           fetch-depth: 0
 
       - name: Maybe mark for benchmarking
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.event_name == 'pull_request' && github.repository == 'coiled/coiled-runtime' #always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         run: echo BENCHMARK=true >> $GITHUB_ENV
 
       - name: Set up environment
@@ -179,7 +179,7 @@ jobs:
           fetch-depth: 0
 
       - name: Maybe mark for benchmarking
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.event_name == 'pull_request' && github.repository == 'coiled/coiled-runtime' #always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         run: echo BENCHMARK=true >> $GITHUB_ENV
 
       - name: Set up environment
@@ -251,7 +251,7 @@ jobs:
           fetch-depth: 0
 
       - name: Maybe mark for benchmarking
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.event_name == 'pull_request' && github.repository == 'coiled/coiled-runtime' #always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         run: echo BENCHMARK=true >> $GITHUB_ENV
 
       - name: Set up environment
