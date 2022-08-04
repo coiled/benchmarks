@@ -69,7 +69,7 @@ def test_adapt_to_changing_workload(minimum: int):
     maximum = 10
     fan_out_size = 100
     # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
-    # during adative scaling but we receive a KilledWorker() instead.
+    # during adaptive scaling but we receive a KilledWorker() instead.
     with dask.config.set({"distributed.scheduler.allowed-failures": 0}):
         with Cluster(
             name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
