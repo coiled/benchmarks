@@ -104,119 +104,119 @@ jobs:
             software_name.txt
             test_upstream.txt
 
-  runtime:
-    name: Runtime - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-    needs: software
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["ubuntu-latest"]
-        python-version: ["3.9"]
-        runtime-version: ["latest", "0.0.3", "0.0.4"]
+  # runtime:
+  #   name: Runtime - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+  #   needs: software
+  #   runs-on: ${{ matrix.os }}
+  #   timeout-minutes: 120
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: ["ubuntu-latest"]
+  #       python-version: ["3.9"]
+  #       runtime-version: ["latest", "0.0.3", "0.0.4"]
 
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Maybe mark for benchmarking
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
-        run: echo BENCHMARK=true >> $GITHUB_ENV
+  #     - name: Maybe mark for benchmarking
+  #       if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+  #       run: echo BENCHMARK=true >> $GITHUB_ENV
 
-      - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-variant: Mambaforge
-          use-mamba: true
-          python-version: ${{ matrix.python-version }}
-          environment-file: ci/environment.yml
+  #     - name: Set up environment
+  #       uses: conda-incubator/setup-miniconda@v2
+  #       with:
+  #         miniforge-variant: Mambaforge
+  #         use-mamba: true
+  #         python-version: ${{ matrix.python-version }}
+  #         environment-file: ci/environment.yml
 
-      - name: Download software environment assets
-        if: matrix.runtime-version == 'latest'
-        uses: actions/download-artifact@v3
-        with:
-          name: software-environment-py${{ matrix.python-version }}
+  #     - name: Download software environment assets
+  #       if: matrix.runtime-version == 'latest'
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: software-environment-py${{ matrix.python-version }}
 
-      - name: Install coiled-runtime
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-        run: source ci/scripts/install_coiled_runtime.sh
+  #     - name: Install coiled-runtime
+  #       env:
+  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+  #       run: source ci/scripts/install_coiled_runtime.sh
 
-      - name: Run Coiled Runtime Tests
-        id: test
-        env:
-          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
-        run: bash ci/scripts/run_tests.sh tests/runtime
+  #     - name: Run Coiled Runtime Tests
+  #       id: test
+  #       env:
+  #         DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+  #         AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+  #         DB_NAME: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+  #       run: bash ci/scripts/run_tests.sh tests/runtime
 
-      - name: Upload benchmark results
-        uses: actions/upload-artifact@v3
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
-        with:
-          name: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-          path: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+  #     - name: Upload benchmark results
+  #       uses: actions/upload-artifact@v3
+  #       if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+  #       with:
+  #         name: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
+  #         path: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
-  benchmarks:
-    name: Benchmarks - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-    needs: software
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["ubuntu-latest"]
-        python-version: ["3.9"]
-        runtime-version: ["latest", "0.0.3", "0.0.4"]
+  # benchmarks:
+  #   name: Benchmarks - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+  #   needs: software
+  #   runs-on: ${{ matrix.os }}
+  #   timeout-minutes: 120
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       os: ["ubuntu-latest"]
+  #       python-version: ["3.9"]
+  #       runtime-version: ["latest", "0.0.3", "0.0.4"]
 
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
 
-      - name: Maybe mark for benchmarking
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
-        run: echo BENCHMARK=true >> $GITHUB_ENV
+  #     - name: Maybe mark for benchmarking
+  #       if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+  #       run: echo BENCHMARK=true >> $GITHUB_ENV
 
-      - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-variant: Mambaforge
-          use-mamba: true
-          python-version: ${{ matrix.python-version }}
-          environment-file: ci/environment.yml
+  #     - name: Set up environment
+  #       uses: conda-incubator/setup-miniconda@v2
+  #       with:
+  #         miniforge-variant: Mambaforge
+  #         use-mamba: true
+  #         python-version: ${{ matrix.python-version }}
+  #         environment-file: ci/environment.yml
 
-      - name: Download software environment assets
-        if: matrix.runtime-version == 'latest'
-        uses: actions/download-artifact@v3
-        with:
-          name: software-environment-py${{ matrix.python-version }}
+  #     - name: Download software environment assets
+  #       if: matrix.runtime-version == 'latest'
+  #       uses: actions/download-artifact@v3
+  #       with:
+  #         name: software-environment-py${{ matrix.python-version }}
 
-      - name: Install coiled-runtime
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-        run: source ci/scripts/install_coiled_runtime.sh
+  #     - name: Install coiled-runtime
+  #       env:
+  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+  #       run: source ci/scripts/install_coiled_runtime.sh
 
-      - name: Run benchmarking tests
-        id: benchmarking_tests
-        env:
-          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
-        run: bash ci/scripts/run_tests.sh tests/benchmarks
+  #     - name: Run benchmarking tests
+  #       id: benchmarking_tests
+  #       env:
+  #         DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+  #         AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+  #         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+  #         DB_NAME: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+  #       run: bash ci/scripts/run_tests.sh tests/benchmarks
 
-      - name: Upload benchmark results
-        uses: actions/upload-artifact@v3
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
-        with:
-          name: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-          path: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+  #     - name: Upload benchmark results
+  #       uses: actions/upload-artifact@v3
+  #       if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+  #       with:
+  #         name: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
+  #         path: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
   stability:
     name: Stability - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
@@ -288,7 +288,7 @@ jobs:
               export CLUSTER_DUMP="true"
           fi
 
-          bash ci/scripts/run_tests.sh tests/stability
+          bash ci/scripts/run_tests.sh tests/stability/test_adaptive_scaling.pyt::test_adapt_to_changing_workload
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
@@ -298,7 +298,7 @@ jobs:
           path: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
   cleanup:
-    needs: [software, runtime, benchmarks, stability]
+    needs: [software, stability]
     if: always()
     name: Cleanup
     runs-on: ubuntu-latest
@@ -330,122 +330,122 @@ jobs:
           echo "Deleting $SOFTWARE_NAME"
           coiled env delete $SOFTWARE_NAME
 
-  report:
-    name: report
-    needs: [runtime, benchmarks, stability]
-    if: |
-      always()
-      && github.event_name != 'pull_request'
-      && github.repository == 'coiled/coiled-runtime'
-      && (needs.runtime.result == 'failure' ||
-          needs.benchmarks.result == 'failure' ||
-          needs.stability.result == 'failure')
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v2
-      - name: Report failures
-        uses: actions/github-script@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const title = "⚠️ CI failed ⚠️"
-            const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-            const issue_body = `[Workflow Run URL](${workflow_url})`
-            const variables = {
-                owner: context.repo.owner,
-                name: context.repo.repo,
-                creator: "github-actions[bot]"
-            }
-            github.issues.create({
-                owner: variables.owner,
-                repo: variables.name,
-                body: issue_body,
-                title: title,
-            })
+  # report:
+  #   name: report
+  #   needs: [runtime, benchmarks, stability]
+  #   if: |
+  #     always()
+  #     && github.event_name != 'pull_request'
+  #     && github.repository == 'coiled/coiled-runtime'
+  #     && (needs.runtime.result == 'failure' ||
+  #         needs.benchmarks.result == 'failure' ||
+  #         needs.stability.result == 'failure')
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Report failures
+  #       uses: actions/github-script@v3
+  #       with:
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         script: |
+  #           const title = "⚠️ CI failed ⚠️"
+  #           const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+  #           const issue_body = `[Workflow Run URL](${workflow_url})`
+  #           const variables = {
+  #               owner: context.repo.owner,
+  #               name: context.repo.repo,
+  #               creator: "github-actions[bot]"
+  #           }
+  #           github.issues.create({
+  #               owner: variables.owner,
+  #               repo: variables.name,
+  #               body: issue_body,
+  #               title: title,
+  #           })
 
-  process-results:
-    needs: [runtime, benchmarks, stability]
-    name: Combine separate benchmark results
-    if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
-    runs-on: ubuntu-latest
-    concurrency:
-      # Fairly strict concurrency rule to avoid stepping on benchmark db.
-      # Could eventually replace with a real db in coiled, RDS, or litestream
-      group: process-benchmarks
-      cancel-in-progress: false
-    steps:
-      - uses: actions/checkout@v2
+  # process-results:
+  #   needs: [runtime, benchmarks, stability]
+  #   name: Combine separate benchmark results
+  #   if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+  #   runs-on: ubuntu-latest
+  #   concurrency:
+  #     # Fairly strict concurrency rule to avoid stepping on benchmark db.
+  #     # Could eventually replace with a real db in coiled, RDS, or litestream
+  #     group: process-benchmarks
+  #     cancel-in-progress: false
+  #   steps:
+  #     - uses: actions/checkout@v2
 
-      - uses: actions/setup-python@v4
+  #     - uses: actions/setup-python@v4
 
-      - name: Install dependencies
-        run: pip install alembic
+  #     - name: Install dependencies
+  #       run: pip install alembic
 
-      - uses: actions/download-artifact@v3
-        with:
-          path: benchmarks
+  #     - uses: actions/download-artifact@v3
+  #       with:
+  #         path: benchmarks
 
-      - name: Download benchmark db
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
-          DB_NAME: benchmark.db
-        run: |
-          aws s3 cp s3://coiled-runtime-ci/benchmarks/$DB_NAME . || true
+  #     - name: Download benchmark db
+  #       env:
+  #         AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+  #         AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
+  #         DB_NAME: benchmark.db
+  #       run: |
+  #         aws s3 cp s3://coiled-runtime-ci/benchmarks/$DB_NAME . || true
 
-      - name: Combine benchmarks
-        run: |
-          ls -lhR benchmarks
-          bash ci/scripts/combine-dbs.sh
+  #     - name: Combine benchmarks
+  #       run: |
+  #         ls -lhR benchmarks
+  #         bash ci/scripts/combine-dbs.sh
 
-      - name: Upload benchmark db
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
-          DB_NAME: benchmark.db
-        run: |
-          aws s3 cp $DB_NAME s3://coiled-runtime-ci/benchmarks/
+  #     - name: Upload benchmark db
+  #       env:
+  #         AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+  #         AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
+  #         DB_NAME: benchmark.db
+  #       run: |
+  #         aws s3 cp $DB_NAME s3://coiled-runtime-ci/benchmarks/
 
-      - name: Upload benchmark results as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: benchmark.db
-          path: benchmark.db
+  #     - name: Upload benchmark results as artifact
+  #       uses: actions/upload-artifact@v3
+  #       with:
+  #         name: benchmark.db
+  #         path: benchmark.db
 
-  static-site:
-    needs: process-results
-    # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
-    if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
-    name: Build static dashboards
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+  # static-site:
+  #   needs: process-results
+  #   # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
+  #   if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+  #   name: Build static dashboards
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #       with:
+  #         fetch-depth: 0
 
-      - uses: actions/download-artifact@v3
-        with:
-          name: benchmark.db
+  #     - uses: actions/download-artifact@v3
+  #       with:
+  #         name: benchmark.db
 
-      - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-variant: Mambaforge
-          use-mamba: true
-          python-version: "3.9"
-          environment-file: ci/environment-dashboard.yml
+  #     - name: Set up environment
+  #       uses: conda-incubator/setup-miniconda@v2
+  #       with:
+  #         miniforge-variant: Mambaforge
+  #         use-mamba: true
+  #         python-version: "3.9"
+  #         environment-file: ci/environment-dashboard.yml
 
-      - name: Generate dashboards
-        run: |
-          python dashboard.py
+  #     - name: Generate dashboards
+  #       run: |
+  #         python dashboard.py
 
-      - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@4.1.7
-        with:
-          branch: gh-pages
-          folder: static
+  #     - name: Deploy 🚀
+  #       uses: JamesIves/github-pages-deploy-action@4.1.7
+  #       with:
+  #         branch: gh-pages
+  #         folder: static
