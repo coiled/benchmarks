@@ -103,7 +103,7 @@ def get_coiled_software_name():
 dask.config.set(
     {
         "coiled.account": "dask-engineering",
-        "coiled.software": get_coiled_software_name(),
+        # "coiled.software": get_coiled_software_name(),
     }
 )
 
@@ -249,6 +249,7 @@ def small_cluster(request):
         worker_vm_types=["t3.large"],
         scheduler_vm_types=["t3.large"],
         backend_options=backend_options,
+        package_sync=True,
     ) as cluster:
         yield cluster
 
