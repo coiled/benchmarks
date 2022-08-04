@@ -288,7 +288,7 @@ jobs:
               export CLUSTER_DUMP="true"
           fi
 
-          bash ci/scripts/run_tests.sh tests/stability/test_adaptive_scaling.pyt::test_adapt_to_changing_workload
+          bash ci/scripts/run_tests.sh tests/stability/test_adaptive_scaling.py::test_adapt_to_changing_workload
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
