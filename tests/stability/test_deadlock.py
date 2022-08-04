@@ -18,6 +18,7 @@ def test_repeated_merge_spill(upload_cluster_dump, benchmark_time):
         name=f"test_deadlock-{uuid.uuid4().hex}",
         n_workers=20,
         worker_vm_types=["t3.medium"],
+        package_sync=True,
     ) as cluster:
         with Client(cluster) as client:
             with upload_cluster_dump(client, cluster), benchmark_time:

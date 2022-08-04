@@ -21,6 +21,7 @@ def parquet_cluster():
         n_workers=N_WORKERS,
         worker_vm_types=["m5.xlarge"],
         scheduler_vm_types=["m5.xlarge"],
+        package_sync=True,
     ) as cluster:
         yield cluster
 
