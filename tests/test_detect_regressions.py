@@ -56,14 +56,13 @@ def test_detect_regressions():
                 }
 
                 stats = stats_dict[f"({runtime, name})"]
-                dur_threshold = stats["duration_mean"] + 1 * stats["duration_std"]
-                avg_mem_threshold = (
-                    stats["avg_memory_mean"] + 1 * stats["avg_memory_mean"]
-                )
+                dur_threshold = stats["duration_mean"] + stats["duration_std"]
+                avg_mem_threshold = stats["avg_memory_mean"] + stats["avg_memory_mean"]
                 peak_mem_threshold = (
-                    stats["peak_memory_mean"] + 1 * stats["peak_memory_mean"]
+                    stats["peak_memory_mean"] + stats["peak_memory_mean"]
                 )
 
+                # Only raise if the last three show regression
                 if (
                     stats["duration_last"] >= dur_threshold
                     and stats["duration_last-1"] >= dur_threshold
