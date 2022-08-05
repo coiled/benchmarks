@@ -4,7 +4,7 @@ import pandas
 import sqlalchemy
 
 
-def detect_regressions():
+def detect_regressions(stats_table=False):
 
     DB_FILE = pathlib.Path("./benchmark.db")
     engine = sqlalchemy.create_engine(f"sqlite:///{DB_FILE}")
@@ -25,6 +25,10 @@ def detect_regressions():
     # by_name_runtime = df.groupby(["name", "runtime"])
     stats_dict = {}
     regressions = []
+    reg_df = pandas.DataFrame(
+        columns=["type", "mean", "last", "last-1", "last-2", "threshold"]
+    )
+
     runtimes = list(df.runtime.unique())
     for runtime in runtimes:
         by_test = df[(df.runtime == runtime)].groupby("name")
@@ -76,6 +80,15 @@ def detect_regressions():
                     )
 
                     regressions.append(reg)
+                    # ["regression_type", "mean", "last", "last-1", "last-2", "thershold"])
+                    reg_df.loc[f"{(runtime, name)}"] = [
+                        "duration",
+                        stats["duration_mean"],
+                        stats["duration_last"],
+                        stats["duration_last-1"],
+                        stats["duration_last-2"],
+                        dur_threshold,
+                    ]
 
                 if (
                     stats["avg_memory_last"] >= avg_mem_threshold
@@ -91,6 +104,15 @@ def detect_regressions():
 
                     regressions.append(reg)
 
+                    reg_df.loc[f"{(runtime, name)}"] = [
+                        "avg_memory",
+                        stats["avg_memory_mean"],
+                        stats["avg_memory_last"],
+                        stats["avg_memory_last-1"],
+                        stats["avg_memory_last-2"],
+                        avg_mem_threshold,
+                    ]
+
                 if (
                     stats["peak_memory_last"] >= peak_mem_threshold
                     and stats["peak_memory_last-1"] >= peak_mem_threshold
@@ -105,9 +127,24 @@ def detect_regressions():
 
                     regressions.append(reg)
 
-    # convert dict to dataframe to write to xml to use later ask ian if this is what he had in mind.
-    # df_stats = pandas.DataFrame.from_dict(stats_dict, orient="index")
-    # df_stats.to_xml("stats.xml")
+                    reg_df.loc[f"{(runtime, name)}"] = [
+                        "peak_memory",
+                        stats["peak_memory_mean"],
+                        stats["peak_memory_last"],
+                        stats["peak_memory_last-1"],
+                        stats["peak_memory_last-2"],
+                        peak_mem_threshold,
+                    ]
+
+    # if stats_table:
+    #     # convert dict to dataframe
+    #     # df_stats = pandas.DataFrame.from_dict(stats_dict, orient="index")
+
+    #     # choose best format for altair or should we do html?
+    #     # df_stats.to_csv("stats.csv")
+
+    # write reg_df to markdown for summary
+    reg_df.to_markdown("regressions_summary.md")
 
     if regressions:
         raise Exception(
@@ -115,6 +152,7 @@ def detect_regressions():
         )
     else:
         assert not regressions
+        return
 
 
 if __name__ == "__main__":
