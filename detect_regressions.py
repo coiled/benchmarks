@@ -4,7 +4,7 @@ import pandas
 import sqlalchemy
 
 
-def test_detect_regressions():
+def detect_regressions():
 
     DB_FILE = pathlib.Path("./benchmark.db")
     engine = sqlalchemy.create_engine(f"sqlite:///{DB_FILE}")
@@ -115,3 +115,7 @@ def test_detect_regressions():
         )
     else:
         assert not regressions
+
+
+if __name__ == "__main__":
+    detect_regressions()
