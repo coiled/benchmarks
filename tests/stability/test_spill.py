@@ -13,12 +13,12 @@ def test_spilling():
         with Cluster(
             name=f"test_spilling-{uuid.uuid4().hex}",
             n_workers=5,
-            worker_disk_size=50,
+            worker_disk_size=55,
             wait_for_workers=True,
         ) as cluster:
             with Client(cluster) as client:
-                arr = da.random.random((200, 2**27))  # 200 GiB
-                wait(arr.persist())
+                arr = da.random.random((200, 2**27)).persist()  # 200 GiB
+                wait(arr)
                 fut = client.compute(arr.sum())
                 del arr
                 wait(fut)
