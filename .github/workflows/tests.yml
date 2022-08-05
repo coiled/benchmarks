@@ -156,7 +156,7 @@ jobs:
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.event_name == 'pull_request' && github.repository == 'coiled/coiled-runtime' #always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         with:
           name: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
@@ -213,7 +213,7 @@ jobs:
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.event_name == 'pull_request' && github.repository == 'coiled/coiled-runtime' #always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         with:
           name: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
@@ -292,7 +292,7 @@ jobs:
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.event_name == 'pull_request' && github.repository == 'coiled/coiled-runtime' #always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         with:
           name: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
