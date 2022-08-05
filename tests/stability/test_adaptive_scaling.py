@@ -6,7 +6,7 @@ import dask.array as da
 import pytest
 from coiled.v2 import Cluster
 from dask import delayed
-from dask.distributed import Client, Event, Semaphore, wait
+from dask.distributed import Client, Event, wait
 
 TIMEOUT_THRESHOLD = 1800  # 10 minutes
 
