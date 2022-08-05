@@ -1,8 +1,8 @@
-import pytest
-
 import dask
 import dask.array as da
-from distributed import wait
+import pytest
+from coiled.v2 import Cluster
+from dask.distributed import Client, wait
 
 
 @pytest.mark.stability
