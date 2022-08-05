@@ -1,3 +1,5 @@
+import uuid
+
 import dask
 import dask.array as da
 import pytest
@@ -15,6 +17,8 @@ def test_spilling():
             wait_for_workers=True,
         ) as cluster:
             with Client(cluster) as client:
-                data = da.random.random((200, 2**27))  # 200 GiB
-                wait(data.persist())
-                data.sum().compute()
+                arr = da.random.random((200, 2**27))  # 200 GiB
+                wait(arr.persist())
+                fut = client.compute(arr.sum())
+                del arr
+                wait(fut)
