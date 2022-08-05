@@ -92,9 +92,7 @@ def test_adapt_to_changing_workload(minimum: int):
                     ev_barrier,
                     ev_final_fan_out,
                 ):
-                    fan_out = [
-                        clog(i, ev=ev_fan_out) for i in range(fan_out_size)
-                    ]
+                    fan_out = [clog(i, ev=ev_fan_out) for i in range(fan_out_size)]
                     barrier = clog(delayed(sum)(fan_out), ev=ev_barrier)
                     final_fan_out = [
                         clog(i, ev=ev_final_fan_out, barrier=barrier)
