@@ -8,10 +8,11 @@ from dask.distributed import Client, wait
 
 
 @pytest.mark.stability
-def test_spilling():
+@pytest.mark.parametrize("keep_around", (True, False))
+def test_spilling(keep_around):
     with dask.config.set({"distributed.scheduler.allowed-failures": 0}):
         with Cluster(
-            name=f"test_spilling-{uuid.uuid4().hex}",
+            name=f"test_spill-{uuid.uuid4().hex}",
             n_workers=5,
             worker_disk_size=55,
             wait_for_workers=True,
@@ -20,5 +21,6 @@ def test_spilling():
                 arr = da.random.random((200, 2**27)).persist()  # 200 GiB
                 wait(arr)
                 fut = client.compute(arr.sum())
-                del arr
+                if not keep_around:
+                    del arr
                 wait(fut)
