@@ -12,7 +12,7 @@ TIMEOUT_THRESHOLD = 1800  # 10 minutes
 
 
 @pytest.mark.stability
-@pytest.mark.parametrize("minimum,threshold", [(0, 240), (1, 120)])
+@pytest.mark.parametrize("minimum,threshold", [(0, 300), (1, 150)])
 @pytest.mark.parametrize(
     "scatter",
     (
@@ -118,7 +118,7 @@ def test_adapt_to_changing_workload(minimum: int):
                 client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
                 end = time.monotonic()
                 duration_first_scale_up = end - start
-                assert duration_first_scale_up < 120
+                assert duration_first_scale_up < 150
                 assert len(cluster.observed) == maximum
                 assert adapt.log[-1][1]["status"] == "up"
 
@@ -141,7 +141,7 @@ def test_adapt_to_changing_workload(minimum: int):
                 client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
                 end = time.monotonic()
                 duration_second_scale_up = end - start
-                assert duration_second_scale_up < 120
+                assert duration_second_scale_up < 150
                 assert len(cluster.observed) == maximum
                 assert adapt.log[-1][1]["status"] == "up"
 
