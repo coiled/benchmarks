@@ -407,12 +407,10 @@ jobs:
       - name: Run detect regressions
         run: |
           python detect_regressions.py
-
-      # - name: Upload stats.xml as artifact
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: stats.xml
-      #     path: stats.xml
+      
+      - name: Create regressions summary
+        run: |
+          echo "$(<regressions_summary.md)" >> $GITHUB_STEP_SUMMARY
 
   report:
     name: report
