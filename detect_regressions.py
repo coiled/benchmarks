@@ -154,7 +154,7 @@ def detect_regressions(stats_table=False):
 
     if regressions:
         raise Exception(
-            f"'\x1b[31m Regressions detected {len(regressions)}: \n{''.join(regressions)} \x1b[0m'"
+            f"\x1b[31m Regressions detected {len(regressions)}: \n{''.join(regressions)} \x1b[0m"
         )
     else:
         assert not regressions
