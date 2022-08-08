@@ -405,6 +405,8 @@ jobs:
           environment-file: ci/environment-regressions.yml
 
       - name: Run detect regressions
+        env:
+          ANSIBLE_FORCE_COLOR: '1'
         run: |
           python detect_regressions.py
       
