@@ -409,6 +409,7 @@ jobs:
           python detect_regressions.py
       
       - name: Create regressions summary
+        if: always() && github.event_name == 'pull_request' && github.repository == 'coiled/coiled-runtime' #always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         run: |
           echo "$(<regressions_summary.md)" >> $GITHUB_STEP_SUMMARY
 
