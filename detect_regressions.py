@@ -76,7 +76,7 @@ def detect_regressions(stats_table=False):
                     and stats["duration_last-2"] >= dur_threshold
                 ):
                     reg = (
-                        f"{runtime= }, {name= }, {category= },"
+                        f"{runtime= }, {name= }, {category= }, "
                         f"last_three_durations = "
                         f"{(stats['duration_last'], stats['duration_last-1'],stats['duration_last-2'])}, "
                         f"{dur_threshold= } \n"
@@ -100,7 +100,7 @@ def detect_regressions(stats_table=False):
                     and stats["avg_memory_last-2"] >= avg_mem_threshold
                 ):
                     reg = (
-                        f"{runtime= }, {name= }, {category= },"
+                        f"{runtime= }, {name= }, {category= }, "
                         f"avg_mem_last = "
                         f"{(stats['avg_memory_last'], stats['avg_memory_last-1'], stats['avg_memory_last-2'])}, "
                         f"{avg_mem_threshold= } \n"
@@ -124,7 +124,7 @@ def detect_regressions(stats_table=False):
                     and stats["peak_memory_last-2"] >= peak_mem_threshold
                 ):
                     reg = (
-                        f"{runtime= }, {name= }, {category= },"
+                        f"{runtime= }, {name= }, {category= }, "
                         f"peak_mem_last = "
                         f"{(stats['peak_memory_last'], stats['peak_memory_last-1'], stats['peak_memory_last-2'])}, "
                         f"{peak_mem_threshold= } \n"
@@ -154,7 +154,7 @@ def detect_regressions(stats_table=False):
 
     if regressions:
         raise Exception(
-            f"Regressions detected {len(regressions)}: \n{''.join(regressions)}"
+            f"'\x1b[31m Regressions detected {len(regressions)}: \n{''.join(regressions)} \x1b[0m'"
         )
     else:
         assert not regressions
