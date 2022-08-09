@@ -75,7 +75,7 @@ def test_install_dist():
     # Test that versions of packages installed are consistent with those
     # specified in `meta.yaml`
 
-    if os.environ.get("COILED_RUNTIME_VERSION", "unknown") not in (
+    if os.environ.get("COILED_RUNTIME_VERSION", "unknown") in (
         "upstream",
         "latest",
         "unknown",
