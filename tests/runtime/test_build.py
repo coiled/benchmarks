@@ -8,6 +8,7 @@ import shlex
 import subprocess
 import sys
 
+import coiled
 import pytest
 import yaml
 from distributed import Client
