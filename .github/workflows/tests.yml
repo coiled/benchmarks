@@ -24,7 +24,6 @@ defaults:
 jobs:
   runtime:
     name: Runtime - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-    needs: software
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -78,7 +77,6 @@ jobs:
 
   benchmarks:
     name: Benchmarks - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-    needs: software
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -132,7 +130,6 @@ jobs:
 
   stability:
     name: Stability - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-    needs: software
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
