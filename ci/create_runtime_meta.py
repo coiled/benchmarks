@@ -6,7 +6,6 @@ import pathlib
 import shlex
 import subprocess
 import sys
-from distutils.util import strtobool
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -40,8 +39,7 @@ def main():
 
     # Optionally use the development version of `dask` and `distributed`
     # from `dask/label/dev` conda channel
-    upstream = strtobool(os.environ.get("TEST_UPSTREAM", "false"))
-    if upstream:
+    if os.environ.get("COILED_RUNTIME_VERSION", "unknown") == "upstream":
         upstream_packages = {"dask", "distributed"}
         for idx, req in enumerate(requirements):
             package_name = Requirement(req).name
@@ -53,7 +51,7 @@ def main():
         "channels": ["conda-forge"],
         "dependencies": requirements,
     }
-    with open("latest.yaml", "w") as f:
+    with open("runtime.yaml", "w") as f:
         yaml.dump(env, f)
 
 
