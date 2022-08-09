@@ -40,6 +40,7 @@ jobs:
         with:
           miniforge-variant: Mambaforge
           use-mamba: true
+          condarc-file: ci/condarc
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
@@ -126,6 +127,7 @@ jobs:
         with:
           miniforge-variant: Mambaforge
           use-mamba: true
+          condarc-file: ci/condarc
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
@@ -171,6 +173,7 @@ jobs:
         with:
           miniforge-variant: Mambaforge
           use-mamba: true
+          condarc-file: ci/condarc
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
@@ -231,6 +234,7 @@ jobs:
         with:
           miniforge-variant: Mambaforge
           use-mamba: true
+          condarc-file: ci/condarc
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
