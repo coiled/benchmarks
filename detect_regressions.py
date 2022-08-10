@@ -1,13 +1,13 @@
+import datetime
 import pathlib
 
 import pandas
 import sqlalchemy
 
 
-def detect_regressions(stats_table=False):
+def detect_regressions(database_file):
 
-    DB_FILE = pathlib.Path("./benchmark.db")
-    engine = sqlalchemy.create_engine(f"sqlite:///{DB_FILE}")
+    engine = sqlalchemy.create_engine(f"sqlite:///{database_file}")
 
     df = pandas.read_sql("select * from test_run where platform = 'linux'", engine)
 
@@ -38,118 +38,133 @@ def detect_regressions(stats_table=False):
             df_test = by_test.get_group(name)
 
             df_passed = df_test[df_test.call_outcome == "passed"]
-            # check for empty dataframe
-            if not df_passed.empty:
-                # get category for report
-                category = df_passed.category.unique()[0]
+            # check for empty dataframe and having enough data to do some stats
+            # currently we don't have a lot of data but eventually use 10 instead of 6.
 
-                # stats of latest 10 runs exclude last point
-                stats_dict[f"({runtime, name})"] = {
-                    "duration_mean": df_passed.duration[-13:-3].mean(),
-                    "duration_std": df_passed.duration[-13:-3].std(),
-                    "duration_last": df_passed.duration.iloc[-1],
-                    "duration_last-1": df_passed.duration.iloc[-2],
-                    "duration_last-2": df_passed.duration.iloc[-3],
-                    "avg_memory_mean": df_passed.average_memory[-13:-3].mean(),
-                    "avg_memory_std": df_passed.average_memory[-13:-3].std(),
-                    "avg_memory_last": df_passed.average_memory.iloc[-1],
-                    "avg_memory_last-1": df_passed.average_memory.iloc[-2],
-                    "avg_memory_last-2": df_passed.average_memory.iloc[-3],
-                    "peak_memory_mean": df_passed.peak_memory[-13:-3].mean(),
-                    "peak_memory_std": df_passed.peak_memory[-13:-3].std(),
-                    "peak_memory_last": df_passed.peak_memory.iloc[-1],
-                    "peak_memory_last-1": df_passed.peak_memory.iloc[-2],
-                    "peak_memory_last-2": df_passed.peak_memory.iloc[-3],
-                }
+            if not df_passed.empty and (len(df_passed) >= 6):
 
-                stats = stats_dict[f"({runtime, name})"]
-                dur_threshold = stats["duration_mean"] + stats["duration_std"]
-                avg_mem_threshold = stats["avg_memory_mean"] + stats["avg_memory_mean"]
-                peak_mem_threshold = (
-                    stats["peak_memory_mean"] + stats["peak_memory_mean"]
+                # check the test is not obsolete.
+                date_last_run = datetime.datetime.strptime(
+                    df_passed.start.values[-1].split()[0], "%Y-%m-%d"
                 )
+                date_threshold = datetime.datetime.today() - datetime.timedelta(7)
 
-                # Only raise if the last three show regression
-                if (
-                    stats["duration_last"] >= dur_threshold
-                    and stats["duration_last-1"] >= dur_threshold
-                    and stats["duration_last-2"] >= dur_threshold
-                ):
-                    reg = (
-                        f"{runtime= }, {name= }, {category= }, "
-                        f"last_three_durations = "
-                        f"{(stats['duration_last'], stats['duration_last-1'],stats['duration_last-2'])}, "
-                        f"{dur_threshold= } \n"
+                if date_last_run < date_threshold:
+                    # the latest run was 7+ days ago, test is obsolete
+                    pass
+                else:
+                    # get category for report
+                    category = df_passed.category.unique()[0]
+                    # stats of latest 10 runs exclude last point
+                    stats_dict[f"({runtime, name})"] = {
+                        "duration_mean": df_passed.duration[-13:-3].mean(),
+                        "duration_std": df_passed.duration[-13:-3].std(),
+                        "duration_last": df_passed.duration.iloc[-1],
+                        "duration_last-1": df_passed.duration.iloc[-2],
+                        "duration_last-2": df_passed.duration.iloc[-3],
+                        "avg_memory_mean": df_passed.average_memory[-13:-3].mean(),
+                        "avg_memory_std": df_passed.average_memory[-13:-3].std(),
+                        "avg_memory_last": df_passed.average_memory.iloc[-1],
+                        "avg_memory_last-1": df_passed.average_memory.iloc[-2],
+                        "avg_memory_last-2": df_passed.average_memory.iloc[-3],
+                        "peak_memory_mean": df_passed.peak_memory[-13:-3].mean(),
+                        "peak_memory_std": df_passed.peak_memory[-13:-3].std(),
+                        "peak_memory_last": df_passed.peak_memory.iloc[-1],
+                        "peak_memory_last-1": df_passed.peak_memory.iloc[-2],
+                        "peak_memory_last-2": df_passed.peak_memory.iloc[-3],
+                    }
+
+                    stats = stats_dict[f"({runtime, name})"]
+                    dur_threshold = stats["duration_mean"] + stats["duration_std"]
+                    avg_mem_threshold = (
+                        stats["avg_memory_mean"] + stats["avg_memory_mean"]
+                    )
+                    peak_mem_threshold = (
+                        stats["peak_memory_mean"] + stats["peak_memory_mean"]
                     )
 
-                    regressions.append(reg)
-                    # ["regression_type", "mean", "last", "last-1", "last-2", "thershold"])
-                    reg_df.loc[f"{(runtime, name)}"] = [
-                        category,
-                        "duration",
-                        stats["duration_mean"],
-                        stats["duration_last"],
-                        stats["duration_last-1"],
-                        stats["duration_last-2"],
-                        dur_threshold,
-                    ]
+                    # Only raise if the last three show regression
+                    if (
+                        stats["duration_last"] >= dur_threshold
+                        and stats["duration_last-1"] >= dur_threshold
+                        and stats["duration_last-2"] >= dur_threshold
+                    ):
+                        reg = (
+                            f"{runtime= }, {name= }, {category= }, "
+                            f"last_three_durations = "
+                            f"{(stats['duration_last'], stats['duration_last-1'],stats['duration_last-2'])}, "
+                            f"{dur_threshold= } \n"
+                        )
 
-                if (
-                    stats["avg_memory_last"] >= avg_mem_threshold
-                    and stats["avg_memory_last-1"] >= avg_mem_threshold
-                    and stats["avg_memory_last-2"] >= avg_mem_threshold
-                ):
-                    reg = (
-                        f"{runtime= }, {name= }, {category= }, "
-                        f"avg_mem_last = "
-                        f"{(stats['avg_memory_last'], stats['avg_memory_last-1'], stats['avg_memory_last-2'])}, "
-                        f"{avg_mem_threshold= } \n"
-                    )
+                        regressions.append(reg)
+                        # ["regression_type", "mean", "last", "last-1", "last-2", "thershold"])
+                        reg_df.loc[f"{(runtime, name)}"] = [
+                            category,
+                            "duration",
+                            stats["duration_mean"],
+                            stats["duration_last"],
+                            stats["duration_last-1"],
+                            stats["duration_last-2"],
+                            dur_threshold,
+                        ]
 
-                    regressions.append(reg)
+                    if (
+                        stats["avg_memory_last"] >= avg_mem_threshold
+                        and stats["avg_memory_last-1"] >= avg_mem_threshold
+                        and stats["avg_memory_last-2"] >= avg_mem_threshold
+                    ):
+                        reg = (
+                            f"{runtime= }, {name= }, {category= }, "
+                            f"avg_mem_last = "
+                            f"{(stats['avg_memory_last'], stats['avg_memory_last-1'], stats['avg_memory_last-2'])}, "
+                            f"{avg_mem_threshold= } \n"
+                        )
 
-                    reg_df.loc[f"{(runtime, name)}"] = [
-                        category,
-                        "avg_memory",
-                        stats["avg_memory_mean"],
-                        stats["avg_memory_last"],
-                        stats["avg_memory_last-1"],
-                        stats["avg_memory_last-2"],
-                        avg_mem_threshold,
-                    ]
+                        regressions.append(reg)
 
-                if (
-                    stats["peak_memory_last"] >= peak_mem_threshold
-                    and stats["peak_memory_last-1"] >= peak_mem_threshold
-                    and stats["peak_memory_last-2"] >= peak_mem_threshold
-                ):
-                    reg = (
-                        f"{runtime= }, {name= }, {category= }, "
-                        f"peak_mem_last = "
-                        f"{(stats['peak_memory_last'], stats['peak_memory_last-1'], stats['peak_memory_last-2'])}, "
-                        f"{peak_mem_threshold= } \n"
-                    )
+                        reg_df.loc[f"{(runtime, name)}"] = [
+                            category,
+                            "avg_memory",
+                            stats["avg_memory_mean"],
+                            stats["avg_memory_last"],
+                            stats["avg_memory_last-1"],
+                            stats["avg_memory_last-2"],
+                            avg_mem_threshold,
+                        ]
 
-                    regressions.append(reg)
+                    if (
+                        stats["peak_memory_last"] >= peak_mem_threshold
+                        and stats["peak_memory_last-1"] >= peak_mem_threshold
+                        and stats["peak_memory_last-2"] >= peak_mem_threshold
+                    ):
+                        reg = (
+                            f"{runtime= }, {name= }, {category= }, "
+                            f"peak_mem_last = "
+                            f"{(stats['peak_memory_last'], stats['peak_memory_last-1'], stats['peak_memory_last-2'])}, "
+                            f"{peak_mem_threshold= } \n"
+                        )
 
-                    reg_df.loc[f"{(runtime, name)}"] = [
-                        category,
-                        "peak_memory",
-                        stats["peak_memory_mean"],
-                        stats["peak_memory_last"],
-                        stats["peak_memory_last-1"],
-                        stats["peak_memory_last-2"],
-                        peak_mem_threshold,
-                    ]
+                        regressions.append(reg)
 
-    # if stats_table:
-    #     # convert dict to dataframe
-    #     # df_stats = pandas.DataFrame.from_dict(stats_dict, orient="index")
+                        reg_df.loc[f"{(runtime, name)}"] = [
+                            category,
+                            "peak_memory",
+                            stats["peak_memory_mean"],
+                            stats["peak_memory_last"],
+                            stats["peak_memory_last-1"],
+                            stats["peak_memory_last-2"],
+                            peak_mem_threshold,
+                        ]
+            else:
+                # df_pass is empty or we don't have enough stats
+                pass
 
-    #     # choose best format for altair or should we do html?
-    #     # df_stats.to_csv("stats.csv")
+    return reg_df, regressions
 
-    # write reg_df to markdown for summary
+
+def regressions_report(reg_df, regressions):
+
+    # write reg_df to markdown for GHA summary
     reg_df.to_markdown("regressions_summary.md")
 
     if regressions:
@@ -162,4 +177,8 @@ def detect_regressions(stats_table=False):
 
 
 if __name__ == "__main__":
-    detect_regressions()
+
+    DB_FILE = pathlib.Path("./benchmark.db")
+    regressions_df, regressions_list = detect_regressions(DB_FILE)
+
+    regressions_report(regressions_df, regressions_list)
