@@ -18,6 +18,9 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 from packaging.requirements import Requirement, SpecifierSet
 from packaging.version import Version
 
+# Note: all of these tests are local, and do not create clusters,
+# so don't bother benchmarking them.
+
 
 def get_installed_versions(packages) -> dict[str, str]:
     package_versions = {}

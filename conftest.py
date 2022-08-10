@@ -201,17 +201,27 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
         benchmark_db_session.commit()
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function")
 def benchmark_time(test_run_benchmark):
-    if not test_run_benchmark:
+    @contextlib.contextmanager
+    def _benchmark_time():
+        if not test_run_benchmark:
+            yield
+        else:
+            start = time.time()
+            yield
+            end = time.time()
+            test_run_benchmark.duration = end - start
+            test_run_benchmark.start = datetime.datetime.utcfromtimestamp(start)
+            test_run_benchmark.end = datetime.datetime.utcfromtimestamp(end)
+
+    return _benchmark_time()
+
+
+@pytest.fixture(scope="function")
+def auto_benchmark_time(benchmark_time):
+    with benchmark_time:
         yield
-    else:
-        start = time.time()
-        yield
-        end = time.time()
-        test_run_benchmark.duration = end - start
-        test_run_benchmark.start = datetime.datetime.utcfromtimestamp(start)
-        test_run_benchmark.end = datetime.datetime.utcfromtimestamp(end)
 
 
 @pytest.fixture(scope="function")
@@ -261,7 +271,7 @@ def small_client(small_cluster, upload_cluster_dump, sample_memory, benchmark_ti
         client.restart()
 
         with upload_cluster_dump(client, small_cluster):
-            with sample_memory(client):
+            with sample_memory(client), benchmark_time:
                 yield client
 
 
