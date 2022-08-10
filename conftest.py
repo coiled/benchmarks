@@ -246,6 +246,12 @@ def sample_memory(test_run_benchmark):
 # ############################################### #
 
 
+@pytest.fixture
+def test_name_uuid(request):
+    "Test name, suffixed with a UUID. Useful for resources like cluster names, S3 paths, etc."
+    return f"{request.node.originalname}-{uuid.uuid4().hex}"
+
+
 @pytest.fixture(scope="module")
 def small_cluster(request):
     # Extract `backend_options` for cluster from `backend_options` markers
@@ -308,8 +314,8 @@ def s3_scratch(s3):
 
 
 @pytest.fixture(scope="function")
-def s3_url(s3, s3_scratch, request):
-    url = f"{s3_scratch}/{request.node.originalname}-{uuid.uuid4().hex}"
+def s3_url(s3, s3_scratch, test_name_uuid):
+    url = f"{s3_scratch}/{test_name_uuid}"
     s3.mkdirs(url, exist_ok=False)
     yield url
     s3.rm(url, recursive=True)
