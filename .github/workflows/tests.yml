@@ -383,7 +383,7 @@ jobs:
 
   regressions:
     needs: process-results
-    # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
+    # Always check for regressions, as this can be skipped even if an indirect dependency fails (like a test run)
     if: always() && github.event_name == 'pull_request' && github.repository == 'coiled/coiled-runtime' #always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
     name: Detect regressions
     runs-on: ubuntu-latest
@@ -402,7 +402,7 @@ jobs:
           miniforge-variant: Mambaforge
           use-mamba: true
           python-version: "3.9"
-          environment-file: ci/environment-regressions.yml
+          environment-file: ci/environment-dashboard.yml
 
       - name: Run detect regressions
         run: |
