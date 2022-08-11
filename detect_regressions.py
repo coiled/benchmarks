@@ -9,7 +9,10 @@ def detect_regressions(database_file):
 
     engine = sqlalchemy.create_engine(f"sqlite:///{database_file}")
 
-    df = pandas.read_sql("select * from test_run where platform = 'linux'", engine)
+    df = pandas.read_sql(
+        "select * from test_run where platform = 'linux' and call_outcome = 'passed'",
+        engine,
+    )
 
     # join runtime + py version
     df = df.assign(
@@ -22,7 +25,6 @@ def detect_regressions(database_file):
         category=df.path.str.split("/", n=1).str[0],
     )
 
-    # by_name_runtime = df.groupby(["name", "runtime"])
     stats_dict = {}
     regressions = []
     reg_df = pandas.DataFrame(
@@ -37,15 +39,13 @@ def detect_regressions(database_file):
         for name in test_names:
             df_test = by_test.get_group(name)
 
-            df_passed = df_test[df_test.call_outcome == "passed"]
-            # check for empty dataframe and having enough data to do some stats
+            # check that we have enough data to do some stats
             # currently we don't have a lot of data but eventually use 10 instead of 6.
-
-            if not df_passed.empty and (len(df_passed) >= 6):
+            if len(df_test) >= 6:
 
                 # check the test is not obsolete.
                 date_last_run = datetime.datetime.strptime(
-                    df_passed.start.values[-1].split()[0], "%Y-%m-%d"
+                    df_test.start.values[-1].split()[0], "%Y-%m-%d"
                 )
                 date_threshold = datetime.datetime.today() - datetime.timedelta(7)
 
@@ -54,24 +54,24 @@ def detect_regressions(database_file):
                     pass
                 else:
                     # get category for report
-                    category = df_passed.category.unique()[0]
+                    category = df_test.category.unique()[0]
                     # stats of latest 10 runs exclude last point
                     stats_dict[f"({runtime, name})"] = {
-                        "duration_mean": df_passed.duration[-13:-3].mean(),
-                        "duration_std": df_passed.duration[-13:-3].std(),
-                        "duration_last": df_passed.duration.iloc[-1],
-                        "duration_last-1": df_passed.duration.iloc[-2],
-                        "duration_last-2": df_passed.duration.iloc[-3],
-                        "avg_memory_mean": df_passed.average_memory[-13:-3].mean(),
-                        "avg_memory_std": df_passed.average_memory[-13:-3].std(),
-                        "avg_memory_last": df_passed.average_memory.iloc[-1],
-                        "avg_memory_last-1": df_passed.average_memory.iloc[-2],
-                        "avg_memory_last-2": df_passed.average_memory.iloc[-3],
-                        "peak_memory_mean": df_passed.peak_memory[-13:-3].mean(),
-                        "peak_memory_std": df_passed.peak_memory[-13:-3].std(),
-                        "peak_memory_last": df_passed.peak_memory.iloc[-1],
-                        "peak_memory_last-1": df_passed.peak_memory.iloc[-2],
-                        "peak_memory_last-2": df_passed.peak_memory.iloc[-3],
+                        "duration_mean": df_test.duration[-13:-3].mean(),
+                        "duration_std": df_test.duration[-13:-3].std(),
+                        "duration_last": df_test.duration.iloc[-1],
+                        "duration_last-1": df_test.duration.iloc[-2],
+                        "duration_last-2": df_test.duration.iloc[-3],
+                        "avg_memory_mean": df_test.average_memory[-13:-3].mean(),
+                        "avg_memory_std": df_test.average_memory[-13:-3].std(),
+                        "avg_memory_last": df_test.average_memory.iloc[-1],
+                        "avg_memory_last-1": df_test.average_memory.iloc[-2],
+                        "avg_memory_last-2": df_test.average_memory.iloc[-3],
+                        "peak_memory_mean": df_test.peak_memory[-13:-3].mean(),
+                        "peak_memory_std": df_test.peak_memory[-13:-3].std(),
+                        "peak_memory_last": df_test.peak_memory.iloc[-1],
+                        "peak_memory_last-1": df_test.peak_memory.iloc[-2],
+                        "peak_memory_last-2": df_test.peak_memory.iloc[-3],
                     }
 
                     stats = stats_dict[f"({runtime, name})"]
@@ -155,9 +155,6 @@ def detect_regressions(database_file):
                             stats["peak_memory_last-2"],
                             peak_mem_threshold,
                         ]
-            else:
-                # df_pass is empty or we don't have enough stats
-                pass
 
     return reg_df, regressions
 
