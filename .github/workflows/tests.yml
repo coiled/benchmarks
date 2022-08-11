@@ -87,8 +87,8 @@ jobs:
           python ci/create_latest_runtime_meta.py
           export ENV_FILE=latest.yaml
           # TODO: Remove before merging
-          echo "- pip:" >> $ENV_FILE
-          echo "  - xgboost==1.6.1" >> $ENV_FILE
+          # echo "- pip:" >> $ENV_FILE
+          # echo "  - xgboost==1.6.1" >> $ENV_FILE
 
           cat $ENV_FILE
 

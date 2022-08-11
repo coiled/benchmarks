@@ -11,10 +11,12 @@ then
   mamba env update --file latest.yaml
 else
   mamba install -c conda-forge coiled-runtime=$COILED_RUNTIME_VERSION
+  # TODO: Remove before merging
+  mamba install -c conda-forge xgboost=1.6.1 dask-ml=2022.5.27
 fi
 
 # TODO: Remove before merging
-pip install xgboost==1.6.1
+# pip install xgboost==1.6.1
 
 # For debugging
 echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
