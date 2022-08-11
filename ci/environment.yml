@@ -8,3 +8,6 @@ dependencies:
   - pytest-xdist
   - python
   - pyyaml
+  - sqlalchemy
+  - alembic
+  - filelock
