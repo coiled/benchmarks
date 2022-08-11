@@ -262,7 +262,7 @@ def small_cluster(request):
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
         n_workers=10,
-        worker_vm_types=["t3.large"],
+        worker_vm_types=["t3.large"],  # 2CPU, 8GiB
         scheduler_vm_types=["t3.large"],
         backend_options=backend_options,
     ) as cluster:
