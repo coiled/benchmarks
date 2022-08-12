@@ -5,7 +5,7 @@ import dask.array as da
 from dask.utils import format_bytes
 import numpy as np
 
-from ..utils_test import scaled_array_shape, wait, cluster_memory
+from ..utils_test import scaled_array_shape, wait, cluster_memory, arr_to_devnull
 
 
 def print_size_info(memory: int, target_nbytes: int, *arrs: da.Array) -> None:
@@ -15,7 +15,7 @@ def print_size_info(memory: int, target_nbytes: int, *arrs: da.Array) -> None:
     for i, arr in enumerate(arrs, 1):
         print(
             f"Input {i}: {format_bytes(arr.nbytes)} - "
-            f"{arr.npartitions} {format_bytes(arr.blocks[(0,) * arr.ndim].nbytes)} chunks",
+            f"{arr.npartitions} {format_bytes(arr.blocks[(0,) * arr.ndim].nbytes)} chunks"
         )
 
 
@@ -124,3 +124,19 @@ def test_vorticity(small_client):
     result = dx[..., None] * up - dy[..., None] * vp
 
     wait(result, small_client, 10 * 60)
+
+
+def test_double_diff(small_client):
+    # Variant of https://github.com/dask/distributed/issues/6597
+    memory = cluster_memory(small_client)  # 76.66 GiB
+
+    a = da.random.random(
+        scaled_array_shape(memory, ("x", "x")), chunks=("20MiB", "20MiB")
+    )
+    b = da.random.random(
+        scaled_array_shape(memory, ("x", "x")), chunks=("20MiB", "20MiB")
+    )
+    print_size_info(memory, memory, a, b)
+
+    diff = a[1:, 1:] - b[:-1, :-1]
+    wait(arr_to_devnull(diff), small_client, 10 * 60)

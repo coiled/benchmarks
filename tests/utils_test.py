@@ -1,5 +1,7 @@
 import numpy as np
 import pandas as pd
+import dask
+import dask.array as da
 import dask.dataframe as dd
 from dask.utils import parse_bytes, format_bytes
 from dask.datasets import timeseries
@@ -170,3 +172,14 @@ def timeseries_of_size(
     )
     assert ts.npartitions == npartitions
     return ts
+
+
+class _DevNull:
+    def __setitem__(self, k, v):
+        pass
+
+
+def arr_to_devnull(arr: da.Array) -> dask.delayed:
+    "Simulate storing an array to zarr, without writing anything (just drops every block once it's computed)"
+    # TODO `da.store` should use blockwise to be much more efficient https://github.com/dask/dask/issues/9381
+    return da.store(arr, _DevNull(), lock=False, compute=False)
