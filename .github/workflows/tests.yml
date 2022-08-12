@@ -370,14 +370,14 @@ jobs:
           ls -lhR benchmarks
           bash ci/scripts/combine-dbs.sh
 
-      # - name: Upload benchmark db
-      #   env:
-      #     AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-      #     AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-      #     AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
-      #     DB_NAME: benchmark.db
-      #   run: |
-      #     aws s3 cp $DB_NAME s3://coiled-runtime-ci/benchmarks/
+      - name: Upload benchmark db
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
+          DB_NAME: benchmark.db
+        run: |
+          aws s3 cp $DB_NAME s3://coiled-runtime-ci/benchmarks/
 
       - name: Upload benchmark results as artifact
         uses: actions/upload-artifact@v3
@@ -413,7 +413,7 @@ jobs:
           python detect_regressions.py
       
       - name: Create regressions summary
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always()
         run: |
           echo "$(<regressions_summary.md)" >> $GITHUB_STEP_SUMMARY
 
