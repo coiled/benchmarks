@@ -432,19 +432,14 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const title = "⚠️ CI failed ⚠️"
             const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
             const issue_body = `[Workflow Run URL](${workflow_url})`
-            const variables = {
-                owner: context.repo.owner,
-                name: context.repo.repo,
-                creator: "github-actions[bot]"
-            }
             github.issues.create({
-                owner: variables.owner,
-                repo: variables.name,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
                 body: issue_body,
-                title: title,
+                title: "⚠️ CI failed ⚠️",
+                labels: ["ci-failure"],
             })
 
 
