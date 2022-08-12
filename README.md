@@ -39,7 +39,7 @@ conda install -c conda-forge conda-build
 conda build recipe -c conda-forge --output-folder dist/conda --no-anaconda-upload
 
 # Install the built `coiled-runtime` metapackage
-conda install -c conda-forge -c ./dist/conda/ coiled-runtime
+conda install -c ./dist/conda/ -c conda-forge coiled-runtime
 ```
 
 ## Test

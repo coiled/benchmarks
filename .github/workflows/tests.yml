@@ -38,10 +38,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Maybe mark for benchmarking
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
-        run: echo BENCHMARK=true >> $GITHUB_ENV
-
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -66,11 +62,12 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          BENCHMARK: true
         run: bash ci/scripts/run_tests.sh tests/runtime
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always()
         with:
           name: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
@@ -90,10 +87,6 @@ jobs:
       - uses: actions/checkout@v2
         with:
           fetch-depth: 0
-
-      - name: Maybe mark for benchmarking
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
-        run: echo BENCHMARK=true >> $GITHUB_ENV
 
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
@@ -119,11 +112,12 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          BENCHMARK: true
         run: bash ci/scripts/run_tests.sh tests/benchmarks
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always()
         with:
           name: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
@@ -159,10 +153,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Maybe mark for benchmarking
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
-        run: echo BENCHMARK=true >> $GITHUB_ENV
-
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -187,6 +177,7 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          BENCHMARK: true
         run: |
           # run only on latest as cluster_dump to s3 was merged after dask = 2022.1.0
           if [[ ${{ matrix.runtime-version }} != '0.0.3' ]]
@@ -198,51 +189,15 @@ jobs:
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always()
         with:
           name: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
-  report:
-    name: report
-    needs: [runtime, benchmarks, stability]
-    if: |
-      always()
-      && github.event_name != 'pull_request'
-      && github.repository == 'coiled/coiled-runtime'
-      && (needs.runtime.result == 'failure' ||
-          needs.benchmarks.result == 'failure' ||
-          needs.stability.result == 'failure')
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v2
-      - name: Report failures
-        uses: actions/github-script@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const title = "⚠️ CI failed ⚠️"
-            const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-            const issue_body = `[Workflow Run URL](${workflow_url})`
-            const variables = {
-                owner: context.repo.owner,
-                name: context.repo.repo,
-                creator: "github-actions[bot]"
-            }
-            github.issues.create({
-                owner: variables.owner,
-                repo: variables.name,
-                body: issue_body,
-                title: title,
-            })
-
   process-results:
     needs: [runtime, benchmarks, stability]
     name: Combine separate benchmark results
-    if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+    if: always() && github.repository == 'coiled/coiled-runtime'
     runs-on: ubuntu-latest
     concurrency:
       # Fairly strict concurrency rule to avoid stepping on benchmark db.
@@ -276,6 +231,7 @@ jobs:
           bash ci/scripts/combine-dbs.sh
 
       - name: Upload benchmark db
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
@@ -289,6 +245,72 @@ jobs:
         with:
           name: benchmark.db
           path: benchmark.db
+
+  regressions:
+    needs: process-results
+    # Always check for regressions, as this can be skipped even if an indirect dependency fails (like a test run)
+    if: always()
+    name: Detect regressions
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v3
+        with:
+          name: benchmark.db
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: "3.9"
+          environment-file: ci/environment-dashboard.yml
+
+      - name: Run detect regressions
+        run: |
+          python detect_regressions.py
+      
+      - name: Create regressions summary
+        if: always()
+        run: |
+          echo "$(<regressions_summary.md)" >> $GITHUB_STEP_SUMMARY
+
+  report:
+    name: report
+    needs: [runtime, benchmarks, stability, regressions]
+    if: |
+      always()
+      && github.event_name != 'pull_request'
+      && github.repository == 'coiled/coiled-runtime'
+      && (needs.runtime.result == 'failure' ||
+          needs.benchmarks.result == 'failure' ||
+          needs.stability.result == 'failure' ||
+          needs.regressions.result == 'failure') 
+
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v2
+      - name: Report failures
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+            const issue_body = `[Workflow Run URL](${workflow_url})`
+            github.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: issue_body,
+                title: "⚠️ CI failed ⚠️",
+                labels: ["ci-failure"],
+            })
+
 
   static-site:
     needs: process-results

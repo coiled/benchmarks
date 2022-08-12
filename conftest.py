@@ -257,7 +257,6 @@ S3_BUCKET = "s3://coiled-runtime-ci"
 @pytest.fixture(scope="session")
 def s3_storage_options():
     return {
-        "config_kwargs": {"region_name": S3_REGION},
         "key": os.environ.get("AWS_ACCESS_KEY_ID"),
         "secret": os.environ.get("AWS_SECRET_ACCESS_KEY"),
     }
@@ -268,7 +267,6 @@ def s3():
     return s3fs.S3FileSystem(
         key=os.environ.get("AWS_ACCESS_KEY_ID"),
         secret=os.environ.get("AWS_SECRET_ACCESS_KEY"),
-        client_kwargs={"region_name": S3_REGION},
     )
 
 

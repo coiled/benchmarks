@@ -10,3 +10,5 @@ dependencies:
   - coiled
   - dask
   - distributed
+  - pandas
+  - tabulate
