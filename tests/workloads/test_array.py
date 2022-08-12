@@ -123,7 +123,7 @@ def test_vorticity(small_client):
     vp = pad_rechunk(v)
     result = dx[..., None] * up - dy[..., None] * vp
 
-    wait(result, small_client, 10 * 60)
+    wait(arr_to_devnull(result), small_client, 10 * 60)
 
 
 def test_double_diff(small_client):
