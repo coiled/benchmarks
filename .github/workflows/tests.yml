@@ -86,10 +86,6 @@ jobs:
           # Create conda environment.yaml file for the latest software environment
           python ci/create_latest_runtime_meta.py
           export ENV_FILE=latest.yaml
-          # TODO: Remove before merging
-          # echo "- pip:" >> $ENV_FILE
-          # echo "  - xgboost==1.6.1" >> $ENV_FILE
-
           cat $ENV_FILE
 
           mamba install coiled
