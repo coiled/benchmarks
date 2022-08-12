@@ -1,5 +1,9 @@
 import numpy as np
-from dask.utils import parse_bytes
+import pandas as pd
+import dask.dataframe as dd
+from dask.utils import parse_bytes, format_bytes
+from dask.datasets import timeseries
+from dask.sizeof import sizeof
 import distributed
 
 
@@ -90,3 +94,79 @@ def cluster_memory(client: distributed.Client) -> int:
     return int(
         sum(w["memory_limit"] for w in client.scheduler_info()["workers"].values())
     )
+
+
+def timeseries_of_size(
+    target_nbytes: int | str,
+    *,
+    start="2000-01-01",
+    freq="1s",
+    partition_freq="1d",
+    dtypes={"name": str, "id": int, "x": float, "y": float},
+    seed=None,
+    **kwargs,
+) -> dd.DataFrame:
+    """
+    Generate a `dask.demo.timeseries` of a target total size.
+
+    Same arguments as `dask.demo.timeseries`, but instead of specifying an ``end`` date,
+    you specify ``target_nbytes``. The number of partitions is set as necessary to reach
+    approximately that total dataset size. Note that you control the partition size via
+    ``freq``, ``partition_freq``, and ``dtypes``.
+
+    Examples
+    --------
+    >>> timeseries_of_size(
+    ...     "1mb", freq="1s", partition_freq="100s", dtypes={"x": float}
+    ... ).npartitions
+    278
+    >>> timeseries_of_size(
+    ...     "1mb", freq="1s", partition_freq="100s", dtypes={i: float for i in range(10)}
+    ... ).npartitions
+    93
+
+    Notes
+    -----
+    The ``target_nbytes`` refers to the amount of RAM the dask DataFrame would use up
+    across all workers, as many pandas partitions.
+
+    This is typically larger than ``df.compute()`` would be as a single pandas
+    DataFrame. Especially with many partions, there can be significant overhead to
+    storing all the individual pandas objects.
+
+    Additionally, ``target_nbytes`` certainly does not correspond to the size
+    the dataset would take up on disk (as parquet, csv, etc.).
+    """
+    if isinstance(target_nbytes, str):
+        target_nbytes = parse_bytes(target_nbytes)
+
+    start_dt = pd.to_datetime(start)
+    partition_freq_dt = pd.to_timedelta(partition_freq)
+    example_part = timeseries(
+        start=start,
+        end=start_dt + partition_freq_dt,
+        freq=freq,
+        partition_freq=partition_freq,
+        dtypes=dtypes,
+        seed=seed,
+        **kwargs,
+    )
+    p = example_part.compute(scheduler="threads")
+    partition_size = sizeof(p)
+    npartitions = round(target_nbytes / partition_size)
+    assert npartitions > 0, (
+        f"Partition size of {format_bytes(partition_size)} > "
+        f"target size {format_bytes(target_nbytes)}"
+    )
+
+    ts = timeseries(
+        start=start,
+        end=start_dt + partition_freq_dt * npartitions,
+        freq=freq,
+        partition_freq=partition_freq,
+        dtypes=dtypes,
+        seed=seed,
+        **kwargs,
+    )
+    assert ts.npartitions == npartitions
+    return ts
