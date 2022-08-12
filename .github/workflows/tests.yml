@@ -337,7 +337,7 @@ jobs:
   process-results:
     needs: [runtime, benchmarks, stability]
     name: Combine separate benchmark results
-    if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+    if: always() && github.repository == 'coiled/coiled-runtime'
     runs-on: ubuntu-latest
     concurrency:
       # Fairly strict concurrency rule to avoid stepping on benchmark db.
@@ -371,6 +371,7 @@ jobs:
           bash ci/scripts/combine-dbs.sh
 
       - name: Upload benchmark db
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
@@ -388,7 +389,7 @@ jobs:
   regressions:
     needs: process-results
     # Always check for regressions, as this can be skipped even if an indirect dependency fails (like a test run)
-    if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+    if: always()
     name: Detect regressions
     runs-on: ubuntu-latest
     steps:
