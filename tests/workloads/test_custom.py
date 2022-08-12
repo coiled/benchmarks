@@ -1,7 +1,8 @@
+import random
+import time
+
 from dask import delayed
 from dask.utils import parse_bytes
-import time
-import random
 
 from ..utils_test import wait
 
@@ -19,6 +20,7 @@ def test_jobqueue(small_client):
     def task(i: int) -> int:
         stuff = "x" * parse_bytes("400MiB")
         time.sleep(random.uniform(0, max_sleep))
+        del stuff
         return i
 
     tasks = [task(i) for i in range(n_tasks)]

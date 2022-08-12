@@ -1,8 +1,8 @@
-import pytest
-import numpy as np
 import dask
-from dask.utils import parse_bytes
+import numpy as np
+import pytest
 from dask.sizeof import sizeof
+from dask.utils import parse_bytes
 
 from .utils_test import scaled_array_shape, timeseries_of_size
 

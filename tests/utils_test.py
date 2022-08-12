@@ -1,12 +1,12 @@
-import numpy as np
-import pandas as pd
 import dask
 import dask.array as da
 import dask.dataframe as dd
-from dask.utils import parse_bytes, format_bytes
+import distributed
+import numpy as np
+import pandas as pd
 from dask.datasets import timeseries
 from dask.sizeof import sizeof
-import distributed
+from dask.utils import format_bytes, parse_bytes
 
 
 def scaled_array_shape(

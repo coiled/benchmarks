@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import xarray as xr
 import dask.array as da
-from dask.utils import format_bytes
 import numpy as np
+import xarray as xr
+from dask.utils import format_bytes
 
-from ..utils_test import scaled_array_shape, wait, cluster_memory, arr_to_devnull
+from ..utils_test import arr_to_devnull, cluster_memory, scaled_array_shape, wait
 
 
 def print_size_info(memory: int, target_nbytes: int, *arrs: da.Array) -> None:
@@ -101,10 +101,13 @@ def test_vorticity(small_client):
 
     def pad_rechunk(arr):
         """
-        Pad a single element onto the end of arr, then merge the 1-element long chunk created back in.
+        Pad a single element onto the end of arr, then merge the 1-element long chunk
+        created back in.
 
-        This operation complicates each chain of the graph enough so that the scheduler no longer recognises the overall computation as blockwise,
-        but doesn't actually change the overall topology of the graph, or the number of chunks along any dimension of the array.
+        This operation complicates each chain of the graph enough so that the scheduler
+        no longer recognizes the overall computation as blockwise, but doesn't actually
+        change the overall topology of the graph, or the number of chunks along any
+        dimension of the array.
 
         This is motivated by the padding operation we do in xGCM, see
 
