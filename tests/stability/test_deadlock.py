@@ -13,14 +13,14 @@ from distributed import Client, wait
 @pytest.mark.skip(
     reason="Skip until https://github.com/dask/distributed/pull/6637 is merged"
 )
-def test_repeated_merge_spill(upload_cluster_dump):
+def test_repeated_merge_spill(upload_cluster_dump, benchmark_time):
     with coiled.v2.Cluster(
         name=f"test_deadlock-{uuid.uuid4().hex}",
         n_workers=20,
         worker_vm_types=["t3.medium"],
     ) as cluster:
         with Client(cluster) as client:
-            with upload_cluster_dump(client, cluster):
+            with upload_cluster_dump(client, cluster), benchmark_time:
                 ddf = dask.datasets.timeseries(
                     "2020",
                     "2025",
