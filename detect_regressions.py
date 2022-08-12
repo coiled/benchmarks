@@ -60,7 +60,7 @@ def detect_regressions(database_file):
                         category = df_test.category.unique()[0]
                         metric_threshold = (
                             df_test[metric][-13:-3].mean()
-                            + 1 * df_test[metric][-13:-3].std()
+                            + 2 * df_test[metric][-13:-3].std()
                         )
 
                         if (df_test[metric].iloc[-3:] >= metric_threshold).all():
