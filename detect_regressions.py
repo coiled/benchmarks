@@ -25,9 +25,17 @@ def detect_regressions(database_file):
         category=df.path.str.split("/", n=1).str[0],
     )
 
-    regressions = []
     reg_df = pd.DataFrame(
-        columns=["category", "type", "mean", "last", "last-1", "last-2", "threshold"]
+        columns=[
+            "category",
+            "type",
+            "mean",
+            "last",
+            "last-1",
+            "last-2",
+            "threshold",
+            "str_report",
+        ]
     )
 
     runtimes = list(df.runtime.unique())
@@ -39,8 +47,8 @@ def detect_regressions(database_file):
             df_test = by_test.get_group(name)
 
             # check the test is not obsolete.
-            if pd.Timestamp(df_test.start.iloc[-1]) < pd.Timestamp.now() - pd.Timedelta(
-                days=15
+            if pd.Timestamp(df_test.start.iloc[-1]) < (
+                pd.Timestamp.now() - pd.Timedelta(days=7)
             ):
                 # the latest run was 7+ days ago, test is obsolete
                 pass
@@ -52,7 +60,7 @@ def detect_regressions(database_file):
                         category = df_test.category.unique()[0]
                         metric_threshold = (
                             df_test[metric][-13:-3].mean()
-                            + 2 * df_test[metric][-13:-3].std()
+                            + 1 * df_test[metric][-13:-3].std()
                         )
 
                         if (df_test[metric].iloc[-3:] >= metric_threshold).all():
@@ -78,10 +86,8 @@ def detect_regressions(database_file):
                                 f"{metric}_threshold {u} = {metric_threshold * units_norm} \n"
                             )
 
-                            regressions.append(reg)
-
                             # ["category", "type", "mean", "last", "last-1", "last-2", "threshold"])
-                            reg_df.loc[f"{(runtime, name, metric)}"] = [
+                            reg_df.loc[f"{(runtime, name, metric)} {u}"] = [
                                 category,
                                 metric,
                                 df_test[metric][-13:-3].mean() * units_norm,
@@ -89,19 +95,29 @@ def detect_regressions(database_file):
                                 df_test[metric].iloc[-2] * units_norm,
                                 df_test[metric].iloc[-3] * units_norm,
                                 metric_threshold * units_norm,
+                                reg,
                             ]
 
-    return reg_df, regressions
+    return reg_df
 
 
-def regressions_report(reg_df, regressions):
+def regressions_report(reg_df):
 
     # write reg_df to markdown for GHA summary
-    reg_df.to_markdown("regressions_summary.md")
+    cols_for_report = [
+        "category",
+        "type",
+        "mean",
+        "last",
+        "last-1",
+        "last-2",
+        "threshold",
+    ]
+    reg_df[cols_for_report].to_markdown("regressions_summary.md")
 
-    if regressions:
+    if not reg_df.empty:
         raise Exception(
-            f"\x1b[31m Regressions detected {len(regressions)}: \n{''.join(regressions)} \x1b[0m"
+            f"\x1b[31m Regressions detected {len(reg_df)}: \n{''.join(reg_df.str_report.values)} \x1b[0m"
         )
     else:
         return
@@ -110,6 +126,6 @@ def regressions_report(reg_df, regressions):
 if __name__ == "__main__":
 
     DB_FILE = pathlib.Path("./benchmark.db")
-    regressions_df, regressions_list = detect_regressions(DB_FILE)
+    regressions_df = detect_regressions(DB_FILE)
 
-    regressions_report(regressions_df, regressions_list)
+    regressions_report(regressions_df)
