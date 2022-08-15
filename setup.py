@@ -27,9 +27,6 @@ def get_requirements():
     requirements["blosc"] = requirements.pop("python-blosc")
     requirements["msgpack"] = requirements.pop("msgpack-python")
 
-    # Exclude packages not available on PyPI
-    del requirements["openssl"]
-
     # Get Python version requirements (also not included on PyPI)
     python_requires = requirements.pop("python")
 
@@ -44,7 +41,7 @@ python_requires, install_requires = get_requirements()
 
 setup(
     name="coiled-runtime",
-    version="0.0.4",
+    version="0.1.0",
     description="Simple and fast way to get started with Dask",
     url="https://github.com/coiled/coiled-runtime",
     license="BSD",
