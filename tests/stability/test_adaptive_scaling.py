@@ -30,6 +30,9 @@ def test_scale_up_on_task_load(minimum, threshold, scatter):
         n_workers=minimum,
         worker_vm_types=["t3.medium"],
         wait_for_workers=True,
+        # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
+        # during adaptive scaling but we receive a KilledWorker() instead.
+        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": 0},
     ) as cluster:
         with Client(cluster) as client:
             adapt = cluster.adapt(minimum=minimum, maximum=maximum)
@@ -68,104 +71,104 @@ def test_adapt_to_changing_workload(minimum: int):
     """
     maximum = 10
     fan_out_size = 100
-    # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
-    # during adaptive scaling but we receive a KilledWorker() instead.
-    with dask.config.set({"distributed.scheduler.allowed-failures": 0}):
-        with Cluster(
-            name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
-            n_workers=5,
-            worker_vm_types=["t3.medium"],
-            wait_for_workers=True,
-        ) as cluster:
-            with Client(cluster) as client:
-                adapt = cluster.adapt(minimum=minimum, maximum=maximum)
-                assert len(adapt.log) == 0
+    with Cluster(
+        name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
+        n_workers=5,
+        worker_vm_types=["t3.medium"],
+        wait_for_workers=True,
+        # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
+        # during adaptive scaling but we receive a KilledWorker() instead.
+        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": 0},
+    ) as cluster:
+        with Client(cluster) as client:
+            adapt = cluster.adapt(minimum=minimum, maximum=maximum)
+            assert len(adapt.log) == 0
 
-                @delayed
-                def clog(x: int, ev: Event, **kwargs) -> int:
-                    ev.wait()
-                    return x
+            @delayed
+            def clog(x: int, ev: Event, **kwargs) -> int:
+                ev.wait()
+                return x
 
-                def workload(
-                    fan_out_size,
-                    ev_fan_out,
-                    ev_barrier,
-                    ev_final_fan_out,
-                ):
-                    fan_out = [clog(i, ev=ev_fan_out) for i in range(fan_out_size)]
-                    barrier = clog(delayed(sum)(fan_out), ev=ev_barrier)
-                    final_fan_out = [
-                        clog(i, ev=ev_final_fan_out, barrier=barrier)
-                        for i in range(fan_out_size)
-                    ]
-                    return final_fan_out
+            def workload(
+                fan_out_size,
+                ev_fan_out,
+                ev_barrier,
+                ev_final_fan_out,
+            ):
+                fan_out = [clog(i, ev=ev_fan_out) for i in range(fan_out_size)]
+                barrier = clog(delayed(sum)(fan_out), ev=ev_barrier)
+                final_fan_out = [
+                    clog(i, ev=ev_final_fan_out, barrier=barrier)
+                    for i in range(fan_out_size)
+                ]
+                return final_fan_out
 
-                ev_fan_out = Event(name="fan-out", client=client)
-                ev_barrier = Event(name="barrier", client=client)
-                ev_final_fan_out = Event(name="final-fan-out", client=client)
+            ev_fan_out = Event(name="fan-out", client=client)
+            ev_barrier = Event(name="barrier", client=client)
+            ev_final_fan_out = Event(name="final-fan-out", client=client)
 
-                fut = client.compute(
-                    workload(
-                        fan_out_size=fan_out_size,
-                        ev_fan_out=ev_fan_out,
-                        ev_barrier=ev_barrier,
-                        ev_final_fan_out=ev_final_fan_out,
-                    )
+            fut = client.compute(
+                workload(
+                    fan_out_size=fan_out_size,
+                    ev_fan_out=ev_fan_out,
+                    ev_barrier=ev_barrier,
+                    ev_final_fan_out=ev_final_fan_out,
                 )
+            )
 
-                # Scale up to maximum
-                start = time.monotonic()
-                client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
-                end = time.monotonic()
-                duration_first_scale_up = end - start
-                assert duration_first_scale_up < 150
-                assert len(cluster.observed) == maximum
-                assert adapt.log[-1][1]["status"] == "up"
+            # Scale up to maximum
+            start = time.monotonic()
+            client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
+            end = time.monotonic()
+            duration_first_scale_up = end - start
+            assert duration_first_scale_up < 150
+            assert len(cluster.observed) == maximum
+            assert adapt.log[-1][1]["status"] == "up"
 
-                ev_fan_out.set()
-                # Scale down to a single worker
-                start = time.monotonic()
-                while len(cluster.observed) > 1:
-                    if time.monotonic() - start >= TIMEOUT_THRESHOLD:
-                        raise TimeoutError()
-                    time.sleep(0.1)
-                end = time.monotonic()
-                duration_first_scale_down = end - start
-                assert duration_first_scale_down < 330
-                assert len(cluster.observed) == 1
-                assert adapt.log[-1][1]["status"] == "down"
+            ev_fan_out.set()
+            # Scale down to a single worker
+            start = time.monotonic()
+            while len(cluster.observed) > 1:
+                if time.monotonic() - start >= TIMEOUT_THRESHOLD:
+                    raise TimeoutError()
+                time.sleep(0.1)
+            end = time.monotonic()
+            duration_first_scale_down = end - start
+            assert duration_first_scale_down < 330
+            assert len(cluster.observed) == 1
+            assert adapt.log[-1][1]["status"] == "down"
 
-                ev_barrier.set()
-                # Scale up to maximum again
-                start = time.monotonic()
-                client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
-                end = time.monotonic()
-                duration_second_scale_up = end - start
-                assert duration_second_scale_up < 150
-                assert len(cluster.observed) == maximum
-                assert adapt.log[-1][1]["status"] == "up"
+            ev_barrier.set()
+            # Scale up to maximum again
+            start = time.monotonic()
+            client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
+            end = time.monotonic()
+            duration_second_scale_up = end - start
+            assert duration_second_scale_up < 150
+            assert len(cluster.observed) == maximum
+            assert adapt.log[-1][1]["status"] == "up"
 
-                ev_final_fan_out.set()
-                client.gather(fut)
-                del fut
+            ev_final_fan_out.set()
+            client.gather(fut)
+            del fut
 
-                # Scale down to minimum
-                start = time.monotonic()
-                while len(cluster.observed) > minimum:
-                    if time.monotonic() - start >= TIMEOUT_THRESHOLD:
-                        raise TimeoutError()
-                    time.sleep(0.1)
-                end = time.monotonic()
-                duration_second_scale_down = end - start
-                assert duration_second_scale_down < 330
-                assert len(cluster.observed) == minimum
-                assert adapt.log[-1][1]["status"] == "down"
-                return (
-                    duration_first_scale_up,
-                    duration_first_scale_down,
-                    duration_second_scale_up,
-                    duration_second_scale_down,
-                )
+            # Scale down to minimum
+            start = time.monotonic()
+            while len(cluster.observed) > minimum:
+                if time.monotonic() - start >= TIMEOUT_THRESHOLD:
+                    raise TimeoutError()
+                time.sleep(0.1)
+            end = time.monotonic()
+            duration_second_scale_down = end - start
+            assert duration_second_scale_down < 330
+            assert len(cluster.observed) == minimum
+            assert adapt.log[-1][1]["status"] == "down"
+            return (
+                duration_first_scale_up,
+                duration_first_scale_down,
+                duration_second_scale_up,
+                duration_second_scale_down,
+            )
 
 
 @pytest.mark.skip(
@@ -184,6 +187,9 @@ def test_adapt_to_memory_intensive_workload(minimum):
         n_workers=minimum,
         worker_vm_types=["t3.medium"],
         wait_for_workers=True,
+        # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
+        # during adaptive scaling but we receive a KilledWorker() instead.
+        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": 0},
     ) as cluster:
         with Client(cluster) as client:
             adapt = cluster.adapt(minimum=minimum, maximum=maximum)
