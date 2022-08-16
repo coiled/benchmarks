@@ -15,7 +15,12 @@ def test_spilling(keep_around):
         worker_disk_size=55,
         worker_vm_types=["t3.medium"],
         wait_for_workers=True,
-        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"},
+        environ={
+            # Note: We set allowed-failures to ensure that no tasks are not retried
+            #  upon ungraceful shutdown behavior during adaptive scaling
+            #  but we receive a KilledWorker() instead.
+            "DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"
+        },
     ) as cluster:
         with Client(cluster) as client:
             arr = da.random.random((200, 2**27)).persist()  # 200 GiB
@@ -35,7 +40,13 @@ def test_tensordot_stress():
         worker_vm_types=["t3.medium"],
         wait_for_workers=True,
         environ={
+            # Note: We set allowed-failures to ensure that no tasks are not retried
+            #  upon ungraceful shutdown behavior during adaptive scaling
+            #  but we receive a KilledWorker() instead.
             "DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0",
+            # We need to limit the number of connections to avoid getting `oom-killed`.
+            #  See https://github.com/coiled/coiled-runtime/pull/229#discussion_r946807049
+            #  for a longer discussion
             "DASK_DISTRIBUTED__WORKER__CONNECTIONS__INCOMING": "1",
             "DASK_DISTRIBUTED__WORKER__CONNECTIONS__OUTGOING": "1",
         },
