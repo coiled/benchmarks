@@ -35,7 +35,7 @@ def get_test_source():
                     if not callable(fn):
                         continue
                     source[f[len("tests/") :] + "::" + test] = inspect.getsource(fn)
-        except Exception:
+        except BaseException:  # Some pytest exceptions inherit directly from BaseException
             pass
     return source
 
