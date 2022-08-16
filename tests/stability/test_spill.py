@@ -1,6 +1,5 @@
 import uuid
 
-import dask
 import dask.array as da
 import pytest
 from coiled.v2 import Cluster
