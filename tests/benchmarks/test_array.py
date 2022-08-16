@@ -80,7 +80,7 @@ def test_climatcic_mean(small_client):
     # arr_clim = array.groupby("init_date.month").mean(dim="init_date")
     arr_clim = array.groupby("init_date").mean(dim="init_date")
 
-    wait(arr_clim, small_client, 10 * 60)
+    wait(arr_clim, small_client, 15 * 60)
 
 
 def test_vorticity(small_client):
