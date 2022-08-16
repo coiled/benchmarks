@@ -14,7 +14,7 @@ def test_jobqueue(small_client):
     )
     max_runtime = 120
     max_sleep = 3
-    n_tasks = max_runtime / max_sleep * nthreads
+    n_tasks = round(max_runtime / max_sleep * nthreads)
 
     @delayed(pure=True)
     def task(i: int) -> int:
