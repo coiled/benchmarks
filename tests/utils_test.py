@@ -176,12 +176,14 @@ def timeseries_of_size(
     return ts
 
 
-class _DevNull:
-    def __setitem__(self, k, v):
-        pass
-
-
 def arr_to_devnull(arr: da.Array) -> dask.delayed:
     "Simulate storing an array to zarr, without writing anything (just drops every block once it's computed)"
+
+    # NOTE: this class must be defined inside the function so it's cloudpickled as code,
+    # otherwise `tests/utils_test` would have to be installed on the cluster.
+    class _DevNull:
+        def __setitem__(self, k, v):
+            pass
+
     # TODO `da.store` should use blockwise to be much more efficient https://github.com/dask/dask/issues/9381
     return da.store(arr, _DevNull(), lock=False, compute=False)
