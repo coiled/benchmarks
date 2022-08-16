@@ -32,7 +32,7 @@ def test_scale_up_on_task_load(minimum, threshold, scatter):
         wait_for_workers=True,
         # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
         # during adaptive scaling but we receive a KilledWorker() instead.
-        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": 0},
+        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"},
     ) as cluster:
         with Client(cluster) as client:
             adapt = cluster.adapt(minimum=minimum, maximum=maximum)
@@ -78,7 +78,7 @@ def test_adapt_to_changing_workload(minimum: int):
         wait_for_workers=True,
         # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
         # during adaptive scaling but we receive a KilledWorker() instead.
-        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": 0},
+        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"},
     ) as cluster:
         with Client(cluster) as client:
             adapt = cluster.adapt(minimum=minimum, maximum=maximum)
@@ -189,7 +189,7 @@ def test_adapt_to_memory_intensive_workload(minimum):
         wait_for_workers=True,
         # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
         # during adaptive scaling but we receive a KilledWorker() instead.
-        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": 0},
+        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"},
     ) as cluster:
         with Client(cluster) as client:
             adapt = cluster.adapt(minimum=minimum, maximum=maximum)
