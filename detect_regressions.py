@@ -54,9 +54,8 @@ def detect_regressions(database_file):
                 pass
             else:
                 for metric in ["duration", "average_memory", "peak_memory"]:
-                    # check that we have enough data to do some stats
-                    # currently we don't have a lot of data but eventually use 10 instead of 6.
-                    if len(df_test[metric]):
+                    # check that we have enough data to do some stats (last three plus previous ten)
+                    if len(df_test.loc[df_test[metric].notna()]) > 13:
                         category = df_test.category.unique()[0]
                         metric_threshold = (
                             df_test[metric][-13:-3].mean()

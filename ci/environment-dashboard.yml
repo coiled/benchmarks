@@ -9,6 +9,8 @@ dependencies:
   - panel=0.13
   - coiled
   - dask
+  - dask-ml
   - distributed
+  - xgboost
   - pandas
   - tabulate
