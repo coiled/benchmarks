@@ -14,9 +14,9 @@ def test_spilling(keep_around):
         name=f"test_spill-{uuid.uuid4().hex}",
         n_workers=5,
         worker_disk_size=55,
-        worker_vm_types="t3-medium",
+        worker_vm_types="t3.medium",
         wait_for_workers=True,
-        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": 0},
+        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"},
     ) as cluster:
         with Client(cluster) as client:
             arr = da.random.random((200, 2**27)).persist()  # 200 GiB
@@ -33,12 +33,12 @@ def test_tensordot_stress():
         name=f"test_spill-{uuid.uuid4().hex}",
         n_workers=5,
         worker_disk_size=45,
-        worker_vm_types="t3-medium",
+        worker_vm_types="t3.medium",
         wait_for_workers=True,
         environ={
-            "DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": 0,
-            "DASK_DISTRIBUTED__WORKER__CONNECTIONS__INCOMING": 1,
-            "DASK_DISTRIBUTED__WORKER__CONNECTIONS__OUTGOING": 1,
+            "DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0",
+            "DASK_DISTRIBUTED__WORKER__CONNECTIONS__INCOMING": "1",
+            "DASK_DISTRIBUTED__WORKER__CONNECTIONS__OUTGOING": "1",
         },
     ) as cluster:
         with Client(cluster) as client:
