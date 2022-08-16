@@ -13,7 +13,7 @@ def test_spilling(keep_around):
         name=f"test_spill-{uuid.uuid4().hex}",
         n_workers=5,
         worker_disk_size=55,
-        worker_vm_types="t3.medium",
+        worker_vm_types=["t3.medium"],
         wait_for_workers=True,
         environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"},
     ) as cluster:
@@ -32,7 +32,7 @@ def test_tensordot_stress():
         name=f"test_spill-{uuid.uuid4().hex}",
         n_workers=5,
         worker_disk_size=45,
-        worker_vm_types="t3.medium",
+        worker_vm_types=["t3.medium"],
         wait_for_workers=True,
         environ={
             "DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0",
