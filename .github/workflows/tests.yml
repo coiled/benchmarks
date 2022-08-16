@@ -243,7 +243,7 @@ jobs:
       - name: Upload benchmark results as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: benchmark.db
+          name: benchmark
           path: benchmark.db
 
   regressions:
@@ -259,7 +259,7 @@ jobs:
 
       - uses: actions/download-artifact@v3
         with:
-          name: benchmark.db
+          name: benchmark
 
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
@@ -325,7 +325,7 @@ jobs:
 
       - uses: actions/download-artifact@v3
         with:
-          name: benchmark.db
+          name: benchmark
 
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
