@@ -64,7 +64,7 @@ def test_basic_sum(small_client):
 @pytest.skip(
     "fails in actual CI; see https://github.com/coiled/coiled-runtime/issues/253"
 )
-def test_climatcic_mean(small_client):
+def test_climatic_mean(small_client):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-535009454
 
     memory = cluster_memory(small_client)  # 76.66 GiB
