@@ -24,7 +24,7 @@ def test_jobqueue(small_client):
         return i
 
     tasks = [task(i) for i in range(n_tasks)]
-    result = delayed(sum)(*tasks)  # just so we have a single object
+    result = delayed(sum)(tasks)  # just so we have a single object
 
     wait(
         result,
