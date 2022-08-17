@@ -27,6 +27,9 @@ def get_requirements():
     requirements["blosc"] = requirements.pop("python-blosc")
     requirements["msgpack"] = requirements.pop("msgpack-python")
 
+    # Exclude packages not available on PyPI
+    del requirements["openssl"]
+
     # Get Python version requirements (also not included on PyPI)
     python_requires = requirements.pop("python")
 
