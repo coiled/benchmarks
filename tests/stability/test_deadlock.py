@@ -2,17 +2,9 @@ import uuid
 
 import coiled.v2
 import dask
-import pytest
 from distributed import Client, wait
 
 
-# @pytest.mark.skipif(
-#     Version(distributed.__version__) < Version("2022.4.2"),
-#     reason="https://github.com/dask/distributed/issues/6110",
-# )
-@pytest.mark.skip(
-    reason="Skip until https://github.com/dask/distributed/pull/6637 is merged"
-)
 def test_repeated_merge_spill(upload_cluster_dump, benchmark_time):
     with coiled.v2.Cluster(
         name=f"test_deadlock-{uuid.uuid4().hex}",
