@@ -57,6 +57,7 @@ setup(
     ],
     packages=["coiled_runtime"],
     long_description=open("README.md").read(),
+    long_description_content_type="text/markdown",
     python_requires=python_requires,
     install_requires=install_requires,
 )
