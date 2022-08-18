@@ -46,10 +46,12 @@ requirements:
     - tornado ==6.1
     - toolz ==0.11.2
     - python-blosc ==1.10.2
+
     - zict ==2.2.0
     - xgboost ==1.6.1
     - dask-ml ==2022.5.27
     - openssl >1.1.0g
+    - pynmvl ==11.4.1
 
 test:
   imports:
