@@ -1,12 +1,12 @@
 import dask.dataframe as dd
 import pytest
 
-# `coiled-runtime=0.0.3,0.0.4` don't contain `xgboost`
+# `coiled-runtime=0.0.4` don't contain `xgboost`
 xgb = pytest.importorskip("xgboost")
 
 
 def test_xgboost_distributed_training(small_client):
-    # `coiled-runtime=0.0.3,0.0.4` don't contain `dask_ml`
+    # `coiled-runtime=0.0.4` don't contain `dask_ml`
     dask_ml = pytest.importorskip("dask_ml")
 
     ddf = dd.read_parquet(
