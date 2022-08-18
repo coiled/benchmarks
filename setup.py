@@ -44,7 +44,7 @@ python_requires, install_requires = get_requirements()
 
 setup(
     name="coiled-runtime",
-    version="0.0.4",
+    version="0.1.0",
     description="Simple and fast way to get started with Dask",
     url="https://github.com/coiled/coiled-runtime",
     license="BSD",
