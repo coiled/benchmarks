@@ -68,8 +68,8 @@ def test_adapt_to_changing_workload():
     a varying task load and scales up or down. This also asserts that no recomputation
     is caused by the scaling.
     """
-    minimum=0
-    maximum=10
+    minimum = 0
+    maximum = 10
     fan_out_size = 100
     with Cluster(
         name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
