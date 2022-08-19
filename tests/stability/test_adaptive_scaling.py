@@ -7,19 +7,12 @@ from coiled.v2 import Cluster
 from dask import delayed
 from dask.distributed import Client, Event, wait
 
-TIMEOUT_THRESHOLD = 900  # 15 minutes
+TIMEOUT_THRESHOLD = 600  # 10 minutes
 
 
 @pytest.mark.stability
 @pytest.mark.parametrize("minimum,threshold", [(0, 300), (1, 150)])
-@pytest.mark.parametrize(
-    "scatter",
-    (
-        False,
-        pytest.param(True, marks=[pytest.mark.xfail(reason="dask/distributed#6686")]),
-    ),
-)
-def test_scale_up_on_task_load(minimum, threshold, scatter):
+def test_scale_up_on_task_load(minimum, threshold):
     """Tests that adaptive scaling reacts in a reasonable amount of time to
     an increased task load and scales up.
     """
@@ -43,11 +36,7 @@ def test_scale_up_on_task_load(minimum, threshold, scatter):
                 ev.wait()
                 return x
 
-            numbers = range(100)
-            if scatter is True:
-                numbers = client.scatter(list(numbers))
-
-            futures = client.map(clog, numbers, ev=ev_fan_out)
+            futures = client.map(clog, range(100), ev=ev_fan_out)
 
             start = time.monotonic()
             client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
