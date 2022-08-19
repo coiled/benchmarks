@@ -50,7 +50,7 @@ def test_scale_up_on_task_load(minimum, threshold):
             return duration
 
 
-@pytest.mark.stability
+@pytest.mark.skip(reason="coiled-runtime#266")
 @pytest.mark.stability
 def test_adapt_to_changing_workload():
     """Tests that adaptive scaling reacts within a reasonable amount of time to
