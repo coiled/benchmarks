@@ -163,6 +163,58 @@ def test_adapt_to_changing_workload():
             )
 
 
+@pytest.mark.stability
+def test_adaptive_rechunk_stress():
+    """Tests adaptive scaling in a transfer-heavy workload that reduces its memory load
+     in a series of rechunking and dimensional reduction steps.
+    """
+    with Cluster(
+        name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
+        n_workers=32,
+        worker_vm_types=["t3.large"],
+        wait_for_workers=True,
+        # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
+        # during adaptive scaling but we receive a KilledWorker() instead.
+        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"},
+    ) as cluster:
+        with Client(cluster) as client:
+            def workload(arr):
+                arr = arr.sum(axis=[3])
+                arr = (
+                    arr.rechunk((128, 8 * 1024, 2))
+                    .rechunk((8 * 1024, 128, 2))
+                    .rechunk((128, 8 * 1024, 2))
+                    .sum(axis=[2])
+                )
+                arr = (
+                    arr.rechunk((64, 8 * 1024))
+                    .rechunk((8 * 1024, 64))
+                    .rechunk((64, 8 * 1024))
+                    .sum(axis=[1])
+                )
+                return arr.sum()
+
+            # Initialize array on workers to avoid adaptive scale-down
+            arr = client.persist(
+                da.random.random(
+                    (8 * 1024, 8 * 1024, 16, 16), chunks=(8 * 1024, 128, 2, 2)
+                )
+            )
+            wait(arr)
+            
+            cluster.adapt(
+                minimum=1,
+                maximum=32,
+                interval="1s",
+                target_duration="180s",
+                wait_count=1,
+            )
+            fut = client.compute(workload(arr))
+            del arr
+            wait(fut)
+            assert fut.result()
+
+
 @pytest.mark.skip(
     reason="The test behavior is unreliable and may lead to very long runtime (see: coiled-runtime#211)"
 )
