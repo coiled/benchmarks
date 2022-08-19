@@ -7,7 +7,7 @@ from coiled.v2 import Cluster
 from dask import delayed
 from dask.distributed import Client, Event, wait
 
-TIMEOUT_THRESHOLD = 1800  # 10 minutes
+TIMEOUT_THRESHOLD = 900  # 15 minutes
 
 
 @pytest.mark.stability
@@ -49,9 +49,9 @@ def test_scale_up_on_task_load(minimum, threshold, scatter):
 
             futures = client.map(clog, numbers, ev=ev_fan_out)
 
-            end = time.monotonic()
-            client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
             start = time.monotonic()
+            client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
+            end = time.monotonic()
             duration = end - start
             assert duration < threshold, duration
             assert len(adapt.log) <= 2
