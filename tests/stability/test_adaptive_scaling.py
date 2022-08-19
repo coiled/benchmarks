@@ -156,7 +156,6 @@ def test_adapt_to_changing_workload():
             assert len(cluster.observed) == minimum
             assert adapt.log[-1][1]["status"] == "down"
             return (
-                duration_first_scale_up,
                 duration_first_scale_down,
                 duration_second_scale_up,
                 duration_second_scale_down,
@@ -166,7 +165,7 @@ def test_adapt_to_changing_workload():
 @pytest.mark.stability
 def test_adaptive_rechunk_stress():
     """Tests adaptive scaling in a transfer-heavy workload that reduces its memory load
-     in a series of rechunking and dimensional reduction steps.
+    in a series of rechunking and dimensional reduction steps.
     """
     with Cluster(
         name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
@@ -178,6 +177,7 @@ def test_adaptive_rechunk_stress():
         environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"},
     ) as cluster:
         with Client(cluster) as client:
+
             def workload(arr):
                 arr = arr.sum(axis=[3])
                 arr = (
@@ -201,7 +201,7 @@ def test_adaptive_rechunk_stress():
                 )
             )
             wait(arr)
-            
+
             cluster.adapt(
                 minimum=1,
                 maximum=32,
@@ -236,6 +236,7 @@ def test_adapt_to_memory_intensive_workload(minimum):
         environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"},
     ) as cluster:
         with Client(cluster) as client:
+
             def memory_intensive_processing():
                 matrix = da.random.random((40000, 40000), chunks=(40000, 500))
                 rechunked = matrix.rechunk((500, 40000))
@@ -306,7 +307,6 @@ def test_adapt_to_memory_intensive_workload(minimum):
             assert len(cluster.observed) == minimum
             assert adapt.log[-1][1]["status"] == "down"
             return (
-                duration_first_scale_up,
                 duration_first_scale_down,
                 duration_second_scale_up,
                 duration_second_scale_down,
