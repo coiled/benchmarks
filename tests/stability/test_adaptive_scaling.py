@@ -176,7 +176,7 @@ def test_adapt_to_memory_intensive_workload(minimum):
     maximum = 10
     with Cluster(
         name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
-        n_workers=minimum,
+        n_workers=maximum,
         worker_vm_types=["t3.medium"],
         wait_for_workers=True,
         # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
@@ -184,9 +184,6 @@ def test_adapt_to_memory_intensive_workload(minimum):
         environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"},
     ) as cluster:
         with Client(cluster) as client:
-            adapt = cluster.adapt(minimum=minimum, maximum=maximum)
-            assert len(adapt.log) == 0
-
             def memory_intensive_processing():
                 matrix = da.random.random((40000, 40000), chunks=(40000, 500))
                 rechunked = matrix.rechunk((500, 40000))
@@ -214,14 +211,7 @@ def test_adapt_to_memory_intensive_workload(minimum):
                 )
             )
 
-            # Scale up to maximum on preprocessing
-            start = time.monotonic()
-            client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
-            end = time.monotonic()
-            duration_first_scale_up = end - start
-            assert duration_first_scale_up < 420, duration_first_scale_up
-            assert len(cluster.observed) == maximum
-            assert adapt.log[-1][1]["status"] == "up"
+            adapt = cluster.adapt(minimum=minimum, maximum=maximum)
 
             ev_scale_down.wait()
             # Scale down to a single worker on barrier task
