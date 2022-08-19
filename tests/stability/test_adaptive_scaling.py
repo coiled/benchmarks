@@ -62,17 +62,18 @@ def test_scale_up_on_task_load(minimum, threshold, scatter):
 
 
 @pytest.mark.stability
-@pytest.mark.parametrize("minimum", (0, 1))
-def test_adapt_to_changing_workload(minimum: int):
+@pytest.mark.stability
+def test_adapt_to_changing_workload():
     """Tests that adaptive scaling reacts within a reasonable amount of time to
     a varying task load and scales up or down. This also asserts that no recomputation
     is caused by the scaling.
     """
-    maximum = 10
+    minimum=0
+    maximum=10
     fan_out_size = 100
     with Cluster(
         name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
-        n_workers=5,
+        n_workers=maximum,
         worker_vm_types=["t3.medium"],
         wait_for_workers=True,
         # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
@@ -80,8 +81,6 @@ def test_adapt_to_changing_workload(minimum: int):
         environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"},
     ) as cluster:
         with Client(cluster) as client:
-            adapt = cluster.adapt(minimum=minimum, maximum=maximum)
-            assert len(adapt.log) == 0
 
             @delayed
             def clog(x: int, ev: Event, **kwargs) -> int:
@@ -115,14 +114,8 @@ def test_adapt_to_changing_workload(minimum: int):
                 )
             )
 
-            # Scale up to maximum
-            start = time.monotonic()
-            client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
-            end = time.monotonic()
-            duration_first_scale_up = end - start
-            assert duration_first_scale_up < 150
-            assert len(cluster.observed) == maximum
-            assert adapt.log[-1][1]["status"] == "up"
+            adapt = cluster.adapt(minimum=minimum, maximum=maximum)
+            wait(90)
 
             ev_fan_out.set()
             # Scale down to a single worker
