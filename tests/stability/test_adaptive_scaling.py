@@ -231,8 +231,10 @@ def test_adapt_to_memory_intensive_workload(minimum, test_name_uuid):
         wait_for_workers=True,
         # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
         # during adaptive scaling but we receive a KilledWorker() instead.
-        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0",
-            "DASK_DISTRIBUTED__SCHEDULER__UNKNOWN_TASK_DURATION": "500ms",},
+        environ={
+            "DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0",
+            "DASK_DISTRIBUTED__SCHEDULER__UNKNOWN_TASK_DURATION": "500ms",
+        },
     ) as cluster:
         with Client(cluster) as client:
 
