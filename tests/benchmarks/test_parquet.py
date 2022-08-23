@@ -26,12 +26,14 @@ def parquet_cluster():
 
 
 @pytest.fixture
-def parquet_client(parquet_cluster, sample_memory, benchmark_time):
+def parquet_client(
+    parquet_cluster, benchmark_task_durations, benchmark_memory, benchmark_time
+):
     with distributed.Client(parquet_cluster) as client:
         parquet_cluster.scale(N_WORKERS)
         client.wait_for_workers(N_WORKERS)
         client.restart()
-        with sample_memory(client), benchmark_time:
+        with benchmark_memory(client), benchmark_task_durations(client), benchmark_time:
             yield client
 
 
