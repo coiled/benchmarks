@@ -1,5 +1,4 @@
 import time
-import uuid
 
 import dask.array as da
 import pytest
@@ -12,13 +11,13 @@ TIMEOUT_THRESHOLD = 600  # 10 minutes
 
 @pytest.mark.stability
 @pytest.mark.parametrize("minimum,threshold", [(0, 300), (1, 150)])
-def test_scale_up_on_task_load(minimum, threshold):
+def test_scale_up_on_task_load(minimum, threshold, test_name_uuid):
     """Tests that adaptive scaling reacts in a reasonable amount of time to
     an increased task load and scales up.
     """
     maximum = 10
     with Cluster(
-        name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
+        name=test_name_uuid,
         n_workers=minimum,
         worker_vm_types=["t3.medium"],
         wait_for_workers=True,
@@ -52,7 +51,7 @@ def test_scale_up_on_task_load(minimum, threshold):
 
 @pytest.mark.skip(reason="coiled-runtime#266")
 @pytest.mark.stability
-def test_adapt_to_changing_workload():
+def test_adapt_to_changing_workload(test_name_uuid):
     """Tests that adaptive scaling reacts within a reasonable amount of time to
     a varying task load and scales up or down. This also asserts that no recomputation
     is caused by the scaling.
@@ -61,13 +60,16 @@ def test_adapt_to_changing_workload():
     maximum = 10
     fan_out_size = 100
     with Cluster(
-        name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
+        name=test_name_uuid,
         n_workers=maximum,
         worker_vm_types=["t3.medium"],
         wait_for_workers=True,
         # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
         # during adaptive scaling but we receive a KilledWorker() instead.
-        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"},
+        environ={
+            "DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0",
+            "DASK_DISTRIBUTED__SCHEDULER__UNKNOWN_TASK_DURATION": "500ms",
+        },
     ) as cluster:
         with Client(cluster) as client:
 
@@ -103,8 +105,15 @@ def test_adapt_to_changing_workload():
                 )
             )
 
-            adapt = cluster.adapt(minimum=minimum, maximum=maximum)
-            wait(90)
+            adapt = cluster.adapt(
+                minimum=minimum,
+                maximum=maximum,
+                target_duration="5s",
+                interval="1s",
+                wait_count=1,
+            )
+            time.sleep(adapt.interval * 2.1)
+            assert len(adapt.log) == 0
 
             ev_fan_out.set()
             # Scale down to a single worker
@@ -115,7 +124,7 @@ def test_adapt_to_changing_workload():
                 time.sleep(0.1)
             end = time.monotonic()
             duration_first_scale_down = end - start
-            assert duration_first_scale_down < 330
+            assert duration_first_scale_down < 10, duration_first_scale_down
             assert len(cluster.observed) == 1
             assert adapt.log[-1][1]["status"] == "down"
 
@@ -125,7 +134,7 @@ def test_adapt_to_changing_workload():
             client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
             end = time.monotonic()
             duration_second_scale_up = end - start
-            assert duration_second_scale_up < 150
+            assert duration_second_scale_up < 150, duration_second_scale_up
             assert len(cluster.observed) == maximum
             assert adapt.log[-1][1]["status"] == "up"
 
@@ -141,7 +150,7 @@ def test_adapt_to_changing_workload():
                 time.sleep(0.1)
             end = time.monotonic()
             duration_second_scale_down = end - start
-            assert duration_second_scale_down < 330
+            assert duration_second_scale_down < 10, duration_second_scale_down
             assert len(cluster.observed) == minimum
             assert adapt.log[-1][1]["status"] == "down"
             return (
@@ -152,12 +161,12 @@ def test_adapt_to_changing_workload():
 
 
 @pytest.mark.stability
-def test_adaptive_rechunk_stress():
+def test_adaptive_rechunk_stress(test_name_uuid):
     """Tests adaptive scaling in a transfer-heavy workload that reduces its memory load
     in a series of rechunking and dimensional reduction steps.
     """
     with Cluster(
-        name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
+        name=test_name_uuid,
         n_workers=32,
         worker_vm_types=["t3.large"],
         wait_for_workers=True,
@@ -209,20 +218,21 @@ def test_adaptive_rechunk_stress():
 )
 @pytest.mark.stability
 @pytest.mark.parametrize("minimum", (0, 1))
-def test_adapt_to_memory_intensive_workload(minimum):
+def test_adapt_to_memory_intensive_workload(minimum, test_name_uuid):
     """Tests that adaptive scaling reacts within a reasonable amount of time to a varying task and memory load.
 
     Note: This tests currently results in spilling and very long runtimes.
     """
     maximum = 10
     with Cluster(
-        name=f"test_adaptive_scaling-{uuid.uuid4().hex}",
+        name=test_name_uuid,
         n_workers=maximum,
         worker_vm_types=["t3.medium"],
         wait_for_workers=True,
         # Note: We set allowed-failures to ensure that no tasks are not retried upon ungraceful shutdown behavior
         # during adaptive scaling but we receive a KilledWorker() instead.
-        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0"},
+        environ={"DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0",
+            "DASK_DISTRIBUTED__SCHEDULER__UNKNOWN_TASK_DURATION": "500ms",},
     ) as cluster:
         with Client(cluster) as client:
 
@@ -253,7 +263,13 @@ def test_adapt_to_memory_intensive_workload(minimum):
                 )
             )
 
-            adapt = cluster.adapt(minimum=minimum, maximum=maximum)
+            adapt = cluster.adapt(
+                minimum=minimum,
+                maximum=maximum,
+                target_duration="5s",
+                interval="1s",
+                wait_count=1,
+            )
 
             ev_scale_down.wait()
             # Scale down to a single worker on barrier task
@@ -264,7 +280,7 @@ def test_adapt_to_memory_intensive_workload(minimum):
                 time.sleep(0.1)
             end = time.monotonic()
             duration_first_scale_down = end - start
-            assert duration_first_scale_down < 420, duration_first_scale_down
+            assert duration_first_scale_down < 60, duration_first_scale_down
             assert len(cluster.observed) == 1
             assert adapt.log[-1][1]["status"] == "down"
 
@@ -277,7 +293,7 @@ def test_adapt_to_memory_intensive_workload(minimum):
             client.wait_for_workers(n_workers=maximum, timeout=TIMEOUT_THRESHOLD)
             end = time.monotonic()
             duration_second_scale_up = end - start
-            assert duration_second_scale_up < 420, duration_second_scale_up
+            assert duration_second_scale_up < 150, duration_second_scale_up
             assert len(cluster.observed) == maximum
             assert adapt.log[-1][1]["status"] == "up"
 
@@ -292,7 +308,7 @@ def test_adapt_to_memory_intensive_workload(minimum):
                 time.sleep(0.1)
             end = time.monotonic()
             duration_second_scale_down = end - start
-            assert duration_second_scale_down < 420, duration_second_scale_down
+            assert duration_second_scale_down < 60, duration_second_scale_down
             assert len(cluster.observed) == minimum
             assert adapt.log[-1][1]["status"] == "down"
             return (
