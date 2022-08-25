@@ -147,21 +147,24 @@ But often it is due to a change in `dask` or `distributed`.
 If you suspect that is the case, Coiled's `package_sync` feature combines well with the benchmarking infrastructure here and `git bisect`.
 
 The following is an example workflow which could be used to identify a specific commit in `dask` which introduced a performance regression.
+This workflow presumes you have two terminal windows open, one with the `coiled-runtime` test suite,
+and one with a `dask` repository with which to drive bisecting.
 
 #### Create your software environment
 
-You should create a software environment which can run this test suite, but with an editable install of `dask`:
+You should create a software environment which can run this test suite, but with an editable install of `dask`.
+You can do this in any of a number of ways, but one approach coule be
 ```bash
-conda env create -n test-env --file ci/environment.yml
-conda activate test-env
-pip install .
-(cd <your-dask-dir> && pip install -e .)
+conda env create -n test-env --file ci/environment.yml  # Create a test environment
+conda activate test-env  # Activate your test environment
+pip install .  # Install the `coiled-runtime` metapackage dependencies.
+(cd <your-dask-dir> && pip install -e .)  # Do an editable install for dask
 ```
 
 #### Start bisecting
 
 Let's say the current `HEAD` of `dask` is known to be bad, and `$REF` is known to be good.
-In a separate terminal you can initialize a bisect workflow in your dask repository with
+In the terminal opened to your dask repository you can initialize a bisect workflow with
 
 ```bash
 cd <your-dask-dir>
@@ -172,7 +175,7 @@ git bisect good $REF
 
 #### Test for regressions
 
-Now that your editable install is bisecting, run a test or subset of tests which demonstrate the regression.
+Now that your editable install is bisecting, run a test or subset of tests which demonstrate the regression in your `coiled-runtime` terminal.
 Presume that `tests/benchmarks/test_parquet.py::test_write_wide_data` is such a test:
 
 ```bash
@@ -206,14 +209,6 @@ git bisect good
 Proceed with this process until you have narrowed it down to a single commit.
 Congratulations! You've identified the source of your regression.
 
-#### Elaborations
-
-There are some things which might make the above procedure more automated.
-* We could have some common utilities for making charts comparing two git refs.
-* We could have some scripts doing changepoint analysis on different test runs.
-* You could set up a bisect script that allows you to run `git bisect run <script-name>` then go for a hike.
-
-For now, the manual bisecting is still a fairly pleasant process.
 
 ## Contribute
 
