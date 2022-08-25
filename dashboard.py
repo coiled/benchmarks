@@ -151,7 +151,10 @@ if __name__ == "__main__":
     static.mkdir(exist_ok=True)
 
     engine = sqlalchemy.create_engine(f"sqlite:///{DB_NAME}")
-    df = pandas.read_sql("select * from test_run where platform = 'linux'", engine)
+    df = pandas.read_sql(
+        "select * from test_run where platform = 'linux' and call_outcome in ('passed', 'failed')",
+        engine,
+    )
     df = df.assign(
         runtime=(
             "coiled-"
