@@ -163,7 +163,9 @@ pip install .  # Install the `coiled-runtime` metapackage dependencies.
 
 #### Start bisecting
 
-Let's say the current `HEAD` of `dask` is known to be bad, and `$REF` is known to be good.
+Let's say the current `HEAD` of `dask` is known to be bad, and `$REF` is known to be good. If you are looking at an upstream run where you have access to the static page, you can check the dates of reported for each run git log with the corresponding dates to get a list of commits as a reference to use in the bisecting process.
+
+`git log --since='2022-08-15 14:15' --until='2022-08-18 14:15' --pretty=oneline`
 In the terminal opened to your dask repository you can initialize a bisect workflow with
 
 ```bash
