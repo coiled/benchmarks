@@ -1,10 +1,12 @@
+import os
 import pathlib
+from distutils.util import strtobool
 
 import pandas as pd
 import sqlalchemy
 
 
-def detect_regressions(database_file):
+def detect_regressions(database_file, is_pr=False):
 
     engine = sqlalchemy.create_engine(f"sqlite:///{database_file}")
 
@@ -57,12 +59,19 @@ def detect_regressions(database_file):
                     # check that we have enough data to do some stats (last three plus previous ten)
                     if len(df_test.loc[df_test[metric].notna()]) > 13:
                         category = df_test.category.unique()[0]
+
+                        if is_pr:
+                            # Only include last run in detection regression
+                            n_last = 1
+                        else:
+                            n_last = 3
+
                         metric_threshold = (
-                            df_test[metric][-13:-3].mean()
-                            + 2 * df_test[metric][-13:-3].std()
+                            df_test[metric][-(10 + n_last) : -n_last].mean()
+                            + 2 * df_test[metric][-(10 + n_last) : -n_last].std()
                         )
 
-                        if (df_test[metric].iloc[-3:] >= metric_threshold).all():
+                        if (df_test[metric].iloc[-n_last:] >= metric_threshold).all():
 
                             if metric in ["average_memory", "peak_memory"]:
                                 units_norm = 1 / (
@@ -89,7 +98,8 @@ def detect_regressions(database_file):
                             reg_df.loc[f"{(runtime, name, metric)} {u}"] = [
                                 category,
                                 metric,
-                                df_test[metric][-13:-3].mean() * units_norm,
+                                df_test[metric][-(10 + n_last) : -n_last].mean()
+                                * units_norm,
                                 df_test[metric].iloc[-1] * units_norm,
                                 df_test[metric].iloc[-2] * units_norm,
                                 df_test[metric].iloc[-3] * units_norm,
@@ -125,6 +135,8 @@ def regressions_report(reg_df):
 if __name__ == "__main__":
 
     DB_FILE = pathlib.Path("./benchmark.db")
-    regressions_df = detect_regressions(DB_FILE)
+
+    IS_PR = strtobool(os.environ.get("IS_PR", "false"))
+    regressions_df = detect_regressions(DB_FILE, is_pr=IS_PR)
 
     regressions_report(regressions_df)
