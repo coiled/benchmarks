@@ -17,7 +17,8 @@ def test_repeated_merge_spill(upload_cluster_dump, benchmark_time):
     with coiled.v2.Cluster(
         name=f"test_deadlock-{uuid.uuid4().hex}",
         n_workers=20,
-        worker_vm_types=["t3.medium"],
+        worker_vm_types=["t3.large"],
+        scheduler_vm_types=["t3.large"],
         package_sync=True,
     ) as cluster:
         with Client(cluster) as client:

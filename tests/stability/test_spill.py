@@ -13,7 +13,8 @@ def spill_cluster():
         n_workers=5,
         package_sync=True,
         worker_disk_size=55,
-        worker_vm_types=["t3.medium"],
+        worker_vm_types=["t3.large"],
+        scheduler_vm_types=["t3.large"],
         wait_for_workers=True,
         environ={
             # Note: We set allowed-failures to ensure that no tasks are not retried
