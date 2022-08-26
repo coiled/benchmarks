@@ -41,7 +41,6 @@ def spill_client(spill_cluster, sample_memory, benchmark_time):
             yield client
 
 
-@pytest.mark.skip(reason="https://github.com/coiled/coiled-runtime/issues/280")
 @pytest.mark.stability
 @pytest.mark.parametrize("keep_around", (True, False))
 def test_spilling(spill_client, keep_around):
