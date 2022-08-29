@@ -39,7 +39,11 @@ def detect_regressions(database_file, is_pr=False):
             "str_report",
         ]
     )
-
+    if is_pr:
+        # Only include last run in detection regression
+        n_last = 1
+    else:
+        n_last = 3
     runtimes = list(df.runtime.unique())
     for runtime in runtimes:
         by_test = df[(df.runtime == runtime)].groupby("name")
@@ -57,14 +61,8 @@ def detect_regressions(database_file, is_pr=False):
             else:
                 for metric in ["duration", "average_memory", "peak_memory"]:
                     # check that we have enough data to do some stats (last three plus previous ten)
-                    if len(df_test.loc[df_test[metric].notna()]) > 13:
+                    if len(df_test.loc[df_test[metric].notna()]) > (10 + n_last):
                         category = df_test.category.unique()[0]
-
-                        if is_pr:
-                            # Only include last run in detection regression
-                            n_last = 1
-                        else:
-                            n_last = 3
 
                         metric_threshold = (
                             df_test[metric][-(10 + n_last) : -n_last].mean()
