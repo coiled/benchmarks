@@ -50,6 +50,7 @@ requirements:
     - xgboost ==1.6.1
     - dask-ml ==2022.5.27
     - openssl >1.1.0g
+    - pynvml ==11.4.1
 
 test:
   imports:
