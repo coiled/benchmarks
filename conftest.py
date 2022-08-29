@@ -17,17 +17,10 @@ import distributed
 import filelock
 import pytest
 import s3fs
-from distributed import Client
-from distributed.diagnostics.memory_sampler import MemorySampler
-from toolz import merge
-
-try:
-    from coiled.v2 import Cluster
-except ImportError:
-    from coiled._beta import ClusterBeta as Cluster
-
 import sqlalchemy
+from distributed.diagnostics.memory_sampler import MemorySampler
 from sqlalchemy.orm import Session
+from toolz import merge
 
 from benchmark_schema import TestRun
 
@@ -259,26 +252,21 @@ def small_cluster(request):
         m.kwargs for m in request.node.iter_markers(name="backend_options")
     )
     module = os.path.basename(request.fspath).split(".")[0]
-    with Cluster(
-        name=f"{module}-{uuid.uuid4().hex[:8]}",
-        n_workers=10,
-        worker_vm_types=["t3.large"],  # 2CPU, 8GiB
-        scheduler_vm_types=["t3.large"],
-        backend_options=backend_options,
-    ) as cluster:
+    from .utils import small_cluster as small_cluster_util
+
+    with small_cluster_util(backend_options, module) as cluster:
         yield cluster
 
 
 @pytest.fixture
 def small_client(small_cluster, upload_cluster_dump, sample_memory, benchmark_time):
-    with Client(small_cluster) as client:
-        small_cluster.scale(10)
-        client.wait_for_workers(10)
-        client.restart()
+    from .utils import small_client as small_client_util
 
-        with upload_cluster_dump(client, small_cluster):
-            with sample_memory(client), benchmark_time:
-                yield client
+    with small_client_util(small_cluster) as client:
+        with upload_cluster_dump(client, small_cluster), sample_memory(
+            client
+        ), benchmark_time:
+            yield client
 
 
 S3_REGION = "us-east-2"
