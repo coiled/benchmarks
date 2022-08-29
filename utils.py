@@ -3,15 +3,17 @@ from __future__ import annotations
 import contextlib
 import uuid
 
-from coiled import Cluster
+from coiled import AWSOptions, Cluster
 from distributed import Client
 
 
 @contextlib.contextmanager
 def small_cluster(
-    backend_options=None,
-    module=None,
+    backend_options: AWSOptions | None = None,
+    module: str = "manual",
 ):
+    if backend_options is None:
+        backend_options = {"spot": True, "spot_on_demand_fallback": True}
 
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
@@ -26,8 +28,8 @@ def small_cluster(
 @contextlib.contextmanager
 def small_client(
     cluster=None,
-    backend_options=None,
-    module=None,
+    backend_options: AWSOptions | None = None,
+    module: str = "manual",
 ):
     stack = contextlib.ExitStack()
     if not cluster:
