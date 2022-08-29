@@ -63,17 +63,36 @@ def make_timeseries(originalname, df, spec) -> altair.Chart | None:
     df = df.fillna({"ci_run_url": "https://github.com/coiled/coiled-runtime"})
     path = df.path.iloc[0]
     kwargs = {}
+    # Reduce the size of the altair spec
+    df = df[
+        [
+            spec.field,
+            "start",
+            "ci_run_url",
+            "name",
+            "call_outcome",
+            "coiled_runtime_version",
+            "dask_version",
+        ]
+    ]
     if len(df.name.unique()) > 1:
         kwargs["color"] = altair.Color("name:N")
+    if len(df.call_outcome.unique()) > 1:
+        kwargs["shape"] = altair.Shape(
+            "call_outcome:N",
+            scale=altair.Scale(domain=["passed", "failed"], range=["circle", "cross"]),
+            title="Outcome",
+        )
     return (
         altair.Chart(df, width=800, height=256)
-        .mark_line(point=True)
+        .mark_line(point=altair.OverlayMarkDef(size=64))
         .encode(
             x=altair.X("start:T"),
             y=altair.Y(f"{spec.field}:Q", title=spec.label),
             href=altair.Href("ci_run_url:N"),
             tooltip=[
                 altair.Tooltip("name:N", title="Test Name"),
+                altair.Tooltip("start:T", title="Date"),
                 altair.Tooltip("call_outcome:N", title="Test Outcome"),
                 altair.Tooltip("coiled_runtime_version:N", title="Coiled Runtime"),
                 altair.Tooltip("dask_version:N", title="Dask"),
@@ -132,7 +151,10 @@ if __name__ == "__main__":
     static.mkdir(exist_ok=True)
 
     engine = sqlalchemy.create_engine(f"sqlite:///{DB_NAME}")
-    df = pandas.read_sql("select * from test_run where platform = 'linux'", engine)
+    df = pandas.read_sql(
+        "select * from test_run where platform = 'linux' and call_outcome in ('passed', 'failed')",
+        engine,
+    )
     df = df.assign(
         runtime=(
             "coiled-"
