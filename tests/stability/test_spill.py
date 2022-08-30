@@ -12,9 +12,9 @@ def spill_cluster():
         f"spill-{uuid.uuid4().hex[:8]}",
         n_workers=5,
         package_sync=True,
-        worker_disk_size=64,
-        worker_vm_types=["m5d.large"],
-        scheduler_vm_types=["m5d.large"],
+        worker_disk_size=55,
+        worker_vm_types=["t3.large"],
+        scheduler_vm_types=["t3.large"],
         wait_for_workers=True,
         environ={
             # Note: We set allowed-failures to ensure that no tasks are not retried
