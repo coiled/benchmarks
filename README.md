@@ -8,11 +8,18 @@ The Coiled Runtime is a conda metapackage which makes it easy to get started wit
 
 ## Install
 
-`coiled-runtime` can be installed with:
+`coiled-runtime` can be installed with `conda`:
 
 ```bash
 conda install -c conda-forge coiled-runtime
 ```
+
+or with `pip`:
+
+```bash
+pip install coiled-runtime
+```
+
 
 **Nightly builds**
   
