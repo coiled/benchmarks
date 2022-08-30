@@ -42,8 +42,11 @@ def detect_regressions(database_file, is_pr=False):
     if is_pr:
         # Only include last run in detection regression
         n_last = 1
+        n_std = 3  # be a bit more aggressive on PRs
     else:
         n_last = 3
+        n_std = 2
+
     runtimes = list(df.runtime.unique())
     for runtime in runtimes:
         by_test = df[(df.runtime == runtime)].groupby("name")
@@ -64,21 +67,21 @@ def detect_regressions(database_file, is_pr=False):
                     if len(df_test.loc[df_test[metric].notna()]) > (10 + n_last):
                         category = df_test.category.unique()[0]
 
-                        metric_threshold = (
-                            df_test[metric][-(10 + n_last) : -n_last].mean()
-                            + 2 * df_test[metric][-(10 + n_last) : -n_last].std()
+                        if metric in ["average_memory", "peak_memory"]:
+                            units_norm = 1 / (1024**3)  # to GiB to match dashboard
+                            u = "[GiB]"
+                        else:
+                            units_norm = 1
+                            u = "[s]"
+
+                        metric_threshold = df_test[metric][
+                            -(10 + n_last) : -n_last
+                        ].mean() + max(
+                            n_std * df_test[metric][-(10 + n_last) : -n_last].std(),
+                            1 / units_norm,
                         )
 
                         if (df_test[metric].iloc[-n_last:] >= metric_threshold).all():
-
-                            if metric in ["average_memory", "peak_memory"]:
-                                units_norm = 1 / (
-                                    1024**3
-                                )  # to GiB to match dashboard
-                                u = "[GiB]"
-                            else:
-                                units_norm = 1
-                                u = "[s]"
 
                             last_three = (
                                 df_test[metric].iloc[-1] * units_norm,
