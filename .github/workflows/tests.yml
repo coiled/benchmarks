@@ -388,6 +388,11 @@ jobs:
 
       - name: Run detect regressions
         run: |
+          if [[ ${{ github.event_name }} = 'pull_request' ]]
+          then
+            export IS_PR='true'
+          fi
+          echo "IS_PR=$IS_PR"
           python detect_regressions.py
       
       - name: Create regressions summary
