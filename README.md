@@ -120,11 +120,19 @@ They are summarized here:
 
 **`benchmark_time`**: Include this fixture to measure the wall clock time.
 
-**`sample_memory`**: This fixture yields a context manager which takes a distributed `Client` object, and records peak and average memory usage for the cluster within the context:
+**`benchmark_memory`**: This fixture yields a context manager which takes a distributed `Client` object, and records peak and average memory usage for the cluster within the context:
 ```python
-def test_something(sample_memory):
+def test_something(benchmark_memory):
     with Client() as client:
-        with sample_memory(client):
+        with benchmark_memory(client):
+            client.submit(expensive_function)
+```
+
+**`benchmark_task_durations`**: This fixture yields a context manager which takes a distributed `Client` object, and records time spent computing, transferring data, spilling to disk, and deserializing data within the context:
+```python
+def test_something(benchmark_task_durations):
+    with Client() as client:
+        with benchmark_task_durations(client):
             client.submit(expensive_function)
 ```
 

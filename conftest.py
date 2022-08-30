@@ -30,6 +30,7 @@ import sqlalchemy
 from sqlalchemy.orm import Session
 
 from benchmark_schema import TestRun
+from plugins import Durations
 
 logger = logging.getLogger("coiled-runtime")
 logger.setLevel(logging.INFO)
@@ -199,9 +200,9 @@ def auto_benchmark_time(benchmark_time):
 
 
 @pytest.fixture(scope="function")
-def sample_memory(test_run_benchmark):
+def benchmark_memory(test_run_benchmark):
     @contextlib.contextmanager
-    def _sample_memory(client):
+    def _benchmark_memory(client):
         sampler = MemorySampler()
         label = uuid.uuid4().hex[:8]
         with sampler.sample(label, client=client, measure="process"):
@@ -212,7 +213,32 @@ def sample_memory(test_run_benchmark):
             test_run_benchmark.average_memory = df[label].mean()
             test_run_benchmark.peak_memory = df[label].max()
 
-    yield _sample_memory
+    yield _benchmark_memory
+
+
+@pytest.fixture(scope="function")
+def benchmark_task_durations(test_run_benchmark):
+    @contextlib.contextmanager
+    def _measure_durations(client):
+        # TODO: is there a nice way to only register this once? I don't think so,
+        # other than idempotent=True
+        client.register_scheduler_plugin(Durations(), idempotent=True)
+
+        # Start tracking durations
+        client.sync(client.scheduler.start_tracking_durations)
+        yield
+        client.sync(client.scheduler.stop_tracking_durations)
+
+        # Add duration data to db entry
+        durations = client.sync(client.scheduler.get_durations)
+        test_run_benchmark.compute_time = durations.get("compute", 0.0)
+        test_run_benchmark.disk_spill_time = durations.get(
+            "disk-read", 0.0
+        ) + durations.get("disk-write", 0.0)
+        test_run_benchmark.serializing_time = durations.get("deserialize", 0.0)
+        test_run_benchmark.transfer_time = durations.get("transfer", 0.0)
+
+    yield _measure_durations
 
 
 # ############################################### #
@@ -245,14 +271,22 @@ def small_cluster(request):
 
 
 @pytest.fixture
-def small_client(small_cluster, upload_cluster_dump, sample_memory, benchmark_time):
+def small_client(
+    small_cluster,
+    upload_cluster_dump,
+    benchmark_task_durations,
+    benchmark_memory,
+    benchmark_time,
+):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
         client.restart()
 
         with upload_cluster_dump(client, small_cluster):
-            with sample_memory(client), benchmark_time:
+            with benchmark_memory(client), benchmark_task_durations(
+                client
+            ), benchmark_time:
                 yield client
 
 
