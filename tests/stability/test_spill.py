@@ -12,7 +12,7 @@ def spill_cluster():
         f"spill-{uuid.uuid4().hex[:8]}",
         n_workers=5,
         package_sync=True,
-        worker_disk_size=55,
+        worker_disk_size=64,
         worker_vm_types=["t3.large"],
         scheduler_vm_types=["t3.large"],
         wait_for_workers=True,
@@ -46,7 +46,7 @@ def spill_client(
 @pytest.mark.stability
 @pytest.mark.parametrize("keep_around", (True, False))
 def test_spilling(spill_client, keep_around):
-    arr = da.random.random((200, 2**27)).persist()  # 200 GiB
+    arr = da.random.random((64, 2**27)).persist()  # 64 GiB, ~2x memory
     wait(arr)
     fut = spill_client.compute(arr.sum())
     if not keep_around:
