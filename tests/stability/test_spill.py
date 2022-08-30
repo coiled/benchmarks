@@ -32,12 +32,14 @@ def spill_cluster():
 
 
 @pytest.fixture
-def spill_client(spill_cluster, sample_memory, benchmark_time):
+def spill_client(
+    spill_cluster, benchmark_task_durations, benchmark_memory, benchmark_time
+):
     with Client(spill_cluster) as client:
         spill_cluster.scale(5)
         client.wait_for_workers(5)
         client.restart()
-        with sample_memory(client), benchmark_time:
+        with benchmark_memory(client), benchmark_task_durations(client), benchmark_time:
             yield client
 
 
