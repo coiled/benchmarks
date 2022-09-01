@@ -47,7 +47,7 @@ def main():
             {
                 "pip": [
                     "git+https://github.com/dask/dask@main",
-                    "git+https://github.com/dask/distributed@817ead3aed90bad8c6bd38063ec8bdfcacb4ff5f",
+                    "git+https://github.com/dask/distributed@main",
                 ]
             }
         )
