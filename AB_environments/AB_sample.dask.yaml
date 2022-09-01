@@ -1,0 +1,7 @@
+# Sample dask config file for A/B testing
+# It *must* be called AB_<name>.dask.yaml
+# and *must* be accompanied by AB_<name>.conda.yaml
+# Leave empty if you don't want to override anything.
+distributed:
+  scheduler:
+    worker-saturation: 1.2

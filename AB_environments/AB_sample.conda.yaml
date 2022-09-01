@@ -1,0 +1,16 @@
+# Sample conda environment file for A/B testing
+# It *must* be called AB_<name>.conda.yaml
+# and *must* be accompanied by AB_<name>.dask.yaml
+channels:
+  - conda-forge
+dependencies:
+    - python=3.9
+    # Alternatively, we could use a nightly build, or no coiled-runtime at all
+    - coiled-runtime=0.1.0
+    - pip:
+      # Notes:
+      # - You can't install anything with conda which conflicts the versions
+      #   pinned in coiled-runtime. Pip packages ignore these restrictions.
+      # - You can point to your own git fork instead
+      - dask==2022.8.1
+      - git+https://github.com/dask/distributed@dd81b424971e81616e1a52fa09ce4698a5002d41

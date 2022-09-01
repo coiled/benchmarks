@@ -29,6 +29,12 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.8", "3.9", "3.10"]
+        # A/B TESTING: add AB_<name> as needed
+        # For each A/B runtime version there must be two files:
+        # - AB_environment/AB_<name>.conda.yaml
+        # - AB_environment/AB_<name>.dask.yaml
+        # Search for "A/B TESTING" for further change points in this file
+        runtime-version: [latest, AB_sample]  # TODO revert before merging
 
     steps:
       - uses: actions/checkout@v2
@@ -75,7 +81,7 @@ jobs:
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
           export REF_NAME_FORMATTED=$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
           export COILED_SOFTWARE_NAME_HEAD=dask-engineering/coiled-runtime-${{ github.event_name }}
-          export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-py$PYTHON_VERSION_FORMATTED
+          export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-${{ matrix.runtime-version }}-py$PYTHON_VERSION_FORMATTED
 
           if [[ ${{ github.event_name }} = 'pull_request' ]]
           then
@@ -84,14 +90,22 @@ jobs:
             export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
           fi
 
-          # Create conda environment.yaml file for the latest software environment
-          python ci/create_latest_runtime_meta.py
-          export ENV_FILE=latest.yaml
+          if [[ ${{ matrix.runtime-version }} = 'latest' ]]
+            # Create conda environment.yaml file for the latest software environment
+            python ci/create_latest_runtime_meta.py
+            export COILED_SOFTWARE_ENV=""
+          else
+            cp AB_environments/${{ matrix.runtime-version }}.conda.yaml coiled_software_environment.yaml
+            export COILED_SOFTWARE_ENV=$(python ci/dask_config_to_env.py AB_environments/${{ matrix.runtime-version }}.dask.yaml) 
+          fi
+
+          export ENV_FILE=coiled_software_environment.yaml
           cat $ENV_FILE
 
           mamba install coiled
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
-          coiled env create --name $COILED_SOFTWARE_NAME --conda $ENV_FILE
+          echo "Environment parameters: $COILED_SOFTWARE_ENV"
+          coiled env create --name $COILED_SOFTWARE_NAME --conda $ENV_FILE $COILED_SOFTWARE_ENV
 
           # Put COILED_SOFTWARE_NAME into a file so it can be downloaded in subsequent workflow jobs
           echo $COILED_SOFTWARE_NAME > software_name.txt
@@ -99,9 +113,9 @@ jobs:
       - name: Upload environment file
         uses: actions/upload-artifact@v3
         with:
-          name: software-environment-py${{ matrix.python-version }}
+          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: |
-            latest.yaml
+            coiled_software_environment.yaml
             software_name.txt
             test_upstream.txt
 
@@ -113,9 +127,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
+        os: [ubuntu-latest]
         python-version: ["3.9"]
-        runtime-version: ["latest", "0.0.4", "0.1.0"]
+        # A/B TESTING: add AB_<name> as needed (as specified in 'software')
+        # and remove what is not interesting for the test.
+        # You may also want to use include/exclude statements for specific
+        # combinations of python versions and OSs.
+        # runtime-version: [latest, "0.0.4", "0.1.0", AB_sample]
+        runtime-version: [latest, "0.0.4", "0.1.0", AB_sample]  # TODO revert before merging
 
     steps:
       - uses: actions/checkout@v2
@@ -132,10 +151,10 @@ jobs:
           environment-file: ci/environment.yml
 
       - name: Download software environment assets
-        if: matrix.runtime-version == 'latest'
+        if: matrix.runtime-version == 'latest' || startsWith(matrix.runtime-version, 'AB_')
         uses: actions/download-artifact@v3
         with:
-          name: software-environment-py${{ matrix.python-version }}
+          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
 
       - name: Install coiled-runtime
         env:
@@ -168,9 +187,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
+        os: [ubuntu-latest]
         python-version: ["3.9"]
-        runtime-version: ["latest", "0.0.4", "0.1.0"]
+        # A/B TESTING: add AB_<name> as needed (as specified in 'software')
+        # and remove what is not interesting for the test.
+        # Alternatively you may use include/exclude statements for specific
+        # combinations of python versions and OSs.
+        # runtime-version: [latest, "0.0.4", "0.1.0", AB_sample]
+        runtime-version: [latest, "0.0.4", "0.1.0", AB_sample]  # TODO revert before merging
 
     steps:
       - uses: actions/checkout@v2
@@ -187,10 +211,10 @@ jobs:
           environment-file: ci/environment.yml
 
       - name: Download software environment assets
-        if: matrix.runtime-version == 'latest'
+        if: matrix.runtime-version == 'latest' || startsWith(matrix.runtime-version, 'AB_')
         uses: actions/download-artifact@v3
         with:
-          name: software-environment-py${{ matrix.python-version }}
+          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
 
       - name: Install coiled-runtime
         env:
@@ -223,16 +247,23 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
+        os: [ubuntu-latest]
         python-version: ["3.8", "3.9", "3.10"]
-        runtime-version: ["latest", "0.0.4", "0.1.0"]
+        # A/B TESTING: add AB_<name> as needed (as specified in 'software')
+        # and remove what is not interesting for the test.
+        # Alternatively you may use include/exclude statements for specific
+        # combinations of python versions and OSs.
+        runtime-version: [latest, "0.0.4", "0.1.0"]
         include:
           - python-version: "3.9"
-            runtime-version: "latest"
-            os: "windows-latest"
+            runtime-version: latest
+            os: windows-latest
           - python-version: "3.9"
-            runtime-version: "latest"
-            os: "macos-latest"
+            runtime-version: latest
+            os: macos-latest
+          # TODO comment out before merging
+          - python-version: "3.9"
+            runtime-version: AB_sample
 
     steps:
       - uses: actions/checkout@v2
@@ -249,10 +280,10 @@ jobs:
           environment-file: ci/environment.yml
 
       - name: Download software environment assets
-        if: matrix.runtime-version == 'latest'
+        if: matrix.runtime-version == 'latest' || startsWith(matrix.runtime-version, 'AB_')
         uses: actions/download-artifact@v3
         with:
-          name: software-environment-py${{ matrix.python-version }}
+          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
 
       - name: Install coiled-runtime
         env:

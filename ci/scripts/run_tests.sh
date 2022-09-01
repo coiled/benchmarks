@@ -5,7 +5,7 @@ set -o xtrace
 BENCHMARK="${BENCHMARK:-false}"
 
 # Ensure we run additional tests when testing the latest coiled-runtime
-if [[ $COILED_RUNTIME_VERSION = 'latest' ]]
+if [[ "$COILED_RUNTIME_VERSION" =~ latest|AB_ ]]
 then
   EXTRA_OPTIONS="--run-latest"
   export COILED_SOFTWARE_NAME=$(cat software_name.txt)
