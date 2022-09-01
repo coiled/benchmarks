@@ -29,12 +29,17 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.8", "3.9", "3.10"]
-        # A/B TESTING: add AB_<name> as needed
+        # A/B TESTING: add AB_<name> as needed. Alternatively you may use 'include'
+        # statements.
         # For each A/B runtime version there must be two files:
         # - AB_environment/AB_<name>.conda.yaml
         # - AB_environment/AB_<name>.dask.yaml
         # Search for "A/B TESTING" for further change points in this file
-        runtime-version: [latest, AB_sample]  # TODO revert before merging
+        runtime-version: [latest]
+        # TODO comment out before merge
+        include:
+          - python-version: "3.9"
+            runtime-version: AB_sample
 
     steps:
       - uses: actions/checkout@v2
@@ -91,6 +96,7 @@ jobs:
           fi
 
           if [[ ${{ matrix.runtime-version }} = 'latest' ]]
+          then
             # Create conda environment.yaml file for the latest software environment
             python ci/create_latest_runtime_meta.py
             export COILED_SOFTWARE_ENV=""
