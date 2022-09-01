@@ -7,6 +7,7 @@ import inspect
 import os
 import pathlib
 import sys
+from typing import Literal
 
 import altair
 import pandas
@@ -41,6 +42,63 @@ def get_test_source():
 
 
 source = get_test_source()
+
+
+def make_barchart(originalname, df, spec) -> altair.Chart | None:
+    """
+    Make a single timeseries altair chart for a given test.
+
+    originalname: str
+        The name of the test without any fixture or other modifications.
+
+    df: pandas.DataFrame
+        A dataframe with the test data in it.
+
+    spec: ChartSpec
+        Data for how to render the timeseries
+    """
+    df = df.dropna(subset=[spec.field, "start"])
+    if not len(df):
+        return None
+    df = df.assign(**{spec.field: df[spec.field] / spec.scale})
+    path = df.path.iloc[0]
+    kwargs = {}
+    # Reduce the size of the altair spec
+    x = max(
+        ["dask_version", "distributed_version", "session_id"],
+        key=lambda k: len(df[k].unique()),
+    )
+    df = df[
+        [
+            spec.field,
+            "name",
+            "call_outcome",
+            "coiled_runtime_version",
+            "dask_version",
+            "distributed_version",
+            "session_id",
+        ]
+    ]
+    if len(df.name.unique()) > 1:
+        kwargs["column"] = altair.Color("name:N")
+    return (
+        altair.Chart(df, width=800, height=512)
+        .mark_bar()
+        .encode(
+            x=altair.X(f"{x}:N"),
+            y=altair.Y(f"{spec.field}:Q", title=spec.label),
+            color=altair.Color(f"{x}:N"),
+            tooltip=[
+                altair.Tooltip("name:N", title="Test Name"),
+                altair.Tooltip("dask_version:N", title="Dask"),
+                altair.Tooltip("distributed_version:N", title="Dask"),
+                altair.Tooltip(f"{spec.field}:Q", title=spec.label),
+            ],
+            **kwargs,
+        )
+        .properties(title=f"{path}::{originalname}")
+        .configure(autosize="fit")
+    )
 
 
 def make_timeseries(originalname, df, spec) -> altair.Chart | None:
@@ -106,7 +164,9 @@ def make_timeseries(originalname, df, spec) -> altair.Chart | None:
     )
 
 
-def make_test_report(group_keys, df):
+def make_test_report(
+    group_keys, df, kind: Literal["bar"] | Literal["timeseries"] = "timeseries"
+):
     """
     Make a tab panel for a single test.
 
@@ -126,17 +186,21 @@ def make_test_report(group_keys, df):
     ]
     tabs = []
     for s in specs:
-        chart = make_timeseries(originalname, df, s)
+        if kind == "timeseries":
+            chart = make_timeseries(originalname, df, s)
+        else:
+            chart = make_barchart(originalname, df, s)
         if not chart:
             continue
         tabs.append((s.label, chart))
 
     sourcename = path + "::" + originalname
+    height = 384 if kind == "timeseries" else 640
     if sourcename in source:
         code = panel.pane.Markdown(
             f"```python\n{source[sourcename]}\n```",
             width=800,
-            height=384,
+            height=height,
             style={"overflow": "auto"},
         )
         tabs.append(("Source", code))
@@ -147,6 +211,7 @@ if __name__ == "__main__":
     DB_NAME = (
         sys.argv[1] if len(sys.argv) > 1 else os.environ.get("DB_NAME", "benchmark.db")
     )
+    KIND = "barchart"
     static = pathlib.Path("static")
     static.mkdir(exist_ok=True)
 
@@ -177,7 +242,7 @@ if __name__ == "__main__":
                 .groupby(["path", "originalname"])
             )
             panes = [
-                make_test_report(test_name, by_test.get_group(test_name))
+                make_test_report(test_name, by_test.get_group(test_name), KIND)
                 for test_name in by_test.groups
             ]
             flex = panel.FlexBox(*panes, align_items="start", justify_content="start")
