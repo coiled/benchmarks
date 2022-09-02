@@ -36,29 +36,34 @@ def groupby_cluster():
 
 
 @pytest.fixture
-def groupby_client(groupby_cluster, sample_memory, benchmark_time):
+def groupby_client(
+    groupby_cluster, benchmark_memory, benchmark_task_durations, benchmark_time
+):
     with distributed.Client(groupby_cluster) as client:
         groupby_cluster.scale(N_WORKERS)
         client.wait_for_workers(N_WORKERS)
         client.restart()
-        with sample_memory(client), benchmark_time:
+        with benchmark_memory(client), benchmark_task_durations(client), benchmark_time:
             yield client
 
 
-@pytest.mark.parametrize("shuffle", [False, "tasks", "p2p"])
+@pytest.mark.parametrize("shuffle", [False, "tasks"])
 @pytest.mark.parametrize(
-    "n_groups", [1000, 10_000, 100_000, 1_000_000, 10_000_000, 100_000_000]
+    "n_groups", [1_000_000, 10_000_000, 50_000_000, 100_000_000, 200_000_000]
 )
-@pytest.mark.parametrize("split_out", [1, 4, 8])
-def test_groupby(groupby_client, split_out, n_groups, shuffle):
+@pytest.mark.parametrize("split_out", [1, 2, 4, 8, 16])
+@pytest.mark.parametrize("partition_freq", ["10d"])
+def test_groupby(groupby_client, split_out, n_groups, shuffle, partition_freq):
     ddf = timeseries_of_size(
         cluster_memory(groupby_client) // 4,
         id_maximum=n_groups,
-    )
+        partition_freq=partition_freq,
+    )  # ~600MM rows
+    print(ddf)
     agg = ddf.groupby("id").agg(
         {"x": "sum", "y": "mean"},
-        split_every=16,  # Note that the default split_every is a bit small when split_out>1
         split_out=split_out,
         shuffle=shuffle,
     )
+    # print(len(agg))
     wait(agg, groupby_client, 180)
