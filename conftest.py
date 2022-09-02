@@ -17,6 +17,7 @@ import distributed
 import filelock
 import pytest
 import s3fs
+from coiled import performance_report
 from distributed import Client
 from distributed.diagnostics.memory_sampler import MemorySampler
 from toolz import merge
@@ -316,6 +317,7 @@ def small_cluster(request):
 
 @pytest.fixture
 def small_client(
+    request,
     small_cluster,
     upload_cluster_dump,
     benchmark_all,
@@ -325,7 +327,9 @@ def small_client(
         client.wait_for_workers(10)
         client.restart()
 
-        with upload_cluster_dump(client, small_cluster):
+        with upload_cluster_dump(client, small_cluster), performance_report(
+            f"{small_cluster.name}-{request.node.name}"
+        ):
             with benchmark_all(client):
                 yield client
 
