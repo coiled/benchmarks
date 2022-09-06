@@ -7,14 +7,15 @@ import pytest
 from coiled.v2 import Cluster
 from dask import delayed, utils
 from distributed import Client, wait
+from tornado.ioloop import PeriodicCallback
 
 
 @pytest.mark.xfail(reason="https://github.com/dask/distributed/issues/6573")
 def test_trivial_workload_should_not_cause_work_stealing(small_client):
     root = delayed(lambda n: "x" * n)(utils.parse_bytes("1MiB"), dask_key_name="root")
     results = [delayed(lambda *args: None)(root, i) for i in range(10000)]
-    fut = small_client.compute(results)
-    wait(fut)
+    futs = small_client.compute(results)
+    wait(futs)
 
     def count_work_stealing_events(dask_scheduler):
         return len(dask_scheduler.events["stealing"])
@@ -74,5 +75,34 @@ def test_work_stealing_on_inhomogeneous_workload(small_client):
         return n
 
     results = [clog(i) for i in delays]
-    fut = small_client.compute(results)
-    wait(fut)
+    futs = small_client.compute(results)
+    wait(futs)
+
+
+def test_work_stealing_on_straggling_worker(test_name_uuid):
+    with Cluster(
+        name=test_name_uuid,
+        n_workers=10,
+        worker_vm_types=["t3.medium"],
+        wait_for_workers=True,
+    ) as cluster:
+        with Client(cluster) as client:
+
+            def clog():
+                time.sleep(1)
+
+            @delayed
+            def slowinc(i, delay):
+                time.sleep(delay)
+                return i + 1
+
+            def install_clogging_callback(dask_worker):
+                pc = PeriodicCallback(clog, 1500)
+                dask_worker.periodic_callbacks["clog"] = pc
+                pc.start()
+
+            straggler = list(client.scheduler_info()["workers"].keys())[0]
+            client.run(install_clogging_callback, workers=[straggler])
+            results = [slowinc(i, delay=1) for i in range(1000)]
+            futs = client.compute(results)
+            wait(futs)
