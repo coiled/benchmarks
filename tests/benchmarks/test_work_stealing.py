@@ -1,16 +1,20 @@
-import dask.array as da
-import numpy as np
-from dask import delayed, utils
-from distributed import wait, Client
-from coiled.v2 import Cluster
 import time
 
-@pytest.mark.xfail()
+import dask.array as da
+import distributed
+import numpy as np
+import pytest
+from coiled.v2 import Cluster
+from dask import delayed, utils
+from distributed import Client, wait
+
+
 def test_trivial_workload_should_not_cause_work_stealing(small_client):
     root = delayed(lambda n: "x" * n)(utils.parse_bytes("1MiB"), dask_key_name="root")
     results = [delayed(lambda *args: None)(root, i) for i in range(10000)]
     fut = small_client.compute(results)
     wait(fut)
+
     def count_work_stealing_events(dask_scheduler):
         return len(dask_scheduler.events["stealing"])
 
@@ -18,12 +22,23 @@ def test_trivial_workload_should_not_cause_work_stealing(small_client):
     assert count == 0
 
 
-def test_work_stealing_on_scaling_up(test_name_uuid, benchmark_task_durations, benchmark_memory, benchmark_time):
-    with Cluster(name=test_name_uuid, n_workers=1, wait_for_workers=True, worker_vm_types=["t3.medium"]) as cluster:
+@pytest.mark.xfail(
+    distributed.__version__ == "2022.6.0",
+    reason="https://github.com/dask/distributed/issues/6624",
+)
+def test_work_stealing_on_scaling_up(
+    test_name_uuid, benchmark_task_durations, benchmark_memory, benchmark_time
+):
+    with Cluster(
+        name=test_name_uuid,
+        n_workers=1,
+        wait_for_workers=True,
+        worker_vm_types=["t3.medium"],
+    ) as cluster:
         with Client(cluster) as client:
             # Slow task.
             def func1(chunk):
-                if sum(chunk.shape) != 0: # Make initialization fast
+                if sum(chunk.shape) != 0:  # Make initialization fast
                     time.sleep(5)
                 return chunk
 
@@ -35,14 +50,14 @@ def test_work_stealing_on_scaling_up(test_name_uuid, benchmark_task_durations, b
             result = result.map_overlap(func2, depth=1, dtype=data.dtype)
             future = client.compute(result)
 
-            print('started computation')
+            print("started computation")
 
             time.sleep(11)
             # print('scaling to 4 workers')
             # client.cluster.scale(4)
 
             time.sleep(5)
-            print('scaling to 20 workers')
+            print("scaling to 20 workers")
             cluster.scale(20)
 
             _ = future.result()
@@ -56,7 +71,7 @@ def test_work_stealing_on_inhomogeneous_workload(small_client):
     def clog(n):
         time.sleep(min(n, 60))
         return n
-    
+
     results = [clog(i) for i in delays]
     fut = small_client.compute(results)
     wait(fut)
