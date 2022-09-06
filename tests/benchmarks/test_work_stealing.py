@@ -16,6 +16,7 @@ def test_trivial_workload_should_not_cause_work_stealing(small_client):
     results = [delayed(lambda *args: None)(root, i) for i in range(10000)]
     futs = small_client.compute(results)
     wait(futs)
+    _ = [fut.result() for fut in futs]
 
     def count_work_stealing_events(dask_scheduler):
         return len(dask_scheduler.events["stealing"])
@@ -77,6 +78,7 @@ def test_work_stealing_on_inhomogeneous_workload(small_client):
     results = [clog(i) for i in delays]
     futs = small_client.compute(results)
     wait(futs)
+    _ = [fut.result() for fut in futs]
 
 
 def test_work_stealing_on_straggling_worker(test_name_uuid):
@@ -106,3 +108,4 @@ def test_work_stealing_on_straggling_worker(test_name_uuid):
             results = [slowinc(i, delay=1) for i in range(1000)]
             futs = client.compute(results)
             wait(futs)
+            _ = [fut.result() for fut in futs]
