@@ -56,8 +56,9 @@ def make_barchart(
     # Altair will re-sort alphabetically, unless it's explicitly asked to sort by
     # something else. Could not find an option to NOT sort.
     df["order"] = pandas.RangeIndex(0, df.shape[0])
+    height = df.shape[0] * 20 + 50
     return (
-        altair.Chart(df, width=800, height=512)
+        altair.Chart(df, width=800, height=height)
         .mark_bar()
         .encode(
             x=altair.X(spec.field, title=spec.label),
@@ -153,7 +154,11 @@ def make_test_report(
             continue
         tabs.append((s.label, chart))
 
-    height = 384 if kind == "timeseries" else 640
+    if kind == "timeseries":
+        height = 384
+    else:
+        height = df.shape[0] * 20 + 50
+
     if sourcename in source:
         code = panel.pane.Markdown(
             f"```python\n{source[sourcename]}\n```",
