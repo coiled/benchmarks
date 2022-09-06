@@ -163,7 +163,7 @@ not a personal fork**.
 
 To issue a new `coiled-runtime` release:
 
-1. Locally update the `coiled-runtime` version and package pinnings specified in `recipe/meta.yaml`.
+1. Locally update the `coiled-runtime` version and package pinnings specified in `recipe/meta.yaml` and `setup.py`.
     - When updating package version pinnings (in particular `dask` and `distributed`)
       confirm there are no reported large scale stability issues (e.g. deadlocks) or
       performance regressions on the `dask` / `distributed` issue trackers or offline
@@ -192,6 +192,14 @@ git push origin main --tags
     - Reset the build number back to `0` if it isn't already.
     - For more information on updating conda-forge packages, see the
       [conda-forge docs](https://conda-forge.org/docs/maintainer/updating_pkgs.html).
+
+6. Upload to PyPI
+
+```
+git clean -xfd
+python setup.py sdist bdist_wheel
+twine upload dist/*
+```
 
 ## License
 
