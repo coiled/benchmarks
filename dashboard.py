@@ -53,7 +53,7 @@ def load_test_source() -> None:
     print(f"Discovered {len(source)} tests")
 
 
-def align_to_baseline(df: pandas.DataFrame, baseline: str) -> pandas.DataFrame:
+def align_to_baseline(df: pandas.DataFrame, baseline: str) -> pandas.DataFrame | None:
     """Add columns
 
     - duration_baseline
@@ -67,15 +67,33 @@ def align_to_baseline(df: pandas.DataFrame, baseline: str) -> pandas.DataFrame:
     runtime. Note that this means that df is expected to have exactly 1 test in the
     baseline runtime for each test in every other runtime.
     """
-    columns = [spec.field_name for spec in SPECS]
     df_baseline = df[df["runtime"] == baseline]
-    if df_baseline.empty:
-        raise ValueError(
-            f"Baseline runtime {baseline!r} not found; valid choices are: "
-            + ", ".join(df["runtime"].unique())
-        )
-    assert len(df_baseline["fullname"].unique()) == df_baseline.shape[0]
 
+    if df_baseline.empty:
+        # Typically a misspelling. However, this can legitimately happen in CI if all
+        # three jobs of the baseline runtime failed early.
+        print(
+            f"Baseline runtime {baseline!r} not found; valid choices are:",
+            ", ".join(df["runtime"].unique()),
+        )
+        return None
+
+    baseline_names = df_baseline["fullname"].unique()
+    all_names = df["fullname"].unique()
+
+    assert len(baseline_names) == df_baseline.shape[0]
+    if len(baseline_names) < len(all_names):
+        # This will happen in CI if one or two out of three jobs of the baseline failed.
+        # Note that df contains the latest run only. It means that tests on all runtimes
+        # (including historical ones) should be from the coiled-runtime git tip, so
+        # adding or removing tests should not cause a mismatch.
+        print(
+            f"Baseline runtime {baseline!r} is missing some tests:",
+            ", ".join(set(all_names) - set(baseline_names)),
+        )
+        return None
+
+    columns = [spec.field_name for spec in SPECS]
     df_baseline = (
         df_baseline.set_index("fullname")
         .loc[df["fullname"], columns]
@@ -484,23 +502,25 @@ def main() -> None:
         make_timeseries_html_report(df, output_dir, runtime)
 
     # Select only the latest run for each runtime. This may pick up historical runs (up
-    # to 2d old) if they have not been rerun in the current pull/PR.
+    # to 6h old) if they have not been rerun in the current pull/PR.
+    # TODO This is fragile. Keep the latest and historical databases separate, or record
+    #      the coiled-runtime git hash and use it to filter?
     max_end = df.sort_values("end").groupby(["runtime", "category"]).tail(1)
-    max_end = max_end[max_end["end"] > max_end["end"].max() - pandas.Timedelta("2d")]
+    max_end = max_end[max_end["end"] > max_end["end"].max() - pandas.Timedelta("6h")]
     session_ids = max_end["session_id"].unique()
     latest_run = df[df["session_id"].isin(session_ids)]
 
     make_ab_html_report(latest_run, output_dir, by_test=True, baseline=None)
     make_ab_html_report(latest_run, output_dir, by_test=False, baseline=None)
+    baselines = []
     for baseline in args.baseline:
-        make_ab_html_report(
-            align_to_baseline(latest_run, baseline),
-            output_dir,
-            by_test=False,
-            baseline=baseline,
-        )
+        df_baseline = align_to_baseline(latest_run, baseline)
+        if df_baseline is None:
+            continue
+        baselines.append(baseline)
+        make_ab_html_report(df_baseline, output_dir, by_test=False, baseline=baseline)
 
-    make_index_html_report(output_dir, runtimes, args.baseline)
+    make_index_html_report(output_dir, runtimes, baselines)
 
 
 if __name__ == "__main__":
