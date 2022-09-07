@@ -38,7 +38,12 @@ def load_test_source() -> None:
     tests being importable from this script.
     """
     for fname in glob.iglob("tests/**/test_*.py", recursive=True):
-        mod = importlib.import_module(fname.replace("/", ".")[: -len(".py")])
+        try:
+            mod = importlib.import_module(fname.replace("/", ".")[: -len(".py")])
+        # Some pytest exceptions inherit directly from BaseException
+        except BaseException as e:
+            print(f"Could not import {fname}: {e.__class__.__name__}: {e}")
+            continue
         tests = [a for a in dir(mod) if a.startswith("test_")]
         for test in tests:
             if (func := getattr(mod, test, None)) and callable(func):
