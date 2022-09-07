@@ -57,16 +57,19 @@ jobs:
           if [[ "$COMMIT" == *"test-upstream"* || ${{ github.event_name }} == "schedule" ]]
           then
             export TEST_UPSTREAM="true"
+            export AB_BASELINE="coiled-upstream-py3.9 coiled-latest-py3.9 coiled-0.1.0-py3.9"
           else
             export TEST_UPSTREAM="false"
+            export AB_BASELINE="coiled-latest-py3.9 coiled-0.1.0-py3.9"
           fi
 
           # Put TEST_UPSTREAM into $GITHUB_ENV so it can be used in subsequent workflow steps
           echo $TEST_UPSTREAM
           echo TEST_UPSTREAM=$TEST_UPSTREAM >> $GITHUB_ENV
 
-          # Put TEST_UPSTREAM into a file so it can be downloaded in subsequent workflow jobs
+          # Put env variables into files so it can be downloaded in subsequent workflow jobs
           echo $TEST_UPSTREAM > test_upstream.txt
+          echo $AB_BASELINE > ab_baseline.txt
 
       - name: Build Coiled Software Environment
         env:
@@ -104,6 +107,7 @@ jobs:
             latest.yaml
             software_name.txt
             test_upstream.txt
+            ab_baseline.txt
 
   runtime:
     name: Runtime - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
@@ -457,9 +461,14 @@ jobs:
           python-version: "3.9"
           environment-file: ci/environment-dashboard.yml
 
+      - name: Download software environment assets
+        uses: actions/download-artifact@v3
+        with:
+          name: software-environment-py3.9
+
       - name: Generate dashboards
         run: |
-          python dashboard.py
+          python dashboard.py -d benchmark.db -o static -b <(cat ab_baseline.txt)
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.7
