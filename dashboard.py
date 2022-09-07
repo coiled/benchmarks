@@ -50,6 +50,8 @@ def load_test_source() -> None:
                 # FIXME missing decorators, namely @pytest.mark.parametrize
                 source[fname[len("tests/") :] + "::" + test] = inspect.getsource(func)
 
+    print(f"Discovered {len(source)} tests")
+
 
 def align_to_baseline(df: pandas.DataFrame, baseline: str) -> pandas.DataFrame:
     """Add columns
@@ -445,7 +447,6 @@ def main() -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     load_test_source()
-    print(f"Discovered {len(source)} tests")
 
     # Load SQLite database into a pandas DataFrame
     engine = sqlalchemy.create_engine(f"sqlite:///{args.db_file}")
@@ -455,6 +456,8 @@ def main() -> None:
         engine,
     )
     df = df.assign(
+        start=pandas.to_datetime(df.start),
+        end=pandas.to_datetime(df.end),
         runtime=(
             "coiled-"
             + df.coiled_runtime_version
@@ -462,14 +465,9 @@ def main() -> None:
             + df.python_version.str.split(".", n=2).str[:2].str.join(".")
         ),
         category=df.path.str.split("/", n=1).str[0],
-    )
-
-    df["start"] = pandas.to_datetime(df["start"])
-    df["end"] = pandas.to_datetime(df["end"])
-    df["sourcename"] = df["path"].str.cat(df["originalname"], "::")
-    df["fullname"] = df["path"].str.cat(df["name"], "::")
-    df["fullname_no_category"] = df["fullname"].str.replace(
-        r"[a-z]+/", "", regex=True, n=1
+        sourcename=df.path.str.cat(df.originalname, "::"),
+        fullname=df.path.str.cat(df.name, "::"),
+        fullname_no_category=df.path.str.partition("/")[2].str.cat(df.name, "::"),
     )
     for spec in SPECS:
         df[spec.field_name] /= spec.scale
