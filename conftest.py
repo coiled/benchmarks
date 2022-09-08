@@ -267,6 +267,16 @@ def benchmark_task_durations(test_run_benchmark):
     yield _measure_durations
 
 
+@pytest.fixture
+def benchmark_all(benchmark_memory, benchmark_task_durations, benchmark_time):
+    @contextlib.contextmanager
+    def _benchmark_all(client):
+        with benchmark_memory(client), benchmark_task_durations(client), benchmark_time:
+            yield
+
+    yield _benchmark_all
+
+
 # ############################################### #
 #        END BENCHMARKING RELATED                 #
 # ############################################### #
@@ -299,9 +309,7 @@ def small_cluster(request):
 def small_client(
     small_cluster,
     upload_cluster_dump,
-    benchmark_task_durations,
-    benchmark_memory,
-    benchmark_time,
+    benchmark_all,
 ):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
@@ -309,9 +317,7 @@ def small_client(
         client.restart()
 
         with upload_cluster_dump(client, small_cluster):
-            with benchmark_memory(client), benchmark_task_durations(
-                client
-            ), benchmark_time:
+            with benchmark_all(client):
                 yield client
 
 
