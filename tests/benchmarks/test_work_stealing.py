@@ -10,7 +10,6 @@ from distributed import Client
 from tornado.ioloop import PeriodicCallback
 
 
-@pytest.mark.xfail(reason="https://github.com/dask/distributed/issues/6573")
 def test_trivial_workload_should_not_cause_work_stealing(small_client):
     root = delayed(lambda n: "x" * n)(utils.parse_bytes("1MiB"), dask_key_name="root")
     results = [delayed(lambda *args: None)(root, i) for i in range(10000)]
