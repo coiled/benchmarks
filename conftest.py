@@ -12,12 +12,12 @@ import time
 import uuid
 from distutils.util import strtobool
 
+import coiled
 import dask
 import distributed
 import filelock
 import pytest
 import s3fs
-from coiled import performance_report
 from distributed import Client
 from distributed.diagnostics.memory_sampler import MemorySampler
 from toolz import merge
@@ -247,23 +247,26 @@ def benchmark_memory(test_run_benchmark):
 def benchmark_task_durations(test_run_benchmark):
     @contextlib.contextmanager
     def _measure_durations(client):
-        # TODO: is there a nice way to only register this once? I don't think so,
-        # other than idempotent=True
-        client.register_scheduler_plugin(Durations(), idempotent=True)
+        if not test_run_benchmark:
+            yield
+        else:
+            # TODO: is there a nice way to only register this once? I don't think so,
+            # other than idempotent=True
+            client.register_scheduler_plugin(Durations(), idempotent=True)
 
-        # Start tracking durations
-        client.sync(client.scheduler.start_tracking_durations)
-        yield
-        client.sync(client.scheduler.stop_tracking_durations)
+            # Start tracking durations
+            client.sync(client.scheduler.start_tracking_durations)
+            yield
+            client.sync(client.scheduler.stop_tracking_durations)
 
-        # Add duration data to db entry
-        durations = client.sync(client.scheduler.get_durations)
-        test_run_benchmark.compute_time = durations.get("compute", 0.0)
-        test_run_benchmark.disk_spill_time = durations.get(
-            "disk-read", 0.0
-        ) + durations.get("disk-write", 0.0)
-        test_run_benchmark.serializing_time = durations.get("deserialize", 0.0)
-        test_run_benchmark.transfer_time = durations.get("transfer", 0.0)
+            # Add duration data to db entry
+            durations = client.sync(client.scheduler.get_durations)
+            test_run_benchmark.compute_time = durations.get("compute", 0.0)
+            test_run_benchmark.disk_spill_time = durations.get(
+                "disk-read", 0.0
+            ) + durations.get("disk-write", 0.0)
+            test_run_benchmark.serializing_time = durations.get("deserialize", 0.0)
+            test_run_benchmark.transfer_time = durations.get("transfer", 0.0)
 
     yield _measure_durations
 
@@ -327,8 +330,8 @@ def small_client(
         client.wait_for_workers(10)
         client.restart()
 
-        with upload_cluster_dump(client, small_cluster), performance_report(
-            f"{small_cluster.name}-{request.node.name}"
+        with upload_cluster_dump(client, small_cluster), upload_performance_report(
+            f"{small_cluster.name}-{request.node.name}.html"
         ):
             with benchmark_all(client):
                 yield client
@@ -420,3 +423,24 @@ def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
                 client.dump_cluster_state(dump_path, **s3_storage_options)
 
     yield _upload_cluster_dump
+
+
+@pytest.fixture
+def upload_performance_report(test_run_benchmark):
+    @contextlib.contextmanager
+    def _upload_performance_report(name):
+        with coiled.performance_report(name) as obj:
+            yield
+        # TODO: This will not scale well if we have many reports. Instead, the
+        # performance report ctx manager should somehow yield an object that has
+        # the url
+        if obj is None:
+            all_reports = coiled.list_performance_reports()
+            for msg in all_reports:
+                if msg["filename"] == name:
+                    test_run_benchmark.performance_report_url = msg["url"]
+                    break
+        else:
+            test_run_benchmark.performance_report_url = obj.url
+
+    yield _upload_performance_report

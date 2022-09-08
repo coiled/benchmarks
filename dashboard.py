@@ -178,7 +178,10 @@ def make_timeseries(
         # Some tests do not have average_memory or peak_memory measures, only runtime
         return None
 
-    df = df.fillna({"ci_run_url": "https://github.com/coiled/coiled-runtime"})
+    df = df.fillna({
+        "ci_run_url": "https://github.com/coiled/coiled-runtime",
+        "performance_report_url": "https://github.com/coiled/coiled-runtime",
+    })
     kwargs = {}
     # Reduce the size of the altair spec
     df = df[
@@ -191,6 +194,7 @@ def make_timeseries(
             "coiled_runtime_version",
             "dask_version",
             "distributed_version",
+            "performance_report_url",
         ]
     ]
     if len(df.name.unique()) > 1:
@@ -219,6 +223,9 @@ def make_timeseries(
                     f"{spec.field_name}:Q", title=f"{spec.field_desc} {spec.unit}"
                 ),
                 altair.Tooltip("ci_run_url:N", title="CI Run URL"),
+                altair.Tooltip(
+                    "performance_report_url:N", title="Performance Report URL"
+                ),
             ],
             **kwargs,
         )
