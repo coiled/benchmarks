@@ -57,7 +57,7 @@ jobs:
           if [[ "$COMMIT" == *"test-upstream"* || ${{ github.event_name }} == "schedule" ]]
           then
             export TEST_UPSTREAM="true"
-            export AB_BASELINE="coiled-upstream-py3.9 coiled-latest-py3.9 coiled-0.1.0-py3.9"
+            export AB_BASELINE="coiled-upstream-py3.9 coiled-0.1.0-py3.9"
           else
             export TEST_UPSTREAM="false"
             export AB_BASELINE="coiled-latest-py3.9 coiled-0.1.0-py3.9"
