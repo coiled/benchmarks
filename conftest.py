@@ -267,7 +267,7 @@ def benchmark_task_durations(test_run_benchmark):
     yield _measure_durations
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def benchmark_all(benchmark_memory, benchmark_task_durations, benchmark_time):
     @contextlib.contextmanager
     def _benchmark_all(client):
