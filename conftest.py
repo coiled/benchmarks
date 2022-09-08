@@ -269,6 +269,15 @@ def benchmark_task_durations(test_run_benchmark):
 
 @pytest.fixture(scope="function")
 def benchmark_all(benchmark_memory, benchmark_task_durations, benchmark_time):
+    """Return a function that creates a context manager for benchmarking.
+
+    Example:
+    >>> def test_example(benchmark_all):
+    >>>    ...
+    >>>    with benchmark_all(client):
+    >>>       client.compute(my_computation)
+    """
+
     @contextlib.contextmanager
     def _benchmark_all(client):
         with benchmark_memory(client), benchmark_task_durations(client), benchmark_time:
