@@ -467,8 +467,7 @@ jobs:
           name: software-environment-py3.9
 
       - name: Generate dashboards
-        run: |
-          python dashboard.py -d benchmark.db -o static -b $(cat ab_baseline.txt)
+        run: python dashboard.py -d benchmark.db -o static -b $(cat ab_baseline.txt)
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
