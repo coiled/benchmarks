@@ -1,19 +1,13 @@
-name: Tests
+name: A/B Tests
 on:
   push:
-    branches:
+    branches-ignore:
       - main
-    tags:
-      - '*'
-  pull_request:
-  schedule:
-    # Runs "At 00:01" (see https://crontab.guru)
-    - cron: "1 0 * * *"
 
 concurrency:
   # Include `github.event_name` to avoid pushes to `main` and
   # scheduled jobs canceling one another
-  group: tests-${{ github.event_name }}-${{ github.ref }}
+  group: ab_tests-${{ github.event_name }}-${{ github.ref }}
   cancel-in-progress: true
 
 defaults:
@@ -22,13 +16,35 @@ defaults:
     shell: bash -l {0}
 
 jobs:
+  discover_ab_envs:
+    name: Discover A/B environments
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      - id: set-matrix
+        run: echo "::set-output name=matrix::$(python ci/scripts/discover_ab_environments.py)"
+    outputs:
+        matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+  # Everything below this point runs iff there are files matching
+  # AB_environments/AB_*.conda.yaml
+  # AB_environments/AB_*.dask.yaml
+
   software:
     name: Setup
     runs-on: ubuntu-latest
+    needs: discover_ab_envs
+    if: ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.9"]
+        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v2
@@ -44,30 +60,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
-      - name: Check upstream
-        run: |
-          if [[ ${{ github.event_name }} == "pull_request" ]]
-          then
-              export REF="HEAD^2"
-          else
-              export REF="HEAD"
-          fi
-
-          COMMIT="$(git log -n 1 --pretty=format:%s $REF)"
-          if [[ "$COMMIT" == *"test-upstream"* || ${{ github.event_name }} == "schedule" ]]
-          then
-            export TEST_UPSTREAM="true"
-          else
-            export TEST_UPSTREAM="false"
-          fi
-
-          # Put TEST_UPSTREAM into $GITHUB_ENV so it can be used in subsequent workflow steps
-          echo $TEST_UPSTREAM
-          echo TEST_UPSTREAM=$TEST_UPSTREAM >> $GITHUB_ENV
-
-          # Put TEST_UPSTREAM into a file so it can be downloaded in subsequent workflow jobs
-          echo $TEST_UPSTREAM > test_upstream.txt
-
       - name: Build Coiled Software Environment
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
@@ -75,8 +67,8 @@ jobs:
           export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
           export REF_NAME_FORMATTED=$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
           export COILED_SOFTWARE_NAME_HEAD=dask-engineering/coiled-runtime-${{ github.event_name }}
-          export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-py$PYTHON_VERSION_FORMATTED
-
+          export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-$(echo ${{ matrix.runtime-version }} | tr 'A-Z' 'a-z')-py$PYTHON_VERSION_FORMATTED
+          
           if [[ ${{ github.event_name }} = 'pull_request' ]]
           then
             export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-${{ github.event.number }}-$COILED_SOFTWARE_NAME_TAIL
@@ -84,22 +76,26 @@ jobs:
             export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
           fi
 
-          # Create conda environment.yaml file for the latest software environment
-          python ci/create_latest_runtime_meta.py
+          cp AB_environments/${{ matrix.runtime-version }}.conda.yaml coiled_software_environment.yaml
+          export COILED_SOFTWARE_ENV=$(python ci/dask_config_to_env.py AB_environments/${{ matrix.runtime-version }}.dask.yaml) 
           export ENV_FILE=coiled_software_environment.yaml
           cat $ENV_FILE
 
           mamba install coiled
           echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
-          coiled env create --name $COILED_SOFTWARE_NAME --conda $ENV_FILE
+          echo "Environment parameters: $COILED_SOFTWARE_ENV"
+          coiled env create --name $COILED_SOFTWARE_NAME --conda $ENV_FILE $COILED_SOFTWARE_ENV
 
           # Put COILED_SOFTWARE_NAME into a file so it can be downloaded in subsequent workflow jobs
           echo $COILED_SOFTWARE_NAME > software_name.txt
 
+          # Dummy for compatibility with tests.yml
+          echo false > test_upstream.txt
+
       - name: Upload environment file
         uses: actions/upload-artifact@v3
         with:
-          name: software-environment-py${{ matrix.python-version }}
+          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: |
             coiled_software_environment.yaml
             software_name.txt
@@ -107,15 +103,15 @@ jobs:
 
   runtime:
     name: Runtime - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-    needs: software
+    needs: [discover_ab_envs, software]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
+        os: [ubuntu-latest]
         python-version: ["3.9"]
-        runtime-version: ["latest", "0.0.4", "0.1.0"]
+        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v2
@@ -132,10 +128,10 @@ jobs:
           environment-file: ci/environment.yml
 
       - name: Download software environment assets
-        if: matrix.runtime-version == 'latest'
+        if: matrix.runtime-version == 'latest' || startsWith(matrix.runtime-version, 'AB_')
         uses: actions/download-artifact@v3
         with:
-          name: software-environment-py${{ matrix.python-version }}
+          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
 
       - name: Install coiled-runtime
         env:
@@ -162,15 +158,15 @@ jobs:
 
   benchmarks:
     name: Benchmarks - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-    needs: software
+    needs: [discover_ab_envs, software]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
+        os: [ubuntu-latest]
         python-version: ["3.9"]
-        runtime-version: ["latest", "0.0.4", "0.1.0"]
+        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v2
@@ -187,10 +183,9 @@ jobs:
           environment-file: ci/environment.yml
 
       - name: Download software environment assets
-        if: matrix.runtime-version == 'latest'
         uses: actions/download-artifact@v3
         with:
-          name: software-environment-py${{ matrix.python-version }}
+          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
 
       - name: Install coiled-runtime
         env:
@@ -217,22 +212,15 @@ jobs:
 
   stability:
     name: Stability - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-    needs: software
+    needs: [discover_ab_envs, software]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
-        os: ["ubuntu-latest"]
-        python-version: ["3.8", "3.9", "3.10"]
-        runtime-version: ["latest", "0.0.4", "0.1.0"]
-        include:
-          - python-version: "3.9"
-            runtime-version: "latest"
-            os: "windows-latest"
-          - python-version: "3.9"
-            runtime-version: "latest"
-            os: "macos-latest"
+        os: [ubuntu-latest]
+        python-version: ["3.9"]
+        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
 
     steps:
       - uses: actions/checkout@v2
@@ -249,10 +237,10 @@ jobs:
           environment-file: ci/environment.yml
 
       - name: Download software environment assets
-        if: matrix.runtime-version == 'latest'
+        if: matrix.runtime-version == 'latest' || startsWith(matrix.runtime-version, 'AB_')
         uses: actions/download-artifact@v3
         with:
-          name: software-environment-py${{ matrix.python-version }}
+          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
 
       - name: Install coiled-runtime
         env:
@@ -279,14 +267,16 @@ jobs:
           path: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
   cleanup:
-    needs: [software, runtime, benchmarks, stability]
-    if: always()
+    needs: [discover_ab_envs, software, runtime, benchmarks, stability]
+    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
     name: Cleanup
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8", "3.9", "3.10"]
+        python-version: ["3.9"]
+        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
+
     steps:
       - uses: actions/checkout@v2
 
@@ -301,7 +291,7 @@ jobs:
       - name: Download software environment assets
         uses: actions/download-artifact@v3
         with:
-          name: software-environment-py${{ matrix.python-version }}
+          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
 
       - name: Remove Coiled software environment
         env:
@@ -312,9 +302,9 @@ jobs:
           coiled env delete $SOFTWARE_NAME
 
   process-results:
-    needs: [runtime, benchmarks, stability]
+    needs: [discover_ab_envs, runtime, benchmarks, stability]
     name: Combine separate benchmark results
-    if: always() && github.repository == 'coiled/coiled-runtime'
+    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
     runs-on: ubuntu-latest
     concurrency:
       # Fairly strict concurrency rule to avoid stepping on benchmark db.
@@ -333,29 +323,10 @@ jobs:
         with:
           path: benchmarks
 
-      - name: Download benchmark db
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
-          DB_NAME: benchmark.db
-        run: |
-          aws s3 cp s3://coiled-runtime-ci/benchmarks/$DB_NAME . || true
-
       - name: Combine benchmarks
         run: |
           ls -lhR benchmarks
           bash ci/scripts/combine-dbs.sh
-
-      - name: Upload benchmark db
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
-          DB_NAME: benchmark.db
-        run: |
-          aws s3 cp $DB_NAME s3://coiled-runtime-ci/benchmarks/
 
       - name: Upload benchmark results as artifact
         uses: actions/upload-artifact@v3
@@ -363,81 +334,10 @@ jobs:
           name: benchmark.db
           path: benchmark.db
 
-  regressions:
-    needs: process-results
-    # Always check for regressions, as this can be skipped even if an indirect dependency fails (like a test run)
-    if: always()
-    name: Detect regressions
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - uses: actions/download-artifact@v3
-        with:
-          name: benchmark.db
-
-      - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-variant: Mambaforge
-          use-mamba: true
-          python-version: "3.9"
-          environment-file: ci/environment-dashboard.yml
-
-      - name: Run detect regressions
-        run: |
-          if [[ ${{ github.event_name }} = 'pull_request' ]]
-          then
-            export IS_PR='true'
-          fi
-          echo "IS_PR=$IS_PR"
-          python detect_regressions.py
-      
-      - name: Create regressions summary
-        if: always()
-        run: |
-          echo "$(<regressions_summary.md)" >> $GITHUB_STEP_SUMMARY
-
-  report:
-    name: report
-    needs: [runtime, benchmarks, stability, regressions]
-    if: |
-      always()
-      && github.event_name != 'pull_request'
-      && github.repository == 'coiled/coiled-runtime'
-      && (needs.runtime.result == 'failure' ||
-          needs.benchmarks.result == 'failure' ||
-          needs.stability.result == 'failure' ||
-          needs.regressions.result == 'failure') 
-
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v2
-      - name: Report failures
-        uses: actions/github-script@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-            const issue_body = `[Workflow Run URL](${workflow_url})`
-            github.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: issue_body,
-                title: "⚠️ CI failed ⚠️",
-                labels: ["ci-failure"],
-            })
-
-
   static-site:
-    needs: process-results
+    needs: [discover_ab_envs, process-results]
     # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
-    if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
     name: Build static dashboards
     runs-on: ubuntu-latest
     steps:
@@ -461,8 +361,8 @@ jobs:
         run: |
           python dashboard.py
 
-      - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@4.1.7
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
         with:
-          branch: gh-pages
-          folder: static
+          name: static-dashboard
+          path: static
