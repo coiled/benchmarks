@@ -151,6 +151,13 @@ Writing a new benchmark fixture would generally look like:
 
 The `benchmark_time` fixture provides a fairly simple example.
 
+
+## A/B testing
+
+It's possible to run the Coiled Runtime benchmarks for A/B comparisons.
+[Read full documentation](AB_environments/README.md).
+
+
 ## Contribute
 
 This repository uses GitHub Actions secrets for managing authentication tokens used
