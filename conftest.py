@@ -320,7 +320,6 @@ def small_cluster(request):
 
 @pytest.fixture
 def small_client(
-    request,
     small_cluster,
     upload_cluster_dump,
     benchmark_all,
@@ -331,7 +330,7 @@ def small_client(
         client.restart()
 
         with upload_cluster_dump(client, small_cluster), upload_performance_report(
-            f"{small_cluster.name}-{request.node.name}.html"
+            small_cluster.name
         ):
             with benchmark_all(client):
                 yield client
@@ -426,9 +425,10 @@ def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
 
 
 @pytest.fixture
-def upload_performance_report(test_run_benchmark):
+def upload_performance_report(request, test_run_benchmark):
     @contextlib.contextmanager
     def _upload_performance_report(name):
+        name = f"{name}-{request.node.name}.html"
         with coiled.performance_report(name) as obj:
             yield
         # TODO: This will not scale well if we have many reports. Instead, the
