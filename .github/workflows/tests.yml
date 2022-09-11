@@ -48,19 +48,19 @@ jobs:
         run: |
           if [[ ${{ github.event_name }} == "pull_request" ]]
           then
-              export REF="HEAD^2"
+              REF="HEAD^2"
           else
-              export REF="HEAD"
+              REF="HEAD"
           fi
 
           COMMIT="$(git log -n 1 --pretty=format:%s $REF)"
           if [[ "$COMMIT" == *"test-upstream"* || ${{ github.event_name }} == "schedule" ]]
           then
-            export TEST_UPSTREAM="true"
-            export AB_BASELINE="coiled-upstream-py3.9 coiled-0.1.0-py3.9"
+            TEST_UPSTREAM="true"
+            AB_BASELINE="coiled-upstream-py3.9 coiled-0.1.0-py3.9"
           else
-            export TEST_UPSTREAM="false"
-            export AB_BASELINE="coiled-latest-py3.9 coiled-0.1.0-py3.9"
+            TEST_UPSTREAM="false"
+            AB_BASELINE="coiled-latest-py3.9 coiled-0.1.0-py3.9"
           fi
 
           # Put TEST_UPSTREAM into $GITHUB_ENV so it can be used in subsequent workflow steps
@@ -75,21 +75,21 @@ jobs:
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
-          export PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
-          export REF_NAME_FORMATTED=$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
-          export COILED_SOFTWARE_NAME_HEAD=dask-engineering/coiled-runtime-${{ github.event_name }}
-          export COILED_SOFTWARE_NAME_TAIL=$GITHUB_RUN_ID-py$PYTHON_VERSION_FORMATTED
-
+          PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
+          NAME_HEAD=dask-engineering/coiled-runtime-${{ github.event_name }}
+          NAME_TAIL=$GITHUB_RUN_ID-py$PYTHON_VERSION_FORMATTED
           if [[ ${{ github.event_name }} = 'pull_request' ]]
           then
-            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-${{ github.event.number }}-$COILED_SOFTWARE_NAME_TAIL
+            NAME_MID=${{ github.event.number }}
           else
-            export COILED_SOFTWARE_NAME=$COILED_SOFTWARE_NAME_HEAD-$GITHUB_REF_TYPE-$REF_NAME_FORMATTED-$COILED_SOFTWARE_NAME_TAIL
+            NAME_MID=$GITHUB_REF_TYPE-$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
           fi
+          # env name can only contain lowercase ASCII letters, numbers, hyphens and underscores
+          COILED_SOFTWARE_NAME=$NAME_HEAD-$(echo $NAME_MID-$NAME_TAIL | tr 'A-Z' 'a-z' | sed -r 's/[^a-z0-9_-]/_/g')
 
           # Create conda environment.yaml file for the latest software environment
           python ci/create_latest_runtime_meta.py
-          export ENV_FILE=coiled_software_environment.yaml
+          ENV_FILE=coiled_software_environment.yaml
           cat $ENV_FILE
 
           mamba install coiled
@@ -311,7 +311,7 @@ jobs:
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         run: |
-          export SOFTWARE_NAME=$(cat software_name.txt)
+          SOFTWARE_NAME=$(cat software_name.txt)
           echo "Deleting $SOFTWARE_NAME"
           coiled env delete $SOFTWARE_NAME
 

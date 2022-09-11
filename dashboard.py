@@ -127,7 +127,7 @@ def make_barchart(
         "runtime",
     ]
 
-    height = df.shape[0] * 20 + 50
+    height = max(df.shape[0] * 20 + 50, 90)
     tooltip = [
         altair.Tooltip("fullname:N", title="Test"),
         altair.Tooltip("dask_version:N", title="Dask"),
@@ -249,7 +249,7 @@ def make_test_report(
     if kind == "timeseries":
         height = 384
     else:
-        height = df.shape[0] * 20 + 50
+        height = max(df.shape[0] * 20 + 50, 90)
 
     if sourcename in source:
         code = panel.pane.Markdown(
@@ -412,8 +412,10 @@ def runtime_sort_key(runtime: str) -> tuple:
     t = runtime.split("-")
     assert len(t) == 3
     assert t[0] == "coiled"
-    # upstream > latest > 0.1.0 > 0.0.4
-    if t[1] == "upstream":
+    # AB_a > AB_b > upstream > latest > 0.1.0 > 0.0.4
+    if t[1].startswith("AB_"):
+        coiled_version = [-3, t[1]]
+    elif t[1] == "upstream":
         coiled_version = [-2]
     elif t[1] == "latest":
         coiled_version = [-1]
