@@ -126,7 +126,7 @@ git add alembic/versions/name_of_new_migration.py
 git commit -m "Bankruptcy migration for <test-name>"
 ```
 
-An example of a migration that does this is [./alembic/versions/924e9b1430e1_spark_test_bankruptcy.py](here).
+An example of a migration that does this is [here](./alembic/versions/924e9b1430e1_spark_test_bankruptcy.py).
 
 ### Using the benchmark fixtures
 
