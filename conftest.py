@@ -424,12 +424,29 @@ def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
     yield _upload_cluster_dump
 
 
+@contextlib.contextmanager
+def _upload_suppress(name):
+    stack = contextlib.ExitStack()
+    obj = stack.enter_context(coiled.performance_report(name))
+    try:
+        yield obj
+    finally:
+        try:
+            stack.close()
+        except ValueError as err:
+            breakpoint()
+            if "Report file size" in str(err):
+                logger.critical(str(err))
+            else:
+                raise
+
+
 @pytest.fixture
 def upload_performance_report(request, test_run_benchmark):
     @contextlib.contextmanager
     def _upload_performance_report(name):
         name = f"{name}-{request.node.name}.html"
-        with coiled.performance_report(name) as obj:
+        with _upload_suppress(name) as obj:
             yield
         # TODO: This will not scale well if we have many reports. Instead, the
         # performance report ctx manager should somehow yield an object that has
