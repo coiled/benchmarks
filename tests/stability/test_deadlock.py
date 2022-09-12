@@ -14,7 +14,7 @@ from distributed import Client, wait
     reason="Skip until https://github.com/dask/distributed/pull/6637 is merged"
 )
 def test_repeated_merge_spill(
-    upload_cluster_dump, benchmark_time, upload_performance_report
+    upload_cluster_dump, benchmark_all, upload_performance_report
 ):
     with coiled.v2.Cluster(
         name=f"test_deadlock-{uuid.uuid4().hex}",
@@ -22,9 +22,9 @@ def test_repeated_merge_spill(
         worker_vm_types=["t3.medium"],
     ) as cluster:
         with Client(cluster) as client:
-            with upload_cluster_dump(
-                client, cluster
-            ), benchmark_time, upload_performance_report(cluster.name):
+            with upload_cluster_dump(client, cluster), benchmark_all(
+                client
+            ), upload_performance_report(cluster.name):
                 ddf = dask.datasets.timeseries(
                     "2020",
                     "2025",
