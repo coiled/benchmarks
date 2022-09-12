@@ -100,3 +100,22 @@ distributed:
 
 ### 5. Clean up
 Remember to delete the branch once you're done.
+
+### Troubleshooting
+
+#### Problem:
+Environment build fails with a message such as:
+> coiled 0.2.27 requires distributed>=2.23.0, but you have distributed 2.8.0+1709.ge0932ec2 which is incompatible.
+
+#### Solution:
+Your conda environment points to a fork of dask/dask or dask/distributed, but its owner
+did not synchronize the tags. To fix, the owner of the fork must run:
+```bash
+$ git remote -v
+origin  https://github.com/yourname/distributed.git (fetch)
+origin  https://github.com/yourname/distributed.git (push)
+upstream        https://github.com/dask/distributed.git (fetch)
+upstream        https://github.com/dask/distributed.git (push)
+$ git fetch upstream --tags  # Or whatever name dask was added as above
+$ git push origin --tags     # Or whatever name the fork was added as above
+```
