@@ -147,3 +147,9 @@ def test_double_diff(small_client):
 
     diff = a[1:, 1:] - b[:-1, :-1]
     wait(arr_to_devnull(diff), small_client, 10 * 60)
+
+
+def test_dot_product(small_client):
+    a = da.random.random((24 * 1024, 24 * 1024), chunks="128 MiB")  # 4.5 GiB
+    b = (a @ a.T).sum().round(3)
+    wait(b, small_client, 10 * 60)
