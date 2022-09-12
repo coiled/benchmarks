@@ -21,15 +21,17 @@ def test_trivial_workload_should_not_cause_work_stealing(small_client):
     distributed.__version__ == "2022.6.0",
     reason="https://github.com/dask/distributed/issues/6624",
 )
-def test_work_stealing_on_scaling_up(test_name_uuid, benchmark_all):
+def test_work_stealing_on_scaling_up(
+    test_name_uuid, upload_cluster_dump, benchmark_all
+):
     with Cluster(
         name=test_name_uuid,
         n_workers=1,
-        wait_for_workers=True,
         worker_vm_types=["t3.medium"],
+        wait_for_workers=True,
     ) as cluster:
         with Client(cluster) as client:
-            with benchmark_all(client):
+            with upload_cluster_dump(client, cluster), benchmark_all(client):
                 # Slow task.
                 def func1(chunk):
                     if sum(chunk.shape) != 0:  # Make initialization fast
@@ -71,7 +73,9 @@ def test_work_stealing_on_inhomogeneous_workload(small_client):
     small_client.gather(futs)
 
 
-def test_work_stealing_on_straggling_worker(test_name_uuid, benchmark_all):
+def test_work_stealing_on_straggling_worker(
+    test_name_uuid, upload_cluster_dump, benchmark_all
+):
     with Cluster(
         name=test_name_uuid,
         n_workers=10,
@@ -79,7 +83,7 @@ def test_work_stealing_on_straggling_worker(test_name_uuid, benchmark_all):
         wait_for_workers=True,
     ) as cluster:
         with Client(cluster) as client:
-            with benchmark_all(client):
+            with upload_cluster_dump(client, cluster), benchmark_all(client):
 
                 def clog():
                     time.sleep(1)
