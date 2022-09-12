@@ -229,13 +229,15 @@ def auto_benchmark_time(benchmark_time):
 def benchmark_memory(test_run_benchmark):
     @contextlib.contextmanager
     def _benchmark_memory(client):
-        sampler = MemorySampler()
-        label = uuid.uuid4().hex[:8]
-        with sampler.sample(label, client=client, measure="process"):
-            yield
-
-        df = sampler.to_pandas()
         if test_run_benchmark:
+            yield
+        else:
+            sampler = MemorySampler()
+            label = uuid.uuid4().hex[:8]
+            with sampler.sample(label, client=client, measure="process"):
+                yield
+
+            df = sampler.to_pandas()
             test_run_benchmark.average_memory = df[label].mean()
             test_run_benchmark.peak_memory = df[label].max()
 
