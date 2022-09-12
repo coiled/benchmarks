@@ -229,7 +229,7 @@ def auto_benchmark_time(benchmark_time):
 def benchmark_memory(test_run_benchmark):
     @contextlib.contextmanager
     def _benchmark_memory(client):
-        if test_run_benchmark:
+        if not test_run_benchmark:
             yield
         else:
             sampler = MemorySampler()
