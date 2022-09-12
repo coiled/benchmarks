@@ -28,10 +28,10 @@ def traverse(node: dict | list | str | float | None, path: list[str]) -> Iterato
 
     if not path:
         raise ValueError("The top-level element must be a dict")
-    if isinstance(node, str) and "'" in node:
-        raise ValueError("Unsupported character: ' (single quote)")
+    if isinstance(node, str) and " " in node:
+        raise ValueError("Unsupported character: whitespace")
 
-    yield "'DASK_" + "__".join(path) + f"={node}'"
+    yield "DASK_" + "__".join(path) + f"={node}"
 
 
 if __name__ == "__main__":
