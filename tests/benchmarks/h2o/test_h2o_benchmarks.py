@@ -10,15 +10,15 @@ import pytest
 @pytest.fixture(
     scope="module",
     params=[
-        "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_single.csv",
+        # "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_single.csv",
         # "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_single.csv",
         # "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_single.csv",
-        "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_parquet/*.parquet",
-        "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_parquet/*.parquet",
+        "s3://coiled-datasets/h2o-benchmark/id3_nocat/N_1e7_K_1e2_parquet/*.parquet",
+        "s3://coiled-datasets/h2o-benchmark/id3_nocat/N_1e8_K_1e2_parquet/*.parquet",
         # "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_parquet/*.parquet",
     ],
     ids=[
-        "0.5 GB (csv)",
+        # "0.5 GB (csv)",
         # "5 GB (csv)",
         # "50 GB (csv)",
         "0.5 GB (parquet)",
