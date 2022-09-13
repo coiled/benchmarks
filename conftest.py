@@ -229,13 +229,15 @@ def auto_benchmark_time(benchmark_time):
 def benchmark_memory(test_run_benchmark):
     @contextlib.contextmanager
     def _benchmark_memory(client):
-        sampler = MemorySampler()
-        label = uuid.uuid4().hex[:8]
-        with sampler.sample(label, client=client, measure="process"):
+        if not test_run_benchmark:
             yield
+        else:
+            sampler = MemorySampler()
+            label = uuid.uuid4().hex[:8]
+            with sampler.sample(label, client=client, measure="process"):
+                yield
 
-        df = sampler.to_pandas()
-        if test_run_benchmark:
+            df = sampler.to_pandas()
             test_run_benchmark.average_memory = df[label].mean()
             test_run_benchmark.peak_memory = df[label].max()
 
@@ -246,23 +248,26 @@ def benchmark_memory(test_run_benchmark):
 def benchmark_task_durations(test_run_benchmark):
     @contextlib.contextmanager
     def _measure_durations(client):
-        # TODO: is there a nice way to only register this once? I don't think so,
-        # other than idempotent=True
-        client.register_scheduler_plugin(Durations(), idempotent=True)
+        if not test_run_benchmark:
+            yield
+        else:
+            # TODO: is there a nice way to only register this once? I don't think so,
+            # other than idempotent=True
+            client.register_scheduler_plugin(Durations(), idempotent=True)
 
-        # Start tracking durations
-        client.sync(client.scheduler.start_tracking_durations)
-        yield
-        client.sync(client.scheduler.stop_tracking_durations)
+            # Start tracking durations
+            client.sync(client.scheduler.start_tracking_durations)
+            yield
+            client.sync(client.scheduler.stop_tracking_durations)
 
-        # Add duration data to db entry
-        durations = client.sync(client.scheduler.get_durations)
-        test_run_benchmark.compute_time = durations.get("compute", 0.0)
-        test_run_benchmark.disk_spill_time = durations.get(
-            "disk-read", 0.0
-        ) + durations.get("disk-write", 0.0)
-        test_run_benchmark.serializing_time = durations.get("deserialize", 0.0)
-        test_run_benchmark.transfer_time = durations.get("transfer", 0.0)
+            # Add duration data to db entry
+            durations = client.sync(client.scheduler.get_durations)
+            test_run_benchmark.compute_time = durations.get("compute", 0.0)
+            test_run_benchmark.disk_spill_time = durations.get(
+                "disk-read", 0.0
+            ) + durations.get("disk-write", 0.0)
+            test_run_benchmark.serializing_time = durations.get("deserialize", 0.0)
+            test_run_benchmark.transfer_time = durations.get("transfer", 0.0)
 
     yield _measure_durations
 
