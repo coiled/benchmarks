@@ -141,7 +141,7 @@ def test_double_diff(small_client):
 
     # TODO switch back to chunksizes in the `chunks=` argument everywhere
     #  when https://github.com/dask/dask/issues/9488 is fixed
-    cs = parse_bytes("20 MiB") // 8
+    cs = parse_bytes("20 MiB") ** (1 / 2) // 8
     a = da.random.random(scaled_array_shape(memory, ("x", "x")), chunks=(cs, cs))
     b = da.random.random(scaled_array_shape(memory, ("x", "x")), chunks=(cs, cs))
     print_size_info(memory, memory, a, b)
