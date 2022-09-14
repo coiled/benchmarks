@@ -113,6 +113,21 @@ git commit -m "Added a new migration"
 
 Migrations are automatically applied in the pytest runs, so you needn't run them yourself.
 
+### Deleting old test data
+
+At times you might change a specific test that makes older benchmarking data irrelevant.
+In that case, you can discard old benchmarking data for that test by applying a data migration
+removing that data:
+
+```bash
+alembic revision -m "Declare bankruptcy for <test-name>"
+# Edit the migration here to do what you want.
+git add alembic/versions/name_of_new_migration.py
+git commit -m "Bankruptcy migration for <test-name>"
+```
+
+An example of a migration that does this is [here](./alembic/versions/924e9b1430e1_spark_test_bankruptcy.py).
+
 ### Using the benchmark fixtures
 
 We have a number of pytest fixtures defined which can be used to automatically track certain metrics in the benchmark database.
@@ -141,6 +156,9 @@ def test_something(benchmark_task_durations):
         with benchmark_task_durations(client):
             client.submit(expensive_function)
 ```
+
+**`benchmark_all`**: This convenience fixture yields a context manager which takes a distributed `Client` object,
+and combines `benchmark_time`, `benchmark_task_durations`, and `benchmark_memory` into a single fixture.
 
 Writing a new benchmark fixture would generally look like:
 1. Requesting the `test_run_benchmark` fixture, which yields an ORM object.
