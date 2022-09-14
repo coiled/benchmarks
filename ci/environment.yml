@@ -12,3 +12,4 @@ dependencies:
   - filelock
   - s3fs
   - coiled
+  - xarray

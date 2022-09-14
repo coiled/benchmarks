@@ -12,3 +12,5 @@ dependencies:
       - pyarrow
       - bokeh
       - s3fs
+      - cytoolz
+      - xarray
