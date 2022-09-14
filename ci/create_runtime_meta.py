@@ -57,8 +57,7 @@ def main():
         "channels": ["conda-forge"],
         "dependencies": requirements,
     }
-
-    with open("runtime.yaml", "w") as f:
+    with open("coiled_software_environment.yaml", "w") as f:
         yaml.dump(env, f)
 
 

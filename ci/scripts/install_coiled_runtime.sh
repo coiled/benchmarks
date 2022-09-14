@@ -5,10 +5,10 @@ set -o errexit
 set -o nounset
 set -o xtrace
 
-if [[ "$COILED_RUNTIME_VERSION" = 'latest' || "$COILED_RUNTIME_VERSION" = 'upstream' ]]
+if [[ "$COILED_RUNTIME_VERSION" =~ upstream|latest|AB_ ]]
 then
-  cat runtime.yaml
-  mamba env update --file runtime.yaml
+  cat coiled_software_environment.yaml
+  mamba env update --file coiled_software_environment.yaml
 else
   mamba install -c conda-forge coiled-runtime=$COILED_RUNTIME_VERSION
 fi

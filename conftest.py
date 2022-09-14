@@ -203,13 +203,15 @@ def auto_benchmark_time(benchmark_time):
 def benchmark_memory(test_run_benchmark):
     @contextlib.contextmanager
     def _benchmark_memory(client):
-        sampler = MemorySampler()
-        label = uuid.uuid4().hex[:8]
-        with sampler.sample(label, client=client, measure="process"):
+        if not test_run_benchmark:
             yield
+        else:
+            sampler = MemorySampler()
+            label = uuid.uuid4().hex[:8]
+            with sampler.sample(label, client=client, measure="process"):
+                yield
 
-        df = sampler.to_pandas()
-        if test_run_benchmark:
+            df = sampler.to_pandas()
             test_run_benchmark.average_memory = df[label].mean()
             test_run_benchmark.peak_memory = df[label].max()
 
@@ -220,25 +222,47 @@ def benchmark_memory(test_run_benchmark):
 def benchmark_task_durations(test_run_benchmark):
     @contextlib.contextmanager
     def _measure_durations(client):
-        # TODO: is there a nice way to only register this once? I don't think so,
-        # other than idempotent=True
-        client.register_scheduler_plugin(Durations(), idempotent=True)
+        if not test_run_benchmark:
+            yield
+        else:
+            # TODO: is there a nice way to only register this once? I don't think so,
+            # other than idempotent=True
+            client.register_scheduler_plugin(Durations(), idempotent=True)
 
-        # Start tracking durations
-        client.sync(client.scheduler.start_tracking_durations)
-        yield
-        client.sync(client.scheduler.stop_tracking_durations)
+            # Start tracking durations
+            client.sync(client.scheduler.start_tracking_durations)
+            yield
+            client.sync(client.scheduler.stop_tracking_durations)
 
-        # Add duration data to db entry
-        durations = client.sync(client.scheduler.get_durations)
-        test_run_benchmark.compute_time = durations.get("compute", 0.0)
-        test_run_benchmark.disk_spill_time = durations.get(
-            "disk-read", 0.0
-        ) + durations.get("disk-write", 0.0)
-        test_run_benchmark.serializing_time = durations.get("deserialize", 0.0)
-        test_run_benchmark.transfer_time = durations.get("transfer", 0.0)
+            # Add duration data to db entry
+            durations = client.sync(client.scheduler.get_durations)
+            test_run_benchmark.compute_time = durations.get("compute", 0.0)
+            test_run_benchmark.disk_spill_time = durations.get(
+                "disk-read", 0.0
+            ) + durations.get("disk-write", 0.0)
+            test_run_benchmark.serializing_time = durations.get("deserialize", 0.0)
+            test_run_benchmark.transfer_time = durations.get("transfer", 0.0)
 
     yield _measure_durations
+
+
+@pytest.fixture(scope="function")
+def benchmark_all(benchmark_memory, benchmark_task_durations, benchmark_time):
+    """Return a function that creates a context manager for benchmarking.
+
+    Example:
+    >>> def test_example(benchmark_all):
+    >>>    ...
+    >>>    with benchmark_all(client):
+    >>>       client.compute(my_computation)
+    """
+
+    @contextlib.contextmanager
+    def _benchmark_all(client):
+        with benchmark_memory(client), benchmark_task_durations(client), benchmark_time:
+            yield
+
+    yield _benchmark_all
 
 
 # ############################################### #
@@ -274,20 +298,15 @@ def small_cluster(request):
 def small_client(
     small_cluster,
     upload_cluster_dump,
-    benchmark_task_durations,
-    benchmark_memory,
-    benchmark_time,
+    benchmark_all,
 ):
     with Client(small_cluster) as client:
         small_cluster.scale(10)
         client.wait_for_workers(10)
         client.restart()
 
-        with upload_cluster_dump(client, small_cluster):
-            with benchmark_memory(client), benchmark_task_durations(
-                client
-            ), benchmark_time:
-                yield client
+        with upload_cluster_dump(client, small_cluster), benchmark_all(client):
+            yield client
 
 
 S3_REGION = "us-east-2"

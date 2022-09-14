@@ -8,11 +8,18 @@ The Coiled Runtime is a conda metapackage which makes it easy to get started wit
 
 ## Install
 
-`coiled-runtime` can be installed with:
+`coiled-runtime` can be installed with `conda`:
 
 ```bash
 conda install -c conda-forge coiled-runtime
 ```
+
+or with `pip`:
+
+```bash
+pip install coiled-runtime
+```
+
 
 **Nightly builds**
   
@@ -144,6 +151,13 @@ Writing a new benchmark fixture would generally look like:
 1. Setting the appropriate attributes on the ORM object.
 
 The `benchmark_time` fixture provides a fairly simple example.
+
+
+## A/B testing
+
+It's possible to run the Coiled Runtime benchmarks for A/B comparisons.
+[Read full documentation](AB_environments/README.md).
+
 
 ## Contribute
 
