@@ -11,3 +11,4 @@ dependencies:
   - alembic
   - filelock
   - s3fs
+  - coiled
