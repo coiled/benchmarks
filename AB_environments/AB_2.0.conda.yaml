@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
     - python=3.9
+    - pip
     - pip:
       - git+https://github.com/dask/dask@6c151021c313e5d29d8ecca37d98456e7a3e36c2
       - git+https://github.com/dask/distributed@1fd07f03cacee6fde81d13282568a727bce789b9
@@ -10,3 +11,4 @@ dependencies:
       - pandas
       - pyarrow
       - bokeh
+      - s3fs
