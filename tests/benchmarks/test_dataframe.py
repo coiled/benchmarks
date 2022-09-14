@@ -1,5 +1,10 @@
+from cgitb import small
 from dask.sizeof import sizeof
 from dask.utils import format_bytes
+from dask.dataframe import from_pandas
+
+import numpy as np
+import pandas as pd
 
 from ..utils_test import cluster_memory, timeseries_of_size, wait
 
@@ -58,3 +63,19 @@ def test_shuffle(small_client):
     shuf = df.shuffle(0, shuffle="tasks")
     result = shuf.size
     wait(result, small_client, 20 * 60)
+
+
+def test_ddf_isin(small_client):
+    memory = cluster_memory(small_client)
+
+    rs = np.random.RandomState(42)
+    n = 100_000_000
+    a_column_unique_values = np.arange(1, n // 10)
+    df = pd.DataFrame({"A": rs.choice(a_column_unique_values, n), "B": rs.random(n)})
+
+    filter_values_list = sorted(
+        rs.choice(a_column_unique_values, len(a_column_unique_values) // 2).tolist()
+    )
+    ddf = from_pandas(df, npartitions=8).persist()
+    tmp_ddf = ddf[ddf["A"].isin(filter_values_list)].copy()
+    wait(tmp_ddf, small_client, 20*60)
