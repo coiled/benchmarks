@@ -326,11 +326,6 @@ jobs:
           python-version: "3.9"
           environment-file: ci/environment-dashboard.yml
 
-      - name: Download software environment assets
-        uses: actions/download-artifact@v3
-        with:
-          name: software-environment-py3.9
-
       - name: Generate dashboards
         run: python dashboard.py -d benchmark.db -o static -b coiled-latest-py3.9 coiled-upstream-py3.9 
 
