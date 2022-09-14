@@ -4,7 +4,7 @@ import dask.array as da
 import numpy as np
 import pytest
 import xarray as xr
-from dask.utils import format_bytes
+from dask.utils import format_bytes, parse_bytes
 
 from ..utils_test import arr_to_devnull, cluster_memory, scaled_array_shape, wait
 
@@ -26,7 +26,8 @@ def test_anom_mean(small_client):
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory // 2
     data = da.random.random(
-        scaled_array_shape(target_nbytes, ("x", "10MiB")), chunks=(1, "10MiB")
+        scaled_array_shape(target_nbytes, ("x", "10MiB")),
+        chunks=(1, parse_bytes("10MiB") // 8),
     )
     print_size_info(memory, target_nbytes, data)
     # 38.32 GiB - 3925 10.00 MiB chunks
@@ -51,7 +52,8 @@ def test_basic_sum(small_client):
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory * 5
     data = da.zeros(
-        scaled_array_shape(target_nbytes, ("100MiB", "x")), chunks=("100MiB", 1)
+        scaled_array_shape(target_nbytes, ("100MiB", "x")),
+        chunks=(parse_bytes("100MiB") // 8, 1),
     )
     print_size_info(memory, target_nbytes, data)
     # 383.20 GiB - 3924 100.00 MiB chunks
@@ -137,12 +139,11 @@ def test_double_diff(small_client):
     # Variant of https://github.com/dask/distributed/issues/6597
     memory = cluster_memory(small_client)  # 76.66 GiB
 
-    a = da.random.random(
-        scaled_array_shape(memory, ("x", "x")), chunks=("20MiB", "20MiB")
-    )
-    b = da.random.random(
-        scaled_array_shape(memory, ("x", "x")), chunks=("20MiB", "20MiB")
-    )
+    # TODO switch back to chunksizes in the `chunks=` argument everywhere
+    #  when https://github.com/dask/dask/issues/9488 is fixed
+    cs = parse_bytes("20 MiB") // 8
+    a = da.random.random(scaled_array_shape(memory, ("x", "x")), chunks=(cs, cs))
+    b = da.random.random(scaled_array_shape(memory, ("x", "x")), chunks=(cs, cs))
     print_size_info(memory, memory, a, b)
 
     diff = a[1:, 1:] - b[:-1, :-1]
