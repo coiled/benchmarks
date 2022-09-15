@@ -1,6 +1,7 @@
 from cgitb import small
 from dask.sizeof import sizeof
 from dask.utils import format_bytes
+import dask.array as da
 from dask.dataframe import from_pandas
 
 import numpy as np
@@ -66,8 +67,8 @@ def test_shuffle(small_client):
 
 
 def test_ddf_isin(small_client):
-    memory = cluster_memory(small_client)
-
+    # memory = cluster_memory(small_client)
+    print(small_client.dashboard_link)
     rs = np.random.RandomState(42)
     n = 100_000_000
     a_column_unique_values = np.arange(1, n // 10)
@@ -77,5 +78,5 @@ def test_ddf_isin(small_client):
         rs.choice(a_column_unique_values, len(a_column_unique_values) // 2).tolist()
     )
     ddf = from_pandas(df, npartitions=8).persist()
-    tmp_ddf = ddf[ddf["A"].isin(filter_values_list)].copy()
+    tmp_ddf = ddf[ddf["A"].isin(filter_values_list)].persist()
     wait(tmp_ddf, small_client, 20*60)
