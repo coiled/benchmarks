@@ -335,12 +335,6 @@ jobs:
           name: static-dashboard
           path: static
 
-      - name: Upload benchmark results as artifact
-        uses: actions/upload-artifact@v3
-        with:
-          name: static-site
-          path: static/
-
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.7
         if:  github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
