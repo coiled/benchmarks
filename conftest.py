@@ -65,8 +65,6 @@ def pytest_collection_modifyitems(config, items):
 
 
 def get_coiled_runtime_version():
-    if strtobool(os.environ.get("TEST_UPSTREAM", "false")):
-        return "upstream"
     try:
         return os.environ["COILED_RUNTIME_VERSION"]
     except KeyError:
@@ -78,37 +76,13 @@ def get_coiled_runtime_version():
         if runtime_info:
             return runtime_info[0]["version"]
         else:
-            return "latest"
+            return "unknown"
 
 
-def get_coiled_software_name():
-    try:
-        return os.environ["COILED_SOFTWARE_NAME"]
-    except KeyError:
-        # Determine software environment from local `coiled-runtime` version (in installed)
-        out = subprocess.check_output(
-            shlex.split("conda list --json coiled-runtime"), text=True
-        ).rstrip()
-        runtime_info = json.loads(out)
-        if runtime_info:
-            version = runtime_info[0]["version"].replace(".", "-")
-            py_version = f"{sys.version_info[0]}{sys.version_info[1]}"
-            return f"coiled/coiled-runtime-{version}-py{py_version}"
-        else:
-            raise RuntimeError(
-                "Must either specific `COILED_SOFTWARE_NAME` environment variable "
-                "or have `coiled-runtime` installed"
-            )
-
-
-dask.config.set(
-    {
-        "coiled.account": "dask-engineering",
-        "coiled.software": get_coiled_software_name(),
-    }
-)
+dask.config.set({"coiled.account": "dask-engineering"})
 
 COILED_RUNTIME_VERSION = get_coiled_runtime_version()
+COILED_SOFTWARE_NAME = "package_sync"
 
 
 # ############################################### #
@@ -213,7 +187,7 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
             dask_version=dask.__version__,
             distributed_version=distributed.__version__,
             coiled_runtime_version=COILED_RUNTIME_VERSION,
-            coiled_software_name=dask.config.get("coiled.software"),
+            coiled_software_name=COILED_SOFTWARE_NAME,
             python_version=".".join(map(str, sys.version_info)),
             platform=sys.platform,
             ci_run_url=WORKFLOW_URL,
@@ -441,6 +415,7 @@ def small_cluster(request):
         worker_vm_types=["t3.large"],  # 2CPU, 8GiB
         scheduler_vm_types=["t3.large"],
         backend_options=backend_options,
+        package_sync=True,
     ) as cluster:
         yield cluster
 

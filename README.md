@@ -57,10 +57,11 @@ The `coiled-runtime` test suite can be run locally with the following steps:
    the Coiled Dask Engineering AWS S3 account.
 2. Create a Python environment and install development dependencies as
    specified in `ci/environment.yml`.
-3. (Optional) If testing against an unreleased version of `coiled-runtime`,
-   create a Coiled software environment with the unreleased `coiled-runtime` installed
-   and set a local `COILED_SOFTWARE_NAME` environment variable to the name
-   of the software environment (e.g. `export COILED_SOFTWARE_NAME="account/software-name"`)
+3. Install a coiled runtime environment. This might be from one of the environments
+   listed in ``environments/``, or it could be a development environment if you are
+   testing feature branches of dask or distributed. This test suite is configured
+   to run Coiled's ``package_sync`` feature, so your local environment should be copied
+   to the cluster.
 4. Run tests with `python -m pytest tests`
 
 Additionally, tests are automatically run on pull requests to this repository.

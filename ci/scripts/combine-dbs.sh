@@ -16,6 +16,11 @@ DB_NAME=benchmark.tmp.db alembic upgrade head
 # Merge in the individual job dbs into our working copy
 for FILE in $(find benchmarks -name "*.db")
 do
+  # Skip the output DB if we see it
+  if [ ${FILE##*/} == $DB_NAME ]; then
+    echo "Skipping $FILE"
+    continue
+  fi
   echo "Processing $FILE"
   # Copy the individual table into the primary one. We make an intermediate
   # temp table so that we can null out the primary keys and reset the
