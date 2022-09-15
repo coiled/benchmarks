@@ -211,7 +211,7 @@ jobs:
           path: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
   cleanup:
-    needs: [discover_ab_envs, software, runtime, benchmarks, stability]
+    needs: [discover_ab_envs, software, runtime, benchmarks]
     if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
     name: Cleanup
     runs-on: ubuntu-latest
@@ -246,7 +246,7 @@ jobs:
           coiled env delete $SOFTWARE_NAME
 
   process-results:
-    needs: [discover_ab_envs, runtime, benchmarks, stability]
+    needs: [discover_ab_envs, runtime, benchmarks]
     name: Combine separate benchmark results
     if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
     runs-on: ubuntu-latest
