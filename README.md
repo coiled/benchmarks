@@ -131,31 +131,17 @@ An example of a migration that does this is [here](./alembic/versions/924e9b1430
 ### Using the benchmark fixtures
 
 We have a number of pytest fixtures defined which can be used to automatically track certain metrics in the benchmark database.
-They are summarized here:
+The most relevant ones are summarized here:
 
-**`benchmark_db_engine`**: The SQLAlchemy engine for the benchmark sqlite database. You can control the database name with the environment variable `DB_NAME`, which defaults to `benchmark.db`. Most tests shouldn't need to include this fixture directly.
+**`benchmark_time`**: Record wall clock time duration.
 
-**`benchmark_db_session`**: The SQLAlchemy session for a given test. Most tests shouldn't need to include this fixture directly.
+**`benchmark_memory`**: Record memory usage.
 
-**`test_run_benchmark`**: The SQLAlchemy ORM object for a given test. By including this fixutre in a test (or another fixture that includes it) you trigger the test being written to the benchmark database. This fixture includes data common to all tests, including python version, test name, and the test outcome.
+**`benchmark_task_durations`**: Record time spent computing, transferring data, spilling to disk, and deserializing data.
 
-**`benchmark_time`**: Include this fixture to measure the wall clock time.
+**`benchmark_all`**: Record all available metrics.
 
-**`benchmark_memory`**: This fixture yields a context manager which takes a distributed `Client` object, and records peak and average memory usage for the cluster within the context:
-```python
-def test_something(benchmark_memory):
-    with Client() as client:
-        with benchmark_memory(client):
-            client.submit(expensive_function)
-```
-
-**`benchmark_task_durations`**: This fixture yields a context manager which takes a distributed `Client` object, and records time spent computing, transferring data, spilling to disk, and deserializing data within the context:
-```python
-def test_something(benchmark_task_durations):
-    with Client() as client:
-        with benchmark_task_durations(client):
-            client.submit(expensive_function)
-```
+For more information on all available fixtures and examples on how to use them, please refer to their documentation.
 
 **`benchmark_all`**: This convenience fixture yields a context manager which takes a distributed `Client` object,
 and combines `benchmark_time`, `benchmark_task_durations`, and `benchmark_memory` into a single fixture.
