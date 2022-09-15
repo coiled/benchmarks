@@ -77,7 +77,7 @@ jobs:
           COILED_SOFTWARE_NAME=$NAME_HEAD-$(echo $NAME_MID-$NAME_TAIL | tr 'A-Z' 'a-z' | sed -r 's/[^a-z0-9_-]/_/g')
 
           cp AB_environments/${{ matrix.runtime-version }}.conda.yaml coiled_software_environment.yaml
-          COILED_SOFTWARE_ENV=$(python ci/scripts/dask_config_to_env.py AB_environments/${{ matrix.runtime-version }}.dask.yaml) 
+          COILED_SOFTWARE_ENV=$(python ci/scripts/dask_config_to_env.py AB_environments/${{ matrix.runtime-version }}.dask.yaml)
           ENV_FILE=coiled_software_environment.yaml
           cat $ENV_FILE
 
@@ -209,62 +209,6 @@ jobs:
         with:
           name: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
-
-  stability:
-    name: Stability - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-    needs: [discover_ab_envs, software]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.9"]
-        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-variant: Mambaforge
-          use-mamba: true
-          condarc-file: ci/condarc
-          python-version: ${{ matrix.python-version }}
-          environment-file: ci/environment.yml
-
-      - name: Download software environment assets
-        if: matrix.runtime-version == 'latest' || startsWith(matrix.runtime-version, 'AB_')
-        uses: actions/download-artifact@v3
-        with:
-          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-
-      - name: Install coiled-runtime
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-        run: source ci/scripts/install_coiled_runtime.sh
-
-      - name: Run stability tests
-        id: stability_tests
-        env:
-          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
-          BENCHMARK: true
-          CLUSTER_DUMP: true
-        run: bash ci/scripts/run_tests.sh tests/stability
-
-      - name: Upload benchmark results
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-          path: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
   cleanup:
     needs: [discover_ab_envs, software, runtime, benchmarks, stability]
