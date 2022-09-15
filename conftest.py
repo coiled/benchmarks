@@ -312,8 +312,9 @@ def benchmark_memory(test_run_benchmark):
     .. code-block:: python
 
         def test_something(benchmark_memory):
-            with benchmark_memory(client):
-                do_something()
+            with Client() as client:
+                with benchmark_memory(client):
+                    do_something()
     """
 
     @contextlib.contextmanager
@@ -351,8 +352,9 @@ def benchmark_task_durations(test_run_benchmark):
     .. code-block:: python
 
         def test_something(benchmark_task_durations):
-            with benchmark_task_durations(client):
-                do_something()
+            with Client() as client:
+                with benchmark_task_durations(client):
+                    do_something()
     """
 
     @contextlib.contextmanager
