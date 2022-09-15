@@ -16,4 +16,4 @@ dependencies:
       # change this to the dask/dask and/or dask/distributed git tip
       - dask==2022.9.0
       # - distributed=2022.8.1
-      - git+https://github.com/fjetter/distributed@1c3fcb4ea5ea217335d48e6f33da232b7427ffa1
+      - git+https://github.com/fjetter/distributed@b20fd63bfc736101ff3f7cf415d6b67005239a8c
