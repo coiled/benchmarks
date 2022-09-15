@@ -20,34 +20,44 @@ jobs:
     name: Discover A/B environments
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
           fetch-depth: 0
-      - uses: actions/setup-python@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - id: set-matrix
+
+      - name: Install dependencies
+        run: pip install PyYaml
+
+      - name: Generate dynamic matrix
+        id: set-matrix
         run: echo "::set-output name=matrix::$(python ci/scripts/discover_ab_environments.py)"
+
     outputs:
-        matrix: ${{ steps.set-matrix.outputs.matrix }}
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
 
   # Everything below this point runs iff there are files matching
-  # AB_environments/AB_*.conda.yaml
-  # AB_environments/AB_*.dask.yaml
+  # AB_environments/AB_*.{conda,dask}.yaml
+  # and AB_environments/config.yaml set repeat > 0
 
   software:
-    name: Setup
+    name: Setup - ${{ matrix.runtime-version }} py${{ matrix.python-version }}
     runs-on: ubuntu-latest
     needs: discover_ab_envs
-    if: ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
+    if: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.9"]
-        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
+        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
@@ -59,6 +69,13 @@ jobs:
           condarc-file: ci/condarc
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
+
+      - name: Create null hypothesis as a copy of baseline
+        if: matrix.runtime-version == 'AB_null_hypothesis'
+        run: |
+          cd AB_environments
+          cp AB_baseline.conda.yaml AB_null_hypothesis.conda.yaml
+          cp AB_baseline.dask.yaml AB_null_hypothesis.dask.yaml
 
       - name: Build Coiled Software Environment
         env:
@@ -101,8 +118,8 @@ jobs:
             software_name.txt
             test_upstream.txt
 
-  runtime:
-    name: Runtime - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
+  tests:
+    name: A/B Tests - ${{ matrix.category }} ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
     needs: [discover_ab_envs, software]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -111,10 +128,13 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
-        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
+        category: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).category }}
+        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
+        repeat: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).repeat }}
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
@@ -128,7 +148,6 @@ jobs:
           environment-file: ci/environment.yml
 
       - name: Download software environment assets
-        if: matrix.runtime-version == 'latest' || startsWith(matrix.runtime-version, 'AB_')
         uses: actions/download-artifact@v3
         with:
           name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
@@ -145,140 +164,32 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
-          BENCHMARK: true
-        run: bash ci/scripts/run_tests.sh tests/runtime
-
-      - name: Upload benchmark results
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-          path: runtime-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
-
-  benchmarks:
-    name: Benchmarks - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-    needs: [discover_ab_envs, software]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.9"]
-        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-variant: Mambaforge
-          use-mamba: true
-          condarc-file: ci/condarc
-          python-version: ${{ matrix.python-version }}
-          environment-file: ci/environment.yml
-
-      - name: Download software environment assets
-        uses: actions/download-artifact@v3
-        with:
-          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-
-      - name: Install coiled-runtime
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-        run: source ci/scripts/install_coiled_runtime.sh
-
-      - name: Run benchmarking tests
-        id: benchmarking_tests
-        env:
-          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
-          BENCHMARK: true
-        run: bash ci/scripts/run_tests.sh tests/benchmarks
-
-      - name: Upload benchmark results
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-          path: benchmark-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
-
-  stability:
-    name: Stability - ${{ matrix.os }}, Python ${{ matrix.python-version }}, Runtime ${{ matrix.runtime-version }}
-    needs: [discover_ab_envs, software]
-    runs-on: ${{ matrix.os }}
-    timeout-minutes: 120
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.9"]
-        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-variant: Mambaforge
-          use-mamba: true
-          condarc-file: ci/condarc
-          python-version: ${{ matrix.python-version }}
-          environment-file: ci/environment.yml
-
-      - name: Download software environment assets
-        if: matrix.runtime-version == 'latest' || startsWith(matrix.runtime-version, 'AB_')
-        uses: actions/download-artifact@v3
-        with:
-          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-
-      - name: Install coiled-runtime
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-        run: source ci/scripts/install_coiled_runtime.sh
-
-      - name: Run stability tests
-        id: stability_tests
-        env:
-          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          DB_NAME: ${{ matrix.category }}-${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
           BENCHMARK: true
           CLUSTER_DUMP: true
-        run: bash ci/scripts/run_tests.sh tests/stability
+        run: bash ci/scripts/run_tests.sh tests/${{ matrix.category }}
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-          path: stability-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          name: ${{ matrix.category }}-${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}
+          path: ${{ matrix.category }}-${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
 
   cleanup:
-    needs: [discover_ab_envs, software, runtime, benchmarks, stability]
-    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
+    needs: [discover_ab_envs, software, tests]
+    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
     name: Cleanup
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         python-version: ["3.9"]
-        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
+        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
 
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -302,9 +213,9 @@ jobs:
           coiled env delete $SOFTWARE_NAME
 
   process-results:
-    needs: [discover_ab_envs, runtime, benchmarks, stability]
+    needs: [discover_ab_envs, tests]
     name: Combine separate benchmark results
-    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
+    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
     runs-on: ubuntu-latest
     concurrency:
       # Fairly strict concurrency rule to avoid stepping on benchmark db.
@@ -312,14 +223,17 @@ jobs:
       group: process-benchmarks
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
 
-      - uses: actions/setup-python@v4
+      - name: Install Python
+        uses: actions/setup-python@v4
 
       - name: Install dependencies
         run: pip install alembic
 
-      - uses: actions/download-artifact@v3
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
         with:
           path: benchmarks
 
@@ -337,15 +251,17 @@ jobs:
   static-site:
     needs: [discover_ab_envs, process-results]
     # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
-    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix) }}
+    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
     name: Build static dashboards
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - name: Checkout
+        uses: actions/checkout@v2
         with:
           fetch-depth: 0
 
-      - uses: actions/download-artifact@v3
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
         with:
           name: benchmark.db
 
