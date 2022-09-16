@@ -26,6 +26,7 @@ from toolz import merge
 
 from benchmark_schema import TestRun
 from plugins import Durations
+from tests.utils_test import get_cluster_memory
 
 logger = logging.getLogger("coiled-runtime")
 logger.setLevel(logging.INFO)
@@ -436,13 +437,6 @@ def small_client(
 
         with upload_cluster_dump(client, small_cluster), benchmark_all(client):
             yield client
-
-
-def get_cluster_memory(client: distributed.Client) -> int:
-    "Total memory available on the cluster, in bytes"
-    return int(
-        sum(w["memory_limit"] for w in client.scheduler_info()["workers"].values())
-    )
 
 
 @pytest.fixture(
