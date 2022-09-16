@@ -93,13 +93,6 @@ def wait(thing, client, timeout):
         client.cancel(p)
 
 
-def cluster_memory(client: distributed.Client) -> int:
-    "Total memory available on the cluster, in bytes"
-    return int(
-        sum(w["memory_limit"] for w in client.scheduler_info()["workers"].values())
-    )
-
-
 def timeseries_of_size(
     target_nbytes: int | str,
     *,

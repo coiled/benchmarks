@@ -438,6 +438,25 @@ def small_client(
             yield client
 
 
+def _cluster_memory(client: distributed.Client) -> int:
+    "Total memory available on the cluster, in bytes"
+    return int(
+        sum(w["memory_limit"] for w in client.scheduler_info()["workers"].values())
+    )
+
+
+@pytest.fixture(
+    params=[
+        pytest.param(0.5, id="50% cluster memory"),
+        pytest.param(1.0, id="100% cluster memory"),
+    ]
+)
+def cluster_memory(request, small_client):
+
+    cluster_memory = _cluster_memory(small_client)  # 76.66 GiB
+    yield cluster_memory * request.param
+
+
 S3_REGION = "us-east-2"
 S3_BUCKET = "s3://coiled-runtime-ci"
 

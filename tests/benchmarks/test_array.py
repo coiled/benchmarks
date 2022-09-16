@@ -8,7 +8,7 @@ import xarray as xr
 from dask.utils import format_bytes, parse_bytes
 from packaging.version import Version
 
-from ..utils_test import arr_to_devnull, cluster_memory, scaled_array_shape, wait
+from ..utils_test import arr_to_devnull, scaled_array_shape, wait
 
 
 def print_size_info(memory: int, target_nbytes: int, *arrs: da.Array) -> None:
@@ -22,16 +22,15 @@ def print_size_info(memory: int, target_nbytes: int, *arrs: da.Array) -> None:
         )
 
 
-def test_anom_mean(small_client):
+def test_anom_mean(small_client, cluster_memory):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-498718651
 
-    memory = cluster_memory(small_client)  # 76.66 GiB
-    target_nbytes = memory // 2
+    target_nbytes = cluster_memory // 2
     data = da.random.random(
         scaled_array_shape(target_nbytes, ("x", "10MiB")),
         chunks=(1, parse_bytes("10MiB") // 8),
     )
-    print_size_info(memory, target_nbytes, data)
+    print_size_info(cluster_memory, target_nbytes, data)
     # 38.32 GiB - 3925 10.00 MiB chunks
 
     ngroups = data.shape[0] // 100
@@ -48,16 +47,15 @@ def test_anom_mean(small_client):
     wait(anom_mean, small_client, 10 * 60)
 
 
-def test_basic_sum(small_client):
+def test_basic_sum(small_client, cluster_memory):
     # From https://github.com/dask/distributed/pull/4864
 
-    memory = cluster_memory(small_client)  # 76.66 GiB
-    target_nbytes = memory * 5
+    target_nbytes = cluster_memory * 5
     data = da.zeros(
         scaled_array_shape(target_nbytes, ("100MiB", "x")),
         chunks=(parse_bytes("100MiB") // 8, 1),
     )
-    print_size_info(memory, target_nbytes, data)
+    print_size_info(cluster_memory, target_nbytes, data)
     # 383.20 GiB - 3924 100.00 MiB chunks
 
     result = da.sum(data, axis=1)
@@ -68,15 +66,14 @@ def test_basic_sum(small_client):
 @pytest.mark.skip(
     "fails in actual CI; see https://github.com/coiled/coiled-runtime/issues/253"
 )
-def test_climatic_mean(small_client):
+def test_climatic_mean(small_client, cluster_memory):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-535009454
 
-    memory = cluster_memory(small_client)  # 76.66 GiB
-    target_nbytes = memory * 2
+    target_nbytes = cluster_memory * 2
     chunks = (1, 1, 96, 21, 90, 144)
     shape = (28, "x", 96, 21, 90, 144)
     data = da.random.random(scaled_array_shape(target_nbytes, shape), chunks=chunks)
-    print_size_info(memory, target_nbytes, data)
+    print_size_info(cluster_memory, target_nbytes, data)
     # 152.62 GiB - 784 199.34 MiB chunks
 
     array = xr.DataArray(
@@ -91,16 +88,15 @@ def test_climatic_mean(small_client):
     wait(arr_clim, small_client, 15 * 60)
 
 
-def test_vorticity(small_client):
+def test_vorticity(small_client, cluster_memory):
     # From https://github.com/dask/distributed/issues/6571
 
-    memory = cluster_memory(small_client)  # 76.66 GiB
-    target_nbytes = int(memory * 0.85)
+    target_nbytes = int(cluster_memory * 0.85)
     shape = scaled_array_shape(target_nbytes, (5000, 5000, "x"))
 
     u = da.random.random(shape, chunks=(5000, 5000, 1))
     v = da.random.random(shape, chunks=(5000, 5000, 1))
-    print_size_info(memory, target_nbytes, u, v)
+    print_size_info(cluster_memory, target_nbytes, u, v)
     # Input 1: 65.19 GiB - 350 190.73 MiB chunks
     # Input 2: 65.19 GiB - 350 190.73 MiB chunks
 
@@ -137,16 +133,19 @@ def test_vorticity(small_client):
     wait(arr_to_devnull(result), small_client, 10 * 60)
 
 
-def test_double_diff(small_client):
+def test_double_diff(small_client, cluster_memory):
     # Variant of https://github.com/dask/distributed/issues/6597
-    memory = cluster_memory(small_client)  # 76.66 GiB
 
     # TODO switch back to chunksizes in the `chunks=` argument everywhere
     #  when https://github.com/dask/dask/issues/9488 is fixed
     cs = int((parse_bytes("20 MiB") / 8) ** (1 / 2))
-    a = da.random.random(scaled_array_shape(memory, ("x", "x")), chunks=(cs, cs))
-    b = da.random.random(scaled_array_shape(memory, ("x", "x")), chunks=(cs, cs))
-    print_size_info(memory, memory, a, b)
+    a = da.random.random(
+        scaled_array_shape(cluster_memory, ("x", "x")), chunks=(cs, cs)
+    )
+    b = da.random.random(
+        scaled_array_shape(cluster_memory, ("x", "x")), chunks=(cs, cs)
+    )
+    print_size_info(cluster_memory, cluster_memory, a, b)
 
     diff = a[1:, 1:] - b[:-1, :-1]
     wait(arr_to_devnull(diff), small_client, 10 * 60)
