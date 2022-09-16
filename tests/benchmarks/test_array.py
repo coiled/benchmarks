@@ -63,11 +63,12 @@ def test_basic_sum(small_client, cluster_memory):
     wait(result, small_client, 10 * 60)
 
 
-@pytest.mark.skip(
-    "fails in actual CI; see https://github.com/coiled/coiled-runtime/issues/253"
-)
 def test_climatic_mean(small_client, cluster_memory):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-535009454
+    if cluster_memory == 1.0:
+        pytest.skip(
+            "fails in actual CI; see https://github.com/coiled/coiled-runtime/issues/253"
+        )
 
     target_nbytes = cluster_memory * 2
     chunks = (1, 1, 96, 21, 90, 144)
