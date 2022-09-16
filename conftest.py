@@ -438,7 +438,7 @@ def small_client(
             yield client
 
 
-def _cluster_memory(client: distributed.Client) -> int:
+def get_cluster_memory(client: distributed.Client) -> int:
     "Total memory available on the cluster, in bytes"
     return int(
         sum(w["memory_limit"] for w in client.scheduler_info()["workers"].values())
@@ -453,7 +453,7 @@ def _cluster_memory(client: distributed.Client) -> int:
 )
 def cluster_memory(request, small_client):
 
-    cluster_memory = _cluster_memory(small_client)  # 76.66 GiB
+    cluster_memory = get_cluster_memory(small_client)  # 76.66 GiB
     yield cluster_memory * request.param
 
 
