@@ -2,7 +2,7 @@ import uuid
 
 import dask.array as da
 import pytest
-from coiled.v2 import Cluster
+from coiled import Cluster
 from dask.distributed import Client, wait
 
 
@@ -14,7 +14,7 @@ def spill_cluster():
         package_sync=True,
         worker_disk_size=64,
         worker_vm_types=["t3.large"],
-        scheduler_vm_types=["t3.large"],
+        scheduler_vm_types=["t3.xlarge"],
         wait_for_workers=True,
         environ={
             # Note: We set allowed-failures to ensure that no tasks are not retried
