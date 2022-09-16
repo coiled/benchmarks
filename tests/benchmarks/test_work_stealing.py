@@ -1,7 +1,6 @@
 import time
 
 import dask.array as da
-import distributed
 import numpy as np
 import pytest
 from coiled.v2 import Cluster
@@ -17,10 +16,11 @@ def test_trivial_workload_should_not_cause_work_stealing(small_client):
     small_client.gather(futs)
 
 
-@pytest.mark.xfail(
-    distributed.__version__ == "2022.6.0",
-    reason="https://github.com/dask/distributed/issues/6624",
-)
+# @pytest.mark.xfail(
+#    distributed.__version__ == "2022.6.0",
+#    reason="https://github.com/dask/distributed/issues/6624",
+# )
+@pytest.mark.skip("https://github.com/coiled/coiled-runtime/issues/336")
 def test_work_stealing_on_scaling_up(
     test_name_uuid, upload_cluster_dump, benchmark_all
 ):
