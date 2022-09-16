@@ -1,7 +1,7 @@
 from dask.sizeof import sizeof
 from dask.utils import format_bytes
 
-from ..utils_test import cluster_memory, timeseries_of_size, wait
+from ..utils_test import timeseries_of_size, wait
 
 
 def print_dataframe_info(df):
@@ -15,11 +15,10 @@ def print_dataframe_info(df):
     )
 
 
-def test_dataframe_align(small_client):
-    memory = cluster_memory(small_client)  # 76.66 GiB
+def test_dataframe_align(small_client, cluster_memory):
 
     df = timeseries_of_size(
-        memory // 2,
+        cluster_memory // 2,
         start="2020-01-01",
         freq="600ms",
         partition_freq="12h",
@@ -29,7 +28,7 @@ def test_dataframe_align(small_client):
     # ~50,904,000 rows x 100 columns, 38.31 GiB total, 707 55.48 MiB partitions
 
     df2 = timeseries_of_size(
-        memory // 4,
+        cluster_memory // 4,
         start="2010-01-01",
         freq="600ms",
         partition_freq="12h",
@@ -42,11 +41,10 @@ def test_dataframe_align(small_client):
     wait(final, small_client, 10 * 60)
 
 
-def test_shuffle(small_client):
-    memory = cluster_memory(small_client)  # 76.66 GiB
+def test_shuffle(small_client, cluster_memory):
 
     df = timeseries_of_size(
-        memory // 4,
+        cluster_memory // 4,
         start="2020-01-01",
         freq="1200ms",
         partition_freq="24h",
