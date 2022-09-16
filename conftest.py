@@ -17,17 +17,12 @@ import distributed
 import filelock
 import pytest
 import s3fs
+import sqlalchemy
+from coiled import Cluster
 from distributed import Client
 from distributed.diagnostics.memory_sampler import MemorySampler
-from toolz import merge
-
-try:
-    from coiled.v2 import Cluster
-except ImportError:
-    from coiled._beta import ClusterBeta as Cluster
-
-import sqlalchemy
 from sqlalchemy.orm import Session
+from toolz import merge
 
 from benchmark_schema import TestRun
 from plugins import Durations
@@ -413,7 +408,7 @@ def small_cluster(request):
         name=f"{module}-{uuid.uuid4().hex[:8]}",
         n_workers=10,
         worker_vm_types=["t3.large"],  # 2CPU, 8GiB
-        scheduler_vm_types=["t3.large"],
+        scheduler_vm_types=["t3.xlarge"],
         backend_options=backend_options,
         package_sync=True,
     ) as cluster:

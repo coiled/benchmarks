@@ -3,7 +3,7 @@ import time
 import dask.array as da
 import numpy as np
 import pytest
-from coiled.v2 import Cluster
+from coiled import Cluster
 from dask import delayed, utils
 from distributed import Client
 from tornado.ioloop import PeriodicCallback
@@ -28,6 +28,7 @@ def test_work_stealing_on_scaling_up(
         name=test_name_uuid,
         n_workers=1,
         worker_vm_types=["t3.medium"],
+        scheduler_vm_types=["t3.xlarge"],
         wait_for_workers=True,
     ) as cluster:
         with Client(cluster) as client:
@@ -80,6 +81,7 @@ def test_work_stealing_on_straggling_worker(
         name=test_name_uuid,
         n_workers=10,
         worker_vm_types=["t3.medium"],
+        scheduler_vm_types=["t3.xlarge"],
         wait_for_workers=True,
     ) as cluster:
         with Client(cluster) as client:
