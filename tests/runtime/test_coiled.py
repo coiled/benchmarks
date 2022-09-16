@@ -1,5 +1,8 @@
+import uuid
+
 import dask.dataframe as dd
 import pandas as pd
+from coiled import Cluster
 
 
 def test_quickstart_csv(small_client):
@@ -30,3 +33,11 @@ def test_quickstart_parquet(small_client):
 
     assert isinstance(result, pd.Series)
     assert not result.empty
+
+
+def test_default_cluster_spinup_time(request, auto_benchmark_time):
+
+    with Cluster(
+        name=f"{request.node.originalname}-{uuid.uuid4().hex[:8]}", package_sync=True
+    ):
+        pass
