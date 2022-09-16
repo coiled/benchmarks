@@ -447,7 +447,7 @@ def _cluster_memory(client: distributed.Client) -> int:
 
 @pytest.fixture(
     params=[
-        pytest.param(0.5, id="50% cluster memory"),
+        pytest.param(0.3, id="30% cluster memory"),
         pytest.param(1.0, id="100% cluster memory"),
     ]
 )
