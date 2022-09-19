@@ -31,6 +31,7 @@ def test_work_stealing_on_scaling_up(
         worker_vm_types=["t3.medium"],
         scheduler_vm_types=["t3.xlarge"],
         wait_for_workers=True,
+        package_sync=True,
     ) as cluster:
         with Client(cluster) as client:
             with upload_cluster_dump(client, cluster), benchmark_all(client):
