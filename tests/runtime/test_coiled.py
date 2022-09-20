@@ -35,9 +35,11 @@ def test_quickstart_parquet(small_client):
     assert not result.empty
 
 
-def test_default_cluster_spinup_time(request, auto_benchmark_time):
+def test_default_cluster_spinup_time(request, auto_benchmark_time, dask_env_variables):
 
     with Cluster(
-        name=f"{request.node.originalname}-{uuid.uuid4().hex[:8]}", package_sync=True
+        name=f"{request.node.originalname}-{uuid.uuid4().hex[:8]}",
+        package_sync=True,
+        environ=dask_env_variables,
     ):
         pass

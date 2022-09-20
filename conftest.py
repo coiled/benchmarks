@@ -397,8 +397,13 @@ def test_name_uuid(request):
     return f"{request.node.originalname}-{uuid.uuid4().hex}"
 
 
+@pytest.fixture(scope="session")
+def dask_env_variables():
+    return {k: v for k, v in os.environ.items() if k.startswith("DASK_")}
+
+
 @pytest.fixture(scope="module")
-def small_cluster(request):
+def small_cluster(request, dask_env_variables):
     # Extract `backend_options` for cluster from `backend_options` markers
     backend_options = merge(
         m.kwargs for m in request.node.iter_markers(name="backend_options")
@@ -411,6 +416,7 @@ def small_cluster(request):
         scheduler_vm_types=["t3.xlarge"],
         backend_options=backend_options,
         package_sync=True,
+        environ=dask_env_variables,
     ) as cluster:
         yield cluster
 
