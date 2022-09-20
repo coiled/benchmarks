@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Read a dask config file and print it out in the format `-e ENV=VALUE ENV=VALUE ...`
+"""Read a dask config file and print it out in the format `ENV=VALUE\nENV=VALUE ...`
 This script is a work-around to not being able to upload dask config files to
 `conda env create`.
 """
@@ -14,9 +14,8 @@ import yaml
 def main(fname: str) -> None:
     with open(fname) as fh:
         cfg = yaml.safe_load(fh)
-    # Print nothing in case of empty file, comments only, or empty dict
     if cfg:
-        print("-e " + " ".join(traverse(cfg, [])))
+        print("\n".join(traverse(cfg, [])))
 
 
 def traverse(node: dict | list | str | float | None, path: list[str]) -> Iterator[str]:

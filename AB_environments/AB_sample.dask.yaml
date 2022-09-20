@@ -3,6 +3,6 @@
 # All files *must* be called AB_<name>.conda.yaml
 # and *must* be accompanied by AB_<name>.dask.yaml.
 # Leave empty if you don't want to override anything.
-# distributed:
-#   scheduler:
-#     worker-saturation: 1.2
+distributed:
+  scheduler:
+    worker-saturation: 1.2

@@ -11,6 +11,6 @@ test_null_hypothesis: true
 
 # Tests categories to run. These are subdirectories of tests/.
 categories:
-  - runtime
   - benchmarks
-  - stability
+  # - runtime
+  # - stability

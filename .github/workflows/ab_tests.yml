@@ -84,6 +84,9 @@ jobs:
         run: |
           source ci/scripts/install_coiled_runtime.sh AB_environments/${{ matrix.runtime-version }}.conda.yaml
 
+      - name: Convert dask config into environment variables
+        run: python ci/scripts/dask_config_to_env.py AB_environments/${{ matrix.runtime-version }}.dask.yaml >> $GITHUB_ENV
+
       - name: Run Coiled Runtime Tests
         id: test
         env:
