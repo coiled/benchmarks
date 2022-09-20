@@ -78,6 +78,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
+      - name: Create null hypothesis as a copy of baseline
+        if: matrix.runtime-version == 'AB_null_hypothesis'
+        run: |
+          cd AB_environments
+          cp AB_baseline.conda.yaml AB_null_hypothesis.conda.yaml
+          cp AB_baseline.dask.yaml AB_null_hypothesis.dask.yaml
+
       - name: Install coiled-runtime
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
