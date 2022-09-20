@@ -44,83 +44,9 @@ jobs:
   # AB_environments/AB_*.{conda,dask}.yaml
   # and AB_environments/config.yaml set repeat > 0
 
-  software:
-    name: Setup - ${{ matrix.runtime-version }} py${{ matrix.python-version }}
-    runs-on: ubuntu-latest
-    needs: discover_ab_envs
-    if: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.9"]
-        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-variant: Mambaforge
-          use-mamba: true
-          condarc-file: ci/condarc
-          python-version: ${{ matrix.python-version }}
-          environment-file: ci/environment.yml
-
-      - name: Create null hypothesis as a copy of baseline
-        if: matrix.runtime-version == 'AB_null_hypothesis'
-        run: |
-          cd AB_environments
-          cp AB_baseline.conda.yaml AB_null_hypothesis.conda.yaml
-          cp AB_baseline.dask.yaml AB_null_hypothesis.dask.yaml
-
-      - name: Build Coiled Software Environment
-        env:
-          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-        run: |
-          PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
-          NAME_HEAD=dask-engineering/coiled-runtime-${{ github.event_name }}
-          NAME_TAIL=$GITHUB_RUN_ID-${{ matrix.runtime-version }}-py$PYTHON_VERSION_FORMATTED
-          if [[ ${{ github.event_name }} = 'pull_request' ]]
-          then
-            NAME_MID=${{ github.event.number }}
-          else
-            NAME_MID=$GITHUB_REF_TYPE-$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
-          fi
-          # env name can only contain lowercase ASCII letters, numbers, hyphens and underscores
-          COILED_SOFTWARE_NAME=$NAME_HEAD-$(echo $NAME_MID-$NAME_TAIL | tr 'A-Z' 'a-z' | sed -r 's/[^a-z0-9_-]/_/g')
-
-          cp AB_environments/${{ matrix.runtime-version }}.conda.yaml coiled_software_environment.yaml
-          COILED_SOFTWARE_ENV=$(python ci/scripts/dask_config_to_env.py AB_environments/${{ matrix.runtime-version }}.dask.yaml) 
-          ENV_FILE=coiled_software_environment.yaml
-          cat $ENV_FILE
-
-          mamba install coiled
-          echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
-          echo "Environment parameters: $COILED_SOFTWARE_ENV"
-          coiled env create --name $COILED_SOFTWARE_NAME --conda $ENV_FILE $COILED_SOFTWARE_ENV
-
-          # Put COILED_SOFTWARE_NAME into a file so it can be downloaded in subsequent workflow jobs
-          echo $COILED_SOFTWARE_NAME > software_name.txt
-
-          # Dummy for compatibility with tests.yml
-          echo false > test_upstream.txt
-
-      - name: Upload environment file
-        uses: actions/upload-artifact@v3
-        with:
-          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-          path: |
-            coiled_software_environment.yaml
-            software_name.txt
-            test_upstream.txt
-
   tests:
     name: A/B Tests - ${{ matrix.category }} ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
-    needs: [discover_ab_envs, software]
+    needs: discover_ab_envs
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -147,15 +73,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
-      - name: Download software environment assets
-        uses: actions/download-artifact@v3
-        with:
-          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-
       - name: Install coiled-runtime
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-        run: source ci/scripts/install_coiled_runtime.sh
+        run: |
+          source ci/scripts/install_coiled_runtime.sh AB_environments/${{ matrix.runtime-version }}.conda.yaml
 
       - name: Run Coiled Runtime Tests
         id: test
@@ -175,42 +97,6 @@ jobs:
         with:
           name: ${{ matrix.category }}-${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}
           path: ${{ matrix.category }}-${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
-
-  cleanup:
-    needs: [discover_ab_envs, software, tests]
-    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
-    name: Cleanup
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.9"]
-        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install coiled
-        run: python -m pip install coiled
-
-      - name: Download software environment assets
-        uses: actions/download-artifact@v3
-        with:
-          name: software-environment-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-
-      - name: Remove Coiled software environment
-        env:
-          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-        run: |
-          SOFTWARE_NAME=$(cat software_name.txt)
-          echo "Deleting $SOFTWARE_NAME"
-          coiled env delete $SOFTWARE_NAME
 
   process-results:
     needs: [discover_ab_envs, tests]
@@ -245,7 +131,7 @@ jobs:
       - name: Upload benchmark results as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: benchmark.db
+          name: benchmark
           path: benchmark.db
 
   static-site:
@@ -263,7 +149,7 @@ jobs:
       - name: Download artifacts
         uses: actions/download-artifact@v3
         with:
-          name: benchmark.db
+          name: benchmark
 
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2

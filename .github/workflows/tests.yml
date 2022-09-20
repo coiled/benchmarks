@@ -4,7 +4,7 @@ on:
     branches:
       - main
     tags:
-      - '*'
+      - "*"
   pull_request:
   schedule:
     # Runs "At 00:01" (see https://crontab.guru)
@@ -22,97 +22,8 @@ defaults:
     shell: bash -l {0}
 
 jobs:
-  software:
-    name: Setup - py${{ matrix.python-version }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.8", "3.9", "3.10"]
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
-
-      - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-variant: Mambaforge
-          use-mamba: true
-          condarc-file: ci/condarc
-          python-version: ${{ matrix.python-version }}
-          environment-file: ci/environment.yml
-
-      - name: Check upstream
-        run: |
-          if [[ ${{ github.event_name }} == "pull_request" ]]
-          then
-              REF="HEAD^2"
-          else
-              REF="HEAD"
-          fi
-
-          COMMIT="$(git log -n 1 --pretty=format:%s $REF)"
-          if [[ "$COMMIT" == *"test-upstream"* || ${{ github.event_name }} == "schedule" ]]
-          then
-            TEST_UPSTREAM="true"
-            AB_BASELINE="coiled-upstream-py3.9 coiled-0.1.0-py3.9"
-          else
-            TEST_UPSTREAM="false"
-            AB_BASELINE="coiled-latest-py3.9 coiled-0.1.0-py3.9"
-          fi
-
-          # Put TEST_UPSTREAM into $GITHUB_ENV so it can be used in subsequent workflow steps
-          echo $TEST_UPSTREAM
-          echo TEST_UPSTREAM=$TEST_UPSTREAM >> $GITHUB_ENV
-
-          # Put env variables into files so it can be downloaded in subsequent workflow jobs
-          echo $TEST_UPSTREAM > test_upstream.txt
-          echo $AB_BASELINE > ab_baseline.txt
-
-      - name: Build Coiled Software Environment
-        env:
-          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-        run: |
-          PYTHON_VERSION_FORMATTED=$(echo "${{ matrix.python-version }}" | sed 's/\.//g' )
-          NAME_HEAD=dask-engineering/coiled-runtime-${{ github.event_name }}
-          NAME_TAIL=$GITHUB_RUN_ID-py$PYTHON_VERSION_FORMATTED
-          if [[ ${{ github.event_name }} = 'pull_request' ]]
-          then
-            NAME_MID=${{ github.event.number }}
-          else
-            NAME_MID=$GITHUB_REF_TYPE-$(echo "$GITHUB_REF_NAME" | sed 's/\./-/g' )
-          fi
-          # env name can only contain lowercase ASCII letters, numbers, hyphens and underscores
-          COILED_SOFTWARE_NAME=$NAME_HEAD-$(echo $NAME_MID-$NAME_TAIL | tr 'A-Z' 'a-z' | sed -r 's/[^a-z0-9_-]/_/g')
-
-          # Create conda environment.yaml file for the latest software environment
-          python ci/create_latest_runtime_meta.py
-          ENV_FILE=coiled_software_environment.yaml
-          cat $ENV_FILE
-
-          mamba install coiled
-          echo "Creating Coiled software environment for $COILED_SOFTWARE_NAME"
-          coiled env create --name $COILED_SOFTWARE_NAME --conda $ENV_FILE
-
-          # Put COILED_SOFTWARE_NAME into a file so it can be downloaded in subsequent workflow jobs
-          echo $COILED_SOFTWARE_NAME > software_name.txt
-
-      - name: Upload environment file
-        uses: actions/upload-artifact@v3
-        with:
-          name: software-environment-py${{ matrix.python-version }}
-          path: |
-            coiled_software_environment.yaml
-            software_name.txt
-            test_upstream.txt
-            ab_baseline.txt
-
   tests:
     name: Tests - ${{ matrix.category }} ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
-    needs: software
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -174,16 +85,12 @@ jobs:
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
-      - name: Download software environment assets
-        if: matrix.runtime-version == 'latest'
-        uses: actions/download-artifact@v3
-        with:
-          name: software-environment-py${{ matrix.python-version }}
-
       - name: Install coiled-runtime
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-        run: source ci/scripts/install_coiled_runtime.sh
+        run: |
+          python ci/create_runtime_meta.py
+          source ci/scripts/install_coiled_runtime.sh coiled_software_environment.yaml
 
       - name: Run Coiled Runtime Tests
         id: test
@@ -203,40 +110,6 @@ jobs:
         with:
           name: ${{ matrix.category }}-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: ${{ matrix.category }}-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
-
-  cleanup:
-    needs: [software, tests]
-    if: always()
-    name: Cleanup
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        python-version: ["3.8", "3.9", "3.10"]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Install coiled
-        run: python -m pip install coiled
-
-      - name: Download software environment assets
-        uses: actions/download-artifact@v3
-        with:
-          name: software-environment-py${{ matrix.python-version }}
-
-      - name: Remove Coiled software environment
-        env:
-          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
-        run: |
-          SOFTWARE_NAME=$(cat software_name.txt)
-          echo "Deleting $SOFTWARE_NAME"
-          coiled env delete $SOFTWARE_NAME
 
   process-results:
     needs: tests
@@ -267,7 +140,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
+          AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
           DB_NAME: benchmark.db
         run: |
           aws s3 cp s3://coiled-runtime-ci/benchmarks/$DB_NAME . || true
@@ -282,7 +155,7 @@ jobs:
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          AWS_DEFAULT_REGION: us-east-2  # this is needed for boto for some reason
+          AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
           DB_NAME: benchmark.db
         run: |
           aws s3 cp $DB_NAME s3://coiled-runtime-ci/benchmarks/
@@ -290,7 +163,7 @@ jobs:
       - name: Upload benchmark results as artifact
         uses: actions/upload-artifact@v3
         with:
-          name: benchmark.db
+          name: benchmark
           path: benchmark.db
 
   regressions:
@@ -307,7 +180,7 @@ jobs:
 
       - uses: actions/download-artifact@v3
         with:
-          name: benchmark.db
+          name: benchmark
 
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
@@ -376,7 +249,7 @@ jobs:
       - name: Download tests database
         uses: actions/download-artifact@v3
         with:
-          name: benchmark.db
+          name: benchmark
 
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
@@ -386,13 +259,8 @@ jobs:
           python-version: "3.9"
           environment-file: ci/environment-dashboard.yml
 
-      - name: Download software environment assets
-        uses: actions/download-artifact@v3
-        with:
-          name: software-environment-py3.9
-
       - name: Generate dashboards
-        run: python dashboard.py -d benchmark.db -o static -b $(cat ab_baseline.txt)
+        run: python dashboard.py -d benchmark.db -o static -b coiled-latest-py3.9 coiled-0.1.0-py3.9
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
