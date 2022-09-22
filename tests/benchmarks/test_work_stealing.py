@@ -23,7 +23,7 @@ def test_trivial_workload_should_not_cause_work_stealing(small_client):
     reason="https://github.com/dask/distributed/issues/6624",
 )
 def test_work_stealing_on_scaling_up(
-    test_name_uuid, upload_cluster_dump, benchmark_all
+    test_name_uuid, upload_cluster_dump, benchmark_all, dask_env_variables
 ):
     with Cluster(
         name=test_name_uuid,
@@ -32,6 +32,7 @@ def test_work_stealing_on_scaling_up(
         scheduler_vm_types=["t3.xlarge"],
         wait_for_workers=True,
         package_sync=True,
+        environ=dask_env_variables,
     ) as cluster:
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103
@@ -79,7 +80,7 @@ def test_work_stealing_on_inhomogeneous_workload(small_client):
 
 
 def test_work_stealing_on_straggling_worker(
-    test_name_uuid, upload_cluster_dump, benchmark_all
+    test_name_uuid, upload_cluster_dump, benchmark_all, dask_env_variables
 ):
     with Cluster(
         name=test_name_uuid,
@@ -87,6 +88,7 @@ def test_work_stealing_on_straggling_worker(
         worker_vm_types=["t3.medium"],
         scheduler_vm_types=["t3.xlarge"],
         wait_for_workers=True,
+        environ=dask_env_variables,
     ) as cluster:
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103

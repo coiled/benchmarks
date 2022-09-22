@@ -4,10 +4,11 @@ import dask.array as da
 import pytest
 from coiled import Cluster
 from dask.distributed import Client, wait
+from toolz import merge
 
 
 @pytest.fixture(scope="module")
-def spill_cluster():
+def spill_cluster(dask_env_variables):
     with Cluster(
         f"spill-{uuid.uuid4().hex[:8]}",
         n_workers=5,
@@ -16,17 +17,20 @@ def spill_cluster():
         worker_vm_types=["t3.large"],
         scheduler_vm_types=["t3.xlarge"],
         wait_for_workers=True,
-        environ={
-            # Note: We set allowed-failures to ensure that no tasks are not retried
-            #  upon ungraceful shutdown behavior during adaptive scaling
-            #  but we receive a KilledWorker() instead.
-            "DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0",
-            # We need to limit the number of connections to avoid getting `oom-killed`.
-            #  See https://github.com/coiled/coiled-runtime/pull/229#discussion_r946807049
-            #  for a longer discussion
-            "DASK_DISTRIBUTED__WORKER__CONNECTIONS__INCOMING": "1",
-            "DASK_DISTRIBUTED__WORKER__CONNECTIONS__OUTGOING": "1",
-        },
+        environ=merge(
+            dask_env_variables,
+            {
+                # Note: We set allowed-failures to ensure that no tasks are not retried
+                # upon ungraceful shutdown behavior during adaptive scaling but we
+                # receive a KilledWorker() instead.
+                "DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0",
+                # We need to limit the number of connections to avoid getting
+                # `oom-killed`. For a longer discussion, see
+                # https://github.com/coiled/coiled-runtime/pull/229#discussion_r946807049
+                "DASK_DISTRIBUTED__WORKER__CONNECTIONS__INCOMING": "1",
+                "DASK_DISTRIBUTED__WORKER__CONNECTIONS__OUTGOING": "1",
+            },
+        ),
     ) as cluster:
         yield cluster
 

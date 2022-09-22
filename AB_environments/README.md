@@ -34,8 +34,8 @@ dependencies:
     - python=3.9
     - coiled-runtime=0.1.0
     - pip:
-      - dask==2022.8.1
-      - distributed=2022.8.1
+      - dask==2022.9.0
+      - distributed==2022.9.0
 ```
 In this example it's using `coiled-runtime` as a base, but it doesn't have to. If you do
 use `coiled-runtime` though, you must install any conflicting packages with pip; in the
@@ -47,8 +47,8 @@ arbitrary forks, e.g.
 
 ```yaml
     - pip:
-      - dask==2022.8.1
-      - git+https://github.com/yourname/distributed@dd81b424971e81616e1a52fa09ce4698a5002d41
+      - dask==2022.9.0
+      - git+https://github.com/yourname/distributed@1fd07f03cacee6fde81d13282568a727bce789b9
 ```
 The second file in each pair is a dask config file. If you don't want to change the
 config, you must create an empty file.
@@ -66,8 +66,32 @@ If you create *any* files in `AB_environments/`, you *must* create the baseline 
 - `AB_baseline.conda.yaml`
 - `AB_baseline.dask.yaml`
 
-#### Complete example
-We want to test the impact of disabling work stealing. We create 4 files:
+### 4. Tweak configuration file
+Open `AB_environments/config.yaml` and set the `repeat` setting to a number higher than 0.
+This enables the A/B tests.
+Setting a low number of repeated runs is faster and cheaper, but will result in higher
+variance.
+
+`repeat` must remain set to 0 in the main branch, thus completely disabling
+A/B tests, in order to avoid unnecessary runs.
+
+In the same file, you can also set the `test_null_hypothesis` flag to true to
+automatically create a verbatim copy of AB_baseline and then compare the two in the A/B
+tests. Set it to false to save some money if you are already confident that the 'repeat'
+setting is high enough.
+
+Finally, the files offers a `categories` list. These are the subdirectories of `tests/`
+which you wish to run.
+
+### 5. (optional) Tweak tests
+Nothing prevents you from changing the tests themselves.
+
+For example, you may be interested in a single test, but you don't want to run its
+whole category; all you need to do is open the test files and delete what you don't care
+about.
+
+### Complete example
+You want to test the impact of disabling work stealing. You'll create at least 4 files:
 
 - `AB_environments/AB_baseline.conda.yaml`:
 ```yaml
@@ -77,8 +101,8 @@ dependencies:
     - python=3.9
     - coiled-runtime=0.1.0
     - pip:
-      - dask==2022.8.1
-      - distributed=2022.8.1
+      - dask==2022.9.0
+      - distributed==2022.9.0
 ```
 - `AB_environments/AB_baseline.dask.yaml`: (empty file)
 - `AB_environments/AB_no_steal.conda.yaml`: (same as baseline)
@@ -89,8 +113,18 @@ distributed:
     work-stealing: False
 ```
 
-### 4. Run CI
-- `git push`. Note: we are *not* creating a PR. 
+- `AB_environments/config.yaml`:
+```yaml
+repeat: 5
+test_null_hypothesis: true
+categories:
+  - runtime
+  - benchmarks
+  - stability
+```
+
+### 6. Run CI
+- `git push`. Note: you should *not* open a Pull Request. 
 - Open https://github.com/coiled/coiled-runtime/actions/workflows/ab_tests.yml and wait
   for the run to complete.
 - Open the run from the link above. In the Summary tab, scroll down and download the
@@ -98,8 +132,10 @@ distributed:
   Note: artifacts will appear only after the run is complete.
 - Decompress `static-dashboard.zip` and open `index.html` in your browser.
 
-### 5. Clean up
+
+### 7. Clean up
 Remember to delete the branch once you're done.
+
 
 ### Troubleshooting
 
