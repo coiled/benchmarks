@@ -13,7 +13,7 @@ def build_json() -> dict[str, list[int]]:
     if not isinstance(cfg.get("repeat"), int) or cfg["repeat"] < 0:
         raise ValueError("AB_environments/config.yaml: missing key {repeat: N}")
     if not cfg["repeat"]:
-        return {"repeat": [], "runtime": [], "category": []}
+        return {"run_AB": False, "repeat": [], "runtime": [], "category": []}
 
     runtimes = []
     for conda_fname in sorted(glob.glob("AB_environments/AB_*.conda.yaml")):
@@ -24,7 +24,7 @@ def build_json() -> dict[str, list[int]]:
         runtimes.append(env_name)
 
     if not runtimes:
-        return {"repeat": [], "runtime": [], "category": []}
+        return {"run_AB": False, "repeat": [], "runtime": [], "category": []}
 
     if "AB_baseline" not in runtimes:
         # If any A/B environments are defined, AB_baseline is required
@@ -34,6 +34,7 @@ def build_json() -> dict[str, list[int]]:
         runtimes += ["AB_null_hypothesis"]
 
     return {
+        "run_AB": True,
         "repeat": list(range(1, cfg["repeat"] + 1)),
         "runtime": runtimes,
         "category": cfg["categories"],
