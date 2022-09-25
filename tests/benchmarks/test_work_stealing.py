@@ -33,6 +33,7 @@ def test_work_stealing_on_scaling_up(
         wait_for_workers=True,
         package_sync=True,
         environ=dask_env_variables,
+        backend_options={"send_prometheus_metrics": True},
     ) as cluster:
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103
