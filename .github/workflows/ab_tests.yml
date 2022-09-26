@@ -47,6 +47,7 @@ jobs:
   tests:
     name: A/B Tests - ${{ matrix.category }} ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
     needs: discover_ab_envs
+    if: fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -116,7 +117,7 @@ jobs:
   process-results:
     needs: [discover_ab_envs, tests]
     name: Combine separate benchmark results
-    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
+    if: always() && fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
     runs-on: ubuntu-latest
     concurrency:
       # Fairly strict concurrency rule to avoid stepping on benchmark db.
@@ -129,6 +130,8 @@ jobs:
 
       - name: Install Python
         uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
       - name: Install dependencies
         run: pip install alembic
@@ -152,7 +155,7 @@ jobs:
   static-site:
     needs: [discover_ab_envs, process-results]
     # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
-    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
+    if: always() && fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
     name: Build static dashboards
     runs-on: ubuntu-latest
     steps:
