@@ -9,6 +9,7 @@ import yaml
 
 
 class JSONOutput(TypedDict):
+    run_AB: bool
     repeat: list[int]
     runtime: list[str]
     pytest_args: list[str]
@@ -25,7 +26,7 @@ def build_json() -> JSONOutput:
             raise ValueError("fNot a valid test category: {category}")
 
     if not cfg["repeat"] or not cfg["categories"]:
-        return {"repeat": [], "runtime": [], "pytest_args": []}
+        return {"run_AB": False, "repeat": [], "runtime": [], "pytest_args": []}
 
     runtimes = []
     for conda_fname in sorted(glob.glob("AB_environments/AB_*.conda.yaml")):
@@ -36,7 +37,7 @@ def build_json() -> JSONOutput:
         runtimes.append(env_name)
 
     if not runtimes:
-        return {"repeat": [], "runtime": [], "pytest_args": []}
+        return {"run_AB": False, "repeat": [], "runtime": [], "pytest_args": []}
 
     if "AB_baseline" not in runtimes:
         # If any A/B environments are defined, AB_baseline is required
@@ -46,6 +47,7 @@ def build_json() -> JSONOutput:
         runtimes += ["AB_null_hypothesis"]
 
     return {
+        "run_AB": True,
         "repeat": list(range(1, cfg["repeat"] + 1)),
         "runtime": runtimes,
         "pytest_args": [" ".join(f"tests/{c}" for c in cfg["categories"])],

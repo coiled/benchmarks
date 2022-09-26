@@ -648,8 +648,12 @@ def main() -> None:
     for runtime in runtimes:
         make_timeseries_html_report(df, output_dir, runtime)
 
-    # Do not use data that is more than a week old in statistical analysis
-    df_recent = df[df["end"] > df["end"].max() - pandas.Timedelta("7d")]
+    # Do not use data that is more than a week old in statistical analysis.
+    # Also exclude failed tests.
+    df_recent = df[
+        (df["end"] > df["end"].max() - pandas.Timedelta("7d"))
+        & (df["call_outcome"] == "passed")
+    ]
 
     make_barchart_html_report(df_recent, output_dir, by_test=True)
     make_barchart_html_report(df_recent, output_dir, by_test=False)
