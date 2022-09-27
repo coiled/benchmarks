@@ -414,7 +414,7 @@ def small_cluster(request, dask_env_variables):
         n_workers=10,
         worker_vm_types=["t3.large"],  # 2CPU, 8GiB
         scheduler_vm_types=["t3.xlarge"],
-        backend_options={"send_prometheus_metrics": True, **backend_options},
+        backend_options={"send_prometheus_metrics": True, **backend_options},  # hi
         package_sync=True,
         environ=dask_env_variables,
     ) as cluster:
