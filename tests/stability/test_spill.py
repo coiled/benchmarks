@@ -10,7 +10,7 @@ from toolz import merge
 @pytest.fixture(scope="module")
 def spill_cluster(dask_env_variables):
     with Cluster(
-        f"spill-{uuid.uuid4().hex[:8]}",
+        f"funtime-spill-{uuid.uuid4().hex[:8]}",
         n_workers=5,
         package_sync=True,
         worker_disk_size=64,

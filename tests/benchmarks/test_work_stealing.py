@@ -26,7 +26,7 @@ def test_work_stealing_on_scaling_up(
     test_name_uuid, upload_cluster_dump, benchmark_all, dask_env_variables
 ):
     with Cluster(
-        name=test_name_uuid,
+        name="funtime-" + test_name_uuid,
         n_workers=1,
         worker_vm_types=["t3.medium"],
         scheduler_vm_types=["t3.xlarge"],
@@ -83,7 +83,7 @@ def test_work_stealing_on_straggling_worker(
     test_name_uuid, upload_cluster_dump, benchmark_all, dask_env_variables
 ):
     with Cluster(
-        name=test_name_uuid,
+        name="funtime-" + test_name_uuid,
         n_workers=10,
         worker_vm_types=["t3.medium"],
         scheduler_vm_types=["t3.xlarge"],

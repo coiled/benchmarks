@@ -410,7 +410,7 @@ def small_cluster(request, dask_env_variables):
     )
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
-        name=f"{module}-{uuid.uuid4().hex[:8]}",
+        name=f"funtime-{module}-{uuid.uuid4().hex[:8]}",
         n_workers=10,
         worker_vm_types=["t3.large"],  # 2CPU, 8GiB
         scheduler_vm_types=["t3.xlarge"],

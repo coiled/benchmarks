@@ -17,7 +17,7 @@ N_WORKERS = 15
 @pytest.fixture(scope="module")
 def parquet_cluster(dask_env_variables):
     with Cluster(
-        f"parquet-{uuid.uuid4().hex[:8]}",
+        f"funtime-parquet-{uuid.uuid4().hex[:8]}",
         n_workers=N_WORKERS,
         worker_vm_types=["m5.xlarge"],
         scheduler_vm_types=["m5.xlarge"],
