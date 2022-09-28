@@ -53,7 +53,7 @@ def test_basic_sum(small_client):
 
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory * 5
-    data = da.zeros(
+    data = da.random.randint(0, 255,
         scaled_array_shape(target_nbytes, ("100MiB", "x")),
         chunks=(parse_bytes("100MiB") // 8, 1),
     )
@@ -175,3 +175,16 @@ def test_map_overlap_sample(small_client):
 
     y = x.map_overlap(lambda x: x, depth=1)
     y[5000:5010, 5000:5010].compute()
+
+
+@pytest.mark.parametrize("threshold", [128, 200, 250])
+@pytest.mark.parametrize("nlayers", [10, 100, 1000])
+def test_filter_then_average(threshold, nlayers, small_client):
+    memory = cluster_memory(small_client)  # 76.66 GiB
+    target_nbytes = memory * 5
+    data = da.random.randint(0, 255,
+        scaled_array_shape(target_nbytes, ("100MiB", "x", nlayers)),
+        chunks=(parse_bytes("100MiB") // 8, 10, 10),
+    )
+
+    result = data[data > threshold].mean().compute()
