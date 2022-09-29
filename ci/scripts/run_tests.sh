@@ -16,4 +16,4 @@ then
   EXTRA_OPTIONS="$EXTRA_OPTIONS --benchmark"
 fi
 
-python -m pytest -n 8 --dist loadscope $EXTRA_OPTIONS $@
+python -m pytest -n 2 --dist loadscope $EXTRA_OPTIONS $@
