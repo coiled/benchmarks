@@ -21,6 +21,7 @@ def parquet_cluster():
         n_workers=N_WORKERS,
         worker_vm_types=["m5.xlarge"],
         scheduler_vm_types=["m5.xlarge"],
+        package_sync=True,
     ) as cluster:
         yield cluster
 
@@ -45,7 +46,7 @@ def test_read_spark_generated_data(parquet_client):
     Citation: https://www.nature.com/articles/s41467-018-08148-z
     """
     ddf = dd.read_parquet(
-        "s3://coiled-runtime-ci/thousandgenomes_dragen/var_partby_samples/NA21**.parquet",
+        "s3://coiled-runtime-ci/thousandgenomes_dagen/NA21**.parquet",
         engine="pyarrow",
         index="sample_id",
     )

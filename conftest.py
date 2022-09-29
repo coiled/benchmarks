@@ -65,8 +65,6 @@ def pytest_collection_modifyitems(config, items):
 
 
 def get_coiled_runtime_version():
-    if strtobool(os.environ.get("TEST_UPSTREAM", "false")):
-        return "upstream"
     try:
         return os.environ["COILED_RUNTIME_VERSION"]
     except KeyError:
@@ -78,37 +76,13 @@ def get_coiled_runtime_version():
         if runtime_info:
             return runtime_info[0]["version"]
         else:
-            return "latest"
+            return "unknown"
 
 
-def get_coiled_software_name():
-    try:
-        return os.environ["COILED_SOFTWARE_NAME"]
-    except KeyError:
-        # Determine software environment from local `coiled-runtime` version (in installed)
-        out = subprocess.check_output(
-            shlex.split("conda list --json coiled-runtime"), text=True
-        ).rstrip()
-        runtime_info = json.loads(out)
-        if runtime_info:
-            version = runtime_info[0]["version"].replace(".", "-")
-            py_version = f"{sys.version_info[0]}{sys.version_info[1]}"
-            return f"coiled/coiled-runtime-{version}-py{py_version}"
-        else:
-            raise RuntimeError(
-                "Must either specific `COILED_SOFTWARE_NAME` environment variable "
-                "or have `coiled-runtime` installed"
-            )
-
-
-dask.config.set(
-    {
-        "coiled.account": "dask-engineering",
-        "coiled.software": get_coiled_software_name(),
-    }
-)
+dask.config.set({"coiled.account": "dask-engineering"})
 
 COILED_RUNTIME_VERSION = get_coiled_runtime_version()
+COILED_SOFTWARE_NAME = "package_sync"
 
 
 # ############################################### #
@@ -133,6 +107,17 @@ else:
 
 @pytest.fixture(scope="session")
 def benchmark_db_engine(pytestconfig, tmp_path_factory):
+    """Session-scoped fixture for the SQLAlchemy engine for the benchmark sqlite database.
+
+    You can control the database name with the environment variable ``DB_NAME``,
+    which defaults to ``benchmark.db``. Most tests shouldn't need to include this
+    fixture directly.
+
+    Yields
+    ------
+    The SQLAlchemy engine if the ``--benchmark`` option is set, None otherwise.
+    """
+
     if not pytestconfig.getoption("--benchmark"):
         yield
     else:
@@ -160,6 +145,15 @@ def benchmark_db_engine(pytestconfig, tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def benchmark_db_session(benchmark_db_engine):
+    """SQLAlchemy session for a given test.
+
+    Most tests shouldn't need to include this fixture directly.
+
+    Yields
+    ------
+    SQLAlchemy session for the benchmark database engine if run as part of a benchmark,
+    None otherwise.
+    """
     if not benchmark_db_engine:
         yield
     else:
@@ -169,6 +163,18 @@ def benchmark_db_session(benchmark_db_engine):
 
 @pytest.fixture(scope="function")
 def test_run_benchmark(benchmark_db_session, request, testrun_uid):
+    """SQLAlchemy ORM object representing a given test run.
+
+    By including this fixture in a test (or another fixture that includes it)
+    you trigger the test being written to the benchmark database. This fixture
+    includes data common to all tests, including python version, test name,
+    and the test outcome.
+
+    Yields
+    ------
+    SQLAlchemy ORM object representing a given test run if run as part of a benchmark,
+    None otherwise.
+    """
     if not benchmark_db_session:
         yield
     else:
@@ -181,7 +187,7 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
             dask_version=dask.__version__,
             distributed_version=distributed.__version__,
             coiled_runtime_version=COILED_RUNTIME_VERSION,
-            coiled_software_name=dask.config.get("coiled.software"),
+            coiled_software_name=COILED_SOFTWARE_NAME,
             python_version=".".join(map(str, sys.version_info)),
             platform=sys.platform,
             ci_run_url=WORKFLOW_URL,
@@ -204,6 +210,26 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
 
 @pytest.fixture(scope="function")
 def benchmark_time(test_run_benchmark):
+    """Benchmark the wall clock time of executing some code.
+
+    Yields
+    ------
+    Context manager that records the wall clock time duration of executing
+    the ``with`` statement if run as part of a benchmark, or does nothing otherwise.
+
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(benchmark_time):
+            with benchmark_time:
+                do_something()
+
+    See Also
+    --------
+    auto_benchmark_time
+    """
+
     @contextlib.contextmanager
     def _benchmark_time():
         if not test_run_benchmark:
@@ -221,12 +247,50 @@ def benchmark_time(test_run_benchmark):
 
 @pytest.fixture(scope="function")
 def auto_benchmark_time(benchmark_time):
+    """Benchmark the wall clock time of an individual test.
+
+    This fixture automatically records the wall clock time it takes to
+    execute an individual test if run as part of a benchmark. Depending on the test's structure, this may
+    include setup or teardown code that should not be measured. For more
+    control, use the ``benchmark_time`` context manager fixture.
+
+
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(auto_benchmark_time):
+            do_something()
+
+    See Also
+    --------
+    benchmark_time
+    """
     with benchmark_time:
         yield
 
 
 @pytest.fixture(scope="function")
 def benchmark_memory(test_run_benchmark):
+    """Benchmark the memory usage of executing some code.
+
+    Yields
+    ------
+    Context manager factory function which takes a ``distributed.Client``
+    as input. The context manager records peak and average memory usage of
+    executing the ``with`` statement if run as part of a benchmark,
+    or does nothing otherwise.
+
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(benchmark_memory):
+            with Client() as client:
+                with benchmark_memory(client):
+                    do_something()
+    """
+
     @contextlib.contextmanager
     def _benchmark_memory(client):
         if not test_run_benchmark:
@@ -246,6 +310,27 @@ def benchmark_memory(test_run_benchmark):
 
 @pytest.fixture(scope="function")
 def benchmark_task_durations(test_run_benchmark):
+    """Benchmark the time spent computing, transferring data, spilling to disk,
+    and deserializing data.
+
+    Yields
+    ------
+    Context manager factory function which takes a ``distributed.Client``
+    as input. The context manager records records time spent computing,
+    transferring data, spilling to disk, and deserializing data while
+    executing the ``with`` statement if run as part of a benchmark,
+    or does nothing otherwise.
+
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(benchmark_task_durations):
+            with Client() as client:
+                with benchmark_task_durations(client):
+                    do_something()
+    """
+
     @contextlib.contextmanager
     def _measure_durations(client):
         if not test_run_benchmark:
@@ -274,13 +359,28 @@ def benchmark_task_durations(test_run_benchmark):
 
 @pytest.fixture(scope="function")
 def benchmark_all(benchmark_memory, benchmark_task_durations, benchmark_time):
-    """Return a function that creates a context manager for benchmarking.
+    """Benchmark all available metrics.
 
-    Example:
-    >>> def test_example(benchmark_all):
-    >>>    ...
-    >>>    with benchmark_all(client):
-    >>>       client.compute(my_computation)
+    Yields
+    ------
+    Context manager factory function which takes a ``distributed.Client``
+    as input. The context manager records records all available metrics while
+    executing the ``with`` statement if run as part of a benchmark,
+    or does nothing otherwise.
+
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(benchmark_all):
+            with benchmark_all(client):
+                do_something()
+
+    See Also
+    --------
+    benchmark_memory
+    benchmark_task_durations
+    benchmark_time
     """
 
     @contextlib.contextmanager
@@ -315,6 +415,7 @@ def small_cluster(request):
         worker_vm_types=["t3.large"],  # 2CPU, 8GiB
         scheduler_vm_types=["t3.large"],
         backend_options=backend_options,
+        package_sync=True,
     ) as cluster:
         yield cluster
 

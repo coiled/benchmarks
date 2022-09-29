@@ -6,7 +6,6 @@ import pathlib
 import shlex
 import subprocess
 import sys
-from distutils.util import strtobool
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -38,15 +37,20 @@ def main():
         if package_name == "python":
             requirements[idx] = f"python =={python_version}"
 
-    # Optionally use the development version of `dask` and `distributed`
-    # from `dask/label/dev` conda channel
-    upstream = strtobool(os.environ.get("TEST_UPSTREAM", "false"))
-    if upstream:
-        upstream_packages = {"dask", "distributed"}
-        for idx, req in enumerate(requirements):
-            package_name = Requirement(req).name
-            if package_name in upstream_packages:
-                requirements[idx] = get_latest_conda_build(package_name)
+    if os.environ.get("COILED_RUNTIME_VERSION", "unknown") == "upstream":
+        requirements = [
+            r
+            for r in requirements
+            if Requirement(r).name not in {"dask", "distributed"}
+        ]
+        requirements.append(
+            {
+                "pip": [
+                    "git+https://github.com/dask/dask@main",
+                    "git+https://github.com/dask/distributed@main",
+                ]
+            }
+        )
 
     # File compatible with `mamba env create --file <...>`
     env = {
