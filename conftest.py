@@ -17,17 +17,12 @@ import distributed
 import filelock
 import pytest
 import s3fs
+import sqlalchemy
+from coiled import Cluster
 from distributed import Client
 from distributed.diagnostics.memory_sampler import MemorySampler
-from toolz import merge
-
-try:
-    from coiled.v2 import Cluster
-except ImportError:
-    from coiled._beta import ClusterBeta as Cluster
-
-import sqlalchemy
 from sqlalchemy.orm import Session
+from toolz import merge
 
 from benchmark_schema import TestRun
 from plugins import Durations
@@ -402,8 +397,13 @@ def test_name_uuid(request):
     return f"{request.node.originalname}-{uuid.uuid4().hex}"
 
 
+@pytest.fixture(scope="session")
+def dask_env_variables():
+    return {k: v for k, v in os.environ.items() if k.startswith("DASK_")}
+
+
 @pytest.fixture(scope="module")
-def small_cluster(request):
+def small_cluster(request, dask_env_variables):
     # Extract `backend_options` for cluster from `backend_options` markers
     backend_options = merge(
         m.kwargs for m in request.node.iter_markers(name="backend_options")
@@ -413,9 +413,10 @@ def small_cluster(request):
         name=f"{module}-{uuid.uuid4().hex[:8]}",
         n_workers=10,
         worker_vm_types=["t3.large"],  # 2CPU, 8GiB
-        scheduler_vm_types=["t3.large"],
+        scheduler_vm_types=["t3.xlarge"],
         backend_options=backend_options,
         package_sync=True,
+        environ=dask_env_variables,
     ) as cluster:
         yield cluster
 

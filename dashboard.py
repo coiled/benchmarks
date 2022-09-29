@@ -4,15 +4,19 @@ import argparse
 import glob
 import importlib
 import inspect
+import operator
 import pathlib
-from typing import Literal, NamedTuple
+from collections.abc import Callable
+from typing import Any, Literal, NamedTuple
 
 import altair
+import numpy
 import pandas
 import panel
 import sqlalchemy
 from bokeh.resources import INLINE
 
+altair.data_transformers.enable("default", max_rows=None)
 panel.extension("vega")
 
 
@@ -53,120 +57,221 @@ def load_test_source() -> None:
     print(f"Discovered {len(source)} tests")
 
 
-def align_to_baseline(df: pandas.DataFrame, baseline: str) -> pandas.DataFrame | None:
-    """Add columns
+def calc_ab_confidence_intervals(
+    df: pandas.DataFrame, field_name: str, A: str, B: str
+) -> pandas.DataFrame:
+    """Calculate p(B / A - 1) > x and p(B / A - 1) < -x for discrete x, where A and B
+    are runtimes, for all tests in df.
 
-    - duration_baseline
-    - average_memory_baseline
-    - peak_memory_baseline
-    - duration_delta (A/B - 1)
-    - average_memory_delta (A/B - 1)
-    - peak_memory_delta (A/B - 1)
+    Algorithm
+    ---------
+    https://towardsdatascience.com/a-practical-guide-to-a-b-tests-in-python-66666f5c3b02
 
-    Baseline values are from the matching rows given the same test name and the baseline
-    runtime. Note that this means that df is expected to have exactly 1 test in the
-    baseline runtime for each test in every other runtime.
+    Returns
+    -------
+    DataFrame:
+
+    fullname
+        Test name with category, e.g. bencharks/test_foo.py::test_123[1]
+    fullname_no_category
+        Test name without category, e.g. test_foo.py::test_123[1]
+    x
+        Confidence interval [-0.5, 0.5]. Note that element 0 will be repeated.
+    xlabel
+        "<-{p*100}% | x < 0
+        ">{p*100}% | x > 0
+    p
+        p(B/A-1) < x | x < 0
+        p(B/A-1) > x | x > 0
+    color
+        0 if p=1 and x < 0
+        0.5 if p=0
+        1 if p=1 and x > 0
+        plus all shades in between
     """
-    df_baseline = df[df["runtime"] == baseline]
 
-    if df_baseline.empty:
-        # Typically a misspelling. However, this can legitimately happen in CI if all
-        # three jobs of the baseline runtime failed early.
-        print(
-            f"Baseline runtime {baseline!r} not found; valid choices are:",
-            ", ".join(df["runtime"].unique()),
-        )
-        return None
+    def bootstrap_mean(df_i: pandas.DataFrame) -> pandas.DataFrame:
+        boot = df_i[field_name].sample(frac=10_000, replace=True).to_frame()
+        boot["i"] = pandas.RangeIndex(boot.shape[0]) // df_i.shape[0]
+        out = boot.groupby("i").mean().reset_index()[[field_name]]
+        assert out.shape == (10_000, 1)
+        out.index.name = "bootstrap_run"
+        return out
 
-    baseline_names = df_baseline["fullname"].unique()
-    all_names = df["fullname"].unique()
-
-    assert len(baseline_names) == df_baseline.shape[0]
-    if len(baseline_names) < len(all_names):
-        # This will happen in CI if one or two out of three jobs of the baseline failed.
-        # Note that df contains the latest run only. It means that tests on all runtimes
-        # (including historical ones) should be from the coiled-runtime git tip, so
-        # adding or removing tests should not cause a mismatch.
-        print(
-            f"Baseline runtime {baseline!r} is missing some tests:",
-            ", ".join(set(all_names) - set(baseline_names)),
-        )
-        return None
-
-    columns = [spec.field_name for spec in SPECS]
-    df_baseline = (
-        df_baseline.set_index("fullname")
-        .loc[df["fullname"], columns]
-        .rename(columns={k: k + "_baseline" for k in columns})
+    # DataFrame with 20,000 rows per test exactly, with columns
+    # [fullname, fullname_no_category, runtime, bootstrap_run, {field_name}]
+    bootstrapped = (
+        df.groupby(["fullname", "fullname_no_category", "runtime"])
+        .apply(bootstrap_mean)
+        .reset_index()
     )
-    df_baseline.index = df.index
-    df = pandas.concat([df, df_baseline], axis=1)
-    for column in columns:
-        df[column + "_delta"] = (df[column] / df[column + "_baseline"] - 1) * 100
-    return df
+
+    # DataFrame with 10,000 rows per test exactly, with columns
+    # [fullname, fullname_no_category, bootstrap_run, {A}, {B}, diff]
+    pivot = bootstrapped.pivot(
+        ["fullname", "fullname_no_category", "bootstrap_run"],
+        "runtime",
+        field_name,
+    ).reset_index()
+    pivot["diff"] = pivot[B] / pivot[A] - 1
+
+    def confidence(
+        df_i: pandas.DataFrame,
+        x: numpy.ndarray,
+        op: Literal["<", ">"],
+        cmp: Callable[[Any, Any], bool],
+        color_factor: float,
+    ) -> pandas.DataFrame:
+        xlabel = [f"{op}{xi * 100:.0f}%" for xi in x]
+        p = (cmp(df_i["diff"].values.reshape([-1, 1]), x)).sum(axis=0) / df_i.shape[0]
+        color = color_factor * p / 2 + 0.5
+        return pandas.DataFrame({"x": x, "xlabel": xlabel, "p": p, "color": color})
+
+    pivot_groups = pivot.groupby(["fullname", "fullname_no_category"])[["diff"]]
+    x_neg = numpy.linspace(-0.8, 0, 17)
+    x_pos = numpy.linspace(0, 0.8, 17)
+    conf_neg, conf_pos = [
+        # DataFrame with 1 row per element of x_neg/x_pos and columns
+        # [fullname, fullname_no_category, x, xlabel, p, color]
+        (
+            pivot_groups.apply(confidence, p, op, cmp, color_factor)
+            .reset_index()
+            .drop("level_2", axis=1)
+        )
+        for (p, op, cmp, color_factor) in (
+            (x_neg, "<", operator.lt, -1),
+            (x_pos, ">", operator.gt, 1),
+        )
+    ]
+    return pandas.concat([conf_neg, conf_pos], axis=0)
 
 
 def make_barchart(
     df: pandas.DataFrame,
     spec: ChartSpec,
     title: str,
-    baseline: str | None,
-) -> altair.Chart | None:
+) -> tuple[altair.Chart | None, int]:
     """Make a single Altair barchart for a given test or runtime"""
     df = df.dropna(subset=[spec.field_name, "start"])
     if not len(df):
         # Some tests do not have average_memory or peak_memory measures, only runtime
-        return None
+        return None, 0
 
-    fields = [
-        spec.field_name,
-        "fullname",
-        "fullname_no_category",
-        "dask_version",
-        "distributed_version",
-        "runtime",
+    df = df[
+        [
+            spec.field_name,
+            "fullname",
+            "fullname_no_category",
+            "dask_version",
+            "distributed_version",
+            "runtime",
+        ]
     ]
 
-    height = max(df.shape[0] * 20 + 50, 90)
     tooltip = [
         altair.Tooltip("fullname:N", title="Test"),
+        altair.Tooltip("runtime:N", title="Runtime"),
         altair.Tooltip("dask_version:N", title="Dask"),
         altair.Tooltip("distributed_version:N", title="Distributed"),
-        altair.Tooltip(f"{spec.field_name}:Q", title=f"{spec.field_desc} {spec.unit}"),
+        altair.Tooltip(f"count({spec.field_name}):N", title="Number of runs"),
+        altair.Tooltip(f"stdev({spec.field_name}):Q", title=f"std dev {spec.unit}"),
+        altair.Tooltip(f"min({spec.field_name}):Q", title=f"min {spec.unit}"),
+        altair.Tooltip(f"median({spec.field_name}):Q", title=f"median {spec.unit}"),
+        altair.Tooltip(f"mean({spec.field_name}):Q", title=f"mean {spec.unit}"),
+        altair.Tooltip(f"max({spec.field_name}):Q", title=f"max {spec.unit}"),
     ]
 
     by_test = len(df["fullname"].unique()) == 1
     if by_test:
         df = df.sort_values("runtime", key=runtime_sort_key_pd)
         y = altair.Y("runtime", title="Runtime", sort=None)
+        n_bars = df["runtime"].unique().size
     else:
         y = altair.Y("fullname_no_category", title="Test name")
+        n_bars = df["fullname_no_category"].unique().size
 
-    if baseline:
-        fields += [
-            f"{spec.field_name}_delta",
-            f"{spec.field_name}_baseline",
-        ]
-        x = altair.X(
-            f"{spec.field_name}_delta",
-            title=f"{spec.field_desc} (delta % from {baseline})",
-        )
-        tooltip += [
-            altair.Tooltip(
-                f"{spec.field_name}_baseline:Q", title=f"{baseline} {spec.unit}"
-            ),
-            altair.Tooltip(f"{spec.field_name}_delta:Q", title="Delta %"),
-        ]
-    else:
-        x = altair.X(spec.field_name, title=f"{spec.field_desc} {spec.unit}")
+    height = max(n_bars * 20 + 50, 90)
 
-    return (
-        altair.Chart(df[fields], width=800, height=height)
+    bars = (
+        altair.Chart(width=800, height=height)
         .mark_bar()
-        .encode(x=x, y=y, tooltip=tooltip)
+        .encode(
+            x=altair.X(
+                f"median({spec.field_name}):Q", title=f"{spec.field_desc} {spec.unit}"
+            ),
+            y=y,
+            tooltip=tooltip,
+        )
+    )
+    ticks = (
+        altair.Chart()
+        .mark_tick(color="black")
+        .encode(x=f"mean({spec.field_name})", y=y)
+    )
+    error_bars = (
+        altair.Chart().mark_errorbar(extent="stdev").encode(x=spec.field_name, y=y)
+    )
+    chart = (
+        altair.layer(bars, ticks, error_bars, data=df)
         .properties(title=title)
         .configure(autosize="fit")
     )
+
+    return chart, height
+
+
+def make_ab_confidence_map(
+    df: pandas.DataFrame,
+    spec: ChartSpec,
+    title: str,
+    baseline: str,
+) -> tuple[altair.Chart | None, int]:
+    """Make a single Altair heatmap of p(B/A - 1) confidence intervals, where B is the
+    examined runtime and A is the baseline, for all tests for a given measure.
+    """
+    df = df.dropna(subset=[spec.field_name, "start"])
+    if not len(df):
+        # Some tests do not have average_memory or peak_memory measures, only runtime
+        return None, 0
+
+    df = df[
+        [
+            spec.field_name,
+            "fullname",
+            "fullname_no_category",
+            "runtime",
+        ]
+    ]
+    runtimes = df["runtime"].unique()
+    A = baseline
+    B = next(r for r in runtimes if r != baseline)
+    conf = calc_ab_confidence_intervals(df, spec.field_name, A, B)
+
+    n_bars = df["fullname_no_category"].unique().size
+    height = max(n_bars * 20 + 50, 90)
+
+    chart = (
+        altair.Chart(conf, width=800, height=height)
+        .mark_rect()
+        .encode(
+            x=altair.X("xlabel:O", title="confidence threshold (B/A - 1)", sort=None),
+            y=altair.Y("fullname_no_category:O", title="Test"),
+            color=altair.Color(
+                "color:Q",
+                scale=altair.Scale(scheme="redblue", domain=[0, 1], reverse=True),
+                legend=None,
+            ),
+            tooltip=[
+                altair.Tooltip("fullname:O", title="Test Name"),
+                altair.Tooltip("xlabel:O", title="Confidence threshold"),
+                altair.Tooltip("p:Q", format=".2p", title="p(B/A-1) exceeds threshold"),
+            ],
+        )
+        .properties(title=title)
+        .configure(autosize="fit")
+    )
+
+    return chart, height
 
 
 def make_timeseries(
@@ -229,7 +334,7 @@ def make_timeseries(
 
 def make_test_report(
     df: pandas.DataFrame,
-    kind: Literal["barchart" | "timeseries"],
+    kind: Literal["barchart" | "timeseries" | "A/B"],
     title: str,
     sourcename: str | None = None,
     baseline: str | None = None,
@@ -240,16 +345,18 @@ def make_test_report(
         if kind == "timeseries":
             assert not baseline
             chart = make_timeseries(df, spec, title)
+            height = 384
+        elif kind == "barchart":
+            assert not baseline
+            chart, height = make_barchart(df, spec, title)
+        elif kind == "A/B":
+            assert baseline
+            chart, height = make_ab_confidence_map(df, spec, title, baseline=baseline)
         else:
-            chart = make_barchart(df, spec, title, baseline)
+            raise ValueError(kind)  # pragma: nocover
         if not chart:
             continue
         tabs.append((spec.field_desc, chart))
-
-    if kind == "timeseries":
-        height = 384
-    else:
-        height = max(df.shape[0] * 20 + 50, 90)
 
     if sourcename in source:
         code = panel.pane.Markdown(
@@ -281,10 +388,8 @@ def make_timeseries_html_report(
     categories = sorted(df[df.runtime == runtime].category.unique())
     tabs = []
     for category in categories:
-        df_by_test = (
-            df[(df.runtime == runtime) & (df.category == category)]
-            .sort_values("sourcename")
-            .groupby("sourcename")
+        df_by_test = df[(df.runtime == runtime) & (df.category == category)].groupby(
+            "sourcename"
         )
         panes = [
             make_test_report(
@@ -302,29 +407,22 @@ def make_timeseries_html_report(
     doc.save(out_fname, title=runtime, resources=INLINE)
 
 
-def make_ab_html_report(
+def make_barchart_html_report(
     df: pandas.DataFrame,
     output_dir: pathlib.Path,
     by_test: bool,
-    baseline: str | None,
 ) -> None:
-    """Generate HTML report for the latest CI run, comparing all runtimes (e.g.
-    coiled-upstream-py3.9) against a baseline runtime
+    """Generate HTML report containing bar charts showing statistical information
+    (mean, median, etc).
 
     Create one tab for each test category (e.g. benchmarks, runtime, stability),
     one graph for each runtime and one bar for each test
     OR one graph for each test and one bar for each runtime,
     and one graph tab for each measure (wall clock, average memory, peak memory).
-
-    If a baseline runtime is defined, all measures are expressed relative to the
-    baseline; otherwise they're expressed in absolute terms.
     """
     out_fname = str(
         output_dir.joinpath(
-            "AB_by_"
-            + ("test" if by_test else "runtime")
-            + (f"_vs_{baseline}" if baseline else "")
-            + ".html"
+            "barcharts_by_" + ("test" if by_test else "runtime") + ".html"
         )
     )
     print(f"Generating {out_fname}")
@@ -333,36 +431,25 @@ def make_ab_html_report(
     tabs = []
     for category in categories:
         if by_test:
-            df_by_test = (
-                df[df.category == category]
-                .sort_values(["sourcename", "fullname"])
-                .groupby(["sourcename", "fullname"])
-            )
+            df_by_test = df[df.category == category].groupby(["sourcename", "fullname"])
             panes = [
                 make_test_report(
                     df_by_test.get_group((sourcename, fullname)),
                     kind="barchart",
                     title=fullname,
                     sourcename=sourcename,
-                    baseline=baseline,
                 )
                 for sourcename, fullname in df_by_test.groups
             ]
         else:
-            df_by_runtime = (
-                df[df.category == category]
-                .sort_values("runtime", key=runtime_sort_key_pd)
-                .groupby("runtime")
-            )
+            df_by_runtime = df[df.category == category].groupby("runtime")
             panes = [
                 make_test_report(
                     df_by_runtime.get_group(runtime),
                     kind="barchart",
                     title=runtime,
-                    baseline=baseline,
                 )
                 for runtime in sorted(df_by_runtime.groups, key=runtime_sort_key)
-                if runtime != baseline
             ]
         flex = panel.FlexBox(*panes, align_items="start", justify_content="start")
         tabs.append((category.title(), flex))
@@ -370,11 +457,69 @@ def make_ab_html_report(
 
     doc.save(
         out_fname,
-        title="A/B by "
-        + ("test" if by_test else "runtime")
-        + (f" vs. {baseline}" if baseline else ""),
+        title="Bar charts by " + ("test" if by_test else "runtime"),
         resources=INLINE,
     )
+
+
+def make_ab_html_report(
+    df: pandas.DataFrame,
+    output_dir: pathlib.Path,
+    baseline: str,
+) -> bool:
+    """Generate HTML report containing heat maps for confidence intervals relative to
+    a baseline runtime, e.g. p(B/A-1) > 10%
+
+    Create one tab for each test category (e.g. benchmarks, runtime, stability), one
+    graph for each runtime, and one graph tab for each measure (wall clock, average
+    memory, peak memory).
+
+    Returns
+    -------
+    True if the report was generated; False otherwise
+    """
+    out_fname = str(output_dir.joinpath(f"AB_vs_{baseline}.html"))
+    print(f"Generating {out_fname}")
+
+    categories = sorted(df.category.unique())
+    tabs = []
+    for category in categories:
+        df_by_runtime = df[df.category == category].groupby("runtime")
+        if baseline not in df_by_runtime.groups:
+            # Typically a misspelling. However, this can legitimately happen in CI if
+            # all three jobs of the baseline runtime failed early.
+            print(
+                f"Baseline runtime {baseline!r} not found; valid choices are:",
+                ", ".join(df["runtime"].unique()),
+            )
+            return False
+
+        panes = [
+            make_test_report(
+                pandas.concat(
+                    [
+                        df_by_runtime.get_group(runtime),
+                        df_by_runtime.get_group(baseline),
+                    ],
+                    axis=0,
+                ),
+                kind="A/B",
+                title=runtime,
+                baseline=baseline,
+            )
+            for runtime in sorted(df_by_runtime.groups, key=runtime_sort_key)
+            if runtime != baseline
+        ]
+        flex = panel.FlexBox(*panes, align_items="start", justify_content="start")
+        tabs.append((category.title(), flex))
+    doc = panel.Tabs(*tabs, margin=12)
+
+    doc.save(
+        out_fname,
+        title="A/B confidence intervals vs. " + baseline,
+        resources=INLINE,
+    )
+    return True
 
 
 def make_index_html_report(
@@ -385,12 +530,12 @@ def make_index_html_report(
     index_txt += "### Historical timeseries\n"
     for runtime in runtimes:
         index_txt += f"- [{runtime}](./{runtime}.html)\n"
-    index_txt += "\n\n### A/B tests\n"
-    index_txt += "- [by test](./AB_by_test.html)\n"
-    index_txt += "- [by runtime](./AB_by_runtime.html)\n"
+    index_txt += "\n\n### Statistical analysis\n"
+    index_txt += "- [Bar charts, by test](./barcharts_by_test.html)\n"
+    index_txt += "- [Bar charts, by runtime](./barcharts_by_runtime.html)\n"
     for baseline in baselines:
         index_txt += (
-            f"- [by runtime vs. {baseline}](./AB_by_runtime_vs_{baseline}.html)\n"
+            f"- [A/B confidence intervals vs. {baseline}](./AB_vs_{baseline}.html)\n"
         )
 
     index = panel.pane.Markdown(index_txt, width=800)
@@ -503,24 +648,21 @@ def main() -> None:
     for runtime in runtimes:
         make_timeseries_html_report(df, output_dir, runtime)
 
-    # Select only the latest run for each runtime. This may pick up historical runs (up
-    # to 6h old) if they have not been rerun in the current pull/PR.
-    # TODO This is fragile. Keep the latest and historical databases separate, or record
-    #      the coiled-runtime git hash and use it to filter?
-    max_end = df.sort_values("end").groupby(["runtime", "category"]).tail(1)
-    max_end = max_end[max_end["end"] > max_end["end"].max() - pandas.Timedelta("6h")]
-    session_ids = max_end["session_id"].unique()
-    latest_run = df[df["session_id"].isin(session_ids)]
+    # Do not use data that is more than a week old in statistical analysis.
+    # Also exclude failed tests.
+    df_recent = df[
+        (df["end"] > df["end"].max() - pandas.Timedelta("7d"))
+        & (df["call_outcome"] == "passed")
+    ]
 
-    make_ab_html_report(latest_run, output_dir, by_test=True, baseline=None)
-    make_ab_html_report(latest_run, output_dir, by_test=False, baseline=None)
+    make_barchart_html_report(df_recent, output_dir, by_test=True)
+    make_barchart_html_report(df_recent, output_dir, by_test=False)
+
     baselines = []
     for baseline in args.baseline:
-        df_baseline = align_to_baseline(latest_run, baseline)
-        if df_baseline is None:
-            continue
-        baselines.append(baseline)
-        make_ab_html_report(df_baseline, output_dir, by_test=False, baseline=baseline)
+        has_baseline = make_ab_html_report(df_recent, output_dir, baseline)
+        if has_baseline:
+            baselines.append(baseline)
 
     make_index_html_report(output_dir, runtimes, baselines)
 

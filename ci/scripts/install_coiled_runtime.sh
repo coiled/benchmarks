@@ -7,8 +7,8 @@ set -o xtrace
 
 if [[ "$COILED_RUNTIME_VERSION" =~ upstream|latest|AB_ ]]
 then
-  cat coiled_software_environment.yaml
-  mamba env update --file coiled_software_environment.yaml
+  cat $1
+  mamba env update --file $1
 else
   mamba install -c conda-forge coiled-runtime=$COILED_RUNTIME_VERSION
 fi

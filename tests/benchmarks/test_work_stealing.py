@@ -4,9 +4,10 @@ import dask.array as da
 import distributed
 import numpy as np
 import pytest
-from coiled.v2 import Cluster
+from coiled import Cluster
 from dask import delayed, utils
 from distributed import Client
+from packaging.version import Version
 from tornado.ioloop import PeriodicCallback
 
 
@@ -18,19 +19,24 @@ def test_trivial_workload_should_not_cause_work_stealing(small_client):
 
 
 @pytest.mark.xfail(
-    distributed.__version__ == "2022.6.0",
+    Version(distributed.__version__) < Version("2022.6.1"),
     reason="https://github.com/dask/distributed/issues/6624",
 )
 def test_work_stealing_on_scaling_up(
-    test_name_uuid, upload_cluster_dump, benchmark_all
+    test_name_uuid, upload_cluster_dump, benchmark_all, dask_env_variables
 ):
     with Cluster(
         name=test_name_uuid,
         n_workers=1,
         worker_vm_types=["t3.medium"],
+        scheduler_vm_types=["t3.xlarge"],
         wait_for_workers=True,
+        package_sync=True,
+        environ=dask_env_variables,
     ) as cluster:
         with Client(cluster) as client:
+            # FIXME https://github.com/coiled/platform/issues/103
+            client.wait_for_workers(1)
             with upload_cluster_dump(client, cluster), benchmark_all(client):
                 # Slow task.
                 def func1(chunk):
@@ -74,15 +80,19 @@ def test_work_stealing_on_inhomogeneous_workload(small_client):
 
 
 def test_work_stealing_on_straggling_worker(
-    test_name_uuid, upload_cluster_dump, benchmark_all
+    test_name_uuid, upload_cluster_dump, benchmark_all, dask_env_variables
 ):
     with Cluster(
         name=test_name_uuid,
         n_workers=10,
         worker_vm_types=["t3.medium"],
+        scheduler_vm_types=["t3.xlarge"],
         wait_for_workers=True,
+        environ=dask_env_variables,
     ) as cluster:
         with Client(cluster) as client:
+            # FIXME https://github.com/coiled/platform/issues/103
+            client.wait_for_workers(10)
             with upload_cluster_dump(client, cluster), benchmark_all(client):
 
                 def clog():
