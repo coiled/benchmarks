@@ -10,3 +10,4 @@ dependencies:
   - sqlalchemy
   - alembic
   - filelock
+  - cftime
