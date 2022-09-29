@@ -3,6 +3,7 @@ from __future__ import annotations
 import dask.array as da
 import distributed
 import numpy as np
+import py
 import pytest
 import xarray as xr
 from dask.utils import format_bytes, parse_bytes
@@ -177,14 +178,29 @@ def test_map_overlap_sample(small_client):
     y[5000:5010, 5000:5010].compute()
 
 
-@pytest.mark.parametrize("threshold", [128, 200, 250])
-@pytest.mark.parametrize("nlayers", [10, 100, 1000])
-def test_filter_then_average(threshold, nlayers, small_client):
-    memory = cluster_memory(small_client)  # 76.66 GiB
-    target_nbytes = memory * 5
-    data = da.random.randint(0, 255,
-        scaled_array_shape(target_nbytes, ("100MiB", "x", nlayers)),
-        chunks=(parse_bytes("100MiB") // 8, 10, 10),
+@pytest.fixture(
+    scope="module",
+    params=[500, 1000, 2000],
+    ids=["small", "medium", "large"]
+)
+def zarr_dataset(request):
+    s3_uri = (
+        f"s3://coiled-runtime-ci/synthetic-zarr/"
+        f"synth_random_int_array_{request.param}_cubed.zarr"
     )
+    return da.from_zarr(s3_uri)
 
-    result = data[data > threshold].mean().compute()
+
+@pytest.mark.parametrize("threshold", [50, 100, 200, 255])
+def test_filter_then_average(threshold, zarr_dataset, small_client):
+    _ = zarr_dataset[zarr_dataset > threshold].mean().compute()
+
+
+
+@pytest.mark.parametrize("N", [500, 250, 50, 1])
+def test_access_slices(N, zarr_dataset):
+    _ = zarr_dataset[:N, :N, :N].compute()
+
+
+def test_sum_residuals(zarr_dataset):
+    _ = (zarr_dataset - zarr_dataset.mean(axis=0)).sum()
