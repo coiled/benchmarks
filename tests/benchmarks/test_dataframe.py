@@ -68,8 +68,7 @@ def test_shuffle(small_client):
 
 
 def test_ddf_isin(small_client):
-    # memory = cluster_memory(small_client)
-    print(small_client.dashboard_link)
+    memory = cluster_memory(small_client)
     ddf = dd.read_parquet("s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_parquet/*.parquet",
         columns=["id1", "id6"]
         )
