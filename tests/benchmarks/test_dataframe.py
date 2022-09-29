@@ -58,3 +58,12 @@ def test_shuffle(small_client):
     shuf = df.shuffle(0, shuffle="tasks")
     result = shuf.size
     wait(result, small_client, 20 * 60)
+
+
+def test_filter(small_client):
+    """How fast can we filter a DataFrame?"""
+    memory = cluster_memory(small_client)
+    df = timeseries_of_size(memory)
+    name = df.head(1).name.iloc[0]  # Get first name that appears
+    result = df[df.name == name]
+    wait(result, small_client, 10 * 60)
