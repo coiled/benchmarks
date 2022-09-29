@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import dask.array as da
+import distributed
 import numpy as np
 import pytest
 import xarray as xr
 from dask.utils import format_bytes, parse_bytes
+from packaging.version import Version
 
 from ..utils_test import arr_to_devnull, cluster_memory, scaled_array_shape, wait
 
@@ -156,6 +158,10 @@ def test_dot_product(small_client):
     wait(b, small_client, 10 * 60)
 
 
+@pytest.mark.xfail(
+    Version(distributed.__version__) < Version("2022.6.1"),
+    reason="https://github.com/dask/distributed/issues/6624",
+)
 def test_map_overlap_sample(small_client):
     """
     This is from Napari like workloads where they have large images and
