@@ -154,3 +154,18 @@ def test_dot_product(small_client):
     a = da.random.random((24 * 1024, 24 * 1024), chunks="128 MiB")  # 4.5 GiB
     b = (a @ a.T).sum().round(3)
     wait(b, small_client, 10 * 60)
+
+
+def test_map_overlap_sample(small_client):
+    """
+    This is from Napari like workloads where they have large images and
+    commonly use map_overlap.  They care about rapid (sub-second) access to
+    parts of a large array.
+
+    At the time of writing, data creation took 300ms and the
+    map_overlap/getitem, took 2-3s
+    """
+    x = da.random.random((10000, 10000), chunks=(50, 50))
+
+    y = x.map_overlap(lambda x: x, depth=1)
+    y[5000:5010, 5000:5010].compute()
