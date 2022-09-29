@@ -17,7 +17,7 @@ def test_large_map(small_client):
 def test_large_map_first_work(small_client):
     """
     Large maps are fine, but it's pleasant to see work start immediately.
-    We have a batches keyword that should work here but it's not on by default.
+    We have a batch_size keyword that should work here but it's not on by default.
     Maybe it should be.
     """
     futures = small_client.map(inc, range(100_000))
@@ -35,7 +35,7 @@ def test_memory_efficient(small_client):
     zs = small_client.map(slowdec, ys, delay=0.1)
 
     futures = as_completed(zs)
-    del xs, ys, zs
+    del xs, ys, zs  # Don't keep references to intermediate results
 
-    for future in futures:
+    for future in futures:  # pass through all futures, forget them immediately
         continue
