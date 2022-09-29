@@ -14,3 +14,4 @@ def cmip6():
 def test_select_scalar(small_client, cmip6):
     ds = cmip6.isel({"lat": 20, "lon": 40, "plev": 5, "time": 1234}).compute()
     assert ds.zg.shape == ()
+    assert ds.zg.size == 1
