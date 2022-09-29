@@ -31,52 +31,8 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
-        pytest_args: [tests]
+        pytest_args: [tests/benchmarks/test_array.py]
         runtime-version: [upstream, latest, "0.0.4", "0.1.0"]
-        include:
-          # Run stability tests on Python 3.8
-          - pytest_args: tests/stability
-            python-version: "3.8"
-            runtime-version: upstream
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.8"
-            runtime-version: latest
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.8"
-            runtime-version: "0.0.4"
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.8"
-            runtime-version: "0.1.0"
-            os: ubuntu-latest
-          # Run stability tests on Python 3.10
-          - pytest_args: tests/stability
-            python-version: "3.10"
-            runtime-version: upstream
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.10"
-            runtime-version: latest
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.10"
-            runtime-version: "0.0.4"
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.10"
-            runtime-version: "0.1.0"
-            os: ubuntu-latest
-          # Run stability tests on Python Windows and MacOS (latest py39 only)
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            runtime-version: latest
-            os: windows-latest
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            runtime-version: latest
-            os: macos-latest
 
     steps:
       - name: Checkout
@@ -208,7 +164,7 @@ jobs:
           fi
           echo "IS_PR=$IS_PR"
           python detect_regressions.py
-      
+
       - name: Create regressions summary
         if: always()
         run: |
@@ -221,7 +177,7 @@ jobs:
       always()
       && github.event_name != 'pull_request'
       && github.repository == 'coiled/coiled-runtime'
-      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure') 
+      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
 
     runs-on: ubuntu-latest
     defaults:
