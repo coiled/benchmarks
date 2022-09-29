@@ -106,3 +106,25 @@ def test_download_throughput(parquet_client, kind):
         )
     elif kind == "dask":
         distributed.wait(dd.read_parquet(path, engine="pyarrow").persist())
+
+
+def test_parquet_column_projection(parquet_client):
+    """
+    Selecting columns after a `read_parquet` call should push
+    column selection into the original `read_parquet` call
+    """
+    ddf = dd.read_parquet(
+        "s3://coiled-runtime-ci/nyc-tlc/yellow_tripdata_2019_parquet/yellow_tripdata_2019-*.parquet",
+    )
+    ddf["passenger_count"].max().compute()
+
+
+def test_parquet_groupby_agg_column_projection(parquet_client):
+    """
+    `read_parquet` + grouby-aggregation will push column selection
+    into the original `read_parquet` call
+    """
+    ddf = dd.read_parquet(
+        "s3://coiled-runtime-ci/nyc-tlc/yellow_tripdata_2019_parquet/yellow_tripdata_2019-*.parquet",
+    )
+    ddf.groupby("passenger_count").agg({"tip_amount": "mean"}).compute()
