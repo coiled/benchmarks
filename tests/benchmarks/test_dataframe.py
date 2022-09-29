@@ -1,12 +1,7 @@
-from cgitb import small
+import dask.dataframe as dd
+import pandas as pd
 from dask.sizeof import sizeof
 from dask.utils import format_bytes
-import dask.array as da
-from dask.dataframe import from_pandas
-import dask.dataframe as dd
-
-import numpy as np
-import pandas as pd
 
 from ..utils_test import cluster_memory, timeseries_of_size, wait
 
@@ -68,12 +63,14 @@ def test_shuffle(small_client):
 
 
 def test_ddf_isin(small_client):
-    memory = cluster_memory(small_client)
-    ddf = dd.read_parquet("s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_parquet/*.parquet",
-        columns=["id1", "id6"]
-        )
+    ddf = dd.read_parquet(
+        "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_parquet/*.parquet",
+        columns=["id1", "id6"],
+    )
 
-    filter_values_list = pd.read_parquet("s3://coiled-runtime-ci/client-data/filter_isin.parquet")
+    filter_values_list = pd.read_parquet(
+        "s3://coiled-runtime-ci/client-data/filter_isin.parquet"
+    )
     filter_values_list = filter_values_list.id6.tolist()
     tmp_ddf = ddf[ddf["id6"].isin(filter_values_list)].persist()
-    wait(tmp_ddf, small_client, 20*60)
+    wait(tmp_ddf, small_client, 20 * 60)
