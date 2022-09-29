@@ -11,6 +11,15 @@ from packaging.version import Version
 from ..utils_test import arr_to_devnull, cluster_memory, scaled_array_shape, wait
 
 
+@pytest.fixture(scope="module")
+def zarr_dataset():
+    s3_uri = (
+        "s3://coiled-runtime-ci/synthetic-zarr/"
+        "synth_random_int_array_2000_cubed.zarr"
+    )
+    return da.from_zarr(s3_uri)
+
+
 def print_size_info(memory: int, target_nbytes: int, *arrs: da.Array) -> None:
     print(
         f"Cluster memory: {format_bytes(memory)}, target data size: {format_bytes(target_nbytes)}"
@@ -204,4 +213,21 @@ def test_access_slices(N, zarr_dataset):
 
 
 def test_sum_residuals(zarr_dataset):
+@pytest.mark.parametrize("threshold", [50, 100, 200, 255])
+def test_filter_then_average(threshold, zarr_dataset, small_client):
+    """
+    Compute
+    """
+    _ = zarr_dataset[zarr_dataset > threshold].mean().compute()
+
+
+@pytest.mark.parametrize("N", [500, 250, 50, 1])
+def test_access_slices(N, zarr_dataset, small_client):
+    _ = zarr_dataset[:N, :N, :N].compute()
+
+
+def test_sum_residuals(zarr_dataset, small_client):
+    """
+    Simnple test to check
+    """
     _ = (zarr_dataset - zarr_dataset.mean(axis=0)).sum()
