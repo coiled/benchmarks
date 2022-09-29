@@ -3,7 +3,6 @@ from __future__ import annotations
 import dask.array as da
 import distributed
 import numpy as np
-import py
 import pytest
 import xarray as xr
 from dask.utils import format_bytes, parse_bytes
@@ -54,7 +53,9 @@ def test_basic_sum(small_client):
 
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory * 5
-    data = da.random.randint(0, 255,
+    data = da.random.randint(
+        0,
+        255,
         scaled_array_shape(target_nbytes, ("100MiB", "x")),
         chunks=(parse_bytes("100MiB") // 8, 1),
     )
