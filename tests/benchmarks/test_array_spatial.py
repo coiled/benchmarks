@@ -4,13 +4,11 @@ import dask.array as da
 import pytest
 
 
-@pytest.fixture(
-    scope="module", params=[500, 1000, 2000], ids=["small", "medium", "large"]
-)
-def zarr_dataset(request):
+@pytest.fixture(scope="module")
+def zarr_dataset():
     s3_uri = (
-        f"s3://coiled-runtime-ci/synthetic-zarr/"
-        f"synth_random_int_array_{request.param}_cubed.zarr"
+        "s3://coiled-runtime-ci/synthetic-zarr/"
+        "synth_random_int_array_2000_cubed.zarr"
     )
     return da.from_zarr(s3_uri)
 
@@ -27,3 +25,11 @@ def test_access_slices(N, zarr_dataset):
 
 def test_sum_residuals(zarr_dataset):
     _ = (zarr_dataset - zarr_dataset.mean(axis=0)).sum()
+
+
+def test_map_overlap_extact(zarr_dataset):
+    return (
+        zarr_dataset[:, :, 0]
+        .map_overlap(lambda x: x * 2, depth=2)[:50, 250:303]
+        .compute()
+    )
