@@ -216,18 +216,21 @@ def test_sum_residuals(zarr_dataset):
 @pytest.mark.parametrize("threshold", [50, 100, 200, 255])
 def test_filter_then_average(threshold, zarr_dataset, small_client):
     """
-    Compute
+    Compute the mean for increasingly sparse boolean filters of an array
     """
     _ = zarr_dataset[zarr_dataset > threshold].mean().compute()
 
 
-@pytest.mark.parametrize("N", [500, 250, 50, 1])
+@pytest.mark.parametrize("N", [700, 75, 1])
 def test_access_slices(N, zarr_dataset, small_client):
+    """
+    Accessing just a few chunks of a zarr array should be quick
+    """
     _ = zarr_dataset[:N, :N, :N].compute()
 
 
 def test_sum_residuals(zarr_dataset, small_client):
     """
-    Simnple test to check
+    Simnple test to that computes as reduction, the array op, the reduction again
     """
     _ = (zarr_dataset - zarr_dataset.mean(axis=0)).sum()

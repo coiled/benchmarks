@@ -75,168 +75,168 @@ jobs:
           name: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           path: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
-  # process-results:
-  #   needs: tests
-  #   name: Combine separate benchmark results
-  #   if: always() && github.repository == 'coiled/coiled-runtime'
-  #   runs-on: ubuntu-latest
-  #   concurrency:
-  #     # Fairly strict concurrency rule to avoid stepping on benchmark db.
-  #     # Could eventually replace with a real db in coiled, RDS, or litestream
-  #     group: process-benchmarks
-  #     cancel-in-progress: false
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
+  process-results:
+    needs: tests
+    name: Combine separate benchmark results
+    if: always() && github.repository == 'coiled/coiled-runtime'
+    runs-on: ubuntu-latest
+    concurrency:
+      # Fairly strict concurrency rule to avoid stepping on benchmark db.
+      # Could eventually replace with a real db in coiled, RDS, or litestream
+      group: process-benchmarks
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
 
-  #     - name: Install Python
-  #       uses: actions/setup-python@v4
-  #       with:
-  #         python-version: '3.10'
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
-  #     - name: Install dependencies
-  #       run: pip install alembic
+      - name: Install dependencies
+        run: pip install alembic
 
-  #     - name: Download artifacts
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         path: benchmarks
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: benchmarks
 
-  #     - name: Download benchmark db
-  #       env:
-  #         AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-  #         AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
-  #         DB_NAME: benchmark.db
-  #       run: |
-  #         aws s3 cp s3://coiled-runtime-ci/benchmarks/$DB_NAME . || true
+      - name: Download benchmark db
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
+          DB_NAME: benchmark.db
+        run: |
+          aws s3 cp s3://coiled-runtime-ci/benchmarks/$DB_NAME . || true
 
-  #     - name: Combine benchmarks
-  #       run: |
-  #         ls -lhR benchmarks
-  #         bash ci/scripts/combine-dbs.sh
+      - name: Combine benchmarks
+        run: |
+          ls -lhR benchmarks
+          bash ci/scripts/combine-dbs.sh
 
-  #     - name: Upload benchmark db
-  #       if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
-  #       env:
-  #         AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
-  #         AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-  #         AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
-  #         DB_NAME: benchmark.db
-  #       run: |
-  #         aws s3 cp $DB_NAME s3://coiled-runtime-ci/benchmarks/
+      - name: Upload benchmark db
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
+          DB_NAME: benchmark.db
+        run: |
+          aws s3 cp $DB_NAME s3://coiled-runtime-ci/benchmarks/
 
-  #     - name: Upload benchmark results as artifact
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: benchmark
-  #         path: benchmark.db
+      - name: Upload benchmark results as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark
+          path: benchmark.db
 
-  # regressions:
-  #   needs: process-results
-  #   # Always check for regressions, as this can be skipped even if an indirect dependency fails (like a test run)
-  #   if: always()
-  #   name: Detect regressions
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
+  regressions:
+    needs: process-results
+    # Always check for regressions, as this can be skipped even if an indirect dependency fails (like a test run)
+    if: always()
+    name: Detect regressions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-  #     - uses: actions/download-artifact@v3
-  #       with:
-  #         name: benchmark
+      - uses: actions/download-artifact@v3
+        with:
+          name: benchmark
 
-  #     - name: Set up environment
-  #       uses: conda-incubator/setup-miniconda@v2
-  #       with:
-  #         miniforge-variant: Mambaforge
-  #         use-mamba: true
-  #         python-version: "3.9"
-  #         environment-file: ci/environment-dashboard.yml
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: "3.9"
+          environment-file: ci/environment-dashboard.yml
 
-  #     - name: Run detect regressions
-  #       run: |
-  #         if [[ ${{ github.event_name }} = 'pull_request' ]]
-  #         then
-  #           export IS_PR='true'
-  #         fi
-  #         echo "IS_PR=$IS_PR"
-  #         python detect_regressions.py
+      - name: Run detect regressions
+        run: |
+          if [[ ${{ github.event_name }} = 'pull_request' ]]
+          then
+            export IS_PR='true'
+          fi
+          echo "IS_PR=$IS_PR"
+          python detect_regressions.py
 
-  #     - name: Create regressions summary
-  #       if: always()
-  #       run: |
-  #         echo "$(<regressions_summary.md)" >> $GITHUB_STEP_SUMMARY
+      - name: Create regressions summary
+        if: always()
+        run: |
+          echo "$(<regressions_summary.md)" >> $GITHUB_STEP_SUMMARY
 
-  # report:
-  #   name: report
-  #   needs: [tests, regressions]
-  #   if: |
-  #     always()
-  #     && github.event_name != 'pull_request'
-  #     && github.repository == 'coiled/coiled-runtime'
-  #     && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
+  report:
+    name: report
+    needs: [tests, regressions]
+    if: |
+      always()
+      && github.event_name != 'pull_request'
+      && github.repository == 'coiled/coiled-runtime'
+      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
 
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       shell: bash
-  #   steps:
-  #     - uses: actions/checkout@v2
-  #     - name: Report failures
-  #       uses: actions/github-script@v3
-  #       with:
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         script: |
-  #           const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-  #           const issue_body = `[Workflow Run URL](${workflow_url})`
-  #           github.issues.create({
-  #               owner: context.repo.owner,
-  #               repo: context.repo.repo,
-  #               body: issue_body,
-  #               title: "⚠️ CI failed ⚠️",
-  #               labels: ["ci-failure"],
-  #           })
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v2
+      - name: Report failures
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+            const issue_body = `[Workflow Run URL](${workflow_url})`
+            github.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: issue_body,
+                title: "⚠️ CI failed ⚠️",
+                labels: ["ci-failure"],
+            })
 
-  # static-site:
-  #   needs: process-results
-  #   # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
-  #   if: always()
-  #   name: Build static dashboards
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #       with:
-  #         fetch-depth: 0
+  static-site:
+    needs: process-results
+    # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
+    if: always()
+    name: Build static dashboards
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
 
-  #     - name: Download tests database
-  #       uses: actions/download-artifact@v3
-  #       with:
-  #         name: benchmark
+      - name: Download tests database
+        uses: actions/download-artifact@v3
+        with:
+          name: benchmark
 
-  #     - name: Set up environment
-  #       uses: conda-incubator/setup-miniconda@v2
-  #       with:
-  #         miniforge-variant: Mambaforge
-  #         use-mamba: true
-  #         python-version: "3.9"
-  #         environment-file: ci/environment-dashboard.yml
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: "3.9"
+          environment-file: ci/environment-dashboard.yml
 
-  #     - name: Generate dashboards
-  #       run: python dashboard.py -d benchmark.db -o static -b coiled-latest-py3.9 coiled-0.1.0-py3.9
+      - name: Generate dashboards
+        run: python dashboard.py -d benchmark.db -o static -b coiled-latest-py3.9 coiled-0.1.0-py3.9
 
-  #     - name: Upload artifact
-  #       uses: actions/upload-artifact@v3
-  #       with:
-  #         name: static-dashboard
-  #         path: static
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: static-dashboard
+          path: static
 
-  #     - name: Deploy 🚀
-  #       uses: JamesIves/github-pages-deploy-action@4.1.7
-  #       if:  github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
-  #       with:
-  #         branch: gh-pages
-  #         folder: static
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@4.1.7
+        if:  github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        with:
+          branch: gh-pages
+          folder: static
