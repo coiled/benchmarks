@@ -89,6 +89,7 @@ def test_climatic_mean(small_client):
     wait(arr_clim, small_client, 15 * 60)
 
 
+@pytest.mark.skip
 def test_vorticity(small_client):
     # From https://github.com/dask/distributed/issues/6571
 
@@ -135,6 +136,7 @@ def test_vorticity(small_client):
     wait(arr_to_devnull(result), small_client, 10 * 60)
 
 
+@pytest.mark.skip
 def test_double_diff(small_client):
     # Variant of https://github.com/dask/distributed/issues/6597
     memory = cluster_memory(small_client)  # 76.66 GiB
@@ -150,6 +152,7 @@ def test_double_diff(small_client):
     wait(arr_to_devnull(diff), small_client, 10 * 60)
 
 
+@pytest.mark.skip
 def test_dot_product(small_client):
     a = da.random.random((24 * 1024, 24 * 1024), chunks="128 MiB")  # 4.5 GiB
     b = (a @ a.T).sum().round(3)
