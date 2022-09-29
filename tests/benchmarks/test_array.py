@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import dask.array as da
+import distributed
 import numpy as np
 import pytest
 import xarray as xr
 from dask.utils import format_bytes, parse_bytes
+from packaging.version import Version
 
 from ..utils_test import arr_to_devnull, cluster_memory, scaled_array_shape, wait
 
@@ -154,3 +156,22 @@ def test_dot_product(small_client):
     a = da.random.random((24 * 1024, 24 * 1024), chunks="128 MiB")  # 4.5 GiB
     b = (a @ a.T).sum().round(3)
     wait(b, small_client, 10 * 60)
+
+
+@pytest.mark.xfail(
+    Version(distributed.__version__) < Version("2022.6.1"),
+    reason="https://github.com/dask/distributed/issues/6624",
+)
+def test_map_overlap_sample(small_client):
+    """
+    This is from Napari like workloads where they have large images and
+    commonly use map_overlap.  They care about rapid (sub-second) access to
+    parts of a large array.
+
+    At the time of writing, data creation took 300ms and the
+    map_overlap/getitem, took 2-3s
+    """
+    x = da.random.random((10000, 10000), chunks=(50, 50))
+
+    y = x.map_overlap(lambda x: x, depth=1)
+    y[5000:5010, 5000:5010].compute()
