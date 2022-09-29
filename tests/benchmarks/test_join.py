@@ -3,8 +3,20 @@ import pytest
 
 from ..utils_test import cluster_memory, timeseries_of_size
 
+mem_mult = [
+    0.1,
+    pytest.param(
+        1,
+        marks=pytest.mark.skip(reason="Does not finish"),
+    ),
+    pytest.param(
+        10,
+        marks=pytest.mark.skip(reason="Does not finish"),
+    ),
+]
 
-@pytest.mark.parametrize("mem_mult", [0.1])  # [0.1, 1, 10]
+
+@pytest.mark.parametrize("mem_mult", mem_mult)  # [0.1, 1, 10]
 def test_join_big(small_client, mem_mult):
     memory = cluster_memory(small_client)  # 76.66 GiB
 
@@ -24,7 +36,7 @@ def test_join_big(small_client, mem_mult):
     dd.merge(df1_big, df2_big, on="x2", how="inner").compute()
 
 
-@pytest.mark.parametrize("mem_mult", [0.1])  # [0.1, 1, 10]
+@pytest.mark.parametrize("mem_mult", mem_mult)  # [0.1, 1, 10]
 def test_join_big_small(small_client, mem_mult):
     memory = cluster_memory(small_client)  # 76.66 GiB
 
