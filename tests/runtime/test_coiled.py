@@ -1,3 +1,4 @@
+import coiled
 import dask.dataframe as dd
 import pandas as pd
 
@@ -30,3 +31,9 @@ def test_quickstart_parquet(small_client):
 
     assert isinstance(result, pd.Series)
     assert not result.empty
+
+
+def test_reconnect(small_cluster):
+    """How quickly can we reconnect to an existing cluster?"""
+    with coiled.Cluster(name=small_cluster.name):
+        pass
