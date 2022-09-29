@@ -36,10 +36,11 @@ def test_join_big_small(small_client, mem_mult):
     df_big = df_big.astype({"x2": "int"})
 
     df_small = timeseries_of_size(
-        memory * mem_mult * 0.1,
+        memory * 0.01,
     )
 
     df_small["x2"] = df_small["x"] * 1e9
     df_small = df_small.astype({"x2": "int"})
+    df_small = df_small.repartition(npartitions=1)
 
     dd.merge(df_big, df_small, on="x2", how="inner").compute()
