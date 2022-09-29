@@ -3,6 +3,7 @@ from dask.sizeof import sizeof
 from dask.utils import format_bytes
 import dask.array as da
 from dask.dataframe import from_pandas
+import dask.dataframe as dd
 
 import numpy as np
 import pandas as pd
@@ -69,14 +70,11 @@ def test_shuffle(small_client):
 def test_ddf_isin(small_client):
     # memory = cluster_memory(small_client)
     print(small_client.dashboard_link)
-    rs = np.random.RandomState(42)
-    n = 100_000_000
-    a_column_unique_values = np.arange(1, n // 10)
-    df = pd.DataFrame({"A": rs.choice(a_column_unique_values, n), "B": rs.random(n)})
+    ddf = dd.read_parquet("s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_parquet/*.parquet",
+        columns=["id1", "id6"]
+        )
 
-    filter_values_list = sorted(
-        rs.choice(a_column_unique_values, len(a_column_unique_values) // 2).tolist()
-    )
-    ddf = from_pandas(df, npartitions=8).persist()
-    tmp_ddf = ddf[ddf["A"].isin(filter_values_list)].persist()
+    filter_values_list = pd.read_parquet("s3://coiled-runtime-ci/client-data/filter_isin.parquet")
+    filter_values_list = filter_values_list.id6.tolist()
+    tmp_ddf = ddf[ddf["id6"].isin(filter_values_list)].persist()
     wait(tmp_ddf, small_client, 20*60)
