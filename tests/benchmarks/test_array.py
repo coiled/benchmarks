@@ -135,7 +135,7 @@ def test_vorticity(small_client):
     wait(arr_to_devnull(result), small_client, 10 * 60)
 
 
-@pytest.mark.parametrize("ds_size_fraction_of_cluster", [(1),(2)])
+@pytest.mark.parametrize("ds_size_fraction_of_cluster", [(1), (2)])
 def test_double_diff(ds_size_fraction_of_cluster, small_client):
     # Variant of https://github.com/dask/distributed/issues/6597
 
@@ -144,8 +144,12 @@ def test_double_diff(ds_size_fraction_of_cluster, small_client):
     # This will catch issues like https://github.com/dask/dask/issues/9488
     memory = cluster_memory(small_client) / ds_size_fraction_of_cluster  # 76.66 GiB
 
-    a = da.random.random(scaled_array_shape(memory, ("x", "x")), chunks=("20MiB", "20MiB"))
-    b = da.random.random(scaled_array_shape(memory, ("x", "x")), chunks=("20MiB", "20MiB"))
+    a = da.random.random(
+        scaled_array_shape(memory, ("x", "x")), chunks=("20MiB", "20MiB")
+    )
+    b = da.random.random(
+        scaled_array_shape(memory, ("x", "x")), chunks=("20MiB", "20MiB")
+    )
     print_size_info(memory, memory, a, b)
 
     diff = a[1:, 1:] - b[:-1, :-1]
