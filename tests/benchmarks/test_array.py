@@ -135,10 +135,14 @@ def test_vorticity(small_client):
     wait(arr_to_devnull(result), small_client, 10 * 60)
 
 
-def test_double_diff(small_client):
+@pytest.mark.parametrize("ds_size_fraction_of_cluster", [(1),(2)])
+def test_double_diff(ds_size_fraction_of_cluster, small_client):
     # Variant of https://github.com/dask/distributed/issues/6597
-    memory = cluster_memory(small_client)  # 76.66 GiB
 
+    # We speculate this test shows a lot of variability due to high memory pressure
+    # Here we reduce memory pressure to assess Dask's behavior.  This will catch issues
+    # like https://github.com/dask/dask/issues/9488
+    memory = cluster_memory(small_client) / ds_size_fraction_of_cluster  # 76.66 GiB
     # TODO switch back to chunksizes in the `chunks=` argument everywhere
     #  when https://github.com/dask/dask/issues/9488 is fixed
     cs = int((parse_bytes("20 MiB") / 8) ** (1 / 2))
