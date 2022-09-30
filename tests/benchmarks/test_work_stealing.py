@@ -87,6 +87,7 @@ def test_work_stealing_on_straggling_worker(
         n_workers=10,
         worker_vm_types=["t3.medium"],
         scheduler_vm_types=["t3.xlarge"],
+        package_sync=True,
         wait_for_workers=True,
         environ=dask_env_variables,
     ) as cluster:
