@@ -62,9 +62,7 @@ def test_basic_sum(small_client):
 
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory * 5
-    data = da.random.randint(
-        0,
-        255,
+    data = da.random.zeros(
         scaled_array_shape(target_nbytes, ("100MiB", "x")),
         chunks=(parse_bytes("100MiB") // 8, 1),
     )
@@ -193,7 +191,7 @@ def test_filter_then_average(threshold, zarr_dataset, small_client):
     """
     Compute the mean for increasingly sparse boolean filters of an array
     """
-    _ = zarr_dataset[zarr_dataset > threshold].mean().compute()
+    zarr_dataset[zarr_dataset > threshold].mean().compute()
 
 
 @pytest.mark.parametrize("N", [700, 75, 1])
@@ -201,11 +199,11 @@ def test_access_slices(N, zarr_dataset, small_client):
     """
     Accessing just a few chunks of a zarr array should be quick
     """
-    _ = zarr_dataset[:N, :N, :N].compute()
+    zarr_dataset[:N, :N, :N].compute()
 
 
 def test_sum_residuals(zarr_dataset, small_client):
     """
     Simnple test to that computes as reduction, the array op, the reduction again
     """
-    _ = (zarr_dataset - zarr_dataset.mean(axis=0)).sum()
+    (zarr_dataset - zarr_dataset.mean(axis=0)).sum()
