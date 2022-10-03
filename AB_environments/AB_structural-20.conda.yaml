@@ -1,0 +1,14 @@
+# Sample conda environment file for A/B testing.
+# Delete/rename as needed.
+# All files *must* be called AB_<name>.conda.yaml
+# and *must* be accompanied by AB_<name>.dask.yaml
+
+# See notes in AB_baseline.conda.yaml
+channels:
+  - conda-forge
+dependencies:
+    - python=3.9
+    - coiled-runtime=0.1.0
+    - pip:
+      - dask==2022.9.1
+      - git+https://github.com/dask/distributed@172bbc43648c467d2bb77940d4559f06d5d6deb4
