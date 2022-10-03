@@ -1,10 +1,9 @@
-from cgitb import small
-import dask.dataframe as dd
+from time import time
+
 import numpy as np
-import pandas as pd
+from dask.datasets import timeseries
 from dask.sizeof import sizeof
 from dask.utils import format_bytes
-from dask.datasets import timeseries
 
 from ..utils_test import cluster_memory, timeseries_of_size, wait
 
@@ -71,9 +70,10 @@ def test_ddf_isin(small_client):
     a dask dataframe, and filtering the dataframe by column
     based on that list
     """
+    start = time()
     n = 10_000_000
     rs = np.random.RandomState(42)
-    ddf = timeseries(end="2000-05-01",dtypes={"A": float, "B": int}, seed=42)
+    ddf = timeseries(end="2000-05-01", dtypes={"A": float, "B": int}, seed=42)
     ddf.A = ddf.A.mul(1e7)
     ddf.A = ddf.A.astype(int).persist()
     a_column_unique_values = np.arange(1, n // 10)
@@ -82,3 +82,4 @@ def test_ddf_isin(small_client):
     )
     tmp_ddf = ddf.loc[ddf["A"].isin(filter_values_list)]
     wait(tmp_ddf, small_client, 20 * 60)
+    print(f"Total time to run test_isin:  {time() - start} seconds")
