@@ -62,7 +62,7 @@ def test_basic_sum(small_client):
 
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory * 5
-    data = da.random.zeros(
+    data = da.zeros(
         scaled_array_shape(target_nbytes, ("100MiB", "x")),
         chunks=(parse_bytes("100MiB") // 8, 1),
     )
