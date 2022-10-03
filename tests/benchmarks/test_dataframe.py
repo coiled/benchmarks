@@ -1,7 +1,10 @@
+from cgitb import small
 import dask.dataframe as dd
+import numpy as np
 import pandas as pd
 from dask.sizeof import sizeof
 from dask.utils import format_bytes
+from dask.datasets import timeseries
 
 from ..utils_test import cluster_memory, timeseries_of_size, wait
 
@@ -63,14 +66,24 @@ def test_shuffle(small_client):
 
 
 def test_ddf_isin(small_client):
-    ddf = dd.read_parquet(
-        "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_parquet/*.parquet",
-        columns=["id1", "id6"],
+    import time
+    print(small_client.dashboard_link)
+    n = 10_000_000
+    s0 = time.time()
+    rs = np.random.RandomState(42)
+    ddf = timeseries(end="2000-05-01",dtypes={"A": float, "B": int}, seed=42)
+    ddf.A = ddf.A.mul(1e7)
+    ddf.A = ddf.A.astype(int).persist()
+    # start, stop = ddf.A.min().compute(), ddf.A.max().compute()
+    a_column_unique_values = np.arange(1, n // 10)
+    filter_values_list = sorted(
+        rs.choice(a_column_unique_values, len(a_column_unique_values) // 2).tolist()
     )
-
-    filter_values_list = pd.read_parquet(
-        "s3://coiled-runtime-ci/client-data/filter_isin.parquet"
-    )
-    filter_values_list = filter_values_list.id6.tolist()
-    tmp_ddf = ddf[ddf["id6"].isin(filter_values_list)].persist()
+    print(f"Length of ddf:  {len(ddf.index)}")
+    print(f"Lenght of filter_values_list:  {len(filter_values_list)}")
+    print("Done making ddf...")
+    s1 = time.time()
+    tmp_ddf = ddf.loc[ddf["A"].isin(filter_values_list)]
     wait(tmp_ddf, small_client, 20 * 60)
+    print(f"Done is {time.time() - s1} seconds")
+    print(f"Total run time is:  {time.time() - s0}")
