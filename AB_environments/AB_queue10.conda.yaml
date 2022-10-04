@@ -1,0 +1,8 @@
+channels:
+  - conda-forge
+dependencies:
+    - python=3.9
+    - coiled-runtime=0.1.0
+    - pip:
+      - dask==2022.9.2
+      - distributed==2022.9.2
