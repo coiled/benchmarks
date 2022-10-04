@@ -221,6 +221,7 @@ jobs:
       always()
       && github.event_name != 'pull_request'
       && github.repository == 'coiled/coiled-runtime'
+      && needs.tests.result != 'cancelled'
       && (needs.tests.result == 'failure' || needs.regressions.result == 'failure') 
 
     runs-on: ubuntu-latest
