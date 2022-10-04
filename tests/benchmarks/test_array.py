@@ -142,7 +142,7 @@ def test_double_diff(ds_size_fraction_of_cluster, small_client):
     # We speculate this test shows a lot of variability due to high memory pressure
     # Here we can assess Dask's behavior under both conditions.
     # This will catch issues like https://github.com/dask/dask/issues/9488
-    memory = cluster_memory(small_client) / ds_size_fraction_of_cluster  # 76.66 GiB
+    memory = cluster_memory(small_client) // ds_size_fraction_of_cluster  # 76.66 GiB
 
     a = da.random.random(
         scaled_array_shape(memory, ("x", "x")), chunks=("20MiB", "20MiB")
