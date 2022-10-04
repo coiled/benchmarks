@@ -329,6 +329,7 @@ def make_timeseries(
         )
         .properties(title=title)
         .configure(autosize="fit")
+        .interactive()
     )
 
 
