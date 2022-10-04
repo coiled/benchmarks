@@ -135,7 +135,7 @@ def test_vorticity(small_client):
     wait(arr_to_devnull(result), small_client, 10 * 60)
 
 
-@pytest.mark.parametrize("ds_size_fraction_of_cluster", [(1), (2)])
+@pytest.mark.parametrize("ds_size_fraction_of_cluster", [1, 2])
 def test_double_diff(ds_size_fraction_of_cluster, small_client):
     # Variant of https://github.com/dask/distributed/issues/6597
 
