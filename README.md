@@ -8,11 +8,18 @@ The Coiled Runtime is a conda metapackage which makes it easy to get started wit
 
 ## Install
 
-`coiled-runtime` can be installed with:
+`coiled-runtime` can be installed with `conda`:
 
 ```bash
 conda install -c conda-forge coiled-runtime
 ```
+
+or with `pip`:
+
+```bash
+pip install coiled-runtime
+```
+
 
 **Nightly builds**
   
@@ -50,10 +57,11 @@ The `coiled-runtime` test suite can be run locally with the following steps:
    the Coiled Dask Engineering AWS S3 account.
 2. Create a Python environment and install development dependencies as
    specified in `ci/environment.yml`.
-3. (Optional) If testing against an unreleased version of `coiled-runtime`,
-   create a Coiled software environment with the unreleased `coiled-runtime` installed
-   and set a local `COILED_SOFTWARE_NAME` environment variable to the name
-   of the software environment (e.g. `export COILED_SOFTWARE_NAME="account/software-name"`)
+3. Install a coiled runtime environment. This might be from one of the environments
+   listed in ``environments/``, or it could be a development environment if you are
+   testing feature branches of dask or distributed. This test suite is configured
+   to run Coiled's ``package_sync`` feature, so your local environment should be copied
+   to the cluster.
 4. Run tests with `python -m pytest tests`
 
 Additionally, tests are automatically run on pull requests to this repository.
@@ -106,28 +114,37 @@ git commit -m "Added a new migration"
 
 Migrations are automatically applied in the pytest runs, so you needn't run them yourself.
 
+### Deleting old test data
+
+At times you might change a specific test that makes older benchmarking data irrelevant.
+In that case, you can discard old benchmarking data for that test by applying a data migration
+removing that data:
+
+```bash
+alembic revision -m "Declare bankruptcy for <test-name>"
+# Edit the migration here to do what you want.
+git add alembic/versions/name_of_new_migration.py
+git commit -m "Bankruptcy migration for <test-name>"
+```
+
+An example of a migration that does this is [here](./alembic/versions/924e9b1430e1_spark_test_bankruptcy.py).
+
 ### Using the benchmark fixtures
 
 We have a number of pytest fixtures defined which can be used to automatically track certain metrics in the benchmark database.
-They are summarized here:
+The most relevant ones are summarized here:
 
-**`benchmark_db_engine`**: The SQLAlchemy engine for the benchmark sqlite database. You can control the database name with the environment variable `DB_NAME`, which defaults to `benchmark.db`. Most tests shouldn't need to include this fixture directly.
+**`benchmark_time`**: Record wall clock time duration.
 
-**`benchmark_db_session`**: The SQLAlchemy session for a given test. Most tests shouldn't need to include this fixture directly.
+**`benchmark_memory`**: Record memory usage.
 
-**`test_run_benchmark`**: The SQLAlchemy ORM object for a given test. By including this fixutre in a test (or another fixture that includes it) you trigger the test being written to the benchmark database. This fixture includes data common to all tests, including python version, test name, and the test outcome.
-
-**`benchmark_time`**: This fixture yields a context manager which can be used to benchmark the wall clock time of a specific block of code.
+**`benchmark_task_durations`**: Record time spent computing, transferring data, spilling to disk, and deserializing data.
 
 **`auto_benchmark_time`**: Include this fixture to measure the wall clock time of the whole test automatically.
 
-**`sample_memory`**: This fixture yields a context manager which takes a distributed `Client` object, and records peak and average memory usage for the cluster within the context:
-```python
-def test_something(sample_memory):
-    with Client() as client:
-        with sample_memory(client):
-            client.submit(expensive_function)
-```
+**`benchmark_all`**: Record all available metrics.
+
+For more information on all available fixtures and examples on how to use them, please refer to their documentation.
 
 Writing a new benchmark fixture would generally look like:
 1. Requesting the `test_run_benchmark` fixture, which yields an ORM object.
@@ -210,6 +227,11 @@ git bisect good
 
 Proceed with this process until you have narrowed it down to a single commit.
 Congratulations! You've identified the source of your regression.
+
+## A/B testing
+
+It's possible to run the Coiled Runtime benchmarks for A/B comparisons.
+[Read full documentation](AB_environments/README.md).
 
 
 ## Contribute

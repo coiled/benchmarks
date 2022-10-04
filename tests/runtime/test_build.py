@@ -7,10 +7,8 @@ import pathlib
 import shlex
 import subprocess
 import sys
-from distutils.util import strtobool
 
 import coiled
-import dask
 import pytest
 import yaml
 from distributed import Client
@@ -77,8 +75,10 @@ def test_install_dist():
     # Test that versions of packages installed are consistent with those
     # specified in `meta.yaml`
 
-    if Version(dask.__version__).local or strtobool(
-        os.environ.get("TEST_UPSTREAM", "false")
+    if os.environ.get("COILED_RUNTIME_VERSION", "unknown") in (
+        "upstream",
+        "latest",
+        "unknown",
     ):
         pytest.skip("Not valid on upstream build")
 

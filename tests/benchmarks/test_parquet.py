@@ -15,23 +15,25 @@ N_WORKERS = 15
 
 
 @pytest.fixture(scope="module")
-def parquet_cluster():
+def parquet_cluster(dask_env_variables):
     with Cluster(
         f"parquet-{uuid.uuid4().hex[:8]}",
         n_workers=N_WORKERS,
         worker_vm_types=["m5.xlarge"],
         scheduler_vm_types=["m5.xlarge"],
+        package_sync=True,
+        environ=dask_env_variables,
     ) as cluster:
         yield cluster
 
 
 @pytest.fixture
-def parquet_client(parquet_cluster, sample_memory, benchmark_time):
+def parquet_client(parquet_cluster, upload_cluster_dump, benchmark_all):
     with distributed.Client(parquet_cluster) as client:
         parquet_cluster.scale(N_WORKERS)
         client.wait_for_workers(N_WORKERS)
         client.restart()
-        with sample_memory(client), benchmark_time:
+        with upload_cluster_dump(client, parquet_cluster), benchmark_all(client):
             yield client
 
 
@@ -45,7 +47,7 @@ def test_read_spark_generated_data(parquet_client):
     Citation: https://www.nature.com/articles/s41467-018-08148-z
     """
     ddf = dd.read_parquet(
-        "s3://coiled-runtime-ci/thousandgenomes_dragen/var_partby_samples/NA21**.parquet",
+        "s3://coiled-runtime-ci/thousandgenomes_dagen/NA21**.parquet",
         engine="pyarrow",
         index="sample_id",
     )

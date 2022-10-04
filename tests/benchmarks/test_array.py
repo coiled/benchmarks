@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import dask.array as da
+import distributed
 import numpy as np
 import pytest
 import xarray as xr
-from dask.utils import format_bytes
+from dask.utils import format_bytes, parse_bytes
+from packaging.version import Version
 
 from ..utils_test import arr_to_devnull, cluster_memory, scaled_array_shape, wait
 
@@ -26,7 +28,8 @@ def test_anom_mean(small_client):
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory // 2
     data = da.random.random(
-        scaled_array_shape(target_nbytes, ("x", "10MiB")), chunks=(1, "10MiB")
+        scaled_array_shape(target_nbytes, ("x", "10MiB")),
+        chunks=(1, parse_bytes("10MiB") // 8),
     )
     print_size_info(memory, target_nbytes, data)
     # 38.32 GiB - 3925 10.00 MiB chunks
@@ -51,7 +54,8 @@ def test_basic_sum(small_client):
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory * 5
     data = da.zeros(
-        scaled_array_shape(target_nbytes, ("100MiB", "x")), chunks=("100MiB", 1)
+        scaled_array_shape(target_nbytes, ("100MiB", "x")),
+        chunks=(parse_bytes("100MiB") // 8, 1),
     )
     print_size_info(memory, target_nbytes, data)
     # 383.20 GiB - 3924 100.00 MiB chunks
@@ -137,13 +141,37 @@ def test_double_diff(small_client):
     # Variant of https://github.com/dask/distributed/issues/6597
     memory = cluster_memory(small_client)  # 76.66 GiB
 
-    a = da.random.random(
-        scaled_array_shape(memory, ("x", "x")), chunks=("20MiB", "20MiB")
-    )
-    b = da.random.random(
-        scaled_array_shape(memory, ("x", "x")), chunks=("20MiB", "20MiB")
-    )
+    # TODO switch back to chunksizes in the `chunks=` argument everywhere
+    #  when https://github.com/dask/dask/issues/9488 is fixed
+    cs = int((parse_bytes("20 MiB") / 8) ** (1 / 2))
+    a = da.random.random(scaled_array_shape(memory, ("x", "x")), chunks=(cs, cs))
+    b = da.random.random(scaled_array_shape(memory, ("x", "x")), chunks=(cs, cs))
     print_size_info(memory, memory, a, b)
 
     diff = a[1:, 1:] - b[:-1, :-1]
     wait(arr_to_devnull(diff), small_client, 10 * 60)
+
+
+def test_dot_product(small_client):
+    a = da.random.random((24 * 1024, 24 * 1024), chunks="128 MiB")  # 4.5 GiB
+    b = (a @ a.T).sum().round(3)
+    wait(b, small_client, 10 * 60)
+
+
+@pytest.mark.xfail(
+    Version(distributed.__version__) < Version("2022.6.1"),
+    reason="https://github.com/dask/distributed/issues/6624",
+)
+def test_map_overlap_sample(small_client):
+    """
+    This is from Napari like workloads where they have large images and
+    commonly use map_overlap.  They care about rapid (sub-second) access to
+    parts of a large array.
+
+    At the time of writing, data creation took 300ms and the
+    map_overlap/getitem, took 2-3s
+    """
+    x = da.random.random((10000, 10000), chunks=(50, 50))
+
+    y = x.map_overlap(lambda x: x, depth=1)
+    y[5000:5010, 5000:5010].compute()
