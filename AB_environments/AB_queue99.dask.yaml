@@ -1,3 +1,0 @@
-distributed:
-  scheduler:
-    worker-saturation: 999999
