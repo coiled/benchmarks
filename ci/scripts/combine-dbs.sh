@@ -13,6 +13,8 @@ else
 fi
 DB_NAME=benchmark.tmp.db alembic upgrade head
 
+sqlite3 benchmark.tmp.db < ci/scripts/migrate.sql
+
 # Merge in the individual job dbs into our working copy
 for FILE in $(find benchmarks -name "*.db")
 do
