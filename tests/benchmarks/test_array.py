@@ -63,22 +63,29 @@ def test_basic_sum(small_client, speed, chunk_shape):
 
     n-step map-reduce:
 
-    1. map: create random data (very fast, very high memory output).
-       The chunking is either by single column ("thin") or square.
-    2. map: arbitrary manipulation of the data (variable speed, same memory as input).
-       This step simulates e.g. a slow read from storage or an intensive in-place
-       computation.
-    3. map: first stage of Array.sum(axis=1). Reduce each chunk individually along the
-       columns. In case of "thin" chunks, this is a no-op.
-       In case of "square" chunks, data sizes are negligible after this step.
-    4. reduce: Sum up groups of <split_every> (default 4) contiguous chunks, thus
-       obtaining 1/4th of the original chunks
+    1. map: create huge amounts of random data (5x the available memory on the whole
+       cluster).
+       The chunking is either by single column ("thin") or square; chunk size is 100MiB
+       per chunk in both cases.
+       Tasks in this group terminate almost instantly.
+
+    2. map: in the "slow" use case, sleep for 0.5s after generating each 100MiB chunk.
+       This step simulates e.g. a quite fast read from storage or midly intensive
+       in-place computation. This step is skipped in the "fast" use case.
+
+    3. map: first stage of dask.array.Array.sum(axis=1). Reduce each chunk individually
+       along the columns. In case of "thin" chunks, this is a no-op.
+       In case of "square" chunks, chunk sizes are negligible after this step.
+
+    4. reduce: sum groups of <split_every> (default 4) contiguous chunks, thus
+       obtaining 1/4th of the original chunks.
 
        In the "thin" chunk configuration, this step heavily relies on co-assignment -
-       that is, it relies on the 4 chunks of each group to be (most times) on the same
-       worker and not need to transfer them across the network. Without co-assignment,
-       this will result in up to the whole map output to be transferred across the
-       network.
+       that is, it relies on the 4 nearby chunks to have been generated (most times) on
+       the same worker and not need to be transferred across the network. Without
+       co-assignment, this will result in up to the whole map output to be transferred
+       across the network.
+
     5. reduce: recursively repeat step 4 until only one chunk remains.
 
     See dask/array/reductions.py for the implementation of recursive reductions.
