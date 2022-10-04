@@ -57,7 +57,7 @@ jobs:
       # trying to create the Coiled clusters, and restarting failed jobs won't fix the
       # problem. Additionally, there are problems with Coiled itself triggered by
       # limitations that are never actually reached with real paying users.
-      max-parallel: 5
+      max-parallel: 20
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
