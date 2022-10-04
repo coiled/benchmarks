@@ -30,6 +30,7 @@ def test_join_big(small_client, mem_mult):
         memory * mem_mult,
     )
 
+    # Control cardinality on column to join - this produces cardinality ~ to len(df)
     df2_big["x2"] = df2_big["x"] * 1e9
     df2_big = df2_big.astype({"x2": "int"})
 
@@ -44,6 +45,7 @@ def test_join_big_small(small_client, mem_mult):
         memory * mem_mult,
     )
 
+    # Control cardinality on column to join - this produces cardinality ~ to len(df)
     df_big["x2"] = df_big["x"] * 1e9
     df_big = df_big.astype({"x2": "int"})
 
