@@ -441,14 +441,19 @@ def small_client(
 
 @pytest.fixture(
     params=[
-        pytest.param(0.3, id="30% cluster memory"),
-        pytest.param(1.0, id="100% cluster memory"),
+        pytest.param(0.3, id=" 30% nbytes multiplier"),
+        pytest.param(1.0, id="100% nbytes multiplier"),
     ]
 )
-def cluster_memory(request, small_client):
+def memory_multiplier(request, small_client):
+    """A multiplier that can be used to paramterize over cluster"""
+    yield request.param
 
+
+@pytest.fixture()
+def cluster_memory(small_client):
     cluster_memory = get_cluster_memory(small_client)  # 76.66 GiB
-    yield cluster_memory * request.param
+    yield cluster_memory
 
 
 S3_REGION = "us-east-2"

@@ -19,14 +19,15 @@ depends_on = None
 def upgrade() -> None:
     op.execute(
     """update test_run
-    set name = name || '[100% cluster memory]'
+    set name = name || '[100% nbytes multiplier]'
     where name in (
         'test_vorticity',
         'test_basic_sum',
         'test_double_diff',
         'test_dataframe_align',
         'test_anom_mean',
-        'test_shuffle'
+        'test_shuffle',
+        'test_climatic_mean'
     );
     """
     )

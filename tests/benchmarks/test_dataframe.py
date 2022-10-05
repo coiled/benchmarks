@@ -15,10 +15,10 @@ def print_dataframe_info(df):
     )
 
 
-def test_dataframe_align(small_client, cluster_memory):
+def test_dataframe_align(small_client, cluster_memory, memory_multiplier):
 
     df = timeseries_of_size(
-        cluster_memory // 2,
+        (cluster_memory * memory_multiplier) // 2,
         start="2020-01-01",
         freq="600ms",
         partition_freq="12h",
@@ -28,7 +28,7 @@ def test_dataframe_align(small_client, cluster_memory):
     # ~50,904,000 rows x 100 columns, 38.31 GiB total, 707 55.48 MiB partitions
 
     df2 = timeseries_of_size(
-        cluster_memory // 4,
+        (cluster_memory * memory_multiplier) // 4,
         start="2010-01-01",
         freq="600ms",
         partition_freq="12h",
@@ -41,10 +41,10 @@ def test_dataframe_align(small_client, cluster_memory):
     wait(final, small_client, 10 * 60)
 
 
-def test_shuffle(small_client, cluster_memory):
+def test_shuffle(small_client, cluster_memory, memory_multiplier):
 
     df = timeseries_of_size(
-        cluster_memory // 4,
+        (cluster_memory * memory_multiplier) // 4,
         start="2020-01-01",
         freq="1200ms",
         partition_freq="24h",

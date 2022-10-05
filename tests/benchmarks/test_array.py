@@ -22,10 +22,10 @@ def print_size_info(memory: int, target_nbytes: int, *arrs: da.Array) -> None:
         )
 
 
-def test_anom_mean(small_client, cluster_memory):
+def test_anom_mean(small_client, cluster_memory, memory_multiplier):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-498718651
 
-    target_nbytes = cluster_memory // 2
+    target_nbytes = (cluster_memory * memory_multiplier) // 2
     data = da.random.random(
         scaled_array_shape(target_nbytes, ("x", "10MiB")),
         chunks=(1, parse_bytes("10MiB") // 8),
@@ -47,10 +47,10 @@ def test_anom_mean(small_client, cluster_memory):
     wait(anom_mean, small_client, 10 * 60)
 
 
-def test_basic_sum(small_client, cluster_memory):
+def test_basic_sum(small_client, cluster_memory, memory_multiplier):
     # From https://github.com/dask/distributed/pull/4864
 
-    target_nbytes = cluster_memory * 5
+    target_nbytes = cluster_memory * memory_multiplier * 5
     data = da.zeros(
         scaled_array_shape(target_nbytes, ("100MiB", "x")),
         chunks=(parse_bytes("100MiB") // 8, 1),
@@ -63,14 +63,14 @@ def test_basic_sum(small_client, cluster_memory):
     wait(result, small_client, 10 * 60)
 
 
-def test_climatic_mean(small_client, cluster_memory):
+def test_climatic_mean(small_client, cluster_memory, memory_multiplier):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-535009454
-    if cluster_memory == 1.0:
+    if memory_multiplier == 1.0:
         pytest.skip(
             "fails in actual CI; see https://github.com/coiled/coiled-runtime/issues/253"
         )
 
-    target_nbytes = cluster_memory * 2
+    target_nbytes = cluster_memory * memory_multiplier * 2
     chunks = (1, 1, 96, 21, 90, 144)
     shape = (28, "x", 96, 21, 90, 144)
     data = da.random.random(scaled_array_shape(target_nbytes, shape), chunks=chunks)
@@ -89,10 +89,10 @@ def test_climatic_mean(small_client, cluster_memory):
     wait(arr_clim, small_client, 15 * 60)
 
 
-def test_vorticity(small_client, cluster_memory):
+def test_vorticity(small_client, cluster_memory, memory_multiplier):
     # From https://github.com/dask/distributed/issues/6571
 
-    target_nbytes = int(cluster_memory * 0.85)
+    target_nbytes = int(cluster_memory * memory_multiplier * 0.85)
     shape = scaled_array_shape(target_nbytes, (5000, 5000, "x"))
 
     u = da.random.random(shape, chunks=(5000, 5000, 1))
@@ -134,19 +134,16 @@ def test_vorticity(small_client, cluster_memory):
     wait(arr_to_devnull(result), small_client, 10 * 60)
 
 
-def test_double_diff(small_client, cluster_memory):
+def test_double_diff(small_client, cluster_memory, memory_multiplier):
     # Variant of https://github.com/dask/distributed/issues/6597
 
     # TODO switch back to chunksizes in the `chunks=` argument everywhere
     #  when https://github.com/dask/dask/issues/9488 is fixed
     cs = int((parse_bytes("20 MiB") / 8) ** (1 / 2))
-    a = da.random.random(
-        scaled_array_shape(cluster_memory, ("x", "x")), chunks=(cs, cs)
-    )
-    b = da.random.random(
-        scaled_array_shape(cluster_memory, ("x", "x")), chunks=(cs, cs)
-    )
-    print_size_info(cluster_memory, cluster_memory, a, b)
+    target_nbytes = cluster_memory * memory_multiplier
+    a = da.random.random(scaled_array_shape(target_nbytes, ("x", "x")), chunks=(cs, cs))
+    b = da.random.random(scaled_array_shape(target_nbytes, ("x", "x")), chunks=(cs, cs))
+    print_size_info(cluster_memory, target_nbytes, a, b)
 
     diff = a[1:, 1:] - b[:-1, :-1]
     wait(arr_to_devnull(diff), small_client, 10 * 60)
