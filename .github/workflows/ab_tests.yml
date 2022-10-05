@@ -45,8 +45,9 @@ jobs:
   # and AB_environments/config.yaml set repeat > 0
 
   tests:
-    name: A/B Tests - ${{ matrix.category }} ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
+    name: A/B Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
     needs: discover_ab_envs
+    if: fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -54,12 +55,13 @@ jobs:
       # AWS implements limiters to how many EC2 instances you can spawn in parallel *on
       # the same AWS account*. If such limit is reached, jobs will randomly fail when
       # trying to create the Coiled clusters, and restarting failed jobs won't fix the
-      # problem.
-      max-parallel: 20
+      # problem. Additionally, there are problems with Coiled itself triggered by
+      # limitations that are never actually reached with real paying users.
+      max-parallel: 5
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
-        category: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).category }}
+        pytest_args: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).pytest_args }}
         runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
         repeat: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).repeat }}
 
@@ -101,22 +103,22 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: ${{ matrix.category }}-${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
+          DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
           BENCHMARK: true
           CLUSTER_DUMP: true
-        run: bash ci/scripts/run_tests.sh tests/${{ matrix.category }}
+        run: bash ci/scripts/run_tests.sh ${{ matrix.pytest_args }}
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: ${{ matrix.category }}-${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}
-          path: ${{ matrix.category }}-${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
+          name: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}
+          path: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
 
   process-results:
     needs: [discover_ab_envs, tests]
     name: Combine separate benchmark results
-    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
+    if: always() && fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
     runs-on: ubuntu-latest
     concurrency:
       # Fairly strict concurrency rule to avoid stepping on benchmark db.
@@ -129,6 +131,8 @@ jobs:
 
       - name: Install Python
         uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
       - name: Install dependencies
         run: pip install alembic
@@ -152,7 +156,7 @@ jobs:
   static-site:
     needs: [discover_ab_envs, process-results]
     # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
-    if: always() && ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
+    if: always() && fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
     name: Build static dashboards
     runs-on: ubuntu-latest
     steps:

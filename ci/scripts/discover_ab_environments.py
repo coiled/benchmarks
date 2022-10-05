@@ -3,17 +3,30 @@ from __future__ import annotations
 import glob
 import json
 import os.path
+from typing import TypedDict
 
 import yaml
 
 
-def build_json() -> dict[str, list[int]]:
+class JSONOutput(TypedDict):
+    run_AB: bool
+    repeat: list[int]
+    runtime: list[str]
+    pytest_args: list[str]
+
+
+def build_json() -> JSONOutput:
     with open("AB_environments/config.yaml") as fh:
         cfg = yaml.safe_load(fh)
+
     if not isinstance(cfg.get("repeat"), int) or cfg["repeat"] < 0:
         raise ValueError("AB_environments/config.yaml: missing key {repeat: N}")
-    if not cfg["repeat"]:
-        return {"repeat": [], "runtime": [], "category": []}
+    for category in cfg["categories"]:
+        if not glob.glob(f"tests/{category}/test_*.py"):
+            raise ValueError("fNot a valid test category: {category}")
+
+    if not cfg["repeat"] or not cfg["categories"]:
+        return {"run_AB": False, "repeat": [], "runtime": [], "pytest_args": []}
 
     runtimes = []
     for conda_fname in sorted(glob.glob("AB_environments/AB_*.conda.yaml")):
@@ -24,7 +37,7 @@ def build_json() -> dict[str, list[int]]:
         runtimes.append(env_name)
 
     if not runtimes:
-        return {"repeat": [], "runtime": [], "category": []}
+        return {"run_AB": False, "repeat": [], "runtime": [], "pytest_args": []}
 
     if "AB_baseline" not in runtimes:
         # If any A/B environments are defined, AB_baseline is required
@@ -34,9 +47,10 @@ def build_json() -> dict[str, list[int]]:
         runtimes += ["AB_null_hypothesis"]
 
     return {
+        "run_AB": True,
         "repeat": list(range(1, cfg["repeat"] + 1)),
         "runtime": runtimes,
-        "category": cfg["categories"],
+        "pytest_args": [" ".join(f"tests/{c}" for c in cfg["categories"])],
     }
 
 

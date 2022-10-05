@@ -23,7 +23,7 @@ defaults:
 
 jobs:
   tests:
-    name: Tests - ${{ matrix.category }} ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
+    name: Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -31,49 +31,49 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
-        category: [runtime, benchmarks, stability]
+        pytest_args: [tests]
         runtime-version: [upstream, latest, "0.0.4", "0.1.0"]
         include:
           # Run stability tests on Python 3.8
-          - category: stability
+          - pytest_args: tests/stability
             python-version: "3.8"
             runtime-version: upstream
             os: ubuntu-latest
-          - category: stability
+          - pytest_args: tests/stability
             python-version: "3.8"
             runtime-version: latest
             os: ubuntu-latest
-          - category: stability
+          - pytest_args: tests/stability
             python-version: "3.8"
             runtime-version: "0.0.4"
             os: ubuntu-latest
-          - category: stability
+          - pytest_args: tests/stability
             python-version: "3.8"
             runtime-version: "0.1.0"
             os: ubuntu-latest
           # Run stability tests on Python 3.10
-          - category: stability
+          - pytest_args: tests/stability
             python-version: "3.10"
             runtime-version: upstream
             os: ubuntu-latest
-          - category: stability
+          - pytest_args: tests/stability
             python-version: "3.10"
             runtime-version: latest
             os: ubuntu-latest
-          - category: stability
+          - pytest_args: tests/stability
             python-version: "3.10"
             runtime-version: "0.0.4"
             os: ubuntu-latest
-          - category: stability
+          - pytest_args: tests/stability
             python-version: "3.10"
             runtime-version: "0.1.0"
             os: ubuntu-latest
           # Run stability tests on Python Windows and MacOS (latest py39 only)
-          - category: stability
+          - pytest_args: tests/stability
             python-version: "3.9"
             runtime-version: latest
             os: windows-latest
-          - category: stability
+          - pytest_args: tests/stability
             python-version: "3.9"
             runtime-version: latest
             os: macos-latest
@@ -107,17 +107,17 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: ${{ matrix.category }}-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
           BENCHMARK: true
           CLUSTER_DUMP: true
-        run: bash ci/scripts/run_tests.sh tests/${{ matrix.category }}
+        run: bash ci/scripts/run_tests.sh ${{ matrix.pytest_args }}
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: ${{ matrix.category }}-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-          path: ${{ matrix.category }}-${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          name: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
+          path: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
   process-results:
     needs: tests
@@ -135,6 +135,8 @@ jobs:
 
       - name: Install Python
         uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
 
       - name: Install dependencies
         run: pip install alembic
