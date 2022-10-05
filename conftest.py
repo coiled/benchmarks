@@ -408,6 +408,8 @@ def small_cluster(request, dask_env_variables):
     backend_options = merge(
         m.kwargs for m in request.node.iter_markers(name="backend_options")
     )
+    backend_options["send_prometheus_metrics"] = True
+
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
