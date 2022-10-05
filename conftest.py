@@ -408,13 +408,15 @@ def small_cluster(request, dask_env_variables):
     backend_options = merge(
         m.kwargs for m in request.node.iter_markers(name="backend_options")
     )
+    backend_options["send_prometheus_metrics"] = True
+
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
         n_workers=10,
         worker_vm_types=["t3.large"],  # 2CPU, 8GiB
         scheduler_vm_types=["t3.xlarge"],
-        backend_options={"send_prometheus_metrics": True, **backend_options},
+        backend_options=backend_options,
         package_sync=True,
         environ=dask_env_variables,
     ) as cluster:
