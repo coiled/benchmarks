@@ -1,5 +1,3 @@
-from time import time
-
 import numpy as np
 from dask.datasets import timeseries
 from dask.sizeof import sizeof
