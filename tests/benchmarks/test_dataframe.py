@@ -70,7 +70,6 @@ def test_ddf_isin(small_client):
     a dask dataframe, and filtering the dataframe by column
     based on that list
     """
-    start = time()
     n = 10_000_000
     rs = np.random.RandomState(42)
     ddf = timeseries(end="2000-05-01", dtypes={"A": float, "B": int}, seed=42)
@@ -82,4 +81,3 @@ def test_ddf_isin(small_client):
     )
     tmp_ddf = ddf.loc[ddf["A"].isin(filter_values_list)]
     wait(tmp_ddf, small_client, 20 * 60)
-    print(f"Total time to run test_isin:  {time() - start} seconds")
