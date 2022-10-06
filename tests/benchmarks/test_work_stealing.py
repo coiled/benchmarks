@@ -23,7 +23,11 @@ def test_trivial_workload_should_not_cause_work_stealing(small_client):
     reason="https://github.com/dask/distributed/issues/6624",
 )
 def test_work_stealing_on_scaling_up(
-    test_name_uuid, upload_cluster_dump, benchmark_all, dask_env_variables
+    test_name_uuid,
+    upload_cluster_dump,
+    benchmark_all,
+    get_cluster_info,
+    dask_env_variables,
 ):
     with Cluster(
         name=test_name_uuid,
@@ -38,7 +42,9 @@ def test_work_stealing_on_scaling_up(
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103
             client.wait_for_workers(1)
-            with upload_cluster_dump(client, cluster), benchmark_all(client):
+            with upload_cluster_dump(client, cluster), benchmark_all(
+                client
+            ), get_cluster_info(client):
                 # Slow task.
                 def func1(chunk):
                     if sum(chunk.shape) != 0:  # Make initialization fast

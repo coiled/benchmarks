@@ -29,12 +29,16 @@ def parquet_cluster(dask_env_variables):
 
 
 @pytest.fixture
-def parquet_client(parquet_cluster, upload_cluster_dump, benchmark_all):
+def parquet_client(
+    parquet_cluster, upload_cluster_dump, benchmark_all, get_cluster_info
+):
     with distributed.Client(parquet_cluster) as client:
         parquet_cluster.scale(N_WORKERS)
         client.wait_for_workers(N_WORKERS)
         client.restart()
-        with upload_cluster_dump(client, parquet_cluster), benchmark_all(client):
+        with upload_cluster_dump(client, parquet_cluster), benchmark_all(
+            client
+        ), get_cluster_info(client):
             yield client
 
 
