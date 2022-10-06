@@ -26,6 +26,8 @@ class TestRun(Base):
     distributed_version = Column(String, nullable=True)
     python_version = Column(String, nullable=True)
     platform = Column(String, nullable=True)
+    cluster_name = Column(String, nullable=True)
+    cluster_id = Column(Integer, nullable=True)
 
     # CI runner data
     ci_run_url = Column(String, nullable=True)
@@ -39,12 +41,12 @@ class TestRun(Base):
     average_memory = Column(Float, nullable=True)
     peak_memory = Column(Float, nullable=True)
 
-    # Timing data (Note: this is not yet collected)
+    # Timing data (not yet collected)
     compute_time = Column(Float, nullable=True)
     disk_spill_time = Column(Float, nullable=True)
     serializing_time = Column(Float, nullable=True)
     transfer_time = Column(Float, nullable=True)
 
-    # Artifacts (Note: this is not yet collected)
-    performance_report_url = Column(String, nullable=True)
+    # Artifacts
+    performance_report_url = Column(String, nullable=True)  # Not yet collected
     cluster_dump_url = Column(String, nullable=True)

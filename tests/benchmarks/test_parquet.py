@@ -34,7 +34,7 @@ def parquet_client(parquet_cluster, upload_cluster_dump, benchmark_all):
         parquet_cluster.scale(N_WORKERS)
         client.wait_for_workers(N_WORKERS)
         client.restart()
-        with upload_cluster_dump(client, parquet_cluster), benchmark_all(client):
+        with upload_cluster_dump(client), benchmark_all(client):
             yield client
 
 
