@@ -37,14 +37,12 @@ def spill_cluster(dask_env_variables):
 
 
 @pytest.fixture
-def spill_client(spill_cluster, upload_cluster_dump, benchmark_all, get_cluster_info):
+def spill_client(spill_cluster, upload_cluster_dump, benchmark_all):
     with Client(spill_cluster) as client:
         spill_cluster.scale(5)
         client.wait_for_workers(5)
         client.restart()
-        with upload_cluster_dump(client, spill_cluster), benchmark_all(
-            client
-        ), get_cluster_info(client):
+        with upload_cluster_dump(client, spill_cluster), benchmark_all(client):
             yield client
 
 

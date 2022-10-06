@@ -353,8 +353,10 @@ def benchmark_task_durations(test_run_benchmark):
 
 
 @pytest.fixture(scope="function")
-def benchmark_all(benchmark_memory, benchmark_task_durations, benchmark_time):
-    """Benchmark all available metrics.
+def benchmark_all(
+    benchmark_memory, benchmark_task_durations, benchmark_time, get_cluster_info
+):
+    """Benchmark all available metrics and extracts cluster information
 
     Yields
     ------
@@ -376,11 +378,14 @@ def benchmark_all(benchmark_memory, benchmark_task_durations, benchmark_time):
     benchmark_memory
     benchmark_task_durations
     benchmark_time
+    get_cluster_info
     """
 
     @contextlib.contextmanager
     def _benchmark_all(client):
-        with benchmark_memory(client), benchmark_task_durations(client), benchmark_time:
+        with benchmark_memory(client), benchmark_task_durations(
+            client
+        ), benchmark_time, get_cluster_info(client):
             yield
 
     yield _benchmark_all
@@ -535,12 +540,13 @@ def get_cluster_info(test_run_benchmark):
     @contextlib.contextmanager
     def _get_cluster_info(client):
         cluster_id = client.cluster.cluster_id
+        cluster_acc = client.cluster.account
         details_url = (
-            f"https://cloud.coiled.io/dask-engineering/clusters/{cluster_id}/details"
+            f"https://cloud.coiled.io/{cluster_acc}/clusters/{cluster_id}/details"
         )
 
         test_run_benchmark.cluster_name = client.cluster.name
-        test_run_benchmark.cluster_id = client.cluster.cluster_id
+        test_run_benchmark.cluster_id = cluster_id
         # Replace corresponding lines in next coiled release where
         # details_url will be available as client.cluster.details_url
         # test_run_benchmark.cluster_details_url = client.cluster.details_url
