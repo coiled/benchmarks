@@ -122,7 +122,7 @@ jobs:
   process-results:
     needs: tests
     name: Combine separate benchmark results
-    if: always() && github.repository == 'coiled/coiled-runtime'
+    if: always() && github.repository == 'coiled/coiled-runtime' && needs.tests.result != 'cancelled'
     runs-on: ubuntu-latest
     concurrency:
       # Fairly strict concurrency rule to avoid stepping on benchmark db.
