@@ -524,3 +524,26 @@ def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
                 client.dump_cluster_state(dump_path, **s3_storage_options)
 
     yield _upload_cluster_dump
+
+
+@pytest.fixture
+def get_cluster_info(test_run_benchmark):
+    """
+    Gets cluster.name , cluster.cluster_id and cluster.cluster.details_url
+    """
+
+    @contextlib.contextmanager
+    def _get_cluster_info(client):
+        cluster_id = client.cluster.cluster_id
+        details_url = (
+            f"https://cloud.coiled.io/dask-engineering/clusters/{cluster_id}/details"
+        )
+
+        test_run_benchmark.cluster_name = client.cluster.name
+        test_run_benchmark.cluster_id = client.cluster.cluster_id
+        # Replace corresponding lines in next coiled release where
+        # details_url will be available as client.cluster.details_url
+        # test_run_benchmark.cluster_details_url = client.cluster.details_url
+        test_run_benchmark.cluster_details_url = details_url
+
+        yield _get_cluster_info
