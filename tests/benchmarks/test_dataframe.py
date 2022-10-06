@@ -68,12 +68,12 @@ def test_ddf_isin(small_client):
     a dask dataframe, and filtering the dataframe by column
     based on that list
     """
-    n = 10_000_000
+    N = 10_000_000
     rs = np.random.RandomState(42)
     ddf = timeseries(end="2000-05-01", dtypes={"A": float, "B": int}, seed=42)
-    ddf.A = ddf.A.mul(1e7)
+    ddf.A = ddf.A.mul(N)
     ddf.A = ddf.A.astype(int).persist()
-    a_column_unique_values = np.arange(1, n // 10)
+    a_column_unique_values = np.arange(1, N // 10)
     filter_values_list = sorted(
         rs.choice(a_column_unique_values, len(a_column_unique_values) // 2).tolist()
     )
