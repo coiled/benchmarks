@@ -66,7 +66,11 @@ def test_ddf_isin(small_client):
     """
     Checks the efficiency of serializing a large list for filtering
     a dask dataframe, and filtering the dataframe by column
-    based on that list
+    based on that list.
+
+    To get enough unique integers to make this meaningful, we need to create
+    colum 'A' as a float and then convert it to an int.  This is caused by
+    the fact that random ints in timeseries() are drawn from a Poisson distribution.
     """
     N = 10_000_000
     rs = np.random.RandomState(42)
