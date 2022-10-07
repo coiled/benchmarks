@@ -179,7 +179,7 @@ jobs:
   regressions:
     needs: process-results
     # Always check for regressions, as this can be skipped even if an indirect dependency fails (like a test run)
-    if: always()
+    if: always() && github.event_name != 'pull_request'
     name: Detect regressions
     runs-on: ubuntu-latest
     steps:
