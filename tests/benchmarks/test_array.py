@@ -50,7 +50,7 @@ def test_anom_mean(small_client, cluster_memory, memory_multiplier):
 def test_basic_sum(small_client, cluster_memory, memory_multiplier):
     # From https://github.com/dask/distributed/pull/4864
 
-    target_nbytes = cluster_memory * memory_multiplier * 5
+    target_nbytes = int(cluster_memory * memory_multiplier * 5)
     data = da.zeros(
         scaled_array_shape(target_nbytes, ("100MiB", "x")),
         chunks=(parse_bytes("100MiB") // 8, 1),
@@ -65,10 +65,8 @@ def test_basic_sum(small_client, cluster_memory, memory_multiplier):
 
 def test_climatic_mean(small_client, cluster_memory, memory_multiplier):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-535009454
-    if memory_multiplier == 0.3:
-        pytest.skip("Data generation fails with an error in xarray")
 
-    target_nbytes = cluster_memory * memory_multiplier * 2
+    target_nbytes = int(cluster_memory * memory_multiplier * 2)
     chunks = (1, 1, 96, 21, 90, 144)
     shape = (28, "x", 96, 21, 90, 144)
     data = da.random.random(scaled_array_shape(target_nbytes, shape), chunks=chunks)
@@ -138,7 +136,7 @@ def test_double_diff(small_client, cluster_memory, memory_multiplier):
     # TODO switch back to chunksizes in the `chunks=` argument everywhere
     #  when https://github.com/dask/dask/issues/9488 is fixed
     cs = int((parse_bytes("20 MiB") / 8) ** (1 / 2))
-    target_nbytes = cluster_memory * memory_multiplier
+    target_nbytes = int(cluster_memory * memory_multiplier)
     a = da.random.random(scaled_array_shape(target_nbytes, ("x", "x")), chunks=(cs, cs))
     b = da.random.random(scaled_array_shape(target_nbytes, ("x", "x")), chunks=(cs, cs))
     print_size_info(cluster_memory, target_nbytes, a, b)
