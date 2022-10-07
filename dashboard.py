@@ -109,9 +109,9 @@ def calc_ab_confidence_intervals(
     # DataFrame with 10,000 rows per test exactly, with columns
     # [fullname, fullname_no_category, bootstrap_run, {A}, {B}, diff]
     pivot = bootstrapped.pivot(
-        ["fullname", "fullname_no_category", "bootstrap_run"],
-        "runtime",
-        field_name,
+        index=["fullname", "fullname_no_category", "bootstrap_run"],
+        columns="runtime",
+        values=field_name,
     ).reset_index()
     pivot["diff"] = pivot[B] / pivot[A] - 1
 
@@ -244,7 +244,10 @@ def make_ab_confidence_map(
     ]
     runtimes = df["runtime"].unique()
     A = baseline
-    B = next(r for r in runtimes if r != baseline)
+    B = next((r for r in runtimes if r != baseline), None)
+    if not B:
+        # Nothing to compare against
+        return None, 0
     conf = calc_ab_confidence_intervals(df, spec.field_name, A, B)
 
     n_bars = df["fullname_no_category"].unique().size
