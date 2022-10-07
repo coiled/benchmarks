@@ -351,8 +351,32 @@ def benchmark_task_durations(test_run_benchmark):
 
 
 @pytest.fixture(scope="function")
-def benchmark_all(benchmark_memory, benchmark_task_durations, benchmark_time):
-    """Benchmark all available metrics.
+def get_cluster_info(test_run_benchmark):
+    """
+    Gets cluster.name , cluster.cluster_id and cluster.cluster.details_url
+    """
+
+    @contextlib.contextmanager
+    def _get_cluster_info(client):
+        if not test_run_benchmark:
+            yield
+        else:
+            yield
+            test_run_benchmark.cluster_name = client.cluster.name
+            test_run_benchmark.cluster_id = client.cluster.cluster_id
+            test_run_benchmark.cluster_details_url = client.cluster.details_url
+
+    yield _get_cluster_info
+
+
+@pytest.fixture(scope="function")
+def benchmark_all(
+    benchmark_memory,
+    benchmark_task_durations,
+    get_cluster_info,
+    benchmark_time,
+):
+    """Benchmark all available metrics and extracts cluster information
 
     Yields
     ------
@@ -374,11 +398,14 @@ def benchmark_all(benchmark_memory, benchmark_task_durations, benchmark_time):
     benchmark_memory
     benchmark_task_durations
     benchmark_time
+    get_cluster_info
     """
 
     @contextlib.contextmanager
     def _benchmark_all(client):
-        with benchmark_memory(client), benchmark_task_durations(client), benchmark_time:
+        with benchmark_memory(client), benchmark_task_durations(
+            client
+        ), get_cluster_info(client), benchmark_time:
             yield
 
     yield _benchmark_all

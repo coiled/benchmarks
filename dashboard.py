@@ -302,6 +302,7 @@ def make_timeseries(
             "coiled_runtime_version",
             "dask_version",
             "distributed_version",
+            "cluster_id",
         ]
     ]
     if len(df.name.unique()) > 1:
@@ -330,6 +331,7 @@ def make_timeseries(
                     f"{spec.field_name}:Q", title=f"{spec.field_desc} {spec.unit}"
                 ),
                 altair.Tooltip("ci_run_url:N", title="CI Run URL"),
+                altair.Tooltip("cluster_id:Q", title="Cluster ID"),
             ],
             **kwargs,
         )

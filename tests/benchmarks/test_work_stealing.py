@@ -23,7 +23,10 @@ def test_trivial_workload_should_not_cause_work_stealing(small_client):
     reason="https://github.com/dask/distributed/issues/6624",
 )
 def test_work_stealing_on_scaling_up(
-    test_name_uuid, upload_cluster_dump, benchmark_all, dask_env_variables
+    test_name_uuid,
+    upload_cluster_dump,
+    benchmark_all,
+    dask_env_variables,
 ):
     with Cluster(
         name=test_name_uuid,
