@@ -539,17 +539,20 @@ def get_cluster_info(test_run_benchmark):
 
     @contextlib.contextmanager
     def _get_cluster_info(client):
-        cluster_id = client.cluster.cluster_id
-        cluster_acc = client.cluster.account
-        details_url = (
-            f"https://cloud.coiled.io/{cluster_acc}/clusters/{cluster_id}/details"
-        )
+        if not test_run_benchmark:
+            yield
+        else:
+            cluster_id = client.cluster.cluster_id
+            cluster_acc = client.cluster.account
+            details_url = (
+                f"https://cloud.coiled.io/{cluster_acc}/clusters/{cluster_id}/details"
+            )
 
-        test_run_benchmark.cluster_name = client.cluster.name
-        test_run_benchmark.cluster_id = cluster_id
-        # Replace corresponding lines in next coiled release where
-        # details_url will be available as client.cluster.details_url
-        # test_run_benchmark.cluster_details_url = client.cluster.details_url
-        test_run_benchmark.cluster_details_url = details_url
+            test_run_benchmark.cluster_name = client.cluster.name
+            test_run_benchmark.cluster_id = cluster_id
+            # Replace corresponding lines in next coiled release where
+            # details_url will be available as client.cluster.details_url
+            # test_run_benchmark.cluster_details_url = client.cluster.details_url
+            test_run_benchmark.cluster_details_url = details_url
 
         yield _get_cluster_info
