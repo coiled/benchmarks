@@ -376,7 +376,7 @@ def get_cluster_info(test_run_benchmark):
             # test_run_benchmark.cluster_details_url = client.cluster.details_url
             test_run_benchmark.cluster_details_url = details_url
 
-        yield _get_cluster_info
+    yield _get_cluster_info
 
 
 @pytest.fixture(scope="function")
