@@ -109,9 +109,9 @@ def calc_ab_confidence_intervals(
     # DataFrame with 10,000 rows per test exactly, with columns
     # [fullname, fullname_no_category, bootstrap_run, {A}, {B}, diff]
     pivot = bootstrapped.pivot(
-        ["fullname", "fullname_no_category", "bootstrap_run"],
-        "runtime",
-        field_name,
+        index=["fullname", "fullname_no_category", "bootstrap_run"],
+        columns="runtime",
+        values=field_name,
     ).reset_index()
     pivot["diff"] = pivot[B] / pivot[A] - 1
 
@@ -171,8 +171,10 @@ def make_barchart(
     tooltip = [
         altair.Tooltip("fullname:N", title="Test"),
         altair.Tooltip("runtime:N", title="Runtime"),
-        altair.Tooltip("dask_version:N", title="Dask"),
-        altair.Tooltip("distributed_version:N", title="Distributed"),
+        altair.Tooltip("min(dask_version):N", title="Dask (min)"),
+        altair.Tooltip("max(dask_version):N", title="Dask (max)"),
+        altair.Tooltip("min(distributed_version):N", title="Distributed (min)"),
+        altair.Tooltip("max(distributed_version):N", title="Distributed (max)"),
         altair.Tooltip(f"count({spec.field_name}):N", title="Number of runs"),
         altair.Tooltip(f"stdev({spec.field_name}):Q", title=f"std dev {spec.unit}"),
         altair.Tooltip(f"min({spec.field_name}):Q", title=f"min {spec.unit}"),
@@ -242,9 +244,13 @@ def make_ab_confidence_map(
             "runtime",
         ]
     ]
+
     runtimes = df["runtime"].unique()
+    if len(runtimes) < 2 or baseline not in runtimes:
+        return None, 0
     A = baseline
     B = next(r for r in runtimes if r != baseline)
+
     conf = calc_ab_confidence_intervals(df, spec.field_name, A, B)
 
     n_bars = df["fullname_no_category"].unique().size
@@ -656,6 +662,11 @@ def main() -> None:
         (df["end"] > df["end"].max() - pandas.Timedelta("7d"))
         & (df["call_outcome"] == "passed")
     ]
+
+    if args.pickle:
+        out_fname = str(output_dir.joinpath("records_recent.pickle"))
+        print(f"Generating {out_fname}")
+        df_recent.to_pickle(out_fname)
 
     make_barchart_html_report(df_recent, output_dir, by_test=True)
     make_barchart_html_report(df_recent, output_dir, by_test=False)

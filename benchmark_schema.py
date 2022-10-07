@@ -50,6 +50,6 @@ class TestRun(Base):
     cluster_id = Column(Integer, nullable=True)
     cluster_details_url = Column(String, nullable=True)
 
-    # Artifacts (Note: this is not yet collected)
-    performance_report_url = Column(String, nullable=True)
+    # Artifacts
+    performance_report_url = Column(String, nullable=True)  # Not yet collected
     cluster_dump_url = Column(String, nullable=True)

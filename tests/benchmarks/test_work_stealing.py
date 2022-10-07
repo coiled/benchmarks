@@ -41,7 +41,7 @@ def test_work_stealing_on_scaling_up(
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103
             client.wait_for_workers(1)
-            with upload_cluster_dump(client, cluster), benchmark_all(client):
+            with upload_cluster_dump(client), benchmark_all(client):
                 # Slow task.
                 def func1(chunk):
                     if sum(chunk.shape) != 0:  # Make initialization fast
@@ -98,7 +98,7 @@ def test_work_stealing_on_straggling_worker(
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103
             client.wait_for_workers(10)
-            with upload_cluster_dump(client, cluster), benchmark_all(client):
+            with upload_cluster_dump(client), benchmark_all(client):
 
                 def clog():
                     time.sleep(1)

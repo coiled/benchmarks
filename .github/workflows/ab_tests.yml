@@ -105,7 +105,7 @@ jobs:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
           BENCHMARK: true
-          CLUSTER_DUMP: true
+          CLUSTER_DUMP: always
         run: bash ci/scripts/run_tests.sh ${{ matrix.pytest_args }}
 
       - name: Upload benchmark results

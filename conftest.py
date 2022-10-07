@@ -10,7 +10,6 @@ import sys
 import threading
 import time
 import uuid
-from distutils.util import strtobool
 
 import dask
 import distributed
@@ -173,12 +172,11 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
     if not benchmark_db_session:
         yield
     else:
-        node = request.node
         run = TestRun(
             session_id=testrun_uid,
-            name=node.name,
-            originalname=node.originalname,
-            path=str(node.path.relative_to(TEST_DIR)),
+            name=request.node.name,
+            originalname=request.node.originalname,
+            path=str(request.node.path.relative_to(TEST_DIR)),
             dask_version=dask.__version__,
             distributed_version=distributed.__version__,
             coiled_runtime_version=COILED_RUNTIME_VERSION,
@@ -461,7 +459,7 @@ def small_client(
         client.wait_for_workers(10)
         client.restart()
 
-        with upload_cluster_dump(client, small_cluster), benchmark_all(client):
+        with upload_cluster_dump(client), benchmark_all(client):
             yield client
 
 
@@ -525,9 +523,11 @@ def pytest_runtest_makereport(item, call):
 
 
 @pytest.fixture
-def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
+def upload_cluster_dump(
+    request, s3_cluster_dump_url, s3_storage_options, test_run_benchmark
+):
     @contextlib.contextmanager
-    def _upload_cluster_dump(client, cluster):
+    def _upload_cluster_dump(client):
         failed = False
         # the code below is a workaround to make cluster dumps work with clients in fixtures
         # and outside fixtures.
@@ -544,10 +544,16 @@ def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
             except AttributeError:
                 failed = False
         finally:
-            cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
-            if cluster_dump and failed:
-                dump_path = f"{s3_cluster_dump_url}/{cluster.name}/{request.node.name}"
-                logger.error(f"Cluster state dump can be found at: {dump_path}")
+            cluster_dump = os.environ.get("CLUSTER_DUMP", "false")
+            if cluster_dump == "always" or (cluster_dump == "fail" and failed):
+                dump_path = (
+                    f"{s3_cluster_dump_url}/{client.cluster.name}/"
+                    f"{test_run_benchmark.path.replace('/', '.')}.{request.node.name}"
+                )
+                test_run_benchmark.cluster_dump_url = dump_path + ".msgpack.gz"
+                logger.info(
+                    f"Cluster state dump can be found at: {dump_path}.msgpack.gz"
+                )
                 client.dump_cluster_state(dump_path, **s3_storage_options)
 
     yield _upload_cluster_dump
