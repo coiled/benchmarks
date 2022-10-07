@@ -105,7 +105,7 @@ We use `alembic` to manage SQLAlchemy migrations.
 In the simple case of simply adding or removing a column to the schema, you can do the following:
 
 ```bash
-# First, edit the `benchmark_schema.py`
+# First, edit the `benchmark_schema.py` and commit the changes.
 
 alembic revision --autogenerate -m "Description of migration"
 git add alembic/versions/name_of_new_migration.py
