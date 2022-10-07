@@ -531,7 +531,7 @@ def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
     yield _upload_cluster_dump
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def get_cluster_info(test_run_benchmark):
     """
     Gets cluster.name , cluster.cluster_id and cluster.cluster.details_url
