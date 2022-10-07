@@ -12,5 +12,5 @@ def test_default_cluster_spinup_time(auto_benchmark_time):
     with Cluster(
         name=f"test_default_cluster_spinup_time-{uuid.uuid4().hex[:8]}",
         package_sync=True,
-    ) as cluster:
+    ):
         pass
