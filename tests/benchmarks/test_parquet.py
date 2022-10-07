@@ -23,6 +23,7 @@ def parquet_cluster(dask_env_variables):
         scheduler_vm_types=["m5.xlarge"],
         package_sync=True,
         environ=dask_env_variables,
+        backend_options={"send_prometheus_metrics": True},
     ) as cluster:
         yield cluster
 
