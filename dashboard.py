@@ -302,6 +302,7 @@ def make_timeseries(
             "coiled_runtime_version",
             "dask_version",
             "distributed_version",
+            "cluster_id",
         ]
     ]
     if len(df.name.unique()) > 1:
