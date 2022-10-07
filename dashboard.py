@@ -324,7 +324,7 @@ def make_timeseries(
                     f"{spec.field_name}:Q", title=f"{spec.field_desc} {spec.unit}"
                 ),
                 altair.Tooltip("ci_run_url:N", title="CI Run URL"),
-                altair.Tooltip("cluster_id:N", title="Cluster ID"),
+                altair.Tooltip("cluster_id:Q", title="Cluster ID"),
             ],
             **kwargs,
         )
