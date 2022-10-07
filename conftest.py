@@ -432,7 +432,7 @@ def small_client(
         client.wait_for_workers(10)
         client.restart()
 
-        with upload_cluster_dump(client, small_cluster), benchmark_all(client):
+        with upload_cluster_dump(client), benchmark_all(client):
             yield client
 
 
