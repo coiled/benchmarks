@@ -65,10 +65,8 @@ def test_basic_sum(small_client, cluster_memory, memory_multiplier):
 
 def test_climatic_mean(small_client, cluster_memory, memory_multiplier):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-535009454
-    if memory_multiplier == 1.0:
-        pytest.skip(
-            "fails in actual CI; see https://github.com/coiled/coiled-runtime/issues/253"
-        )
+    if memory_multiplier == 0.3:
+        pytest.skip("Data generation fails with an error in xarray")
 
     target_nbytes = cluster_memory * memory_multiplier * 2
     chunks = (1, 1, 96, 21, 90, 144)
