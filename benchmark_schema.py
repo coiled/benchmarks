@@ -26,8 +26,6 @@ class TestRun(Base):
     distributed_version = Column(String, nullable=True)
     python_version = Column(String, nullable=True)
     platform = Column(String, nullable=True)
-    cluster_name = Column(String, nullable=True)
-    cluster_id = Column(Integer, nullable=True)
 
     # CI runner data
     ci_run_url = Column(String, nullable=True)

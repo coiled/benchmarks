@@ -501,9 +501,6 @@ def upload_cluster_dump(
 ):
     @contextlib.contextmanager
     def _upload_cluster_dump(client):
-        test_run_benchmark.cluster_name = client.cluster.name
-        test_run_benchmark.cluster_id = client.cluster.cluster_id
-
         failed = False
         # the code below is a workaround to make cluster dumps work with clients in fixtures
         # and outside fixtures.
