@@ -31,7 +31,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
-        pytest_args: [tests/stability/test_ols.py]
+        pytest_args: [tests/stability/test_array.py]
         runtime-version: [upstream, latest, "0.0.4", "0.1.0"]
         # include:
         #   # Run stability tests on Python 3.8
