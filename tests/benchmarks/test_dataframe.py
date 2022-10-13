@@ -1,7 +1,7 @@
 from dask.sizeof import sizeof
 from dask.utils import format_bytes
 
-from ..utils_test import cluster_memory, timeseries_of_size, wait
+from ..utils_test import wait
 
 
 def print_dataframe_info(df):
