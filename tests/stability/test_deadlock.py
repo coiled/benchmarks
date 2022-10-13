@@ -17,8 +17,8 @@ def test_repeated_merge_spill(upload_cluster_dump, benchmark_all, dask_env_varia
     with Cluster(
         name=f"test_repeated_merge_spill-{uuid.uuid4().hex[:8]}",
         n_workers=20,
-        worker_vm_types=["t3.large"],
-        scheduler_vm_types=["t3.xlarge"],
+        worker_vm_types=["m6i.large"],
+        scheduler_vm_types=["m6i.xlarge"],
         wait_for_workers=True,
         package_sync=True,
         environ=dask_env_variables,

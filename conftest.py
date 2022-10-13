@@ -439,8 +439,8 @@ def small_cluster(request, dask_env_variables):
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
         n_workers=10,
-        worker_vm_types=["t3.large"],  # 2CPU, 8GiB
-        scheduler_vm_types=["t3.xlarge"],
+        worker_vm_types=["m6i.large"],  # 2CPU, 8GiB
+        scheduler_vm_types=["m6i.xlarge"],
         backend_options=backend_options,
         package_sync=True,
         environ=dask_env_variables,

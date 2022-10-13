@@ -14,8 +14,8 @@ def spill_cluster(dask_env_variables):
         n_workers=5,
         package_sync=True,
         worker_disk_size=64,
-        worker_vm_types=["t3.large"],
-        scheduler_vm_types=["t3.xlarge"],
+        worker_vm_types=["m6i.large"],
+        scheduler_vm_types=["m6i.xlarge"],
         wait_for_workers=True,
         backend_options={"send_prometheus_metrics": True},
         environ=merge(
