@@ -11,6 +11,7 @@ def test_default_cluster_spinup_time(auto_benchmark_time, test_run_benchmark):
     """
     with Cluster(
         name=f"test_default_cluster_spinup_time-{uuid.uuid4().hex[:8]}",
+        n_workers=1,
         package_sync=True,
     ) as cluster:
         test_run_benchmark.cluster_name = cluster.name
