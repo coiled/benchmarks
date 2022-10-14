@@ -416,7 +416,7 @@ def benchmark_all(
 # ############################################### #
 
 
-@pytest.fixture
+@pytest.fixture(scope="session")
 def gitlab_cluster_tags():
     tag_names = [
         "GITHUB_JOB",
