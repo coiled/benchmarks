@@ -27,6 +27,7 @@ def test_work_stealing_on_scaling_up(
     upload_cluster_dump,
     benchmark_all,
     dask_env_variables,
+    gitlab_cluster_tags,
 ):
     with Cluster(
         name=test_name_uuid,
@@ -37,6 +38,7 @@ def test_work_stealing_on_scaling_up(
         package_sync=True,
         environ=dask_env_variables,
         backend_options={"send_prometheus_metrics": True},
+        tags=gitlab_cluster_tags,
     ) as cluster:
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103
@@ -84,7 +86,7 @@ def test_work_stealing_on_inhomogeneous_workload(small_client):
 
 
 def test_work_stealing_on_straggling_worker(
-    test_name_uuid, upload_cluster_dump, benchmark_all, dask_env_variables
+    test_name_uuid, upload_cluster_dump, benchmark_all, dask_env_variables, gitlab_cluster_tags
 ):
     with Cluster(
         name=test_name_uuid,
@@ -94,6 +96,7 @@ def test_work_stealing_on_straggling_worker(
         package_sync=True,
         wait_for_workers=True,
         environ=dask_env_variables,
+        tags=gitlab_cluster_tags,
     ) as cluster:
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103

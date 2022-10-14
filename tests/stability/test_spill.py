@@ -8,7 +8,7 @@ from toolz import merge
 
 
 @pytest.fixture(scope="module")
-def spill_cluster(dask_env_variables):
+def spill_cluster(dask_env_variables, gitlab_cluster_tags):
     with Cluster(
         f"spill-{uuid.uuid4().hex[:8]}",
         n_workers=5,
@@ -32,6 +32,7 @@ def spill_cluster(dask_env_variables):
                 "DASK_DISTRIBUTED__WORKER__CONNECTIONS__OUTGOING": "1",
             },
         ),
+        tags=gitlab_cluster_tags,
     ) as cluster:
         yield cluster
 
