@@ -3,7 +3,9 @@ import uuid
 from coiled import Cluster
 
 
-def test_default_cluster_spinup_time(auto_benchmark_time, test_run_benchmark, gitlab_cluster_tags):
+def test_default_cluster_spinup_time(
+    auto_benchmark_time, test_run_benchmark, gitlab_cluster_tags
+):
     """Note: this test must be kept in a separate module from the tests that use the
     small_cluster fixture (which has the scope=module) or its child small_client.
     This prevents having the small_cluster sitting idle for 5+ minutes while this test
