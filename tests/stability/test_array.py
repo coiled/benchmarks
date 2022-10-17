@@ -1,6 +1,9 @@
 import dask.array as da
 import pytest
 
+from ..utils_test import cluster_memory, scaled_array_shape, wait
+from ..benchmarks.test_array import print_size_info
+
 
 @pytest.mark.stability
 def test_rechunk_in_memory(small_client):
@@ -16,12 +19,16 @@ def test_rechunk_out_of_memory(small_client):
 
 @pytest.mark.stability
 def test_ols(small_client):
-    num_samples = int(1e8)
-    num_coeffs = 100
     chunksize = int(1e6)
+    memory = cluster_memory(small_client)
+    target_nbytes = memory * 0.67
+    target_shape = scaled_array_shape(target_nbytes, ("x", 100))
+    num_samples, num_coeffs = target_shape[0], target_shape[-1]
     beta = da.random.normal(size=(num_coeffs,))
     X = da.random.normal(size=(num_samples, num_coeffs), chunks=(chunksize, -1))
     y = X @ beta + da.random.normal(size=(num_samples,), chunks=(chunksize,))
+    
+    print_size_info(memory, target_nbytes, X, y)
     beta_hat = da.linalg.solve(X.T @ X, X.T @ y)  # normal eq'n
     y_hat = X @ beta_hat
     wait(y_hat, small_client, 20 * 60)
