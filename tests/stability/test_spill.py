@@ -17,6 +17,7 @@ def spill_cluster(dask_env_variables):
         worker_vm_types=["t3.large"],
         scheduler_vm_types=["t3.xlarge"],
         wait_for_workers=True,
+        backend_options={"send_prometheus_metrics": True},
         environ=merge(
             dask_env_variables,
             {
@@ -41,7 +42,7 @@ def spill_client(spill_cluster, upload_cluster_dump, benchmark_all):
         spill_cluster.scale(5)
         client.wait_for_workers(5)
         client.restart()
-        with upload_cluster_dump(client, spill_cluster), benchmark_all(client):
+        with upload_cluster_dump(client), benchmark_all(client):
             yield client
 
 
