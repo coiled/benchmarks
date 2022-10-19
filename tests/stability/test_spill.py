@@ -8,14 +8,14 @@ from toolz import merge
 
 
 @pytest.fixture(scope="module")
-def spill_cluster(dask_env_variables):
+def spill_cluster(dask_env_variables, gitlab_cluster_tags):
     with Cluster(
         f"spill-{uuid.uuid4().hex[:8]}",
         n_workers=5,
         package_sync=True,
         worker_disk_size=64,
-        worker_vm_types=["t3.large"],
-        scheduler_vm_types=["t3.xlarge"],
+        worker_vm_types=["m6i.large"],
+        scheduler_vm_types=["m6i.xlarge"],
         wait_for_workers=True,
         backend_options={"send_prometheus_metrics": True},
         environ=merge(
@@ -32,6 +32,7 @@ def spill_cluster(dask_env_variables):
                 "DASK_DISTRIBUTED__WORKER__CONNECTIONS__OUTGOING": "1",
             },
         ),
+        tags=gitlab_cluster_tags,
     ) as cluster:
         yield cluster
 

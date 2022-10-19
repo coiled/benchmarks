@@ -416,6 +416,20 @@ def benchmark_all(
 # ############################################### #
 
 
+@pytest.fixture(scope="session")
+def gitlab_cluster_tags():
+    tag_names = [
+        "GITHUB_JOB",
+        "GITHUB_REF",
+        "GITHUB_RUN_ATTEMPT",
+        "GITHUB_RUN_ID",
+        "GITHUB_RUN_NUMBER",
+        "GITHUB_SHA",
+    ]
+
+    return {tag: os.environ.get(tag, "") for tag in tag_names}
+
+
 @pytest.fixture
 def test_name_uuid(request):
     "Test name, suffixed with a UUID. Useful for resources like cluster names, S3 paths, etc."
@@ -428,7 +442,7 @@ def dask_env_variables():
 
 
 @pytest.fixture(scope="module")
-def small_cluster(request, dask_env_variables):
+def small_cluster(request, dask_env_variables, gitlab_cluster_tags):
     # Extract `backend_options` for cluster from `backend_options` markers
     backend_options = merge(
         m.kwargs for m in request.node.iter_markers(name="backend_options")
@@ -439,11 +453,12 @@ def small_cluster(request, dask_env_variables):
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
         n_workers=10,
-        worker_vm_types=["t3.large"],  # 2CPU, 8GiB
-        scheduler_vm_types=["t3.xlarge"],
+        worker_vm_types=["m6i.large"],  # 2CPU, 8GiB
+        scheduler_vm_types=["m6i.xlarge"],
         backend_options=backend_options,
         package_sync=True,
         environ=dask_env_variables,
+        tags=gitlab_cluster_tags,
     ) as cluster:
         yield cluster
 
