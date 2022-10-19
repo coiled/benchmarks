@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import time
+
 import dask.array as da
 import distributed
 import numpy as np
@@ -48,17 +50,69 @@ def test_anom_mean(small_client):
     wait(anom_mean, small_client, 10 * 60)
 
 
-def test_basic_sum(small_client):
-    # From https://github.com/dask/distributed/pull/4864
+@pytest.mark.parametrize(
+    "speed,chunk_shape",
+    [
+        ("fast", "thin"),
+        ("slow", "thin"),
+        ("slow", "square"),
+    ],
+)
+def test_basic_sum(small_client, speed, chunk_shape):
+    """From https://github.com/dask/distributed/pull/4864
+
+    n-step map-reduce:
+
+    1. map: create huge amounts of random data (5x the available memory on the whole
+       cluster).
+       The chunking is either by single column ("thin") or square; chunk size is 100MiB
+       per chunk in both cases.
+       Tasks in this group terminate almost instantly.
+
+    2. map: in the "slow" use case, sleep for 0.5s after generating each 100MiB chunk.
+       This step simulates e.g. a quite fast read from storage or midly intensive
+       in-place computation. This step is skipped in the "fast" use case.
+
+    3. map: first stage of dask.array.Array.sum(axis=1). Reduce each chunk individually
+       along the columns. In case of "thin" chunks, this is a no-op.
+       In case of "square" chunks, chunk sizes are negligible after this step.
+
+    4. reduce: sum groups of <split_every> (default 4) contiguous chunks, thus
+       obtaining 1/4th of the original chunks.
+
+       In the "thin" chunk configuration, this step heavily relies on co-assignment -
+       that is, it relies on the 4 nearby chunks to have been generated (most times) on
+       the same worker and not need to be transferred across the network. Without
+       co-assignment, this will result in up to the whole map output to be transferred
+       across the network.
+
+    5. reduce: recursively repeat step 4 until only one chunk remains.
+
+    See dask/array/reductions.py for the implementation of recursive reductions.
+    """
+    if chunk_shape == "thin":
+        chunks = (-1, 1)  # 100 MiB single-column chunks
+    else:
+        chunks = (3350, -1)  # 100.32 MiB square-ish chunks
 
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory * 5
     data = da.zeros(
         scaled_array_shape(target_nbytes, ("100MiB", "x")),
-        chunks=(parse_bytes("100MiB") // 8, 1),
+        chunks=chunks,
     )
     print_size_info(memory, target_nbytes, data)
-    # 383.20 GiB - 3924 100.00 MiB chunks
+    # 383.30 GiB - 3925 100.00 MiB chunks (if thin)
+    # 383.30 GiB - 3913 100.32 MiB chunks (if square)
+
+    def slow_map(x):
+        time.sleep(0.5)
+        # Do not return the input by reference, as it would trigger an edge case where
+        # managed memory is double counted
+        return x.copy()
+
+    if speed == "slow":
+        data = data.map_blocks(slow_map)
 
     result = da.sum(data, axis=1)
 
