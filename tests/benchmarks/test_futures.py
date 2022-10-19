@@ -5,7 +5,8 @@ from distributed.utils_test import inc, slowdec, slowinc
 
 def test_single_future(small_client):
     """How quickly can we run a simple computation?"""
-    small_client.submit(inc, 1).result()
+    for i in range(400):
+        small_client.submit(inc, i).result()
 
 
 def test_large_map(small_client):
@@ -28,14 +29,14 @@ def test_large_map_first_work(small_client):
 def test_memory_efficient(small_client):
     """
     We hope that we pipeline xs->ys->zs without keeping all of the xs in memory
-    to start.  This may not actually happen today.
+    to start. This may not actually happen today.
     """
-    xs = small_client.map(np.random.random, [1_000_000] * 100, pure=False)
-    ys = small_client.map(slowinc, xs, delay=0.1)
-    zs = small_client.map(slowdec, ys, delay=0.1)
+    xs = small_client.map(np.random.random, [20_000_000] * 100, pure=False)
+    ys = small_client.map(slowinc, xs, delay=1)
+    zs = small_client.map(slowdec, ys, delay=1)
 
     futures = as_completed(zs)
     del xs, ys, zs  # Don't keep references to intermediate results
 
-    for future in futures:  # pass through all futures, forget them immediately
+    for _ in futures:  # pass through all futures, forget them immediately
         continue
