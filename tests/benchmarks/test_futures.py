@@ -4,8 +4,11 @@ from distributed.utils_test import inc, slowdec, slowinc
 
 
 def test_single_future(small_client):
-    """How quickly can we run a simple computation?"""
-    for i in range(400):
+    """How quickly can we run a simple computation?
+    Repeat the test a few times to get a more sensible
+    cumulative measure.
+    """
+    for i in range(100):
         small_client.submit(inc, i).result()
 
 
