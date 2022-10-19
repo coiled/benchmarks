@@ -1,15 +1,15 @@
-"""Declare bankruptcy for test_futures
+"""Declare bankruptcy for test_futures.py
 
-Revision ID: 82e8a0855e91
-Revises: a8785a7b3cae
-Create Date: 2022-10-18 15:21:42.845790
+Revision ID: fa79471ffa8c
+Revises: 149d2048065b
+Create Date: 2022-10-19 16:21:21.871309
 
 """
 from alembic import op
 
 # revision identifiers, used by Alembic.
-revision = '82e8a0855e91'
-down_revision = 'a8785a7b3cae'
+revision = 'fa79471ffa8c'
+down_revision = '149d2048065b'
 branch_labels = None
 depends_on = None
 
