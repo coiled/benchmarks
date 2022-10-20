@@ -284,6 +284,11 @@ def make_ab_confidence_map(
     return chart, height
 
 
+def details_report_fname(runtime: str, fullname: str) -> str:
+    fullname = fullname.replace("/", "-").replace(".py::", "-")
+    return f"details/{runtime}-{fullname}.html"
+
+
 def make_timeseries(
     df: pandas.DataFrame, spec: ChartSpec, title: str
 ) -> altair.Chart | None:
@@ -294,7 +299,7 @@ def make_timeseries(
         return None
 
     df["details_url"] = [
-        f"details/{runtime}-{fullname.replace('/', '-')}.html"
+        details_report_fname(runtime, fullname)
         for runtime, fullname in zip(df.runtime, df.fullname)
     ]
 
@@ -541,7 +546,10 @@ def make_ab_html_report(
 
 
 def make_details_html_report(
-    df: pandas.DataFrame, runtime: str, fullname: str, output_dir: pathlib.Path
+    df: pandas.DataFrame,
+    output_dir: pathlib.Path,
+    runtime: str,
+    fullname: str,
 ) -> None:
     """Generate raw tabular info dump for all runs of a single test"""
     df = df.reset_index()
@@ -605,7 +613,7 @@ def make_details_html_report(
         txt += " |\n"
 
     md = panel.pane.Markdown(txt, width=800)
-    out_fname = output_dir / (f"{runtime}-{fullname.replace('/', '-')}.html")
+    out_fname = output_dir / details_report_fname(runtime, fullname)
     print(f"Generating {out_fname}")
     md.save(
         str(out_fname),
@@ -739,7 +747,7 @@ def main() -> None:
         make_timeseries_html_report(df, output_dir, runtime)
 
     for (runtime, fullname), df2 in df.groupby(["runtime", "fullname"]):
-        make_details_html_report(df2, runtime, fullname, output_dir / "details")
+        make_details_html_report(df2, output_dir, runtime, fullname)
 
     # Do not use data that is more than a week old in statistical analysis.
     # Also exclude failed tests.
