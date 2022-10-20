@@ -15,7 +15,7 @@ N_WORKERS = 15
 
 
 @pytest.fixture(scope="module")
-def parquet_cluster(dask_env_variables):
+def parquet_cluster(dask_env_variables, gitlab_cluster_tags):
     with Cluster(
         f"parquet-{uuid.uuid4().hex[:8]}",
         n_workers=N_WORKERS,
@@ -24,6 +24,7 @@ def parquet_cluster(dask_env_variables):
         package_sync=True,
         environ=dask_env_variables,
         backend_options={"send_prometheus_metrics": True},
+        tags=gitlab_cluster_tags,
     ) as cluster:
         yield cluster
 
