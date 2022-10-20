@@ -5,15 +5,8 @@ import dask
 import dask.dataframe as dd
 import pytest
 from dask_snowflake import read_snowflake, to_snowflake
-from distributed import Client
 from snowflake.sqlalchemy import URL
 from sqlalchemy import create_engine
-
-
-@pytest.fixture
-def client():
-    with Client(n_workers=2, threads_per_worker=10) as client:
-        yield client
 
 
 @pytest.fixture
