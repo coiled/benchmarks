@@ -579,8 +579,11 @@ def make_details_html_report(
         row = ds_row.to_dict()
 
         if cluster_name := row["cluster_name"]:
-            start_ts = int(row["start"].to_pydatetime().timestamp() * 1000)
-            end_ts = int(row["end"].to_pydatetime().timestamp() * 1000)
+            # Add some padding to compensate for clock skew of
+            # GitHub actions vs. Prometheus
+            ts_padding = pandas.Timedelta("5s")
+            start_ts = int((row["start"] - ts_padding).timestamp() * 1000)
+            end_ts = int((row["end"] + ts_padding).timestamp() * 1000)
             row["grafana_url"] = (
                 "http://35.86.202.18:3000/d/eU1bT-nVz/cluster-metrics-prometheus"
                 f"?from={start_ts}&to={end_ts}&var-cluster={cluster_name}"
