@@ -588,8 +588,9 @@ def make_details_html_report(
 
         if cluster_name := row["cluster_name"]:
             # Add some padding to compensate for clock differences between
-            # GitHub actions and Prometheus (we've observed 80s gaps)
-            ts_padding = pandas.Timedelta("5m")
+            # GitHub actions and Prometheus, as well for sample granularity
+            # (at the moment of writing, Prometheus data is sampled every 5s)
+            ts_padding = pandas.Timedelta("10s")
             start_ts = int((row["start"] - ts_padding).timestamp() * 1000)
             end_ts = int((row["end"] + ts_padding).timestamp() * 1000)
             row["grafana_url"] = (
