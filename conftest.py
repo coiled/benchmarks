@@ -436,6 +436,7 @@ def test_name_uuid(request):
     "Test name, suffixed with a UUID. Useful for resources like cluster names, S3 paths, etc."
     return f"{request.node.originalname}-{uuid.uuid4().hex}"
 
+
 @pytest.fixture(scope="session")
 def dask_env_variables():
     return {k: v for k, v in os.environ.items() if k.startswith("DASK_")}
@@ -462,8 +463,12 @@ def small_cluster(request, dask_env_variables, gitlab_cluster_tags):
     ) as cluster:
         yield cluster
 
-def log_on_scheduler(client: Client, msg: str, *args, level: int=logging.INFO) -> None:
+
+def log_on_scheduler(
+    client: Client, msg: str, *args, level: int = logging.INFO
+) -> None:
     client.run_on_scheduler(scheduler_logger.log, level=level, msg=msg, *args)
+
 
 @pytest.fixture
 def small_client(
