@@ -593,7 +593,7 @@ def make_details_html_report(
             start_ts = int((row["start"] - ts_padding).timestamp() * 1000)
             end_ts = int((row["end"] + ts_padding).timestamp() * 1000)
             row["grafana_url"] = (
-                "http://35.86.202.18:3000/d/eU1bT-nVz/cluster-metrics-prometheus"
+                "https://grafana.dev-sandbox.coiledhq.com/d/eU1bT-nVz/cluster-metrics-prometheus"
                 f"?from={start_ts}&to={end_ts}&var-cluster={cluster_name}"
             )
         else:
