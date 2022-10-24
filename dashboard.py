@@ -4,9 +4,11 @@ import argparse
 import glob
 import importlib
 import inspect
+import math
 import operator
 import pathlib
 from collections.abc import Callable
+from textwrap import dedent
 from typing import Any, Literal, NamedTuple
 
 import altair
@@ -14,7 +16,9 @@ import numpy
 import pandas
 import panel
 import sqlalchemy
-from bokeh.resources import INLINE
+from bokeh.resources import Resources
+
+CDN = Resources("cdn")
 
 altair.data_transformers.enable("default", max_rows=None)
 panel.extension("vega")
@@ -280,23 +284,33 @@ def make_ab_confidence_map(
     return chart, height
 
 
+def details_report_fname(runtime: str, fullname: str) -> str:
+    fullname = fullname.replace("/", "-").replace(".py::", "-")
+    return f"details/{runtime}-{fullname}.html"
+
+
 def make_timeseries(
     df: pandas.DataFrame, spec: ChartSpec, title: str
 ) -> altair.Chart | None:
     """Make a single Altair timeseries chart for a given test"""
-    df = df.dropna(subset=[spec.field_name, "start"])
+    df = df.dropna(subset=[spec.field_name, "start"]).reset_index().copy()
     if not len(df):
         # Some tests do not have average_memory or peak_memory measures, only runtime
         return None
 
-    df = df.fillna({"ci_run_url": "https://github.com/coiled/coiled-runtime"})
+    df["details_url"] = [
+        details_report_fname(runtime, fullname)
+        for runtime, fullname in zip(df.runtime, df.fullname)
+    ]
+
     kwargs = {}
     # Reduce the size of the altair spec
     df = df[
         [
+            "id",
             spec.field_name,
             "start",
-            "ci_run_url",
+            "details_url",
             "name",
             "call_outcome",
             "coiled_runtime_version",
@@ -319,8 +333,9 @@ def make_timeseries(
         .encode(
             x=altair.X("start:T"),
             y=altair.Y(f"{spec.field_name}:Q", title=f"{spec.field_desc} {spec.unit}"),
-            href=altair.Href("ci_run_url:N"),
+            href=altair.Href("details_url:N"),
             tooltip=[
+                altair.Tooltip("id:N", title="Test id"),
                 altair.Tooltip("name:N", title="Test Name"),
                 altair.Tooltip("start:T", title="Date"),
                 altair.Tooltip("call_outcome:N", title="Test Outcome"),
@@ -330,7 +345,6 @@ def make_timeseries(
                 altair.Tooltip(
                     f"{spec.field_name}:Q", title=f"{spec.field_desc} {spec.unit}"
                 ),
-                altair.Tooltip("ci_run_url:N", title="CI Run URL"),
                 altair.Tooltip("cluster_id:Q", title="Cluster ID"),
             ],
             **kwargs,
@@ -413,7 +427,7 @@ def make_timeseries_html_report(
         tabs.append((category.title(), flex))
     doc = panel.Tabs(*tabs, margin=12)
 
-    doc.save(out_fname, title=runtime, resources=INLINE)
+    doc.save(out_fname, title=runtime, resources=CDN)
 
 
 def make_barchart_html_report(
@@ -467,7 +481,7 @@ def make_barchart_html_report(
     doc.save(
         out_fname,
         title="Bar charts by " + ("test" if by_test else "runtime"),
-        resources=INLINE,
+        resources=CDN,
     )
 
 
@@ -526,34 +540,110 @@ def make_ab_html_report(
     doc.save(
         out_fname,
         title="A/B confidence intervals vs. " + baseline,
-        resources=INLINE,
+        resources=CDN,
     )
     return True
+
+
+def make_details_html_report(
+    df: pandas.DataFrame,
+    output_dir: pathlib.Path,
+    runtime: str,
+    fullname: str,
+) -> None:
+    """Generate raw tabular info dump for all runs of a single test"""
+    df = df.reset_index()
+    # Delete redundant columns
+    for k in (
+        "name",
+        "originalname",
+        "path",
+        "coiled_runtime_version",
+        "coiled_software_name",
+        "python_version",
+        "category",
+        "sourcename",
+        "runtime",
+        "fullname",
+        "fullname_no_category",
+    ):
+        del df[k]
+
+    header = list(df.columns) + ["grafana_url"]
+    txt = dedent(
+        f"""
+        <style>
+            table, th, td {{border: 1px solid black; border-collapse: collapse;}}
+            th {{position: sticky; top: 0; background-color: lightgrey;}}
+        </style>
+        ### {runtime}
+        ### {fullname}
+        | {' | '.join(header)} |
+        | {' | '.join("---" for _ in header)} |
+        """
+    )
+
+    for id_, ds_row in df.iterrows():
+        row = ds_row.to_dict()
+
+        if cluster_name := row["cluster_name"]:
+            # Add some padding to compensate for clock differences between
+            # GitHub actions and Prometheus, as well for sample granularity
+            # (at the moment of writing, Prometheus data is sampled every 5s)
+            ts_padding = pandas.Timedelta("10s")
+            start_ts = int((row["start"] - ts_padding).timestamp() * 1000)
+            end_ts = int((row["end"] + ts_padding).timestamp() * 1000)
+            row["grafana_url"] = (
+                "https://grafana.dev-sandbox.coiledhq.com/d/eU1bT-nVz/cluster-metrics-prometheus"
+                f"?from={start_ts}&to={end_ts}&var-cluster={cluster_name}"
+            )
+        else:
+            row["grafana_url"] = None
+
+        for k, v in row.items():
+            if v is None or (isinstance(v, float) and math.isnan(v)):
+                txt += "| "
+            elif k == "duration" or k.endswith("_time"):
+                txt += f"| {v:.1f}s "
+            elif k.endswith("_memory"):
+                txt += f"| {v:.1f}GiB "
+            elif isinstance(v, str) and "://" in v:
+                txt += f"| [🔗]({v}) "
+            else:
+                txt += f"| {v} "
+        txt += " |\n"
+
+    md = panel.pane.Markdown(txt, width=800)
+    out_fname = output_dir / details_report_fname(runtime, fullname)
+    print(f"Generating {out_fname}")
+    md.save(
+        str(out_fname),
+        title=f"{runtime} - {fullname}",
+        resources=CDN,
+    )
 
 
 def make_index_html_report(
     output_dir: pathlib.Path, runtimes: list[str], baselines: list[str]
 ) -> None:
     """Generate index.html"""
-    index_txt = """# Coiled Runtime Benchmarks\n"""
-    index_txt += "### Historical timeseries\n"
+    txt = """# Coiled Runtime Benchmarks\n"""
+    txt += "### Historical timeseries\n"
     for runtime in runtimes:
-        index_txt += f"- [{runtime}](./{runtime}.html)\n"
-    index_txt += "\n\n### Statistical analysis\n"
-    index_txt += "- [Bar charts, by test](./barcharts_by_test.html)\n"
-    index_txt += "- [Bar charts, by runtime](./barcharts_by_runtime.html)\n"
+        txt += f"- [{runtime}](./{runtime}.html)\n"
+    txt += "\n\n### Statistical analysis\n"
+    txt += "- [Bar charts, by test](./barcharts_by_test.html)\n"
+    txt += "- [Bar charts, by runtime](./barcharts_by_runtime.html)\n"
     for baseline in baselines:
-        index_txt += (
-            f"- [A/B confidence intervals vs. {baseline}](./AB_vs_{baseline}.html)\n"
-        )
+        txt += f"- [A/B confidence intervals vs. {baseline}](./AB_vs_{baseline}.html)\n"
 
-    index = panel.pane.Markdown(index_txt, width=800)
-    out_fname = str(output_dir.joinpath("index.html"))
+    md = panel.pane.Markdown(txt, width=800)
+    out_fname = str(output_dir / "index.html")
     print(f"Generating {out_fname}")
-    index.save(
+    md.save(
         out_fname,
         title="Coiled Runtime Benchmarks",
-        resources=INLINE,
+        resources=CDN,
     )
 
 
@@ -618,7 +708,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     output_dir = pathlib.Path(args.output_dir)
-    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "details").mkdir(parents=True, exist_ok=True)
 
     load_test_source()
 
@@ -656,6 +746,9 @@ def main() -> None:
     runtimes = sorted(df.runtime.unique(), key=runtime_sort_key)
     for runtime in runtimes:
         make_timeseries_html_report(df, output_dir, runtime)
+
+    for (runtime, fullname), df2 in df.groupby(["runtime", "fullname"]):
+        make_details_html_report(df2, output_dir, runtime, fullname)
 
     # Do not use data that is more than a week old in statistical analysis.
     # Also exclude failed tests.
