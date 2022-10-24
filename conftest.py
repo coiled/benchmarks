@@ -455,6 +455,7 @@ def small_client(
     benchmark_all,
 ):
     with Client(small_cluster) as client:
+        client.restart()
         small_cluster.scale(10)
         client.wait_for_workers(10)
 
