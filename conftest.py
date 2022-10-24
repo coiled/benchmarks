@@ -20,6 +20,7 @@ import sqlalchemy
 from coiled import Cluster
 from distributed import Client
 from distributed.diagnostics.memory_sampler import MemorySampler
+from distributed.scheduler import logger as scheduler_logger
 from sqlalchemy.orm import Session
 from toolz import merge
 
@@ -435,7 +436,6 @@ def test_name_uuid(request):
     "Test name, suffixed with a UUID. Useful for resources like cluster names, S3 paths, etc."
     return f"{request.node.originalname}-{uuid.uuid4().hex}"
 
-
 @pytest.fixture(scope="session")
 def dask_env_variables():
     return {k: v for k, v in os.environ.items() if k.startswith("DASK_")}
@@ -462,20 +462,26 @@ def small_cluster(request, dask_env_variables, gitlab_cluster_tags):
     ) as cluster:
         yield cluster
 
+def log_on_scheduler(client: Client, msg: str, *args, level: int=logging.INFO) -> None:
+    client.run_on_scheduler(scheduler_logger.log, level=level, msg=msg, *args)
 
 @pytest.fixture
 def small_client(
+    test_name_uuid,
     small_cluster,
     upload_cluster_dump,
     benchmark_all,
 ):
     with Client(small_cluster) as client:
+        log_on_scheduler(client, "Starting client setup of '%s'", test_name_uuid)
         small_cluster.scale(10)
         client.wait_for_workers(10)
         client.restart()
 
         with upload_cluster_dump(client), benchmark_all(client):
+            log_on_scheduler(client, "Finished client setup of '%s'", test_name_uuid)
             yield client
+            log_on_scheduler(client, "Starting client teardown of '%s'", test_name_uuid)
 
 
 S3_REGION = "us-east-2"
