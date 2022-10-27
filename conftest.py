@@ -467,7 +467,7 @@ def small_cluster(request, dask_env_variables, gitlab_cluster_tags):
 def log_on_scheduler(
     client: Client, msg: str, *args, level: int = logging.INFO
 ) -> None:
-    client.run_on_scheduler(scheduler_logger.log, level=level, msg=msg, *args)
+    client.run_on_scheduler(scheduler_logger.log, level, msg, *args)
 
 
 @pytest.fixture
