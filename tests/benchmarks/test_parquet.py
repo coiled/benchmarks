@@ -15,7 +15,7 @@ N_WORKERS = 15
 
 
 @pytest.fixture(scope="module")
-def parquet_cluster(dask_env_variables):
+def parquet_cluster(dask_env_variables, gitlab_cluster_tags):
     with Cluster(
         f"parquet-{uuid.uuid4().hex[:8]}",
         n_workers=N_WORKERS,
@@ -23,6 +23,8 @@ def parquet_cluster(dask_env_variables):
         scheduler_vm_types=["m5.xlarge"],
         package_sync=True,
         environ=dask_env_variables,
+        backend_options={"send_prometheus_metrics": True},
+        tags=gitlab_cluster_tags,
     ) as cluster:
         yield cluster
 
@@ -33,7 +35,7 @@ def parquet_client(parquet_cluster, upload_cluster_dump, benchmark_all):
         parquet_cluster.scale(N_WORKERS)
         client.wait_for_workers(N_WORKERS)
         client.restart()
-        with upload_cluster_dump(client, parquet_cluster), benchmark_all(client):
+        with upload_cluster_dump(client), benchmark_all(client):
             yield client
 
 
