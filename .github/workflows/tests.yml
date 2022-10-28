@@ -209,7 +209,7 @@ jobs:
           fi
           echo "IS_PR=$IS_PR"
           python detect_regressions.py
-      
+
       - name: Create regressions summary
         if: always()
         run: |
@@ -222,7 +222,7 @@ jobs:
       always()
       && github.event_name != 'pull_request'
       && github.repository == 'coiled/coiled-runtime'
-      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure') 
+      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
 
     runs-on: ubuntu-latest
     defaults:
