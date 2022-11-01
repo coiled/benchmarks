@@ -1,3 +1,10 @@
+import random
+import string
+
+import dask.dataframe as dd
+import numpy
+import pandas
+import pytest
 from dask.sizeof import sizeof
 from dask.utils import format_bytes
 
@@ -57,4 +64,29 @@ def test_shuffle(small_client):
 
     shuf = df.shuffle(0, shuffle="tasks")
     result = shuf.size
+    wait(result, small_client, 20 * 60)
+
+
+@pytest.mark.parametrize("dtype", ["object", "string[python]", "string[pyarrow]"])
+def test_shuffle_string(dtype, small_client):
+    def make_partition(s, n=100_000):
+        random.seed(s)
+        s1 = pandas.Series(
+            [
+                "".join(
+                    random.choices(string.ascii_letters, k=random.randint(100, 1000))
+                )
+                for _ in range(n)
+            ],
+            dtype=dtype,
+            name="label",
+        )
+        df = pandas.DataFrame(numpy.random.randint(0, 100, size=(n, 10)))
+        df.insert(0, "label", s1)
+        return df
+
+    meta = make_partition(0, n=10)
+
+    ddf = dd.from_map(make_partition, range(100), meta=meta)
+    result = ddf.set_index("label").persist()
     wait(result, small_client, 20 * 60)
