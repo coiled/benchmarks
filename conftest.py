@@ -470,12 +470,13 @@ def small_client(
     benchmark_all,
 ):
     with Client(small_cluster) as client:
+        client.restart()
         small_cluster.scale(10)
         client.wait_for_workers(10)
-        client.restart()
 
         with upload_cluster_dump(client), benchmark_all(client):
             yield client
+        client.restart()
 
 
 S3_REGION = "us-east-2"
