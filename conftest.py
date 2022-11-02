@@ -479,14 +479,15 @@ def small_client(
 ):
     with Client(small_cluster) as client:
         log_on_scheduler(client, "Starting client setup of '%s'", test_name_uuid)
+        client.restart()
         small_cluster.scale(10)
         client.wait_for_workers(10)
-        client.restart()
 
         with upload_cluster_dump(client), benchmark_all(client):
             log_on_scheduler(client, "Finished client setup of '%s'", test_name_uuid)
             yield client
             log_on_scheduler(client, "Starting client teardown of '%s'", test_name_uuid)
+        client.restart()
 
 
 S3_REGION = "us-east-2"
