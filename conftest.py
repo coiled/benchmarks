@@ -20,6 +20,7 @@ import sqlalchemy
 from coiled import Cluster
 from distributed import Client
 from distributed.diagnostics.memory_sampler import MemorySampler
+from distributed.scheduler import logger as scheduler_logger
 from sqlalchemy.orm import Session
 from toolz import merge
 
@@ -432,7 +433,9 @@ def gitlab_cluster_tags():
 
 @pytest.fixture
 def test_name_uuid(request):
-    "Test name, suffixed with a UUID. Useful for resources like cluster names, S3 paths, etc."
+    """Test name, suffixed with a UUID.
+    Useful for resources like cluster names, S3 paths, etc.
+    """
     return f"{request.node.originalname}-{uuid.uuid4().hex}"
 
 
@@ -463,19 +466,31 @@ def small_cluster(request, dask_env_variables, gitlab_cluster_tags):
         yield cluster
 
 
+def log_on_scheduler(
+    client: Client, msg: str, *args, level: int = logging.INFO
+) -> None:
+    client.run_on_scheduler(scheduler_logger.log, level, msg, *args)
+
+
 @pytest.fixture
 def small_client(
+    request,
+    testrun_uid,
     small_cluster,
     upload_cluster_dump,
     benchmark_all,
 ):
+    test_label = f"{request.node.name}, session_id={testrun_uid}"
     with Client(small_cluster) as client:
+        log_on_scheduler(client, "Starting client setup of %s", test_label)
         client.restart()
         small_cluster.scale(10)
         client.wait_for_workers(10)
 
         with upload_cluster_dump(client), benchmark_all(client):
+            log_on_scheduler(client, "Finished client setup of %s", test_label)
             yield client
+            log_on_scheduler(client, "Starting client teardown of %s", test_label)
         client.restart()
 
 
