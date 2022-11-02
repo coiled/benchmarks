@@ -248,6 +248,7 @@ def test_filter_then_average(threshold, zarr_dataset, small_client):
     zarr_dataset[zarr_dataset > threshold].mean().compute()
 
 
+@pytest.mark.skip(reason="this test crashed ci workers -see issue #477")
 @pytest.mark.parametrize("N", [700, 75, 1])
 def test_access_slices(N, zarr_dataset, small_client):
     """
