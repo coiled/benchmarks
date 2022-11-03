@@ -13,18 +13,22 @@ from distributed import Client, wait
 @pytest.mark.skip(
     reason="Skip until https://github.com/dask/distributed/pull/6637 is merged"
 )
-def test_repeated_merge_spill(upload_cluster_dump, benchmark_all, dask_env_variables):
+def test_repeated_merge_spill(
+    upload_cluster_dump, benchmark_all, dask_env_variables, gitlab_cluster_tags
+):
     with Cluster(
-        name=f"test_deadlock-{uuid.uuid4().hex}",
+        name=f"test_repeated_merge_spill-{uuid.uuid4().hex[:8]}",
         n_workers=20,
-        worker_vm_types=["t3.large"],
-        scheduler_vm_types=["t3.xlarge"],
+        worker_vm_types=["m6i.large"],
+        scheduler_vm_types=["m6i.xlarge"],
         wait_for_workers=True,
         package_sync=True,
         environ=dask_env_variables,
+        backend_options={"send_prometheus_metrics": True},
+        tags=gitlab_cluster_tags,
     ) as cluster:
         with Client(cluster) as client:
-            with upload_cluster_dump(client, cluster), benchmark_all(client):
+            with upload_cluster_dump(client), benchmark_all(client):
                 ddf = dask.datasets.timeseries(
                     "2020",
                     "2025",

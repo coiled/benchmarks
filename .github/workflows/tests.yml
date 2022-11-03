@@ -109,7 +109,7 @@ jobs:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
           BENCHMARK: true
-          CLUSTER_DUMP: true
+          CLUSTER_DUMP: always
         run: bash ci/scripts/run_tests.sh ${{ matrix.pytest_args }}
 
       - name: Upload benchmark results
@@ -177,9 +177,10 @@ jobs:
           path: benchmark.db
 
   regressions:
-    needs: process-results
+    needs: [tests, process-results]
     # Always check for regressions, as this can be skipped even if an indirect dependency fails (like a test run)
-    if: always()
+    # Not running regressions when tests are cancelled, and on PRs because of volatility of single runs
+    if: always() && github.event_name != 'pull_request' && needs.tests.result != 'cancelled'
     name: Detect regressions
     runs-on: ubuntu-latest
     steps:
@@ -208,7 +209,7 @@ jobs:
           fi
           echo "IS_PR=$IS_PR"
           python detect_regressions.py
-      
+
       - name: Create regressions summary
         if: always()
         run: |
@@ -221,7 +222,7 @@ jobs:
       always()
       && github.event_name != 'pull_request'
       && github.repository == 'coiled/coiled-runtime'
-      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure') 
+      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
 
     runs-on: ubuntu-latest
     defaults:
