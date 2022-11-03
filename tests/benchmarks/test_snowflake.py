@@ -26,9 +26,10 @@ def connection_kwargs():
         password=os.environ["SNOWFLAKE_PASSWORD"],
         account=os.environ["SNOWFLAKE_ACCOUNT"],
         database="TESTDB",
-        schema="PUBLIC",
+        schema="TESTSCHEMA",
         warehouse=os.environ["SNOWFLAKE_WAREHOUSE"],
         role=os.environ["SNOWFLAKE_ROLE"],
+        application="DASK",
     )
 
 
