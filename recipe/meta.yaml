@@ -45,7 +45,6 @@ requirements:
     - cloudpickle ==2.2.0
     - tornado ==6.1
     - toolz ==0.12.0
-    - python-blosc ==1.10.6
     - zict ==2.2.0
     - xgboost ==1.6.2
     - dask-ml ==2022.5.27
