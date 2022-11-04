@@ -4,7 +4,6 @@ import uuid
 import dask
 import pytest
 from dask_snowflake import read_snowflake, to_snowflake
-from distributed import Client
 from snowflake.sqlalchemy import URL
 from sqlalchemy import create_engine
 
@@ -17,6 +16,11 @@ def table(connection_kwargs):
 
     engine = create_engine(URL(**connection_kwargs))
     engine.execute(f"DROP TABLE IF EXISTS {name}")
+
+
+@pytest.fixture
+def perma_table():
+    return "TEST_TABLE_PERMADATA"
 
 
 @pytest.fixture(scope="module")
@@ -36,50 +40,42 @@ def connection_kwargs():
 @pytest.mark.skipif(
     "SNOWFLAKE_USER" not in os.environ.keys(), reason="no snowflake credentials"
 )
-def test_write_to_snowflake(
-    table, connection_kwargs, small_cluster, upload_cluster_dump, benchmark_all
-):
+def test_write_to_snowflake(table, connection_kwargs, small_client):
 
     ddf = dask.datasets.timeseries(
         start="2000-01-01", end="2000-03-31", freq="1T", partition_freq="1W"
     )
-
-    with Client(small_cluster) as client:
-        small_cluster.scale(10)
-        client.wait_for_workers(10)
-        with upload_cluster_dump(client), benchmark_all(client):
-            to_snowflake(ddf, name=table, connection_kwargs=connection_kwargs)
+    to_snowflake(ddf, name=table, connection_kwargs=connection_kwargs)
 
 
 @pytest.mark.skipif(
     "SNOWFLAKE_USER" not in os.environ.keys(), reason="no snowflake credentials"
 )
-def test_read_from_snowflake(
-    table, connection_kwargs, small_cluster, upload_cluster_dump, benchmark_all
+def test_read_from_snowflake(perma_table, connection_kwargs, small_cliet):
+    query = f"SELECT * FROM {perma_table}"
+    reader = read_snowflake(query, connection_kwargs=connection_kwargs)
+    reader.compute()
+
+
+@pytest.mark.skipif(
+    "SNOWFLAKE_USER" not in os.environ.keys(), reason="no snowflake credentials"
+)
+def test_dask_medians_from_snowfloake(perma_table, connection_kwargs, small_client):
+    query = f"SELECT * FROM {perma_table}"
+    reader = (
+        read_snowflake(query, connection_kwargs=connection_kwargs)
+        .groupby("NAME")["X"]
+        .median()
+    )
+    reader.compute()
+
+
+@pytest.mark.skipif(
+    "SNOWFLAKE_USER" not in os.environ.keys(), reason="no snowflake credentials"
+)
+def test_snowflake_medians_inside_snowflake(
+    perma_table, connection_kwargs, small_client
 ):
-    with Client(small_cluster) as client:
-        small_cluster.scale(10)
-        client.wait_for_workers(10)
-
-        ddf = dask.datasets.timeseries(
-            start="2000-01-01", end="2000-03-31", freq="1T", partition_freq="1W"
-        )
-        to_snowflake(ddf, name=table, connection_kwargs=connection_kwargs)
-        raw_query = f"SELECT * FROM {table}"
-
-        with upload_cluster_dump(client), benchmark_all(client):
-            reader = read_snowflake(raw_query, connection_kwargs=connection_kwargs)
-            reader.compute()
-
-        with upload_cluster_dump(client), benchmark_all(client):
-            reader = (
-                read_snowflake(raw_query, connection_kwargs=connection_kwargs)
-                .groupby("NAME")["X"]
-                .median()
-            )
-            reader.compute()
-
-        with upload_cluster_dump(client), benchmark_all(client):
-            median_query = f"SELECT NAME, MEDIAN(X) FROM {table} GROUP BY NAME"
-            reader = read_snowflake(median_query, connection_kwargs=connection_kwargs)
-            reader.compute()
+    median_query = f"SELECT NAME, MEDIAN(X) FROM {table} GROUP BY NAME"
+    reader = read_snowflake(median_query, connection_kwargs=connection_kwargs)
+    reader.compute()
