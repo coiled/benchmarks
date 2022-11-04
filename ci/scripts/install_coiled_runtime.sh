@@ -10,7 +10,7 @@ then
   cat $1
   mamba env update --file $1
 else
-  mamba install -c conda-forge coiled-runtime=$COILED_RUNTIME_VERSION dask-snowflake
+  mamba install -c conda-forge coiled-runtime=$COILED_RUNTIME_VERSION
 fi
 
 # For debugging
