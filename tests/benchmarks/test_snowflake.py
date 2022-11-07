@@ -3,9 +3,12 @@ import uuid
 
 import dask
 import pytest
-from dask_snowflake import read_snowflake, to_snowflake
-from snowflake.sqlalchemy import URL
-from sqlalchemy import create_engine
+
+dask_snowflake = pytest.importorskip("dask_snowflake", minversion="0.1")
+
+from dask_snowflake import read_snowflake, to_snowflake  # noqa: E402
+from snowflake.sqlalchemy import URL  # noqa: E402
+from sqlalchemy import create_engine  # noqa: E402
 
 
 @pytest.fixture
