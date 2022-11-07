@@ -487,10 +487,19 @@ def small_client(
         small_cluster.scale(10)
         client.wait_for_workers(10)
 
-        with upload_cluster_dump(client), benchmark_all(client):
+        with upload_cluster_dump(client):
             log_on_scheduler(client, "Finished client setup of %s", test_label)
-            yield client
+
+            with benchmark_all(client):
+                yield client
+
+            # Note: normally, this RPC call is almost instantaneous. However, in the
+            # case where the scheduler is still very busy when the fixtured test returns
+            # (e.g. test_futures.py::test_large_map_first_work), it can be delayed into
+            # several seconds. We don't want to capture this extra delay with
+            # benchmark_time, as it's beyond the scope of the test.
             log_on_scheduler(client, "Starting client teardown of %s", test_label)
+
         client.restart()
 
 
