@@ -68,7 +68,7 @@ def test_dask_means_from_snowfloake(perma_table, connection_kwargs, small_client
     reader = (
         read_snowflake(query, connection_kwargs=connection_kwargs)
         .groupby("NAME")["X"]
-        .mean()
+        .median()
     )
     reader.compute()
 
@@ -77,6 +77,6 @@ def test_dask_means_from_snowfloake(perma_table, connection_kwargs, small_client
     "SNOWFLAKE_USER" not in os.environ.keys(), reason="no snowflake credentials"
 )
 def test_snowflake_means_inside_snowflake(perma_table, connection_kwargs, small_client):
-    median_query = f"SELECT NAME, AVG(X) as MEAN_X FROM {perma_table} GROUP BY NAME"
+    median_query = f"SELECT NAME, MEDIAN(X) as MEAN_X FROM {perma_table} GROUP BY NAME"
     reader = read_snowflake(median_query, connection_kwargs=connection_kwargs)
     reader.compute()
