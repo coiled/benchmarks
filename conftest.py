@@ -30,8 +30,13 @@ from plugins import Durations
 logger = logging.getLogger("coiled-runtime")
 logger.setLevel(logging.INFO)
 
+coiled_logger = logging.getLogger("coiled")
 # So coiled logs can be displayed on test failure
-logging.getLogger("coiled").setLevel(logging.INFO)
+coiled_logger.setLevel(logging.INFO)
+# Timestamps are useful for debugging
+coiled_logger.setFormatter(
+    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
 
 TEST_DIR = pathlib.Path("./tests").absolute()
 
