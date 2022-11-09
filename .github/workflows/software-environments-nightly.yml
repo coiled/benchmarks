@@ -67,6 +67,7 @@ jobs:
           push: true
           tags: coiled/coiled-runtime:nightly-${{ env.RUNTIME_NIGHTLY_VERSION }}-py${{ matrix.python-version }}
           build-args: ENV_FILENAME=${{ env.ENV_FILENAME }}
+          platforms: linux/amd64,linux/arm64
 
       - name: Create Runtime ${{ env.RUNTIME_NIGHTLY_VERSION}}, Python ${{ matrix.python-version }}, Server ${{ matrix.server }} software environment
         env:
