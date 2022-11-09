@@ -34,9 +34,11 @@ coiled_logger = logging.getLogger("coiled")
 # So coiled logs can be displayed on test failure
 coiled_logger.setLevel(logging.INFO)
 # Timestamps are useful for debugging
-coiled_logger.setFormatter(
+handler = logging.StreamHandler(sys.stderr)
+handler.setFormatter(
     logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 )
+coiled_logger.addHandler(handler)
 
 TEST_DIR = pathlib.Path("./tests").absolute()
 
