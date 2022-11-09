@@ -6,7 +6,6 @@ import pytest
 def test_rechunk_in_memory(small_client):
     x = da.random.random((50000, 50000))
     x.rechunk((50000, 20)).rechunk((20, 50000)).sum().compute()
-    raise ValueError("asdf")
 
 
 @pytest.mark.skip(reason="this runs forever")
