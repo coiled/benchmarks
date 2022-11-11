@@ -1,6 +1,7 @@
 name: Create nightly Coiled software environments
 
 on:
+  workflow_dispatch:
   schedule:
     # Runs at 01:00 every day after pre-release
     - cron: "0 1 * * *"
