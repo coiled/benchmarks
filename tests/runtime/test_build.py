@@ -56,6 +56,7 @@ def get_meta_specifiers() -> dict[str, SpecifierSet]:
 
 _conda_to_pip_names = {
     "msgpack-python": "msgpack",
+    "python-blosc": "blosc",
 }
 
 _pip_to_conda_names = {v: k for k, v in _conda_to_pip_names.items()}

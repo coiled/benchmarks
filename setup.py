@@ -24,6 +24,7 @@ def get_requirements():
         requirements[requirement.name] = str(requirement.specifier)
 
     # Handle packages that have different names on conda-forge and PyPI
+    requirements["blosc"] = requirements.pop("python-blosc")
     requirements["msgpack"] = requirements.pop("msgpack-python")
 
     # Exclude packages not available on PyPI
@@ -43,7 +44,7 @@ python_requires, install_requires = get_requirements()
 
 setup(
     name="coiled-runtime",
-    version="0.2.0",
+    version="0.1.1",
     description="Simple and fast way to get started with Dask",
     url="https://github.com/coiled/coiled-runtime",
     license="BSD",
