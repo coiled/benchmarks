@@ -508,6 +508,12 @@ def small_client(
             log_on_scheduler(client, "Starting client teardown of %s", test_label)
 
         client.restart()
+        # Run connects to all workers once and to ensure they're up before we do
+        # something else. With another call of restart when entering this
+        # fixture again, this can trigger a race condition that kills workers
+        # See https://github.com/dask/distributed/issues/7312 Can be removed
+        # after this issue is fixed.
+        client.run(lambda: None)
 
 
 S3_REGION = "us-east-2"
