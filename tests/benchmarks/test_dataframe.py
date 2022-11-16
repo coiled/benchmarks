@@ -1,12 +1,14 @@
 import random
 import string
 
+import dask
 import dask.dataframe as dd
 import numpy
 import pandas
 import pytest
 from dask.sizeof import sizeof
 from dask.utils import format_bytes
+from packaging.version import Version
 
 from ..utils_test import cluster_memory, timeseries_of_size, wait
 
@@ -67,6 +69,10 @@ def test_shuffle(small_client):
     wait(result, small_client, 20 * 60)
 
 
+@pytest.mark.skipif(
+    Version(dask.__version__) < Version("2022.10.1"),
+    reason=" No support for pandas string dtypes in versions < 2022.10.1",
+)
 @pytest.mark.parametrize("dtype", ["object", "string[python]", "string[pyarrow]"])
 def test_shuffle_string(dtype, small_client):
     def make_partition(s, n=100_000):
