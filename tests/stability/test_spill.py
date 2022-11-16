@@ -17,7 +17,11 @@ def spill_cluster(dask_env_variables, gitlab_cluster_tags):
         worker_vm_types=["m6i.large"],
         scheduler_vm_types=["m6i.xlarge"],
         wait_for_workers=True,
-        backend_options={"send_prometheus_metrics": True},
+        backend_options={
+            "spot": True,
+            "spot_on_demand_fallback": True,
+            "multizone": True,
+        },
         environ=merge(
             dask_env_variables,
             {
