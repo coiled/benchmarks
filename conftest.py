@@ -30,8 +30,15 @@ from plugins import Durations
 logger = logging.getLogger("coiled-runtime")
 logger.setLevel(logging.INFO)
 
+coiled_logger = logging.getLogger("coiled")
 # So coiled logs can be displayed on test failure
-logging.getLogger("coiled").setLevel(logging.INFO)
+coiled_logger.setLevel(logging.INFO)
+# Timestamps are useful for debugging
+handler = logging.StreamHandler(sys.stderr)
+handler.setFormatter(
+    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
+coiled_logger.addHandler(handler)
 
 TEST_DIR = pathlib.Path("./tests").absolute()
 
@@ -458,11 +465,26 @@ def small_client(
         small_cluster.scale(10)
         client.wait_for_workers(10)
 
-        with upload_cluster_dump(client), benchmark_all(client):
+        with upload_cluster_dump(client):
             log_on_scheduler(client, "Finished client setup of %s", test_label)
-            yield client
+
+            with benchmark_all(client):
+                yield client
+
+            # Note: normally, this RPC call is almost instantaneous. However, in the
+            # case where the scheduler is still very busy when the fixtured test returns
+            # (e.g. test_futures.py::test_large_map_first_work), it can be delayed into
+            # several seconds. We don't want to capture this extra delay with
+            # benchmark_time, as it's beyond the scope of the test.
             log_on_scheduler(client, "Starting client teardown of %s", test_label)
+
         client.restart()
+        # Run connects to all workers once and to ensure they're up before we do
+        # something else. With another call of restart when entering this
+        # fixture again, this can trigger a race condition that kills workers
+        # See https://github.com/dask/distributed/issues/7312 Can be removed
+        # after this issue is fixed.
+        client.run(lambda: None)
 
 
 S3_REGION = "us-east-2"
