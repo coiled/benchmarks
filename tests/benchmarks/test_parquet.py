@@ -23,7 +23,11 @@ def parquet_cluster(dask_env_variables, gitlab_cluster_tags):
         scheduler_vm_types=["m5.xlarge"],
         package_sync=True,
         environ=dask_env_variables,
-        backend_options={"send_prometheus_metrics": True},
+        backend_options={
+            "spot": True,
+            "spot_on_demand_fallback": True,
+            "multizone": True,
+        },
         tags=gitlab_cluster_tags,
     ) as cluster:
         yield cluster
