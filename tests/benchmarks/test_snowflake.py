@@ -59,7 +59,8 @@ def test_read_from_snowflake(perma_table, connection_kwargs, small_client):
 
 
 @pytest.mark.skipif(
-    dask.__version__ < Version("2022.10.0"), reason="median not available in dask"
+    Version(dask.__version__) < Version("2022.10.0"),
+    reason="median not available in dask",
 )
 def test_dask_medians_from_snowfloake(perma_table, connection_kwargs, small_client):
     query = f"SELECT * FROM {perma_table}"
