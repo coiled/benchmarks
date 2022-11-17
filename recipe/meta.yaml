@@ -51,7 +51,7 @@ requirements:
     - dask-ml ==2022.5.27
     - openssl >1.1.0g
     - pynvml ==11.4.1
-    - snowflake-connector-python[pandas] >= 2.8.1
+    - snowflake-connector-python[pandas] ==2.8.1
     - dask-snowflake ==0.1.0
     - optuna ==3.0.3
     - bokeh ==2.4.3
