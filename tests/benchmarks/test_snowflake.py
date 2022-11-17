@@ -62,6 +62,9 @@ def test_read_from_snowflake(perma_table, connection_kwargs, small_client):
     Version(dask.__version__) < Version("2022.10.0"),
     reason="median not available in dask",
 )
+@pytest.mark.skipif(
+    "SNOWFLAKE_USER" not in os.environ.keys(), reason="no snowflake credentials"
+)
 def test_dask_medians_from_snowfloake(perma_table, connection_kwargs, small_client):
     query = f"SELECT * FROM {perma_table}"
     reader = (
@@ -72,6 +75,9 @@ def test_dask_medians_from_snowfloake(perma_table, connection_kwargs, small_clie
     reader.compute()
 
 
+@pytest.mark.skipif(
+    "SNOWFLAKE_USER" not in os.environ.keys(), reason="no snowflake credentials"
+)
 def test_snowflake_medians_inside_snowflake(
     perma_table, connection_kwargs, small_client
 ):
@@ -82,6 +88,9 @@ def test_snowflake_medians_inside_snowflake(
     reader.compute()
 
 
+@pytest.mark.skipif(
+    "SNOWFLAKE_USER" not in os.environ.keys(), reason="no snowflake credentials"
+)
 def test_dask_means_from_snowfloake(perma_table, connection_kwargs, small_client):
     query = f"SELECT * FROM {perma_table}"
     reader = (
@@ -96,6 +105,6 @@ def test_dask_means_from_snowfloake(perma_table, connection_kwargs, small_client
     "SNOWFLAKE_USER" not in os.environ.keys(), reason="no snowflake credentials"
 )
 def test_snowflake_means_inside_snowflake(perma_table, connection_kwargs, small_client):
-    median_query = f"SELECT NAME, MEAN(X) as MEAN_X FROM {perma_table} GROUP BY NAME"
+    median_query = f"SELECT NAME, AVG(X) as MEAN_X FROM {perma_table} GROUP BY NAME"
     reader = read_snowflake(median_query, connection_kwargs=connection_kwargs)
     reader.compute()
