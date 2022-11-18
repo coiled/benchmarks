@@ -6,8 +6,9 @@ import pytest
 from packaging.version import Version
 
 dask_snowflake = pytest.importorskip("dask_snowflake", minversion="0.1")
+read_snowflake = pytest.importorskip("dask_snowflake", minversion="0.1").read_snowflake
+to_snowflake = pytest.importorskip("dask_snowflake", minversion="0.1").to_snowflake
 
-from dask_snowflake import read_snowflake, to_snowflake  # noqa: E402
 from snowflake.sqlalchemy import URL  # noqa: E402
 from sqlalchemy import create_engine  # noqa: E402
 
@@ -52,6 +53,9 @@ def test_write_to_snowflake(table, connection_kwargs, small_client):
     to_snowflake(ddf, name=table, connection_kwargs=connection_kwargs)
 
 
+@pytest.mark.skipif(
+    "SNOWFLAKE_USER" not in os.environ.keys(), reason="no snowflake credentials"
+)
 def test_read_from_snowflake(perma_table, connection_kwargs, small_client):
     query = f"SELECT * FROM {perma_table}"
     reader = read_snowflake(query, connection_kwargs=connection_kwargs)
