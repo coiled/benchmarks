@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 from dask.distributed import as_completed, wait
 from distributed.utils_test import inc, slowdec, slowinc
 
@@ -18,6 +19,9 @@ def test_large_map(small_client):
     wait(futures)
 
 
+@pytest.mark.skip(
+    reason="Skip until https://github.com/coiled/coiled-runtime/issues/521 is fixed"
+)
 def test_large_map_first_work(small_client):
     """
     Large maps are fine, but it's pleasant to see work start immediately.
