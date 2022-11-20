@@ -13,8 +13,7 @@ def spill_cluster(dask_env_variables, gitlab_cluster_tags):
         f"spill-{uuid.uuid4().hex[:8]}",
         n_workers=5,
         package_sync=True,
-        worker_disk_size=64,
-        worker_vm_types=["m6i.large"],
+        worker_vm_types=["m6id.large"],
         scheduler_vm_types=["m6i.xlarge"],
         wait_for_workers=True,
         backend_options={
