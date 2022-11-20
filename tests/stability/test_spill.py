@@ -13,7 +13,7 @@ def spill_cluster(dask_env_variables, gitlab_cluster_tags):
         f"spill-{uuid.uuid4().hex[:8]}",
         n_workers=5,
         package_sync=True,
-        worker_vm_types=["m6id.large"],
+        worker_vm_types=["m6id.xlarge"],
         scheduler_vm_types=["m6i.xlarge"],
         wait_for_workers=True,
         backend_options={
@@ -53,7 +53,7 @@ def spill_client(spill_cluster, upload_cluster_dump, benchmark_all):
 @pytest.mark.stability
 @pytest.mark.parametrize("keep_around", (True, False))
 def test_spilling(spill_client, keep_around):
-    arr = da.random.random((64, 2**27)).persist()  # 64 GiB, ~2x memory
+    arr = da.random.random((128, 2**27)).persist()  # 128 GiB, ~2x memory
     wait(arr)
     fut = spill_client.compute(arr.sum())
     if not keep_around:
