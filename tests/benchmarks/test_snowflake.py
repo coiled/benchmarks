@@ -64,7 +64,7 @@ def test_read_from_snowflake(perma_table, connection_kwargs, small_client):
 
 @pytest.mark.skipif(
     Version(dask.__version__) < Version("2022.10.0"),
-    reason="median not available in dask",
+    reason="No support for median in dask < 2022.10.0",
 )
 @pytest.mark.skipif(
     "SNOWFLAKE_USER" not in os.environ.keys(), reason="no snowflake credentials"
