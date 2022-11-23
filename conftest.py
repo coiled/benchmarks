@@ -17,12 +17,12 @@ import filelock
 import pytest
 import s3fs
 import sqlalchemy
+import yaml
 from coiled import Cluster
 from distributed import Client
 from distributed.diagnostics.memory_sampler import MemorySampler
 from distributed.scheduler import logger as scheduler_logger
 from sqlalchemy.orm import Session
-from toolz import merge
 
 from benchmark_schema import TestRun
 from plugins import Durations
@@ -451,24 +451,34 @@ def dask_env_variables():
     return {k: v for k, v in os.environ.items() if k.startswith("DASK_")}
 
 
-@pytest.fixture(scope="module")
-def small_cluster(request, dask_env_variables, gitlab_cluster_tags):
-    # Extract `backend_options` for cluster from `backend_options` markers
-    backend_options = merge(
-        m.kwargs for m in request.node.iter_markers(name="backend_options")
-    )
-    backend_options["send_prometheus_metrics"] = True
+@pytest.fixture(scope="session")
+def cluster_kwargs() -> dict:
+    base_dir = os.path.dirname(__file__)
+    base_fname = os.path.join(base_dir, "cluster_kwargs.yaml")
+    with open(base_fname) as fh:
+        config = yaml.safe_load(fh)
 
+    override_fname = os.getenv("CLUSTER_KWARGS")
+    if override_fname:
+        override_fname = os.path.join(base_dir, override_fname)
+        with open(override_fname) as fh:
+            override_config = yaml.safe_load(fh)
+        dask.config.update(config, override_config)
+
+    default = config.pop("default")
+    config = {k: dask.config.merge(default, v) for k, v in config.items()}
+
+    return config
+
+
+@pytest.fixture(scope="module")
+def small_cluster(request, dask_env_variables, cluster_kwargs, gitlab_cluster_tags):
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
-        n_workers=10,
-        worker_vm_types=["m6i.large"],  # 2CPU, 8GiB
-        scheduler_vm_types=["m6i.xlarge"],
-        backend_options=backend_options,
-        package_sync=True,
         environ=dask_env_variables,
         tags=gitlab_cluster_tags,
+        **cluster_kwargs["small_cluster"],
     ) as cluster:
         yield cluster
 
@@ -484,15 +494,17 @@ def small_client(
     request,
     testrun_uid,
     small_cluster,
+    cluster_kwargs,
     upload_cluster_dump,
     benchmark_all,
 ):
+    n_workers = cluster_kwargs["small_cluster"]["n_workers"]
     test_label = f"{request.node.name}, session_id={testrun_uid}"
     with Client(small_cluster) as client:
         log_on_scheduler(client, "Starting client setup of %s", test_label)
         client.restart()
-        small_cluster.scale(10)
-        client.wait_for_workers(10)
+        small_cluster.scale(n_workers)
+        client.wait_for_workers(n_workers)
 
         with upload_cluster_dump(client):
             log_on_scheduler(client, "Finished client setup of %s", test_label)
