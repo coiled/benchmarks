@@ -110,6 +110,9 @@ jobs:
           CLUSTER_KWARGS: AB_environments/${{ matrix.runtime-version }}.cluster.yaml
         run: bash ci/scripts/run_tests.sh ${{ matrix.pytest_args }}
 
+      - name: Dump coiled.Cluster kwargs
+        run: cat cluster_kwargs.merged.yaml
+
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
         if: always()

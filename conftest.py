@@ -468,6 +468,11 @@ def cluster_kwargs() -> dict:
     default = config.pop("default")
     config = {k: dask.config.merge(default, v) for k, v in config.items()}
 
+    # For forensic analysis
+    output_fname = os.path.join(base_dir, "cluster_kwargs.merged.yaml")
+    with open(output_fname, "w") as fh:
+        yaml.dump(config, fh)
+
     return config
 
 
