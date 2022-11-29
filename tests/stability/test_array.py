@@ -1,3 +1,5 @@
+import sys
+
 import dask.array as da
 import pytest
 
@@ -17,6 +19,9 @@ def test_rechunk_out_of_memory(small_client):
 
 
 @pytest.mark.stability
+@pytest.mark.skipif(
+    sys.platform.startswith("win"), reason="scaled_array_shape fails on windows"
+)
 def test_ols(small_client):
     chunksize = int(1e6)
     memory = cluster_memory(small_client)
