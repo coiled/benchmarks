@@ -26,19 +26,15 @@ def test_work_stealing_on_scaling_up(
     test_name_uuid,
     upload_cluster_dump,
     benchmark_all,
+    cluster_kwargs,
     dask_env_variables,
     gitlab_cluster_tags,
 ):
     with Cluster(
         name=test_name_uuid,
-        n_workers=1,
-        worker_vm_types=["t3.medium"],
-        scheduler_vm_types=["m6i.xlarge"],
-        wait_for_workers=True,
-        package_sync=True,
         environ=dask_env_variables,
-        backend_options={"send_prometheus_metrics": True},
         tags=gitlab_cluster_tags,
+        **cluster_kwargs["test_work_stealing_on_scaling_up"],
     ) as cluster:
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103
@@ -89,22 +85,20 @@ def test_work_stealing_on_straggling_worker(
     test_name_uuid,
     upload_cluster_dump,
     benchmark_all,
+    cluster_kwargs,
     dask_env_variables,
     gitlab_cluster_tags,
 ):
+    kwargs = cluster_kwargs["test_work_stealing_on_straggling_worker"]
     with Cluster(
         name=test_name_uuid,
-        n_workers=10,
-        worker_vm_types=["t3.medium"],
-        scheduler_vm_types=["m6i.xlarge"],
-        package_sync=True,
-        wait_for_workers=True,
         environ=dask_env_variables,
         tags=gitlab_cluster_tags,
+        **kwargs,
     ) as cluster:
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103
-            client.wait_for_workers(10)
+            client.wait_for_workers(kwargs["n_workers"])
             with upload_cluster_dump(client), benchmark_all(client):
 
                 def clog():

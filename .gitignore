@@ -133,3 +133,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Project-specific files
+cluster_kwargs.merged.yaml
