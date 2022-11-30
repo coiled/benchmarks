@@ -121,6 +121,9 @@ categories:
   - runtime
   - benchmarks
   - stability
+max_parallel:
+  ci_jobs: 5
+  modules_per_job: 4
 ```
 
 ### 6. Run CI
