@@ -10,7 +10,10 @@ from distributed import Client
 from packaging.version import Version
 from tornado.ioloop import PeriodicCallback
 
+from ..utils_test import run_up_to_nthreads
 
+
+@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 def test_trivial_workload_should_not_cause_work_stealing(small_client):
     root = delayed(lambda n: "x" * n)(utils.parse_bytes("1MiB"), dask_key_name="root")
     results = [delayed(lambda *args: None)(root, i) for i in range(10000)]
@@ -18,6 +21,7 @@ def test_trivial_workload_should_not_cause_work_stealing(small_client):
     small_client.gather(futs)
 
 
+@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 @pytest.mark.xfail(
     Version(distributed.__version__) < Version("2022.6.1"),
     reason="https://github.com/dask/distributed/issues/6624",
@@ -67,6 +71,7 @@ def test_work_stealing_on_scaling_up(
                 _ = future.result()
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed dataset")
 def test_work_stealing_on_inhomogeneous_workload(small_client):
     np.random.seed(42)
     delays = np.random.lognormal(1, 1.3, 500)
@@ -81,6 +86,7 @@ def test_work_stealing_on_inhomogeneous_workload(small_client):
     small_client.gather(futs)
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed dataset")
 def test_work_stealing_on_straggling_worker(
     test_name_uuid,
     upload_cluster_dump,

@@ -1,11 +1,14 @@
 from __future__ import annotations
 
+import math
+
 import dask
 import dask.array as da
 import dask.dataframe as dd
 import distributed
 import numpy as np
 import pandas as pd
+import pytest
 from dask.datasets import timeseries
 from dask.sizeof import sizeof
 from dask.utils import format_bytes, parse_bytes
@@ -19,7 +22,8 @@ def scaled_array_shape(
     max_error: float = 0.1,
 ) -> tuple[int, ...]:
     """
-    Given a shape with free variables in it, generate the shape that results in the target array size.
+    Given a shape with free variables in it, generate the shape that results in the
+    target array size.
 
     Example
     -------
@@ -81,6 +85,25 @@ def scaled_array_shape(
     return final
 
 
+def scaled_array_shape_quadratic(
+    target_nbytes: int | str,
+    baseline_nbytes: int | str,
+    shape: tuple[int | str, ...],
+    *,
+    dtype: np.dtype | type = np.dtype(float),
+    max_error: float = 0.1,
+) -> tuple[int, ...]:
+    """Variant of `scaled_array_shape` for algorithms that scale quadratically with the
+    amount of data. This function automatically reduces `target_nbytes` when larger than
+    baseline_nbytes, and increases it when smaller, in order to keep a constant-ish
+    runtime.
+    """
+    target_nbytes = parse_bytes(target_nbytes)
+    baseline_nbytes = parse_bytes(baseline_nbytes)
+    scaled_nbytes = int(baseline_nbytes * math.sqrt(target_nbytes / baseline_nbytes))
+    return scaled_array_shape(scaled_nbytes, shape, dtype=dtype, max_error=max_error)
+
+
 def wait(thing, client, timeout):
     "Like `distributed.wait(thing.persist())`, but if any tasks fail, raises its error."
     p = thing.persist()
@@ -94,7 +117,7 @@ def wait(thing, client, timeout):
 
 
 def cluster_memory(client: distributed.Client) -> int:
-    "Total memory available on the cluster, in bytes"
+    """Total memory available on the cluster, in bytes"""
     return int(
         sum(w["memory_limit"] for w in client.scheduler_info()["workers"].values())
     )
@@ -187,3 +210,36 @@ def arr_to_devnull(arr: da.Array) -> dask.delayed:
 
     # TODO `da.store` should use blockwise to be much more efficient https://github.com/dask/dask/issues/9381
     return da.store(arr, _DevNull(), lock=False, compute=False)
+
+
+def ec2_instance_cpus(name: str) -> int:
+    kind, _, size = name.partition(".")
+
+    if size == "large":
+        return 2
+    if size == "xlarge":
+        return 4
+    if size.endswith("xlarge"):
+        return int(size[len("xlarge") :]) * 4
+
+    # nano, micro, small, and medium instances are probably uninteresting for dask.
+    # metal is interesting, but every architecture has its own number of cores and it
+    # would be too much of an effort to hardcode them all here.
+
+    raise ValueError(f"Unknown instance type: {name}")
+
+
+def run_up_to_nthreads(cluster_name: str, nthreads_max: int, reason: str | None = None):
+    from .conftest import load_cluster_kwargs
+
+    cluster_kwargs = load_cluster_kwargs()[cluster_name]
+    nworkers = cluster_kwargs["n_workers"]
+    # This does not consider that there may be a fallback to smaller/larger workers.
+    # It doesn't really make sense to have fallbacks in case of performance benchmarks
+    # anyway.
+    instance_type = cluster_kwargs["worker_vm_types"][0]
+    nthreads = nworkers * ec2_instance_cpus(instance_type)
+
+    return pytest.mark.skipif(
+        nthreads > nthreads_max, reason=reason or "cluster too large"
+    )

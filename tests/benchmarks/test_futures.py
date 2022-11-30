@@ -3,7 +3,10 @@ import pytest
 from dask.distributed import as_completed, wait
 from distributed.utils_test import inc, slowdec, slowinc
 
+from ..utils_test import run_up_to_nthreads
 
+
+@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 def test_single_future(small_client):
     """How quickly can we run a simple computation?
     Repeat the test a few times to get a more sensible
@@ -13,12 +16,14 @@ def test_single_future(small_client):
         small_client.submit(inc, i).result()
 
 
+@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 def test_large_map(small_client):
     """What's the overhead of map these days?"""
     futures = small_client.map(inc, range(100_000))
     wait(futures)
 
 
+@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 @pytest.mark.skip(
     reason="Skip until https://github.com/coiled/coiled-runtime/issues/521 is fixed"
 )
@@ -33,6 +38,7 @@ def test_large_map_first_work(small_client):
         return
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed dataset")
 def test_memory_efficient(small_client):
     """
     We hope that we pipeline xs->ys->zs without keeping all of the xs in memory

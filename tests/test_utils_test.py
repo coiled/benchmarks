@@ -4,7 +4,11 @@ import pytest
 from dask.sizeof import sizeof
 from dask.utils import parse_bytes
 
-from .utils_test import scaled_array_shape, timeseries_of_size
+from .utils_test import (
+    scaled_array_shape,
+    scaled_array_shape_quadratic,
+    timeseries_of_size,
+)
 
 
 def test_scaled_array_shape():
@@ -18,6 +22,13 @@ def test_scaled_array_shape():
     assert scaled_array_shape(64, ("x", "x", "x"), dtype=float) == (2, 2, 2)
 
     assert scaled_array_shape("10kb", ("x", "1kb"), dtype=bool) == (10, 1000)
+
+
+def test_scaled_array_shape_quadratic():
+    assert scaled_array_shape("1GB", ("x",)) == (125000000,)
+    assert scaled_array_shape_quadratic("1GB", "1GB", ("x",)) == (125000000,)
+    assert scaled_array_shape_quadratic("16GB", "1GB", ("x",)) == (500000000,)
+    assert scaled_array_shape_quadratic("64MB", "1GB", ("x",)) == (31622776,)
 
 
 def sizeof_df(df):
