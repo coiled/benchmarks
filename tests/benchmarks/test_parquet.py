@@ -11,33 +11,24 @@ import pandas
 import pytest
 from coiled.v2 import Cluster
 
-N_WORKERS = 15
-
 
 @pytest.fixture(scope="module")
-def parquet_cluster(dask_env_variables, gitlab_cluster_tags):
+def parquet_cluster(dask_env_variables, cluster_kwargs, gitlab_cluster_tags):
     with Cluster(
         f"parquet-{uuid.uuid4().hex[:8]}",
-        n_workers=N_WORKERS,
-        worker_vm_types=["m5.xlarge"],
-        scheduler_vm_types=["m5.xlarge"],
-        package_sync=True,
         environ=dask_env_variables,
-        backend_options={
-            "spot": True,
-            "spot_on_demand_fallback": True,
-            "multizone": True,
-        },
         tags=gitlab_cluster_tags,
+        **cluster_kwargs["parquet_cluster"],
     ) as cluster:
         yield cluster
 
 
 @pytest.fixture
-def parquet_client(parquet_cluster, upload_cluster_dump, benchmark_all):
+def parquet_client(parquet_cluster, cluster_kwargs, upload_cluster_dump, benchmark_all):
+    n_workers = cluster_kwargs["parquet_cluster"]["n_workers"]
     with distributed.Client(parquet_cluster) as client:
-        parquet_cluster.scale(N_WORKERS)
-        client.wait_for_workers(N_WORKERS)
+        parquet_cluster.scale(n_workers)
+        client.wait_for_workers(n_workers)
         client.restart()
         with upload_cluster_dump(client), benchmark_all(client):
             yield client

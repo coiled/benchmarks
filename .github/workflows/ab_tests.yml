@@ -81,6 +81,7 @@ jobs:
           cd AB_environments
           cp AB_baseline.conda.yaml AB_null_hypothesis.conda.yaml
           cp AB_baseline.dask.yaml AB_null_hypothesis.dask.yaml
+          cp AB_baseline.cluster.yaml AB_null_hypothesis.cluster.yaml
 
       - name: Install coiled-runtime
         env:
@@ -101,7 +102,11 @@ jobs:
           DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
           BENCHMARK: true
           CLUSTER_DUMP: always
+          CLUSTER_KWARGS: AB_environments/${{ matrix.runtime-version }}.cluster.yaml
         run: bash ci/scripts/run_tests.sh ${{ matrix.pytest_args }}
+
+      - name: Dump coiled.Cluster kwargs
+        run: cat cluster_kwargs.merged.yaml
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
