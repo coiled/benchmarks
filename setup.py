@@ -24,7 +24,6 @@ def get_requirements():
         requirements[requirement.name] = str(requirement.specifier)
 
     # Handle packages that have different names on conda-forge and PyPI
-    requirements["blosc"] = requirements.pop("python-blosc")
     requirements["msgpack"] = requirements.pop("msgpack-python")
 
     # Exclude packages not available on PyPI
