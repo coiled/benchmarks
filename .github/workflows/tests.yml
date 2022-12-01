@@ -32,7 +32,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.9"]
         pytest_args: [tests]
-        runtime-version: [upstream, latest, "0.1.0"]
+        runtime-version: [upstream, latest, "0.1.0", "0.2.0"]
         include:
           # Run stability tests on Python 3.8
           - pytest_args: tests/stability
