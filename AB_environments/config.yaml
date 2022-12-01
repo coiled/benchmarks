@@ -2,12 +2,12 @@
 # Lower values are faster and cheaper but will result in higher variance.
 # This must remain set to 0 in the main branch, thus completely disabling
 # A/B tests, in order to avoid unnecessary runs.
-repeat: 1
+repeat: 0
 
 # Set to true to automatically create a verbatim copy of AB_baseline and then compare
 # the two in the A/B tests. Set to false to save some money if you are already confident
 # that the 'repeat' setting is high enough.
-test_null_hypothesis: false
+test_null_hypothesis: true
 
 # Tests categories to run. These are subdirectories of tests/.
 categories:
@@ -26,4 +26,4 @@ max_parallel:
   # Number of parallel test_*.py modules per A/B test job.
   # Each module typically spawns one Coiled cluster at a time.
   # Set to 1 to disable pytest-xdist.
-  modules_per_job: 1
+  modules_per_job: 4
