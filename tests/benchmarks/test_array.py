@@ -275,4 +275,4 @@ def test_sum_residuals(zarr_dataset, small_client):
     """
     Simnple test to that computes as reduction, the array op, the reduction again
     """
-    (zarr_dataset - zarr_dataset.mean(axis=0)).sum()
+    (zarr_dataset - zarr_dataset.mean(axis=0)).sum().compute()
