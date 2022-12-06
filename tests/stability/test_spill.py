@@ -6,8 +6,10 @@ from coiled import Cluster
 from dask.distributed import Client, wait
 from toolz import merge
 
-N_SPILL_WORKERS = 2
-GB_MEM_PER_SPILL_WORKER = 64
+N_SPILL_WORKERS = 3
+GB_MEM_PER_SPILL_WORKER = 16
+SPILL_WORKER_TYPE = "m6i.large"
+SPILL_WORKER_TYPE = "i4i.large"
 
 
 @pytest.fixture(scope="module")
@@ -16,7 +18,7 @@ def spill_cluster(dask_env_variables, gitlab_cluster_tags):
         f"spill-{uuid.uuid4().hex[:8]}",
         n_workers=N_SPILL_WORKERS,
         package_sync=True,
-        worker_vm_types=["m6id.4xlarge"],
+        worker_vm_types=[SPILL_WORKER_TYPE],
         scheduler_vm_types=["m6i.xlarge"],
         wait_for_workers=True,
         backend_options={
