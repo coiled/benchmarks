@@ -140,7 +140,7 @@ The most relevant ones are summarized here:
 
 **`benchmark_task_durations`**: Record time spent computing, transferring data, spilling to disk, and deserializing data.
 
-**`auto_benchmark_time`**: Include this fixture to measure the wall clock time of the whole test automatically.
+**`get_cluster_info`**: Record cluster id, name, etc.
 
 **`benchmark_all`**: Record all available metrics.
 
