@@ -225,10 +225,6 @@ def benchmark_time(test_run_benchmark):
         def test_something(benchmark_time):
             with benchmark_time:
                 do_something()
-
-    See Also
-    --------
-    auto_benchmark_time
     """
 
     @contextlib.contextmanager
@@ -244,31 +240,6 @@ def benchmark_time(test_run_benchmark):
             test_run_benchmark.end = datetime.datetime.utcfromtimestamp(end)
 
     return _benchmark_time()
-
-
-@pytest.fixture(scope="function")
-def auto_benchmark_time(benchmark_time):
-    """Benchmark the wall clock time of an individual test.
-
-    This fixture automatically records the wall clock time it takes to
-    execute an individual test if run as part of a benchmark. Depending on the test's structure, this may
-    include setup or teardown code that should not be measured. For more
-    control, use the ``benchmark_time`` context manager fixture.
-
-
-    Example
-    -------
-    .. code-block:: python
-
-        def test_something(auto_benchmark_time):
-            do_something()
-
-    See Also
-    --------
-    benchmark_time
-    """
-    with benchmark_time:
-        yield
 
 
 @pytest.fixture(scope="function")
@@ -365,14 +336,14 @@ def get_cluster_info(test_run_benchmark):
     """
 
     @contextlib.contextmanager
-    def _get_cluster_info(client):
+    def _get_cluster_info(cluster):
         if not test_run_benchmark:
             yield
         else:
             yield
-            test_run_benchmark.cluster_name = client.cluster.name
-            test_run_benchmark.cluster_id = client.cluster.cluster_id
-            test_run_benchmark.cluster_details_url = client.cluster.details_url
+            test_run_benchmark.cluster_name = cluster.name
+            test_run_benchmark.cluster_id = cluster.cluster_id
+            test_run_benchmark.cluster_details_url = cluster.details_url
 
     yield _get_cluster_info
 
@@ -413,7 +384,7 @@ def benchmark_all(
     def _benchmark_all(client):
         with benchmark_memory(client), benchmark_task_durations(
             client
-        ), get_cluster_info(client), benchmark_time:
+        ), get_cluster_info(client.cluster), benchmark_time:
             yield
 
     yield _benchmark_all

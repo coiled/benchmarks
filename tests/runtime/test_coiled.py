@@ -1,7 +1,8 @@
-import coiled
+from coiled import Cluster
 
 
-def test_reconnect(small_cluster):
+def test_cluster_reconnect(small_cluster, get_cluster_info, benchmark_time):
     """How quickly can we reconnect to an existing cluster?"""
-    with coiled.Cluster(name=small_cluster.name):
-        pass
+    with get_cluster_info(small_cluster), benchmark_time:
+        with Cluster(name=small_cluster.name, shutdown_on_close=False):
+            pass
