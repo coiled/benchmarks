@@ -253,7 +253,7 @@ def test_access_slices(N, zarr_dataset, small_client):
     """
     Accessing just a few chunks of a zarr array should be quick
     """
-    zarr_dataset[:N, :N, :N].persist()
+    distributed.wait(zarr_dataset[:N, :N, :N].persist())
 
 
 def test_sum_residuals(zarr_dataset, small_client):
