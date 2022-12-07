@@ -52,43 +52,45 @@ def ddf(request):
         )
 
 
-def test_q1(ddf, small_client):
+def test_q1(ddf, small_client, shuffle):
     ddf = ddf[["id1", "v1"]]
-    ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"}).compute()
+    ddf.groupby("id1", dropna=False, observed=True).agg(
+        {"v1": "sum"}, shuffle=shuffle
+    ).compute()
 
 
-def test_q2(ddf, small_client):
+def test_q2(ddf, small_client, shuffle):
     ddf = ddf[["id1", "id2", "v1"]]
     (
         ddf.groupby(["id1", "id2"], dropna=False, observed=True)
-        .agg({"v1": "sum"})
+        .agg({"v1": "sum"}, shuffle=shuffle)
         .compute()
     )
 
 
-def test_q3(ddf, small_client):
+def test_q3(ddf, small_client, shuffle):
     ddf = ddf[["id3", "v1", "v3"]]
     (
         ddf.groupby("id3", dropna=False, observed=True)
-        .agg({"v1": "sum", "v3": "mean"})
+        .agg({"v1": "sum", "v3": "mean"}, shuffle=shuffle)
         .compute()
     )
 
 
-def test_q4(ddf, small_client):
+def test_q4(ddf, small_client, shuffle):
     ddf = ddf[["id4", "v1", "v2", "v3"]]
     (
         ddf.groupby("id4", dropna=False, observed=True)
-        .agg({"v1": "mean", "v2": "mean", "v3": "mean"})
+        .agg({"v1": "mean", "v2": "mean", "v3": "mean"}, shuffle=shuffle)
         .compute()
     )
 
 
-def test_q5(ddf, small_client):
+def test_q5(ddf, small_client, shuffle):
     ddf = ddf[["id6", "v1", "v2", "v3"]]
     (
         ddf.groupby("id6", dropna=False, observed=True)
-        .agg({"v1": "sum", "v2": "sum", "v3": "sum"})
+        .agg({"v1": "sum", "v2": "sum", "v3": "sum"}, shuffle=shuffle)
         .compute()
     )
 
@@ -97,25 +99,26 @@ def test_q5(ddf, small_client):
     Version(dask.__version__) < Version("2022.10.0"),
     reason="No support for median in dask < 2022.10.0",
 )
-def test_q6(ddf, small_client):
+def test_q6(ddf, small_client, shuffle):
     ddf = ddf[["id4", "id5", "v3"]]
     (
         ddf.groupby(["id4", "id5"], dropna=False, observed=True)
-        .agg({"v3": ["median", "std"]}, shuffle="tasks")
+        .agg({"v3": ["median", "std"]}, shuffle=shuffle)
         .compute()  # requires shuffle="tasks"
     )
 
 
-def test_q7(ddf, small_client):
+def test_q7(ddf, small_client, shuffle):
     ddf = ddf[["id3", "v1", "v2"]]
     (
         ddf.groupby("id3", dropna=False, observed=True)
-        .agg({"v1": "max", "v2": "min"})
+        .agg({"v1": "max", "v2": "min"}, shuffle=shuffle)
         .assign(range_v1_v2=lambda x: x["v1"] - x["v2"])[["range_v1_v2"]]
         .compute()
     )
 
 
+# TODO: Cannot specify shuffle in apply
 def test_q8(ddf, small_client):
     ddf = ddf[["id6", "v1", "v2", "v3"]]
     (
@@ -129,6 +132,7 @@ def test_q8(ddf, small_client):
     )
 
 
+# TODO: Cannot specify shuffle in apply
 def test_q9(ddf, small_client):
     ddf = ddf[["id2", "id4", "v1", "v2"]]
     (
