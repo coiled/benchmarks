@@ -1,3 +1,5 @@
+import numpy as np
+from dask.datasets import timeseries
 from dask.sizeof import sizeof
 from dask.utils import format_bytes
 
@@ -58,3 +60,26 @@ def test_shuffle(small_client):
     shuf = df.shuffle(0, shuffle="tasks")
     result = shuf.size
     wait(result, small_client, 20 * 60)
+
+
+def test_ddf_isin(small_client):
+    """
+    Checks the efficiency of serializing a large list for filtering
+    a dask dataframe, and filtering the dataframe by column
+    based on that list.
+
+    To get enough unique integers to make this meaningful, we need to create
+    colum 'A' as a float and then convert it to an int.  This is caused by
+    the fact that random ints in timeseries() are drawn from a Poisson distribution.
+    """
+    N = 10_000_000
+    rs = np.random.RandomState(42)
+    ddf = timeseries(end="2000-05-01", dtypes={"A": float, "B": int}, seed=42)
+    ddf.A = ddf.A.mul(N)
+    ddf.A = ddf.A.astype(int).persist()
+    a_column_unique_values = np.arange(1, N // 10)
+    filter_values_list = sorted(
+        rs.choice(a_column_unique_values, len(a_column_unique_values) // 2).tolist()
+    )
+    tmp_ddf = ddf.loc[ddf["A"].isin(filter_values_list)]
+    wait(tmp_ddf, small_client, 20 * 60)
