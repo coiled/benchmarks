@@ -21,6 +21,7 @@ from coiled import Cluster
 from distributed import Client
 from distributed.diagnostics.memory_sampler import MemorySampler
 from distributed.scheduler import logger as scheduler_logger
+from packaging.version import parse as parse_version
 from sqlalchemy.orm import Session
 from toolz import merge
 
@@ -604,3 +605,19 @@ def upload_cluster_dump(
                 client.dump_cluster_state(dump_path, **s3_storage_options)
 
     yield _upload_cluster_dump
+
+
+P2P_AVAILABLE = parse_version(dask.__version__) >= parse_version("2022.11.0")
+
+
+@pytest.fixture(
+    params=[
+        "tasks",
+        pytest.param(
+            "p2p",
+            marks=pytest.mark.skipif(not P2P_AVAILABLE),
+        ),
+    ]
+)
+def shuffle(request):
+    return request.param

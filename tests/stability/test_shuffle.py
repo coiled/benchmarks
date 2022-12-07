@@ -1,22 +1,6 @@
 import dask
 import dask.dataframe as dd
 import pytest
-from packaging.version import parse as parse_version
-
-P2P_AVAILABLE = parse_version(dask.__version__) >= parse_version("2022.05.1")
-
-
-@pytest.fixture(
-    params=[
-        "tasks",
-        pytest.param(
-            "p2p",
-            marks=pytest.mark.skipif(not P2P_AVAILABLE),
-        ),
-    ]
-)
-def shuffle(request):
-    return request.param
 
 
 @pytest.mark.stability
