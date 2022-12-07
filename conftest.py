@@ -21,7 +21,7 @@ from coiled import Cluster
 from distributed import Client
 from distributed.diagnostics.memory_sampler import MemorySampler
 from distributed.scheduler import logger as scheduler_logger
-from packaging.version import parse as parse_version
+from packaging.version import Version
 from sqlalchemy.orm import Session
 from toolz import merge
 
@@ -607,7 +607,7 @@ def upload_cluster_dump(
     yield _upload_cluster_dump
 
 
-P2P_AVAILABLE = parse_version(dask.__version__) >= parse_version("2022.11.0")
+P2P_AVAILABLE = Version(dask.__version__) >= Version("2022.11.0")
 
 
 @pytest.fixture(
