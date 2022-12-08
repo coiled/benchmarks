@@ -615,9 +615,17 @@ P2P_AVAILABLE = Version(dask.__version__) >= Version("2022.11.0")
         "tasks",
         pytest.param(
             "p2p",
-            marks=pytest.mark.skipif(not P2P_AVAILABLE),
+            marks=pytest.mark.skipif(
+                not P2P_AVAILABLE, reason="p2p shuffle not available"
+            ),
         ),
     ]
 )
 def shuffle(request):
     return request.param
+
+
+@pytest.fixture
+def small_shuffling_client(small_client, shuffle):
+    with dask.config.set(shuffle=shuffle):
+        yield
