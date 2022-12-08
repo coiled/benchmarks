@@ -8,16 +8,9 @@ from toolz import merge
 
 
 @pytest.fixture(scope="module")
-def spill_cluster(dask_env_variables, gitlab_cluster_tags):
+def spill_cluster(dask_env_variables, cluster_kwargs, gitlab_cluster_tags):
     with Cluster(
-        f"spill-{uuid.uuid4().hex[:8]}",
-        n_workers=5,
-        package_sync=True,
-        worker_disk_size=64,
-        worker_vm_types=["m6i.large"],
-        scheduler_vm_types=["m6i.xlarge"],
-        wait_for_workers=True,
-        backend_options={"send_prometheus_metrics": True},
+        name=f"spill-{uuid.uuid4().hex[:8]}",
         environ=merge(
             dask_env_variables,
             {
@@ -33,15 +26,17 @@ def spill_cluster(dask_env_variables, gitlab_cluster_tags):
             },
         ),
         tags=gitlab_cluster_tags,
+        **cluster_kwargs["spill_cluster"],
     ) as cluster:
         yield cluster
 
 
 @pytest.fixture
-def spill_client(spill_cluster, upload_cluster_dump, benchmark_all):
+def spill_client(spill_cluster, cluster_kwargs, upload_cluster_dump, benchmark_all):
+    n_workers = cluster_kwargs["spill_cluster"]["n_workers"]
     with Client(spill_cluster) as client:
-        spill_cluster.scale(5)
-        client.wait_for_workers(5)
+        spill_cluster.scale(n_workers)
+        client.wait_for_workers(n_workers)
         client.restart()
         with upload_cluster_dump(client), benchmark_all(client):
             yield client

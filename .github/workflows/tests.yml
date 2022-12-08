@@ -32,7 +32,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.9"]
         pytest_args: [tests]
-        runtime-version: [upstream, latest, "0.0.4", "0.1.0"]
+        runtime-version: [upstream, latest, "0.1.0", "0.2.0"]
         include:
           # Run stability tests on Python 3.8
           - pytest_args: tests/stability
@@ -45,11 +45,11 @@ jobs:
             os: ubuntu-latest
           - pytest_args: tests/stability
             python-version: "3.8"
-            runtime-version: "0.0.4"
+            runtime-version: "0.1.0"
             os: ubuntu-latest
           - pytest_args: tests/stability
             python-version: "3.8"
-            runtime-version: "0.1.0"
+            runtime-version: "0.2.0"
             os: ubuntu-latest
           # Run stability tests on Python 3.10
           - pytest_args: tests/stability
@@ -62,11 +62,11 @@ jobs:
             os: ubuntu-latest
           - pytest_args: tests/stability
             python-version: "3.10"
-            runtime-version: "0.0.4"
+            runtime-version: "0.1.0"
             os: ubuntu-latest
           - pytest_args: tests/stability
             python-version: "3.10"
-            runtime-version: "0.1.0"
+            runtime-version: "0.2.0"
             os: ubuntu-latest
           # Run stability tests on Python Windows and MacOS (latest py39 only)
           - pytest_args: tests/stability
@@ -111,6 +111,9 @@ jobs:
           BENCHMARK: true
           CLUSTER_DUMP: always
         run: bash ci/scripts/run_tests.sh ${{ matrix.pytest_args }}
+
+      - name: Dump coiled.Cluster kwargs
+        run: cat cluster_kwargs.merged.yaml
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
