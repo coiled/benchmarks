@@ -9,6 +9,7 @@ dependencies:
     # Here we're using coiled-runtime for the sake of convenience, but we didn't have
     # to. We could have also pointed to a nightly build.
     - coiled-runtime=0.2.0
+    - packaging<22.0
     - pip:
       # Notes:
       # - You can't install anything with conda which conflicts the versions

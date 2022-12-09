@@ -12,6 +12,7 @@ channels:
 dependencies:
     - python=3.9
     - coiled-runtime=0.2.0
+    - packaging<22.0
     - pip:
       # Notes:
       # - You can't install anything with conda which conflicts the versions
