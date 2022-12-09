@@ -434,7 +434,7 @@ def cluster_kwargs() -> dict:
         override_fname = os.path.join(base_dir, override_fname)
         with open(override_fname) as fh:
             override_config = yaml.safe_load(fh)
-        if override_config:  # Empty files convert to None when read with yaml
+        if override_config:
             dask.config.update(config, override_config)
 
     default = config.pop("default")
