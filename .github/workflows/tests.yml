@@ -266,6 +266,7 @@ jobs:
           environment-file: ci/environment-dashboard.yml
 
       - name: Generate dashboards
+        # Show differences of upstream vs. latest unpublished vs. latest publshed
         run: python dashboard.py -d benchmark.db -o static -b coiled-latest-py3.9 coiled-0.2.1-py3.9
 
       - name: Upload artifact
