@@ -267,7 +267,7 @@ def test_access_slices(N, zarr_dataset, small_client):
     """
     Accessing just a few chunks of a zarr array should be quick
     """
-    zarr_dataset[:N, :N, :N].persist()
+    distributed.wait(zarr_dataset[:N, :N, :N].persist())
 
 
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
