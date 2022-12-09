@@ -8,6 +8,7 @@ import subprocess
 import sys
 
 import yaml
+from conda.models.match_spec import MatchSpec
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from packaging.requirements import Requirement
 
@@ -39,9 +40,7 @@ def main():
 
     if os.environ.get("COILED_RUNTIME_VERSION", "unknown") == "upstream":
         requirements = [
-            r
-            for r in requirements
-            if Requirement(r).name not in {"dask", "distributed"}
+            r for r in requirements if MatchSpec(r).name not in {"dask", "distributed"}
         ]
         requirements.append(
             {
