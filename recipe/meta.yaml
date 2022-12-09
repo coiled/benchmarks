@@ -18,6 +18,7 @@ requirements:
   host:
     - python >=3.8,<3.11
     - pip
+    - packaging <22.0
 
   run:
     - python >=3.8,<3.11
@@ -51,7 +52,7 @@ requirements:
     - openssl >1.1.0g
     - pynvml ==11.4.1
     - bokeh ==2.4.3
-
+    - packaging <22.0
 test:
   imports:
     - dask
