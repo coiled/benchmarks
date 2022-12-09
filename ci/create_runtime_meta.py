@@ -9,7 +9,7 @@ import sys
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from packaging.requirements import Requirement
+from packaging.requirements import InvalidRequirement, Requirement
 
 
 def get_latest_conda_build(package):
@@ -33,7 +33,16 @@ def main():
     # Ensure Python is pinned to X.Y.Z version currently being used
     python_version = ".".join(map(str, tuple(sys.version_info)[:3]))
     for idx, req in enumerate(requirements):
-        package_name = Requirement(req).name
+        try:
+            package_name = Requirement(req).name
+        except InvalidRequirement:
+            # The `g` at the end of the openssl version is not compatible with
+            # the way Requirements is parsing versions starting with the latest
+            # CPython patch releases (3.10.9, 3.9.16, 3.8.16)
+            if "openssl" not in req:
+                raise
+            continue
+
         if package_name == "python":
             requirements[idx] = f"python =={python_version}"
 
