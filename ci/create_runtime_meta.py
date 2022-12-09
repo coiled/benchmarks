@@ -10,7 +10,6 @@ import sys
 import yaml
 from conda.models.match_spec import MatchSpec
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from packaging.requirements import Requirement
 
 
 def get_latest_conda_build(package):
@@ -34,7 +33,7 @@ def main():
     # Ensure Python is pinned to X.Y.Z version currently being used
     python_version = ".".join(map(str, tuple(sys.version_info)[:3]))
     for idx, req in enumerate(requirements):
-        package_name = Requirement(req).name
+        package_name = MatchSpec(req).name
         if package_name == "python":
             requirements[idx] = f"python =={python_version}"
 
