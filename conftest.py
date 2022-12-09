@@ -622,4 +622,4 @@ def shuffle(request):
 @pytest.fixture
 def small_shuffling_client(small_client, shuffle):
     with dask.config.set(shuffle=shuffle):
-        yield
+        yield small_client
