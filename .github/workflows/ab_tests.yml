@@ -35,7 +35,7 @@ jobs:
 
       - name: Generate dynamic matrix
         id: set-matrix
-        run: echo "::set-output name=matrix::$(python ci/scripts/discover_ab_environments.py)"
+        run: echo "matrix=$(python ci/scripts/discover_ab_environments.py)" >> $GITHUB_OUTPUT
 
     outputs:
       matrix: ${{ steps.set-matrix.outputs.matrix }}
