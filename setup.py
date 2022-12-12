@@ -5,7 +5,7 @@ import pathlib
 
 import yaml
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from packaging.requirements import Requirement
+from packaging.requirements import InvalidRequirement, Requirement
 from setuptools import setup
 
 
@@ -20,14 +20,20 @@ def get_requirements():
 
     requirements = {}
     for req in meta["requirements"]["run"]:
-        requirement = Requirement(req)
+        try:
+            requirement = Requirement(req)
+        except InvalidRequirement as e:
+            if req.startswith("openssl"):
+                continue
+            raise e
+
         requirements[requirement.name] = str(requirement.specifier)
 
     # Handle packages that have different names on conda-forge and PyPI
     requirements["msgpack"] = requirements.pop("msgpack-python")
 
     # Exclude packages not available on PyPI
-    del requirements["openssl"]
+    requirements.pop("openssl", None)
 
     # Get Python version requirements (also not included on PyPI)
     python_requires = requirements.pop("python")
