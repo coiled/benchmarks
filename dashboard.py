@@ -716,7 +716,8 @@ def main() -> None:
     engine = sqlalchemy.create_engine(f"sqlite:///{args.db_file}")
     df = pandas.read_sql(
         "select * from test_run where platform = 'linux' "
-        "and call_outcome in ('passed', 'failed')",
+        "and call_outcome in ('passed', 'failed')"
+        "and coiled_runtime_version >= '0.2.1' ",
         engine,
     )
     df = df.assign(
