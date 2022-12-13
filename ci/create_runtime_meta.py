@@ -6,11 +6,10 @@ import pathlib
 import shlex
 import subprocess
 import sys
-from distutils.util import strtobool
 
 import yaml
+from conda.models.match_spec import MatchSpec
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from packaging.requirements import Requirement
 
 
 def get_latest_conda_build(package):
@@ -34,26 +33,29 @@ def main():
     # Ensure Python is pinned to X.Y.Z version currently being used
     python_version = ".".join(map(str, tuple(sys.version_info)[:3]))
     for idx, req in enumerate(requirements):
-        package_name = Requirement(req).name
+        package_name = MatchSpec(req).name
         if package_name == "python":
             requirements[idx] = f"python =={python_version}"
 
-    # Optionally use the development version of `dask` and `distributed`
-    # from `dask/label/dev` conda channel
-    upstream = strtobool(os.environ.get("TEST_UPSTREAM", "false"))
-    if upstream:
-        upstream_packages = {"dask", "distributed"}
-        for idx, req in enumerate(requirements):
-            package_name = Requirement(req).name
-            if package_name in upstream_packages:
-                requirements[idx] = get_latest_conda_build(package_name)
+    if os.environ.get("COILED_RUNTIME_VERSION", "unknown") == "upstream":
+        requirements = [
+            r for r in requirements if MatchSpec(r).name not in {"dask", "distributed"}
+        ]
+        requirements.append(
+            {
+                "pip": [
+                    "git+https://github.com/dask/dask@main",
+                    "git+https://github.com/dask/distributed@main",
+                ]
+            }
+        )
 
     # File compatible with `mamba env create --file <...>`
     env = {
         "channels": ["conda-forge"],
         "dependencies": requirements,
     }
-    with open("latest.yaml", "w") as f:
+    with open("coiled_software_environment.yaml", "w") as f:
         yaml.dump(env, f)
 
 

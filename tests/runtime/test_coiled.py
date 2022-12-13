@@ -1,32 +1,8 @@
-import dask.dataframe as dd
-import pandas as pd
+from coiled import Cluster
 
 
-def test_quickstart_csv(small_client):
-    ddf = dd.read_csv(
-        "s3://coiled-runtime-ci/nyc-tlc/yellow_tripdata_2019_csv/yellow_tripdata_2019-*.csv",
-        dtype={
-            "payment_type": "UInt8",
-            "VendorID": "UInt8",
-            "passenger_count": "UInt8",
-            "RatecodeID": "UInt8",
-        },
-        blocksize="16 MiB",
-    ).persist()
-
-    result = ddf.groupby("passenger_count").tip_amount.mean().compute()
-
-    assert isinstance(result, pd.Series)
-    assert not result.empty
-
-
-def test_quickstart_parquet(small_client):
-    ddf = dd.read_parquet(
-        "s3://coiled-runtime-ci/nyc-tlc/yellow_tripdata_2019_parquet/yellow_tripdata_2019-*.parquet",
-        columns=["passenger_count", "tip_amount"],
-    ).persist()
-
-    result = ddf.groupby("passenger_count").tip_amount.mean().compute()
-
-    assert isinstance(result, pd.Series)
-    assert not result.empty
+def test_cluster_reconnect(small_cluster, get_cluster_info, benchmark_time):
+    """How quickly can we reconnect to an existing cluster?"""
+    with get_cluster_info(small_cluster), benchmark_time:
+        with Cluster(name=small_cluster.name, shutdown_on_close=False):
+            pass

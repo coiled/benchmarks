@@ -1,0 +1,193 @@
+name: A/B Tests
+on:
+  push:
+    branches-ignore:
+      - main
+
+concurrency:
+  # Include `github.event_name` to avoid pushes to `main` and
+  # scheduled jobs canceling one another
+  group: ab_tests-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  # Required shell entrypoint to have properly activated conda environments
+  run:
+    shell: bash -l {0}
+
+jobs:
+  discover_ab_envs:
+    name: Discover A/B environments
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install PyYaml
+
+      - name: Generate dynamic matrix
+        id: set-matrix
+        run: echo "matrix=$(python ci/scripts/discover_ab_environments.py)" >> $GITHUB_OUTPUT
+
+    outputs:
+      matrix: ${{ steps.set-matrix.outputs.matrix }}
+
+  # Everything below this point runs iff there are files matching
+  # AB_environments/AB_*.{conda,dask}.yaml
+  # and AB_environments/config.yaml set repeat > 0
+
+  tests:
+    name: A/B Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
+    needs: discover_ab_envs
+    if: fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      # AWS implements limiters to how many EC2 instances you can spawn in parallel *on
+      # the same AWS account*. If such limit is reached, jobs will randomly fail when
+      # trying to create the Coiled clusters, and restarting failed jobs won't fix the
+      # problem. Additionally, there are problems with Coiled itself triggered by
+      # limitations that are never actually reached with real paying users.
+      max-parallel: 5
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.9"]
+        pytest_args: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).pytest_args }}
+        runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
+        repeat: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).repeat }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          condarc-file: ci/condarc
+          python-version: ${{ matrix.python-version }}
+          environment-file: ci/environment.yml
+
+      - name: Create null hypothesis as a copy of baseline
+        if: matrix.runtime-version == 'AB_null_hypothesis'
+        run: |
+          cd AB_environments
+          cp AB_baseline.conda.yaml AB_null_hypothesis.conda.yaml
+          cp AB_baseline.dask.yaml AB_null_hypothesis.dask.yaml
+          cp AB_baseline.cluster.yaml AB_null_hypothesis.cluster.yaml
+
+      - name: Install coiled-runtime
+        env:
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        run: |
+          source ci/scripts/install_coiled_runtime.sh AB_environments/${{ matrix.runtime-version }}.conda.yaml
+
+      - name: Convert dask config into environment variables
+        run: python ci/scripts/dask_config_to_env.py AB_environments/${{ matrix.runtime-version }}.dask.yaml >> $GITHUB_ENV
+
+      - name: Run Coiled Runtime Tests
+        id: test
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
+          BENCHMARK: true
+          CLUSTER_DUMP: always
+          CLUSTER_KWARGS: AB_environments/${{ matrix.runtime-version }}.cluster.yaml
+        run: bash ci/scripts/run_tests.sh ${{ matrix.pytest_args }}
+
+      - name: Dump coiled.Cluster kwargs
+        run: cat cluster_kwargs.merged.yaml
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}
+          path: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
+
+  process-results:
+    needs: [discover_ab_envs, tests]
+    name: Combine separate benchmark results
+    if: always() && fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
+    runs-on: ubuntu-latest
+    concurrency:
+      # Fairly strict concurrency rule to avoid stepping on benchmark db.
+      # Could eventually replace with a real db in coiled, RDS, or litestream
+      group: process-benchmarks
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Install Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install alembic
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          path: benchmarks
+
+      - name: Combine benchmarks
+        run: |
+          ls -lhR benchmarks
+          bash ci/scripts/combine-dbs.sh
+
+      - name: Upload benchmark results as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: benchmark
+          path: benchmark.db
+
+  static-site:
+    needs: [discover_ab_envs, process-results]
+    # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
+    if: always() && fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
+    name: Build static dashboards
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: benchmark
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          python-version: "3.9"
+          environment-file: ci/environment-dashboard.yml
+
+      - name: Generate dashboards
+        run: python dashboard.py -d benchmark.db -o static -b coiled-AB_baseline-py3.9
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: static-dashboard
+          path: static

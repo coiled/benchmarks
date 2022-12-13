@@ -8,11 +8,18 @@ The Coiled Runtime is a conda metapackage which makes it easy to get started wit
 
 ## Install
 
-`coiled-runtime` can be installed with:
+`coiled-runtime` can be installed with `conda`:
 
 ```bash
 conda install -c conda-forge coiled-runtime
 ```
+
+or with `pip`:
+
+```bash
+pip install coiled-runtime
+```
+
 
 **Nightly builds**
   
@@ -50,10 +57,11 @@ The `coiled-runtime` test suite can be run locally with the following steps:
    the Coiled Dask Engineering AWS S3 account.
 2. Create a Python environment and install development dependencies as
    specified in `ci/environment.yml`.
-3. (Optional) If testing against an unreleased version of `coiled-runtime`,
-   create a Coiled software environment with the unreleased `coiled-runtime` installed
-   and set a local `COILED_SOFTWARE_NAME` environment variable to the name
-   of the software environment (e.g. `export COILED_SOFTWARE_NAME="account/software-name"`)
+3. Install a coiled runtime environment. This might be from one of the environments
+   listed in ``environments/``, or it could be a development environment if you are
+   testing feature branches of dask or distributed. This test suite is configured
+   to run Coiled's ``package_sync`` feature, so your local environment should be copied
+   to the cluster.
 4. Run tests with `python -m pytest tests`
 
 Additionally, tests are automatically run on pull requests to this repository.
@@ -97,7 +105,7 @@ We use `alembic` to manage SQLAlchemy migrations.
 In the simple case of simply adding or removing a column to the schema, you can do the following:
 
 ```bash
-# First, edit the `benchmark_schema.py`
+# First, edit the `benchmark_schema.py` and commit the changes.
 
 alembic revision --autogenerate -m "Description of migration"
 git add alembic/versions/name_of_new_migration.py
@@ -106,26 +114,37 @@ git commit -m "Added a new migration"
 
 Migrations are automatically applied in the pytest runs, so you needn't run them yourself.
 
+### Deleting old test data
+
+At times you might change a specific test that makes older benchmarking data irrelevant.
+In that case, you can discard old benchmarking data for that test by applying a data migration
+removing that data:
+
+```bash
+alembic revision -m "Declare bankruptcy for <test-name>"
+# Edit the migration here to do what you want.
+git add alembic/versions/name_of_new_migration.py
+git commit -m "Bankruptcy migration for <test-name>"
+```
+
+An example of a migration that does this is [here](./alembic/versions/924e9b1430e1_spark_test_bankruptcy.py).
+
 ### Using the benchmark fixtures
 
 We have a number of pytest fixtures defined which can be used to automatically track certain metrics in the benchmark database.
-They are summarized here:
+The most relevant ones are summarized here:
 
-**`benchmark_db_engine`**: The SQLAlchemy engine for the benchmark sqlite database. You can control the database name with the environment variable `DB_NAME`, which defaults to `benchmark.db`. Most tests shouldn't need to include this fixture directly.
+**`benchmark_time`**: Record wall clock time duration.
 
-**`benchmark_db_session`**: The SQLAlchemy session for a given test. Most tests shouldn't need to include this fixture directly.
+**`benchmark_memory`**: Record memory usage.
 
-**`test_run_benchmark`**: The SQLAlchemy ORM object for a given test. By including this fixutre in a test (or another fixture that includes it) you trigger the test being written to the benchmark database. This fixture includes data common to all tests, including python version, test name, and the test outcome.
+**`benchmark_task_durations`**: Record time spent computing, transferring data, spilling to disk, and deserializing data.
 
-**`benchmark_time`**: Include this fixture to measure the wall clock time.
+**`get_cluster_info`**: Record cluster id, name, etc.
 
-**`sample_memory`**: This fixture yields a context manager which takes a distributed `Client` object, and records peak and average memory usage for the cluster within the context:
-```python
-def test_something(sample_memory):
-    with Client() as client:
-        with sample_memory(client):
-            client.submit(expensive_function)
-```
+**`benchmark_all`**: Record all available metrics.
+
+For more information on all available fixtures and examples on how to use them, please refer to their documentation.
 
 Writing a new benchmark fixture would generally look like:
 1. Requesting the `test_run_benchmark` fixture, which yields an ORM object.
@@ -135,6 +154,85 @@ Writing a new benchmark fixture would generally look like:
 1. Setting the appropriate attributes on the ORM object.
 
 The `benchmark_time` fixture provides a fairly simple example.
+
+## Investigating performance regressions
+
+It is not always obvious what the cause of a seeming performance regression is.
+It could be due to a new version of a direct or transitive dependency,
+and it could be due to a change in the Coiled platform.
+But often it is due to a change in `dask` or `distributed`.
+If you suspect that is the case, Coiled's `package_sync` feature combines well with the benchmarking infrastructure here and `git bisect`.
+
+The following is an example workflow which could be used to identify a specific commit in `dask` which introduced a performance regression.
+This workflow presumes you have two terminal windows open, one with the `coiled-runtime` test suite,
+and one with a `dask` repository with which to drive bisecting.
+
+#### Create your software environment
+
+You should create a software environment which can run this test suite, but with an editable install of `dask`.
+You can do this in any of a number of ways, but one approach coule be
+```bash
+conda env create -n test-env --file ci/environment.yml  # Create a test environment
+conda activate test-env  # Activate your test environment
+pip install .  # Install the `coiled-runtime` metapackage dependencies.
+(cd <your-dask-dir> && pip install -e .)  # Do an editable install for dask
+```
+
+#### Start bisecting
+
+Let's say the current `HEAD` of `dask` is known to be bad, and `$REF` is known to be good. If you are looking at an upstream run where you have access to the static page, you can check the dates reported for each run and do a `git log` with the corresponding dates to get a list of commits to use in the bisecting process.
+
+`git log --since='2022-08-15 14:15' --until='2022-08-18 14:15' --pretty=oneline`
+In the terminal opened to your dask repository you can initialize a bisect workflow with
+
+```bash
+cd <your-dask-dir>
+git bisect start
+git bisect bad
+git bisect good $REF
+```
+
+#### Test for regressions
+
+Now that your editable install is bisecting, run a test or subset of tests which demonstrate the regression in your `coiled-runtime` terminal.
+Presume that `tests/benchmarks/test_parquet.py::test_write_wide_data` is such a test:
+
+```bash
+pytest tests/benchmarks/test_parquet.py::test_write_wide_data --benchmark
+```
+
+Once the test is done, it will have written a new entry to a local sqlite file `benchmark.db`.
+You will want to check whether that entry displays the regression.
+Exactly what that check will look like will depend on the test and the regression.
+You might have a script that builds a chart from `benchmark.db` similar to `dashboard.py`,
+or a script that performs some kind of statistical analysis.
+But let's assume a simpler case where you can recognize it from the `average_memory`.
+You can query that with
+
+```bash
+sqlite3 benchmark.db "select dask_version, average_memory from test_run where name = 'test_write_wide_data';"
+```
+
+If the last entry displays the regression, mark the commit in your dask terminal as `bad`:
+
+```bash
+git bisect bad
+```
+
+If the last entry doesn't display the regression, mark the commit in your dask terminal as `good`:
+
+```bash
+git bisect good
+```
+
+Proceed with this process until you have narrowed it down to a single commit.
+Congratulations! You've identified the source of your regression.
+
+## A/B testing
+
+It's possible to run the Coiled Runtime benchmarks for A/B comparisons.
+[Read full documentation](AB_environments/README.md).
+
 
 ## Contribute
 

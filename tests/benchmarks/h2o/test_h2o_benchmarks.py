@@ -2,9 +2,11 @@
 h2o-ai benchmark groupby part running on coiled.
 """
 
+import dask
 import dask.dataframe as dd
 import pandas as pd
 import pytest
+from packaging.version import Version
 
 
 @pytest.fixture(
@@ -88,6 +90,19 @@ def test_q5(ddf, small_client):
         ddf.groupby("id6", dropna=False, observed=True)
         .agg({"v1": "sum", "v2": "sum", "v3": "sum"})
         .compute()
+    )
+
+
+@pytest.mark.skipif(
+    Version(dask.__version__) < Version("2022.10.0"),
+    reason="No support for median in dask < 2022.10.0",
+)
+def test_q6(ddf, small_client):
+    ddf = ddf[["id4", "id5", "v3"]]
+    (
+        ddf.groupby(["id4", "id5"], dropna=False, observed=True)
+        .agg({"v3": ["median", "std"]}, shuffle="tasks")
+        .compute()  # requires shuffle="tasks"
     )
 
 

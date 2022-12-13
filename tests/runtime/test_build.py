@@ -7,15 +7,13 @@ import pathlib
 import shlex
 import subprocess
 import sys
-from distutils.util import strtobool
 
 import coiled
-import dask
 import pytest
 import yaml
+from conda.models.match_spec import MatchSpec, VersionSpec
 from distributed import Client
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-from packaging.requirements import Requirement, SpecifierSet
 from packaging.version import Version
 
 # Note: all of these tests are local, and do not create clusters,
@@ -39,7 +37,7 @@ def get_installed_versions(packages) -> dict[str, str]:
     return package_versions
 
 
-def get_meta_specifiers() -> dict[str, SpecifierSet]:
+def get_meta_specifiers() -> dict[str, VersionSpec]:
     """Get packages version specifiers from `meta.yaml`"""
     env = Environment(
         loader=FileSystemLoader(pathlib.Path(__file__).parent.parent.parent / "recipe"),
@@ -50,15 +48,14 @@ def get_meta_specifiers() -> dict[str, SpecifierSet]:
 
     meta_specifiers = {}
     for req in meta["requirements"]["run"]:
-        requirement = Requirement(req)
-        meta_specifiers[requirement.name] = requirement.specifier
+        requirement = MatchSpec(req)
+        meta_specifiers[requirement.name] = requirement.version
 
     return meta_specifiers
 
 
 _conda_to_pip_names = {
     "msgpack-python": "msgpack",
-    "python-blosc": "blosc",
 }
 
 _pip_to_conda_names = {v: k for k, v in _conda_to_pip_names.items()}
@@ -77,8 +74,10 @@ def test_install_dist():
     # Test that versions of packages installed are consistent with those
     # specified in `meta.yaml`
 
-    if Version(dask.__version__).local or strtobool(
-        os.environ.get("TEST_UPSTREAM", "false")
+    if os.environ.get("COILED_RUNTIME_VERSION", "unknown") in (
+        "upstream",
+        "latest",
+        "unknown",
     ):
         pytest.skip("Not valid on upstream build")
 
@@ -92,7 +91,7 @@ def test_install_dist():
         conda_name = pip_to_conda_name(package)
         specifier = meta_specifiers[conda_name]
         installed_version = installed_versions[package]
-        if specifier.contains(installed_version):
+        if specifier.match(installed_version):
             continue
         else:
             mismatches.append((package, specifier, installed_version))

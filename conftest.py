@@ -10,32 +10,35 @@ import sys
 import threading
 import time
 import uuid
-from distutils.util import strtobool
 
 import dask
 import distributed
 import filelock
 import pytest
 import s3fs
+import sqlalchemy
+import yaml
+from coiled import Cluster
 from distributed import Client
 from distributed.diagnostics.memory_sampler import MemorySampler
-from toolz import merge
-
-try:
-    from coiled.v2 import Cluster
-except ImportError:
-    from coiled._beta import ClusterBeta as Cluster
-
-import sqlalchemy
+from distributed.scheduler import logger as scheduler_logger
 from sqlalchemy.orm import Session
 
 from benchmark_schema import TestRun
+from plugins import Durations
 
 logger = logging.getLogger("coiled-runtime")
 logger.setLevel(logging.INFO)
 
+coiled_logger = logging.getLogger("coiled")
 # So coiled logs can be displayed on test failure
-logging.getLogger("coiled").setLevel(logging.INFO)
+coiled_logger.setLevel(logging.INFO)
+# Timestamps are useful for debugging
+handler = logging.StreamHandler(sys.stderr)
+handler.setFormatter(
+    logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+)
+coiled_logger.addHandler(handler)
 
 TEST_DIR = pathlib.Path("./tests").absolute()
 
@@ -64,8 +67,6 @@ def pytest_collection_modifyitems(config, items):
 
 
 def get_coiled_runtime_version():
-    if strtobool(os.environ.get("TEST_UPSTREAM", "false")):
-        return "upstream"
     try:
         return os.environ["COILED_RUNTIME_VERSION"]
     except KeyError:
@@ -77,37 +78,13 @@ def get_coiled_runtime_version():
         if runtime_info:
             return runtime_info[0]["version"]
         else:
-            return "latest"
+            return "unknown"
 
 
-def get_coiled_software_name():
-    try:
-        return os.environ["COILED_SOFTWARE_NAME"]
-    except KeyError:
-        # Determine software environment from local `coiled-runtime` version (in installed)
-        out = subprocess.check_output(
-            shlex.split("conda list --json coiled-runtime"), text=True
-        ).rstrip()
-        runtime_info = json.loads(out)
-        if runtime_info:
-            version = runtime_info[0]["version"].replace(".", "-")
-            py_version = f"{sys.version_info[0]}{sys.version_info[1]}"
-            return f"coiled/coiled-runtime-{version}-py{py_version}"
-        else:
-            raise RuntimeError(
-                "Must either specific `COILED_SOFTWARE_NAME` environment variable "
-                "or have `coiled-runtime` installed"
-            )
-
-
-dask.config.set(
-    {
-        "coiled.account": "dask-engineering",
-        "coiled.software": get_coiled_software_name(),
-    }
-)
+dask.config.set({"coiled.account": "dask-engineering"})
 
 COILED_RUNTIME_VERSION = get_coiled_runtime_version()
+COILED_SOFTWARE_NAME = "package_sync"
 
 
 # ############################################### #
@@ -132,6 +109,17 @@ else:
 
 @pytest.fixture(scope="session")
 def benchmark_db_engine(pytestconfig, tmp_path_factory):
+    """Session-scoped fixture for the SQLAlchemy engine for the benchmark sqlite database.
+
+    You can control the database name with the environment variable ``DB_NAME``,
+    which defaults to ``benchmark.db``. Most tests shouldn't need to include this
+    fixture directly.
+
+    Yields
+    ------
+    The SQLAlchemy engine if the ``--benchmark`` option is set, None otherwise.
+    """
+
     if not pytestconfig.getoption("--benchmark"):
         yield
     else:
@@ -159,6 +147,15 @@ def benchmark_db_engine(pytestconfig, tmp_path_factory):
 
 @pytest.fixture(scope="function")
 def benchmark_db_session(benchmark_db_engine):
+    """SQLAlchemy session for a given test.
+
+    Most tests shouldn't need to include this fixture directly.
+
+    Yields
+    ------
+    SQLAlchemy session for the benchmark database engine if run as part of a benchmark,
+    None otherwise.
+    """
     if not benchmark_db_engine:
         yield
     else:
@@ -168,19 +165,30 @@ def benchmark_db_session(benchmark_db_engine):
 
 @pytest.fixture(scope="function")
 def test_run_benchmark(benchmark_db_session, request, testrun_uid):
+    """SQLAlchemy ORM object representing a given test run.
+
+    By including this fixture in a test (or another fixture that includes it)
+    you trigger the test being written to the benchmark database. This fixture
+    includes data common to all tests, including python version, test name,
+    and the test outcome.
+
+    Yields
+    ------
+    SQLAlchemy ORM object representing a given test run if run as part of a benchmark,
+    None otherwise.
+    """
     if not benchmark_db_session:
         yield
     else:
-        node = request.node
         run = TestRun(
             session_id=testrun_uid,
-            name=node.name,
-            originalname=node.originalname,
-            path=str(node.path.relative_to(TEST_DIR)),
+            name=request.node.name,
+            originalname=request.node.originalname,
+            path=str(request.node.path.relative_to(TEST_DIR)),
             dask_version=dask.__version__,
             distributed_version=distributed.__version__,
             coiled_runtime_version=COILED_RUNTIME_VERSION,
-            coiled_software_name=dask.config.get("coiled.software"),
+            coiled_software_name=COILED_SOFTWARE_NAME,
             python_version=".".join(map(str, sys.version_info)),
             platform=sys.platform,
             ci_run_url=WORKFLOW_URL,
@@ -203,6 +211,22 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
 
 @pytest.fixture(scope="function")
 def benchmark_time(test_run_benchmark):
+    """Benchmark the wall clock time of executing some code.
+
+    Yields
+    ------
+    Context manager that records the wall clock time duration of executing
+    the ``with`` statement if run as part of a benchmark, or does nothing otherwise.
+
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(benchmark_time):
+            with benchmark_time:
+                do_something()
+    """
+
     @contextlib.contextmanager
     def _benchmark_time():
         if not test_run_benchmark:
@@ -219,26 +243,151 @@ def benchmark_time(test_run_benchmark):
 
 
 @pytest.fixture(scope="function")
-def auto_benchmark_time(benchmark_time):
-    with benchmark_time:
-        yield
+def benchmark_memory(test_run_benchmark):
+    """Benchmark the memory usage of executing some code.
 
+    Yields
+    ------
+    Context manager factory function which takes a ``distributed.Client``
+    as input. The context manager records peak and average memory usage of
+    executing the ``with`` statement if run as part of a benchmark,
+    or does nothing otherwise.
 
-@pytest.fixture(scope="function")
-def sample_memory(test_run_benchmark):
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(benchmark_memory):
+            with Client() as client:
+                with benchmark_memory(client):
+                    do_something()
+    """
+
     @contextlib.contextmanager
-    def _sample_memory(client):
-        sampler = MemorySampler()
-        label = uuid.uuid4().hex[:8]
-        with sampler.sample(label, client=client, measure="process"):
+    def _benchmark_memory(client):
+        if not test_run_benchmark:
             yield
+        else:
+            sampler = MemorySampler()
+            label = uuid.uuid4().hex[:8]
+            with sampler.sample(label, client=client, measure="process"):
+                yield
 
-        df = sampler.to_pandas()
-        if test_run_benchmark:
+            df = sampler.to_pandas()
             test_run_benchmark.average_memory = df[label].mean()
             test_run_benchmark.peak_memory = df[label].max()
 
-    yield _sample_memory
+    yield _benchmark_memory
+
+
+@pytest.fixture(scope="function")
+def benchmark_task_durations(test_run_benchmark):
+    """Benchmark the time spent computing, transferring data, spilling to disk,
+    and deserializing data.
+
+    Yields
+    ------
+    Context manager factory function which takes a ``distributed.Client``
+    as input. The context manager records records time spent computing,
+    transferring data, spilling to disk, and deserializing data while
+    executing the ``with`` statement if run as part of a benchmark,
+    or does nothing otherwise.
+
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(benchmark_task_durations):
+            with Client() as client:
+                with benchmark_task_durations(client):
+                    do_something()
+    """
+
+    @contextlib.contextmanager
+    def _measure_durations(client):
+        if not test_run_benchmark:
+            yield
+        else:
+            # TODO: is there a nice way to only register this once? I don't think so,
+            # other than idempotent=True
+            client.register_scheduler_plugin(Durations(), idempotent=True)
+
+            # Start tracking durations
+            client.sync(client.scheduler.start_tracking_durations)
+            yield
+            client.sync(client.scheduler.stop_tracking_durations)
+
+            # Add duration data to db entry
+            durations = client.sync(client.scheduler.get_durations)
+            test_run_benchmark.compute_time = durations.get("compute", 0.0)
+            test_run_benchmark.disk_spill_time = durations.get(
+                "disk-read", 0.0
+            ) + durations.get("disk-write", 0.0)
+            test_run_benchmark.serializing_time = durations.get("deserialize", 0.0)
+            test_run_benchmark.transfer_time = durations.get("transfer", 0.0)
+
+    yield _measure_durations
+
+
+@pytest.fixture(scope="function")
+def get_cluster_info(test_run_benchmark):
+    """
+    Gets cluster.name , cluster.cluster_id and cluster.cluster.details_url
+    """
+
+    @contextlib.contextmanager
+    def _get_cluster_info(cluster):
+        if not test_run_benchmark:
+            yield
+        else:
+            yield
+            test_run_benchmark.cluster_name = cluster.name
+            test_run_benchmark.cluster_id = cluster.cluster_id
+            test_run_benchmark.cluster_details_url = cluster.details_url
+
+    yield _get_cluster_info
+
+
+@pytest.fixture(scope="function")
+def benchmark_all(
+    benchmark_memory,
+    benchmark_task_durations,
+    get_cluster_info,
+    benchmark_time,
+):
+    """Benchmark all available metrics and extracts cluster information
+
+    Yields
+    ------
+    Context manager factory function which takes a ``distributed.Client``
+    as input. The context manager records records all available metrics while
+    executing the ``with`` statement if run as part of a benchmark,
+    or does nothing otherwise.
+
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(benchmark_all):
+            with benchmark_all(client):
+                do_something()
+
+    See Also
+    --------
+    benchmark_memory
+    benchmark_task_durations
+    benchmark_time
+    get_cluster_info
+    """
+
+    @contextlib.contextmanager
+    def _benchmark_all(client):
+        with benchmark_memory(client), benchmark_task_durations(
+            client
+        ), get_cluster_info(client.cluster), benchmark_time:
+            yield
+
+    yield _benchmark_all
 
 
 # ############################################### #
@@ -246,39 +395,114 @@ def sample_memory(test_run_benchmark):
 # ############################################### #
 
 
+@pytest.fixture(scope="session")
+def gitlab_cluster_tags():
+    tag_names = [
+        "GITHUB_JOB",
+        "GITHUB_REF",
+        "GITHUB_RUN_ATTEMPT",
+        "GITHUB_RUN_ID",
+        "GITHUB_RUN_NUMBER",
+        "GITHUB_SHA",
+    ]
+
+    return {tag: os.environ.get(tag, "") for tag in tag_names}
+
+
 @pytest.fixture
 def test_name_uuid(request):
-    "Test name, suffixed with a UUID. Useful for resources like cluster names, S3 paths, etc."
+    """Test name, suffixed with a UUID.
+    Useful for resources like cluster names, S3 paths, etc.
+    """
     return f"{request.node.originalname}-{uuid.uuid4().hex}"
 
 
+@pytest.fixture(scope="session")
+def dask_env_variables():
+    return {k: v for k, v in os.environ.items() if k.startswith("DASK_")}
+
+
+@pytest.fixture(scope="session")
+def cluster_kwargs() -> dict:
+    base_dir = os.path.dirname(__file__)
+    base_fname = os.path.join(base_dir, "cluster_kwargs.yaml")
+    with open(base_fname) as fh:
+        config = yaml.safe_load(fh)
+
+    override_fname = os.getenv("CLUSTER_KWARGS")
+    if override_fname:
+        override_fname = os.path.join(base_dir, override_fname)
+        with open(override_fname) as fh:
+            override_config = yaml.safe_load(fh)
+        if override_config:
+            dask.config.update(config, override_config)
+
+    default = config.pop("default")
+    config = {k: dask.config.merge(default, v) for k, v in config.items()}
+
+    # For forensic analysis
+    output_fname = os.path.join(base_dir, "cluster_kwargs.merged.yaml")
+    with open(output_fname, "w") as fh:
+        yaml.dump(config, fh)
+
+    return config
+
+
 @pytest.fixture(scope="module")
-def small_cluster(request):
-    # Extract `backend_options` for cluster from `backend_options` markers
-    backend_options = merge(
-        m.kwargs for m in request.node.iter_markers(name="backend_options")
-    )
+def small_cluster(request, dask_env_variables, cluster_kwargs, gitlab_cluster_tags):
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
-        n_workers=10,
-        worker_vm_types=["t3.large"],  # 2CPU, 8GiB
-        scheduler_vm_types=["t3.large"],
-        backend_options=backend_options,
+        environ=dask_env_variables,
+        tags=gitlab_cluster_tags,
+        **cluster_kwargs["small_cluster"],
     ) as cluster:
         yield cluster
 
 
-@pytest.fixture
-def small_client(small_cluster, upload_cluster_dump, sample_memory, benchmark_time):
-    with Client(small_cluster) as client:
-        small_cluster.scale(10)
-        client.wait_for_workers(10)
-        client.restart()
+def log_on_scheduler(
+    client: Client, msg: str, *args, level: int = logging.INFO
+) -> None:
+    client.run_on_scheduler(scheduler_logger.log, level, msg, *args)
 
-        with upload_cluster_dump(client, small_cluster):
-            with sample_memory(client), benchmark_time:
+
+@pytest.fixture
+def small_client(
+    request,
+    testrun_uid,
+    small_cluster,
+    cluster_kwargs,
+    upload_cluster_dump,
+    benchmark_all,
+):
+    n_workers = cluster_kwargs["small_cluster"]["n_workers"]
+    test_label = f"{request.node.name}, session_id={testrun_uid}"
+    with Client(small_cluster) as client:
+        log_on_scheduler(client, "Starting client setup of %s", test_label)
+        client.restart()
+        small_cluster.scale(n_workers)
+        client.wait_for_workers(n_workers)
+
+        with upload_cluster_dump(client):
+            log_on_scheduler(client, "Finished client setup of %s", test_label)
+
+            with benchmark_all(client):
                 yield client
+
+            # Note: normally, this RPC call is almost instantaneous. However, in the
+            # case where the scheduler is still very busy when the fixtured test returns
+            # (e.g. test_futures.py::test_large_map_first_work), it can be delayed into
+            # several seconds. We don't want to capture this extra delay with
+            # benchmark_time, as it's beyond the scope of the test.
+            log_on_scheduler(client, "Starting client teardown of %s", test_label)
+
+        client.restart()
+        # Run connects to all workers once and to ensure they're up before we do
+        # something else. With another call of restart when entering this
+        # fixture again, this can trigger a race condition that kills workers
+        # See https://github.com/dask/distributed/issues/7312 Can be removed
+        # after this issue is fixed.
+        client.run(lambda: None)
 
 
 S3_REGION = "us-east-2"
@@ -341,9 +565,11 @@ def pytest_runtest_makereport(item, call):
 
 
 @pytest.fixture
-def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
+def upload_cluster_dump(
+    request, s3_cluster_dump_url, s3_storage_options, test_run_benchmark
+):
     @contextlib.contextmanager
-    def _upload_cluster_dump(client, cluster):
+    def _upload_cluster_dump(client):
         failed = False
         # the code below is a workaround to make cluster dumps work with clients in fixtures
         # and outside fixtures.
@@ -360,10 +586,16 @@ def upload_cluster_dump(request, s3_cluster_dump_url, s3_storage_options):
             except AttributeError:
                 failed = False
         finally:
-            cluster_dump = strtobool(os.environ.get("CLUSTER_DUMP", "false"))
-            if cluster_dump and failed:
-                dump_path = f"{s3_cluster_dump_url}/{cluster.name}/{request.node.name}"
-                logger.error(f"Cluster state dump can be found at: {dump_path}")
+            cluster_dump = os.environ.get("CLUSTER_DUMP", "false")
+            if cluster_dump == "always" or (cluster_dump == "fail" and failed):
+                dump_path = (
+                    f"{s3_cluster_dump_url}/{client.cluster.name}/"
+                    f"{test_run_benchmark.path.replace('/', '.')}.{request.node.name}"
+                )
+                test_run_benchmark.cluster_dump_url = dump_path + ".msgpack.gz"
+                logger.info(
+                    f"Cluster state dump can be found at: {dump_path}.msgpack.gz"
+                )
                 client.dump_cluster_state(dump_path, **s3_storage_options)
 
     yield _upload_cluster_dump

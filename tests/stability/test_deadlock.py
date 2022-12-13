@@ -1,18 +1,26 @@
 import uuid
 
-import coiled.v2
 import dask
+import pytest
+from coiled import Cluster
 from distributed import Client, wait
 
 
-def test_repeated_merge_spill(upload_cluster_dump, benchmark_time):
-    with coiled.v2.Cluster(
-        name=f"test_deadlock-{uuid.uuid4().hex}",
-        n_workers=20,
-        worker_vm_types=["t3.medium"],
+def test_repeated_merge_spill(
+    upload_cluster_dump,
+    benchmark_all,
+    cluster_kwargs,
+    dask_env_variables,
+    gitlab_cluster_tags,
+):
+    with Cluster(
+        name=f"test_repeated_merge_spill-{uuid.uuid4().hex[:8]}",
+        environ=dask_env_variables,
+        tags=gitlab_cluster_tags,
+        **cluster_kwargs["test_repeated_merge_spill"],
     ) as cluster:
         with Client(cluster) as client:
-            with upload_cluster_dump(client, cluster), benchmark_time:
+            with upload_cluster_dump(client), benchmark_all(client):
                 ddf = dask.datasets.timeseries(
                     "2020",
                     "2025",

@@ -1,0 +1,21 @@
+# Special environment file for A/B testing, used to define the conda environment for the
+# baseline environment.
+# Change contents, but do not rename.
+
+channels:
+  - conda-forge
+dependencies:
+    - python=3.9
+    # Here we're using coiled-runtime for the sake of convenience, but we didn't have
+    # to. We could have also pointed to a nightly build.
+    - coiled-runtime=0.2.1
+    - pip:
+      # Notes:
+      # - You can't install anything with conda which conflicts the versions
+      #   pinned in coiled-runtime. Pip packages ignore these restrictions.
+      # - You can point to your own git fork instead
+      # For example, if you want to test a PR before it's merged into main, you should
+      # change this to the dask/dask and/or dask/distributed git tip
+      - dask==2022.12.0
+      - distributed==2022.12.0
+      # - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
