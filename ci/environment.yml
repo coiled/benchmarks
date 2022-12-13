@@ -11,4 +11,4 @@ dependencies:
   - alembic
   - filelock
   - cftime
-  - packaging <22.0
+  - conda
