@@ -5,6 +5,7 @@ import time
 import dask.array as da
 import distributed
 import numpy as np
+import pytest
 import xarray as xr
 from dask.utils import format_bytes, parse_bytes
 from packaging.version import Version
@@ -127,6 +128,9 @@ def test_basic_sum(small_client, speed, chunk_shape):
     wait(result, small_client, 10 * 60)
 
 
+@pytest.mark.skip(
+    "fails in actual CI; see https://github.com/coiled/coiled-runtime/issues/253"
+)
 def test_climatic_mean(small_client):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-535009454
 
