@@ -8,6 +8,8 @@ import pandas as pd
 import pytest
 from packaging.version import Version
 
+from ...utils_test import run_up_to_nthreads
+
 
 @pytest.fixture(
     scope="module",
@@ -52,11 +54,13 @@ def ddf(request):
         )
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
 def test_q1(ddf, small_client):
     ddf = ddf[["id1", "v1"]]
     ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"}).compute()
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
 def test_q2(ddf, small_client):
     ddf = ddf[["id1", "id2", "v1"]]
     (
@@ -66,6 +70,7 @@ def test_q2(ddf, small_client):
     )
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
 def test_q3(ddf, small_client):
     ddf = ddf[["id3", "v1", "v3"]]
     (
@@ -75,6 +80,7 @@ def test_q3(ddf, small_client):
     )
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
 def test_q4(ddf, small_client):
     ddf = ddf[["id4", "v1", "v2", "v3"]]
     (
@@ -84,6 +90,7 @@ def test_q4(ddf, small_client):
     )
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
 def test_q5(ddf, small_client):
     ddf = ddf[["id6", "v1", "v2", "v3"]]
     (
@@ -93,6 +100,7 @@ def test_q5(ddf, small_client):
     )
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
 @pytest.mark.skipif(
     Version(dask.__version__) < Version("2022.10.0"),
     reason="No support for median in dask < 2022.10.0",
@@ -106,6 +114,7 @@ def test_q6(ddf, small_client):
     )
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
 def test_q7(ddf, small_client):
     ddf = ddf[["id3", "v1", "v2"]]
     (
@@ -116,6 +125,7 @@ def test_q7(ddf, small_client):
     )
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
 def test_q8(ddf, small_client):
     ddf = ddf[["id6", "v1", "v2", "v3"]]
     (
@@ -129,6 +139,7 @@ def test_q8(ddf, small_client):
     )
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
 def test_q9(ddf, small_client):
     ddf = ddf[["id2", "id4", "v1", "v2"]]
     (
