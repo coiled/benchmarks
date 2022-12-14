@@ -50,7 +50,10 @@ def ddf(request):
         )
     else:
         yield dd.read_parquet(
-            request.param, engine="pyarrow", storage_options={"anon": True}
+            request.param,
+            engine="pyarrow",
+            storage_options={"anon": True},
+            use_nullable_dtypes=True,
         )
 
 

@@ -30,7 +30,9 @@ def test_shuffle_parquet(small_client, s3_url, s3_storage_options):
 
     # Test `read_parquet` + `shuffle` + `to_parquet` works
     shuffled_url = s3_url + "/shuffled.parquet"
-    df_shuffled = dd.read_parquet(dataset_url, storage_options=s3_storage_options)
+    df_shuffled = dd.read_parquet(
+        dataset_url, storage_options=s3_storage_options, use_nullable_dtypes=True
+    )
     df_shuffled = df_shuffled.shuffle(on="x")
     # Workaround for performance issue. See https://github.com/coiled/coiled-runtime/issues/79
     # for more details. Replace with the line below once using `dask>=2022.04.2`.

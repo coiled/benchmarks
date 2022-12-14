@@ -12,6 +12,7 @@ def test_xgboost_distributed_training(small_client):
     ddf = dd.read_parquet(
         "s3://coiled-datasets/synthetic-data/synth-reg-104GB.parquet",
         storage_options={"anon": True},
+        use_nullable_dtypes=True,
     )
     ddf = ddf.partitions[0:30]
     ddf = ddf.persist()
