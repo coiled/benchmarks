@@ -10,7 +10,14 @@ import xarray as xr
 from dask.utils import format_bytes, parse_bytes
 from packaging.version import Version
 
-from ..utils_test import arr_to_devnull, cluster_memory, scaled_array_shape, wait
+from ..utils_test import (
+    arr_to_devnull,
+    cluster_memory,
+    run_up_to_nthreads,
+    scaled_array_shape,
+    scaled_array_shape_quadratic,
+    wait,
+)
 
 
 @pytest.fixture(scope="module")
@@ -24,12 +31,13 @@ def zarr_dataset():
 
 def print_size_info(memory: int, target_nbytes: int, *arrs: da.Array) -> None:
     print(
-        f"Cluster memory: {format_bytes(memory)}, target data size: {format_bytes(target_nbytes)}"
+        f"Cluster memory: {format_bytes(memory)}, "
+        f"target data size: {format_bytes(target_nbytes)}"
     )
     for i, arr in enumerate(arrs, 1):
         print(
-            f"Input {i}: {format_bytes(arr.nbytes)} - "
-            f"{arr.npartitions} {format_bytes(arr.blocks[(0,) * arr.ndim].nbytes)} chunks"
+            f"Input {i}: {format_bytes(arr.nbytes)} - {arr.npartitions} "
+            f"{format_bytes(arr.blocks[(0,) * arr.ndim].nbytes)} chunks"
         )
 
 
@@ -102,7 +110,7 @@ def test_basic_sum(small_client, speed, chunk_shape):
     if chunk_shape == "thin":
         chunks = (-1, 1)  # 100 MiB single-column chunks
     else:
-        chunks = (3350, -1)  # 100.32 MiB square-ish chunks
+        chunks = (3350, 3925)  # 100.32 MiB square-ish chunks
 
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory * 5
@@ -203,12 +211,12 @@ def test_vorticity(small_client):
 def test_double_diff(small_client):
     # Variant of https://github.com/dask/distributed/issues/6597
     memory = cluster_memory(small_client)  # 76.66 GiB
+    # FIXME https://github.com/coiled/coiled-runtime/issues/564
+    #       this algorithm is supposed to scale linearly!
+    shape = scaled_array_shape_quadratic(memory, "76.66 GiB", ("x", "x"))
 
-    # TODO switch back to chunksizes in the `chunks=` argument everywhere
-    #  when https://github.com/dask/dask/issues/9488 is fixed
-    cs = int((parse_bytes("20 MiB") / 8) ** (1 / 2))
-    a = da.random.random(scaled_array_shape(memory, ("x", "x")), chunks=(cs, cs))
-    b = da.random.random(scaled_array_shape(memory, ("x", "x")), chunks=(cs, cs))
+    a = da.random.random(shape, chunks="20MiB")
+    b = da.random.random(shape, chunks="20MiB")
     print_size_info(memory, memory, a, b)
 
     diff = a[1:, 1:] - b[:-1, :-1]
@@ -216,7 +224,12 @@ def test_double_diff(small_client):
 
 
 def test_dot_product(small_client):
-    a = da.random.random((24 * 1024, 24 * 1024), chunks="128 MiB")  # 4.5 GiB
+    memory = cluster_memory(small_client)  # 76.66 GiB
+    shape = scaled_array_shape_quadratic(memory // 17, "4.5 GiB", ("x", "x"))
+    a = da.random.random(shape, chunks="128 MiB")
+    print_size_info(memory, memory // 17, a)
+    # Input 1: 4.51 GiB - 49 128.00 MiB chunks
+
     b = (a @ a.T).sum().round(3)
     wait(b, small_client, 10 * 60)
 
@@ -234,12 +247,12 @@ def test_map_overlap_sample(small_client):
     At the time of writing, data creation took 300ms and the
     map_overlap/getitem, took 2-3s
     """
-    x = da.random.random((10000, 10000), chunks=(50, 50))
-
+    x = da.random.random((10000, 10000), chunks=(50, 50))  # 40_000 19.5 kiB chunks
     y = x.map_overlap(lambda x: x, depth=1)
     y[5000:5010, 5000:5010].compute()
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed dataset")
 @pytest.mark.parametrize("threshold", [50, 100, 200, 255])
 def test_filter_then_average(threshold, zarr_dataset, small_client):
     """
@@ -248,6 +261,7 @@ def test_filter_then_average(threshold, zarr_dataset, small_client):
     zarr_dataset[zarr_dataset > threshold].mean().compute()
 
 
+@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 @pytest.mark.parametrize("N", [700, 75, 1])
 def test_access_slices(N, zarr_dataset, small_client):
     """
@@ -256,6 +270,7 @@ def test_access_slices(N, zarr_dataset, small_client):
     distributed.wait(zarr_dataset[:N, :N, :N].persist())
 
 
+@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 def test_sum_residuals(zarr_dataset, small_client):
     """
     Simnple test to that computes as reduction, the array op, the reduction again
