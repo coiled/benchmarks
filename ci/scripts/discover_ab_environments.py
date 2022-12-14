@@ -56,7 +56,7 @@ def build_json() -> JSONOutput:
     if cfg["test_null_hypothesis"]:
         runtimes += ["AB_null_hypothesis"]
 
-    n = cfg["max_parallel"]["modules_per_job"]
+    n = cfg["max_parallel"]["pytest_workers_per_job"]
     xdist_args = f"-n {n} --dist loadscope " if n > 1 else ""
 
     return {

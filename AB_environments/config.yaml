@@ -26,4 +26,4 @@ max_parallel:
   # Number of parallel test_*.py modules per A/B test job.
   # Each module typically spawns one Coiled cluster at a time.
   # Set to 1 to disable pytest-xdist.
-  modules_per_job: 4
+  pytest_workers_per_job: 4
