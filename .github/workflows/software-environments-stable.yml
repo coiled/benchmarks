@@ -45,6 +45,16 @@ jobs:
           echo $COILED_SOFTWARE_ENV_NAME
           echo COILED_SOFTWARE_ENV_NAME=$COILED_SOFTWARE_ENV_NAME >> $GITHUB_ENV
 
+          ## Choose target platform do docker
+          if [[ ${{ matrix.python-version }} = '3.8' ]]
+          then
+            export TARGET_PLATFORM='linux/amd64'
+          else
+            export TARGET_PLATFORM='linux/amd64 ,linux/arm64'
+          fi
+          echo $TARGET_PLATFORM
+          echo TARGET_PLATFORM=$TARGET_PLATFORM  >> $GITHUB_ENV
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v2
 
@@ -58,14 +68,6 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
       
       - name: Build and push runtime ${{ matrix.runtime-version }} python ${{ matrix.python-version }}
-        run: |
-          if [[ ${{ matrix.python-version }} = '3.8' ]]
-          then
-            export TARGET_PLATFORM='linux/amd64'
-          else
-            export TARGET_PLATFORM='linux/amd64 ,linux/arm64'
-          fi
-          echo "TARGET_PLATFORM=$TARGET_PLATFORM"
         uses: docker/build-push-action@v3
         with:
           push: false #revert to true
