@@ -15,7 +15,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ["3.8"] #, "3.9", "3.10"]
+        python-version: ["3.8" , "3.9"] #, "3.10"]
         runtime-version: ["0.2.1"]
         server: ["https://cloud.coiled.io", "https://staging.coiledhq.com"]
         include:
@@ -58,16 +58,24 @@ jobs:
           password: ${{ secrets.DOCKER_HUB_TOKEN }}
       
       - name: Build and push runtime ${{ matrix.runtime-version }} python ${{ matrix.python-version }}
+        run: |
+          if [[ ${{ matrix.python-version }} = '3.8' ]]
+          then
+            export TARGET_PLATFORM='linux/amd64'
+          else
+            export TARGET_PLATFORM='linux/amd64 ,linux/arm64'
+          fi
+          echo "TARGET_PLATFORM=$TARGET_PLATFORM"
         uses: docker/build-push-action@v3
         with:
-          push: true
+          push: false #revert to true
           tags: coiled/coiled-runtime:${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           build-args: ENV_FILENAME=${{ env.COILED_SOFTWARE_ENV_NAME }}
-          platforms: linux/amd64 #,linux/arm64
+          platforms: $TARGET_PLATFORM #linux/amd64 #,linux/arm64
 
-      - name: Create Runtime ${{ matrix.runtime-version }} Python ${{ matrix.python-version }} ${{ matrix.server }} software environment
-        env:
-          DASK_COILED__SERVER: ${{ matrix.server }}
-          DASK_COILED__TOKEN: ${{ secrets[matrix.token-name] }}
-        run: |
-          coiled env create --name coiled/${{ env.COILED_SOFTWARE_ENV_NAME }} --container coiled/coiled-runtime:${{ matrix.runtime-version }}-py${{ matrix.python-version }}
+      # - name: Create Runtime ${{ matrix.runtime-version }} Python ${{ matrix.python-version }} ${{ matrix.server }} software environment
+      #   env:
+      #     DASK_COILED__SERVER: ${{ matrix.server }}
+      #     DASK_COILED__TOKEN: ${{ secrets[matrix.token-name] }}
+      #   run: |
+      #     coiled env create --name coiled/${{ env.COILED_SOFTWARE_ENV_NAME }} --container coiled/coiled-runtime:${{ matrix.runtime-version }}-py${{ matrix.python-version }}
