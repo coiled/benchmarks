@@ -4,8 +4,8 @@ on:
   push:
     branches: 
       - update-micromamba
-    paths:
-      - environments/**
+    # paths:
+    #   - environments/**
   workflow_dispatch:
 
 jobs:
