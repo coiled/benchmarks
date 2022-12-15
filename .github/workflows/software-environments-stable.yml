@@ -2,7 +2,8 @@ name: Create Coiled software environments
 
 on:
   push:
-    branches: main
+    branches: 
+      - update-micromamba #revert after testing
     paths:
       - environments/**
   workflow_dispatch:
