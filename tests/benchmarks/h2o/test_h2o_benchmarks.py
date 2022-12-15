@@ -14,12 +14,13 @@ from ...utils_test import run_up_to_nthreads
 @pytest.fixture(
     scope="module",
     params=[
-        "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_single.csv",
-        # "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_single.csv",
-        # "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_single.csv",
-        "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_parquet/*.parquet",
-        "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_parquet/*.parquet",
-        # "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_parquet/*.parquet",
+        # "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_single.csv",
+        # # "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_single.csv",
+        # # "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_single.csv",
+        # "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_parquet/*.parquet",
+        # "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_parquet/*.parquet",
+        # # "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_parquet/*.parquet",
+        "s3://coiled-datasets/h2o-benchmark/pyarrow_strings/N_1e9_K_1e2/*.parquet",
     ],
     ids=[
         "0.5 GB (csv)",
