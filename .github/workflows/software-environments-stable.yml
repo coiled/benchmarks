@@ -73,7 +73,7 @@ jobs:
           push: false #revert to true
           tags: coiled/coiled-runtime:${{ matrix.runtime-version }}-py${{ matrix.python-version }}
           build-args: ENV_FILENAME=${{ env.COILED_SOFTWARE_ENV_NAME }}
-          platforms: $TARGET_PLATFORM #linux/amd64 #,linux/arm64
+          platforms: ${{ env.TARGET_PLATFORM }} #linux/amd64 #,linux/arm64
 
       # - name: Create Runtime ${{ matrix.runtime-version }} Python ${{ matrix.python-version }} ${{ matrix.server }} software environment
       #   env:
