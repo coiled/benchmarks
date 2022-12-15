@@ -23,12 +23,12 @@ from ...utils_test import run_up_to_nthreads
         "s3://coiled-datasets/h2o-benchmark/pyarrow_strings/N_1e9_K_1e2/*.parquet",
     ],
     ids=[
-        "0.5 GB (csv)",
-        # "5 GB (csv)",
-        # "50 GB (csv)",
-        "0.5 GB (parquet)",
-        "5 GB (parquet)",
-        # "50 GB (parquet)",
+        # "0.5 GB (csv)",
+        # # "5 GB (csv)",
+        # # "50 GB (csv)",
+        # "0.5 GB (parquet)",
+        # "5 GB (parquet)",
+        "50 GB (parquet)",
     ],
 )
 def ddf(request):
