@@ -18,8 +18,8 @@ mem_mult = [
 
 @run_up_to_nthreads("small_cluster", 40, reason="Does not finish")
 @pytest.mark.parametrize("mem_mult", mem_mult)  # [0.1, 1, 10]
-def test_join_big(small_shuffling_client, mem_mult):
-    memory = cluster_memory(small_shuffling_client)  # 76.66 GiB
+def test_join_big(small_client, mem_mult, configure_shuffling):
+    memory = cluster_memory(small_client)  # 76.66 GiB
 
     df1_big = timeseries_of_size(memory * mem_mult)
     df1_big["x2"] = df1_big["x"] * 1e9
@@ -35,8 +35,8 @@ def test_join_big(small_shuffling_client, mem_mult):
 
 
 @pytest.mark.parametrize("mem_mult", mem_mult)  # [0.1, 1, 10]
-def test_join_big_small(small_shuffling_client, mem_mult):
-    memory = cluster_memory(small_shuffling_client)  # 76.66 GiB
+def test_join_big_small(small_client, mem_mult, configure_shuffling):
+    memory = cluster_memory(small_client)  # 76.66 GiB
 
     df_big = timeseries_of_size(memory * mem_mult)
 
