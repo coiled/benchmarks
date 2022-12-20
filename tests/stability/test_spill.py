@@ -46,11 +46,11 @@ def spill_client(spill_cluster, cluster_kwargs, upload_cluster_dump, benchmark_a
 
 
 @pytest.mark.parametrize(
-    "keep_around", [pytest.param(False, "release"), pytest.param(True, "keep")]
+    "keep_around", [pytest.param(False, id="release"), pytest.param(True, id="keep")]
 )
 @pytest.mark.parametrize(
     "compressible",
-    [pytest.param(False, "uncompressible"), pytest.param(True, "compressible")],
+    [pytest.param(False, id="uncompressible"), pytest.param(True, id="compressible")],
 )
 def test_spilling(spill_client, compressible, keep_around):
     memory = cluster_memory(spill_client)  # 38.33 GiB
@@ -71,7 +71,7 @@ def test_spilling(spill_client, compressible, keep_around):
 
 @pytest.mark.parametrize(
     "compressible",
-    [pytest.param(False, "uncompressible"), pytest.param(True, "compressible")],
+    [pytest.param(False, id="uncompressible"), pytest.param(True, id="compressible")],
 )
 def test_tensordot_stress(spill_client, compressible):
     memory = cluster_memory(spill_client)  # 38.33 GiB
