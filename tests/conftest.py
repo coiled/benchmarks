@@ -10,6 +10,7 @@ import sys
 import threading
 import time
 import uuid
+from functools import lru_cache
 
 import dask
 import distributed
@@ -423,9 +424,9 @@ def dask_env_variables():
     return {k: v for k, v in os.environ.items() if k.startswith("DASK_")}
 
 
-@pytest.fixture(scope="session")
-def cluster_kwargs() -> dict:
-    base_dir = os.path.dirname(__file__)
+@lru_cache(None)
+def load_cluster_kwargs() -> dict:
+    base_dir = os.path.join(os.path.dirname(__file__), "..")
     base_fname = os.path.join(base_dir, "cluster_kwargs.yaml")
     with open(base_fname) as fh:
         config = yaml.safe_load(fh)
@@ -447,6 +448,11 @@ def cluster_kwargs() -> dict:
         yaml.dump(config, fh)
 
     return config
+
+
+@pytest.fixture(scope="session")
+def cluster_kwargs():
+    return load_cluster_kwargs()
 
 
 @pytest.fixture(scope="module")

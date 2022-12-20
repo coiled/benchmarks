@@ -14,3 +14,16 @@ categories:
   - benchmarks
   # - runtime
   # - stability
+
+# AWS implements limiters to how many EC2 instances you can spawn in parallel on the
+# same AWS account. If such limit is reached, tests will randomly fail when trying to
+# create the Coiled clusters, and restarting failed jobs won't fix the problem.
+# Additionally, there are problems with Coiled itself triggered by limitations that are
+# never actually reached with real paying users.
+max_parallel:
+  # Number of parallel A/B test jobs per branch.
+  ci_jobs: 5
+  # Number of parallel test_*.py modules per A/B test job.
+  # Each module typically spawns one Coiled cluster at a time.
+  # Set to 1 to disable pytest-xdist.
+  pytest_workers_per_job: 4

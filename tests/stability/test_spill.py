@@ -53,9 +53,6 @@ def test_spilling(spill_client, keep_around):
     wait(fut)
 
 
-@pytest.mark.skip(
-    reason="Skip until https://github.com/coiled/feedback/issues/185 is resolved."
-)
 @pytest.mark.stability
 def test_tensordot_stress(spill_client):
     a = da.random.random((48 * 1024, 48 * 1024))  # 18 GiB

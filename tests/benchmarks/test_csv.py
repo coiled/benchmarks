@@ -1,7 +1,10 @@
 import dask.dataframe as dd
 import pandas as pd
 
+from ..utils_test import run_up_to_nthreads
 
+
+@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 def test_csv_basic(small_client):
     ddf = dd.read_csv(
         "s3://coiled-runtime-ci/nyc-tlc/yellow_tripdata_2019_csv/yellow_tripdata_2019-*.csv",

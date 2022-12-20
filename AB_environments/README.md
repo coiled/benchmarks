@@ -112,8 +112,14 @@ automatically create a verbatim copy of AB_baseline and then compare the two in 
 tests. Set it to false to save some money if you are already confident that the 'repeat'
 setting is high enough.
 
-Finally, the files offers a `categories` list. These are the subdirectories of `tests/`
+The file offers a `categories` list. These are the subdirectories of `tests/`
 which you wish to run.
+
+Finally, the `max_parallel` setting lets you tweak maximum test parallelism, both in
+github actions and in pytest-xdist. Reducing parallelism is useful when testing on very
+large clusters (e.g. to avoid having 20 clusters with 1000 workers each at the same
+time).
+
 
 ### 5. (optional) Tweak tests
 Nothing prevents you from changing the tests themselves.
@@ -154,6 +160,9 @@ categories:
   - runtime
   - benchmarks
   - stability
+max_parallel:
+  ci_jobs: 5
+  pytest_workers_per_job: 4
 ```
 
 ### 6. Run CI
