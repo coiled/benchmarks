@@ -15,7 +15,7 @@ from dask.utils import format_bytes, parse_bytes
 
 
 def scaled_array_shape(
-    target_nbytes: int | str,
+    target_nbytes: float | str,
     shape: tuple[int | str, ...],
     *,
     dtype: np.dtype | type = np.dtype(float),
@@ -38,8 +38,7 @@ def scaled_array_shape(
     >>> scaled_array_shape("10kb", ("x", "1kb"), dtype=bool)
     (10, 1000)
     """
-    if isinstance(target_nbytes, str):
-        target_nbytes = parse_bytes(target_nbytes)
+    target_nbytes = parse_bytes(target_nbytes)
 
     dtype = np.dtype(dtype)
     # Given a shape like:
@@ -86,8 +85,8 @@ def scaled_array_shape(
 
 
 def scaled_array_shape_quadratic(
-    target_nbytes: int | str,
-    baseline_nbytes: int | str,
+    target_nbytes: float | str,
+    baseline_nbytes: float | str,
     shape: tuple[int | str, ...],
     *,
     dtype: np.dtype | type = np.dtype(float),
@@ -102,6 +101,18 @@ def scaled_array_shape_quadratic(
     baseline_nbytes = parse_bytes(baseline_nbytes)
     scaled_nbytes = int(baseline_nbytes * math.sqrt(target_nbytes / baseline_nbytes))
     return scaled_array_shape(scaled_nbytes, shape, dtype=dtype, max_error=max_error)
+
+
+def print_size_info(memory: int, target_nbytes: float, *arrs: da.Array) -> None:
+    print(
+        f"Cluster memory: {format_bytes(memory)}, "
+        f"target data size: {format_bytes(int(target_nbytes))}"
+    )
+    for i, arr in enumerate(arrs, 1):
+        print(
+            f"Input {i}: {format_bytes(arr.nbytes)} - {arr.npartitions} "
+            f"{format_bytes(arr.blocks[(0,) * arr.ndim].nbytes)} chunks"
+        )
 
 
 def wait(thing, client, timeout):
