@@ -12,3 +12,6 @@
 # small_cluster:
 #   n_workers: 5
 #   worker_vm_types: [m6i.xlarge]  # 4CPU, 16GiB
+
+spill_cluster:
+  n_workers: 10
