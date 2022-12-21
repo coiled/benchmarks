@@ -12,3 +12,6 @@ channels:
 dependencies:
     - python=3.9
     - coiled-runtime=0.2.1
+    - pip:
+        - dask==2022.12.1
+        - distributed==2022.12.1
