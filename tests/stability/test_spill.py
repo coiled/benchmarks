@@ -73,7 +73,10 @@ def test_spilling(spill_client, compressible, keep_around):
     "compressible",
     [pytest.param(False, id="uncompressible"), pytest.param(True, id="compressible")],
 )
-def test_tensordot_stress(spill_client, compressible):
+def test_dot_product_spill(spill_client, compressible):
+    """See also benchmarks/test_array.py::test_dot_product
+    for variant that doesn't hit the spill threshold
+    """
     memory = cluster_memory(spill_client)  # 38.33 GiB
     shape = scaled_array_shape_quadratic(memory * 0.47, "18 GiB", ("x", "x"))  # 18 GiB
     a = da.random.random(shape)

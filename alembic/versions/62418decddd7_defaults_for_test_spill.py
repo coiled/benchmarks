@@ -33,7 +33,8 @@ def upgrade() -> None:
     op.execute(
         """
         update test_run 
-        set name = 'test_tensordot_stress[uncompressible]' 
+        set name = 'test_dot_product_spill[uncompressible]',
+        originalname = 'test_dot_product_spill'
         where name == 'test_tensordot_stress';
         """
     )

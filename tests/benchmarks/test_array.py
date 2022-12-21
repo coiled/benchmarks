@@ -213,6 +213,9 @@ def test_double_diff(small_client):
 
 
 def test_dot_product(small_client):
+    """See also stability/test_spill.py::test_dot_product_spill
+    for variant that hits the spill threshold
+    """
     memory = cluster_memory(small_client)  # 76.66 GiB
     shape = scaled_array_shape_quadratic(memory // 17, "4.5 GiB", ("x", "x"))
     a = da.random.random(shape, chunks="128 MiB")
