@@ -74,7 +74,7 @@ def test_spilling(spill_client, compressible, keep_around):
     [pytest.param(False, id="uncompressible"), pytest.param(True, id="compressible")],
 )
 def test_dot_product_spill(spill_client, compressible):
-    """See also benchmarks/test_array.py::test_dot_product
+    """See also test_array.py::test_dot_product
     for variant that doesn't hit the spill threshold
     """
     memory = cluster_memory(spill_client)  # 38.33 GiB

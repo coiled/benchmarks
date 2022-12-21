@@ -19,14 +19,16 @@ def upgrade() -> None:
     op.execute(
         """
         update test_run 
-        set name = 'test_spilling[uncompressible-release]' 
+        set name = 'test_spilling[uncompressible-release]',
+        path = 'benchmarks/test_spill.py'
         where name == 'test_spilling[False]';
         """
     )
     op.execute(
         """
         update test_run 
-        set name = 'test_spilling[uncompressible-keep]' 
+        set name = 'test_spilling[uncompressible-keep]',
+        path = 'benchmarks/test_spill.py'
         where name == 'test_spilling[True]';
         """
     )

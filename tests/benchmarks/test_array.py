@@ -213,7 +213,7 @@ def test_double_diff(small_client):
 
 
 def test_dot_product(small_client):
-    """See also stability/test_spill.py::test_dot_product_spill
+    """See also test_spill.py::test_dot_product_spill
     for variant that hits the spill threshold
     """
     memory = cluster_memory(small_client)  # 76.66 GiB
