@@ -63,10 +63,10 @@ def test_spilling(spill_client, compressible, keep_around):
     print_size_info(memory, memory * 1.67, a)
 
     wait(a, spill_client, 600)
-    fut = spill_client.compute(a.sum())
+    b = a.sum()
     if not keep_around:
         del a
-    wait(fut, spill_client, 600)
+    wait(b, spill_client, 600)
 
 
 @pytest.mark.parametrize(
@@ -84,6 +84,4 @@ def test_tensordot_stress(spill_client, compressible):
 
     print_size_info(memory, memory * 0.47, a)
     b = (a @ a.T).sum().round(3)
-
-    fut = spill_client.compute(b)
-    wait(fut, spill_client, 3000)
+    wait(b, spill_client, 3000)
