@@ -78,9 +78,15 @@ def scaled_array_shape(
     final = tuple(s for s in resolved_shape if s is not None)
     assert len(final) == len(resolved_shape), resolved_shape
 
-    actual_nbytes = np.prod(final) * dtype.itemsize
+    actual_nbytes = math.prod(final) * dtype.itemsize
     error = (actual_nbytes - target_nbytes) / actual_nbytes
-    assert abs(error) < max_error, (error, actual_nbytes, target_nbytes, final)
+    assert abs(error) < max_error, (
+        error,
+        actual_nbytes,
+        target_nbytes,
+        final,
+        dtype.itemsize,
+    )
     return final
 
 
