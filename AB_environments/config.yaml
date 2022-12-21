@@ -11,9 +11,9 @@ test_null_hypothesis: true
 
 # Tests categories to run. These are subdirectories of tests/.
 categories:
-  # - benchmarks
+  - benchmarks
   # - runtime
-  - stability
+  # - stability
 
 # AWS implements limiters to how many EC2 instances you can spawn in parallel on the
 # same AWS account. If such limit is reached, tests will randomly fail when trying to
