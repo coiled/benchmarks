@@ -4,7 +4,7 @@ import dask.array as da
 import numpy as np
 import pytest
 from coiled import Cluster
-from dask.distributed import Client
+from dask.distributed import Client, wait
 from toolz import merge
 
 from ..utils_test import (
@@ -12,7 +12,6 @@ from ..utils_test import (
     print_size_info,
     scaled_array_shape,
     scaled_array_shape_quadratic,
-    wait,
 )
 
 
@@ -57,17 +56,17 @@ def test_spilling(spill_client, compressible, keep_around):
     shape = scaled_array_shape(memory * 1.67, ("x", "x"))  # 64 GiB
     a = da.random.random(shape)
     if compressible:
-        # Note: this is not the same as da.zeros, which is smart and uses broadcasting
+        # Note: this is not the same as da.ones, which is smart and uses broadcasting
         # to actually store in memory just a single scalar
-        a = a.map_blocks(np.zeros_like)
+        a = a.map_blocks(np.ones_like)
     print_size_info(memory, memory * 1.67, a)
 
     a = a.persist()
-    wait(a, spill_client, 600)
+    wait(a)
     b = a.sum()
     if not keep_around:
         del a
-    wait(b, spill_client, 600)
+    b.result()
 
 
 @pytest.mark.parametrize(
@@ -82,10 +81,10 @@ def test_dot_product_spill(spill_client, compressible):
     shape = scaled_array_shape_quadratic(memory * 0.3, "11.5 GiB", ("x", "x"))
     a = da.random.random(shape)
     if compressible:
-        # Note: this is not the same as da.zeros, which is smart and uses broadcasting
+        # Note: this is not the same as da.ones, which is smart and uses broadcasting
         # to actually store in memory just a single scalar
-        a = a.map_blocks(np.zeros_like)
+        a = a.map_blocks(np.ones_like)
 
     print_size_info(memory, memory * 0.3, a)
     b = (a @ a.T).sum().round(3)
-    wait(b, spill_client, 3000)
+    b.result()
