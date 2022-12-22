@@ -11,6 +11,7 @@ from ..utils_test import (
     cluster_memory,
     print_size_info,
     scaled_array_shape,
+    scaled_array_shape_quadratic,
     wait,
 )
 
@@ -78,7 +79,7 @@ def test_dot_product_spill(spill_client, compressible):
     for variant that doesn't hit the spill threshold
     """
     memory = cluster_memory(spill_client)  # 38.33 GiB
-    shape = scaled_array_shape(memory * 0.3, ("x", "x"))  # 11.5 GiB
+    shape = scaled_array_shape_quadratic(memory * 0.3, "11.5 GiB", ("x", "x"))
     a = da.random.random(shape)
     if compressible:
         # Note: this is not the same as da.zeros, which is smart and uses broadcasting
