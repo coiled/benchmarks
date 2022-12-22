@@ -61,6 +61,7 @@ def test_spilling(spill_client, compressible, keep_around):
         a = a.map_blocks(np.zeros_like)
     print_size_info(memory, memory * 1.67, a)
 
+    a = a.persist()
     wait(a, spill_client, 600)
     b = a.sum()
     if not keep_around:
