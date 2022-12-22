@@ -14,7 +14,7 @@
 default:
   package_sync: true
   wait_for_workers: true
-  scheduler_vm_types: [m6i.xlarge]
+  scheduler_vm_types: [m6i.large]
   backend_options:
     send_prometheus_metrics: true
     spot: true
