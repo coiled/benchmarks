@@ -112,7 +112,7 @@ def scaled_array_shape_quadratic(
 def print_size_info(memory: int, target_nbytes: float, *arrs: da.Array) -> None:
     print(
         f"Cluster memory: {format_bytes(memory)}, "
-        f"target data size: {format_bytes(int(target_nbytes))}"
+        f"target data size: {format_bytes(target_nbytes)}"
     )
     for i, arr in enumerate(arrs, 1):
         print(
