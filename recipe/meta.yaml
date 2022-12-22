@@ -51,6 +51,7 @@ requirements:
     - openssl >1.1.0g
     - pynvml ==11.4.1
     - bokeh ==2.4.3
+
 test:
   imports:
     - dask
