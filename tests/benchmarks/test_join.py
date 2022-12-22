@@ -6,10 +6,10 @@ from ..utils_test import cluster_memory, run_up_to_nthreads, timeseries_of_size
 
 params = [
     (0.1, "tasks"),
-    # task-based shuffling does not finish with 1 or higher
+    # shuffling takes a long time with 1 or higher
     (0.1, "p2p"),
-    (1, "p2p"),
-    (10, "p2p"),
+    # (1, "p2p"),
+    # (10, "p2p"),
 ]
 
 
