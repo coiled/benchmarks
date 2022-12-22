@@ -52,14 +52,14 @@ def spill_client(spill_cluster, cluster_kwargs, upload_cluster_dump, benchmark_a
     [pytest.param(False, id="uncompressible"), pytest.param(True, id="compressible")],
 )
 def test_spilling(spill_client, compressible, keep_around):
-    memory = cluster_memory(spill_client)  # 38.33 GiB
-    shape = scaled_array_shape(memory * 1.67, ("x", "x"))  # 64 GiB
+    memory = cluster_memory(spill_client)  # 36 GiB
+    shape = scaled_array_shape(memory * 1.78, ("x", "x"))  # 64 GiB
     a = da.random.random(shape)
     if compressible:
         # Note: this is not the same as da.ones, which is smart and uses broadcasting
         # to actually store in memory just a single scalar
         a = a.map_blocks(np.ones_like)
-    print_size_info(memory, memory * 1.67, a)
+    print_size_info(memory, memory * 1.78, a)
 
     a = a.persist()
     wait(a)
