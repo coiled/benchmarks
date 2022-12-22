@@ -63,10 +63,10 @@ def test_spilling(spill_client, compressible, keep_around):
 
     a = a.persist()
     wait(a)
-    b = a.sum()
+    b = a.sum().persist()
     if not keep_around:
         del a
-    b.result()
+    assert b.compute()
 
 
 @pytest.mark.parametrize(
@@ -86,5 +86,5 @@ def test_dot_product_spill(spill_client, compressible):
         a = a.map_blocks(np.ones_like)
 
     print_size_info(memory, memory * 0.3, a)
-    b = (a @ a.T).sum().round(3)
-    b.result()
+    b = (a @ a.T).sum()
+    assert b.compute()

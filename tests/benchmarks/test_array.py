@@ -222,8 +222,9 @@ def test_dot_product(small_client):
     print_size_info(memory, memory // 17, a)
     # Input 1: 4.51 GiB - 49 128.00 MiB chunks
 
-    b = (a @ a.T).sum().round(3)
+    b = (a @ a.T).sum().persist()
     wait(b, small_client, 10 * 60)
+    assert b.compute()
 
 
 @pytest.mark.xfail(
