@@ -42,7 +42,7 @@ def rename_join_tests() -> None:
             """)
 
 def rename_shuffle_tests() -> None:
-    for test in ("test_shuffle_parquet", "test_shuffle_simple", "test_shuffle"):
+    for test in ("test_shuffle_parquet", "test_shuffle_simple"):
         op.execute(f"""
             update test_run
                 set name = '{test}[tasks]'
