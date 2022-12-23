@@ -55,13 +55,13 @@ def ddf(request):
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q1(ddf, small_client):
+def test_q1(ddf, small_client, configure_shuffling):
     ddf = ddf[["id1", "v1"]]
     ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"}).compute()
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q2(ddf, small_client):
+def test_q2(ddf, small_client, configure_shuffling):
     ddf = ddf[["id1", "id2", "v1"]]
     (
         ddf.groupby(["id1", "id2"], dropna=False, observed=True)
@@ -71,7 +71,7 @@ def test_q2(ddf, small_client):
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q3(ddf, small_client):
+def test_q3(ddf, small_client, configure_shuffling):
     ddf = ddf[["id3", "v1", "v3"]]
     (
         ddf.groupby("id3", dropna=False, observed=True)
@@ -81,7 +81,7 @@ def test_q3(ddf, small_client):
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q4(ddf, small_client):
+def test_q4(ddf, small_client, configure_shuffling):
     ddf = ddf[["id4", "v1", "v2", "v3"]]
     (
         ddf.groupby("id4", dropna=False, observed=True)
@@ -91,11 +91,13 @@ def test_q4(ddf, small_client):
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q5(ddf, small_client):
+def test_q5(ddf, small_client, configure_shuffling):
     ddf = ddf[["id6", "v1", "v2", "v3"]]
     (
         ddf.groupby("id6", dropna=False, observed=True)
-        .agg({"v1": "sum", "v2": "sum", "v3": "sum"})
+        .agg(
+            {"v1": "sum", "v2": "sum", "v3": "sum"},
+        )
         .compute()
     )
 
@@ -105,17 +107,17 @@ def test_q5(ddf, small_client):
     Version(dask.__version__) < Version("2022.10.0"),
     reason="No support for median in dask < 2022.10.0",
 )
-def test_q6(ddf, small_client):
+def test_q6(ddf, small_client, shuffle):
     ddf = ddf[["id4", "id5", "v3"]]
     (
         ddf.groupby(["id4", "id5"], dropna=False, observed=True)
-        .agg({"v3": ["median", "std"]}, shuffle="tasks")
-        .compute()  # requires shuffle="tasks"
+        .agg({"v3": ["median", "std"]}, shuffle=shuffle)
+        .compute()  # requires shuffle arg to be set explicitly
     )
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q7(ddf, small_client):
+def test_q7(ddf, small_client, configure_shuffling):
     ddf = ddf[["id3", "v1", "v2"]]
     (
         ddf.groupby("id3", dropna=False, observed=True)
@@ -126,7 +128,7 @@ def test_q7(ddf, small_client):
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q8(ddf, small_client):
+def test_q8(ddf, small_client, configure_shuffling):
     ddf = ddf[["id6", "v1", "v2", "v3"]]
     (
         ddf[~ddf["v3"].isna()][["id6", "v3"]]
@@ -140,7 +142,7 @@ def test_q8(ddf, small_client):
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q9(ddf, small_client):
+def test_q9(ddf, small_client, configure_shuffling):
     ddf = ddf[["id2", "id4", "v1", "v2"]]
     (
         ddf[["id2", "id4", "v1", "v2"]]

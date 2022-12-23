@@ -23,6 +23,7 @@ from coiled import Cluster
 from distributed import Client
 from distributed.diagnostics.memory_sampler import MemorySampler
 from distributed.scheduler import logger as scheduler_logger
+from packaging.version import Version
 from sqlalchemy.orm import Session
 
 from benchmark_schema import TestRun
@@ -277,6 +278,7 @@ def benchmark_memory(test_run_benchmark):
             df = sampler.to_pandas()
             test_run_benchmark.average_memory = df[label].mean()
             test_run_benchmark.peak_memory = df[label].max()
+            sampler.to_pandas(align=True).to_csv(f"ms-{test_run_benchmark.name}.csv")
 
     yield _benchmark_memory
 
@@ -605,3 +607,28 @@ def upload_cluster_dump(
                 client.dump_cluster_state(dump_path, **s3_storage_options)
 
     yield _upload_cluster_dump
+
+
+# Include https://github.com/dask/distributed/pull/7410 for categorical support
+P2P_AVAILABLE = Version(distributed.__version__) > Version("2022.12.1")
+
+
+@pytest.fixture(
+    params=[
+        "tasks",
+        pytest.param(
+            "p2p",
+            marks=pytest.mark.skipif(
+                not P2P_AVAILABLE, reason="p2p shuffle not available"
+            ),
+        ),
+    ]
+)
+def shuffle(request):
+    return request.param
+
+
+@pytest.fixture
+def configure_shuffling(shuffle):
+    with dask.config.set(shuffle=shuffle):
+        yield
