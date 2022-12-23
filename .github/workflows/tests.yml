@@ -33,7 +33,7 @@ jobs:
         python-version: ["3.9"]
         pytest_args: [tests/benchmarks/test_join.py]
         runtime-version: [latest] #[upstream, latest, "0.2.1"]
-        include:
+        # include:
           # Run stability tests on Python 3.8
           # - pytest_args: tests/stability
           #   python-version: "3.8"
