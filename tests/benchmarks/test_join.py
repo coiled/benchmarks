@@ -10,16 +10,16 @@ params = [
     # shuffling takes a long time with 1 or higher
     (0.1, "p2p"),
     (
-        1,
         pytest.param(
-            "p2p", marks=pytest.mark.skip(reason="client OOMs, see coiled-runtime#633")
+            1, marks=pytest.mark.skip(reason="client OOMs, see coiled-runtime#633")
         ),
+        "p2p",
     ),
     (
-        10,
         pytest.param(
-            "p2p", marks=pytest.mark.skip(reason="client OOMs, see coiled-runtime#633")
+            10, marks=pytest.mark.skip(reason="client OOMs, see coiled-runtime#633")
         ),
+        "p2p",
     ),
 ]
 
