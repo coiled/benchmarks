@@ -608,7 +608,8 @@ def upload_cluster_dump(
     yield _upload_cluster_dump
 
 
-P2P_AVAILABLE = Version(dask.__version__) >= Version("2022.11.0")
+# Include https://github.com/dask/distributed/pull/7410 for categorical support
+P2P_AVAILABLE = Version(dask.__version__) > Version("2022.12.1")
 
 
 @pytest.fixture(
