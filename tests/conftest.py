@@ -278,6 +278,7 @@ def benchmark_memory(test_run_benchmark):
             df = sampler.to_pandas()
             test_run_benchmark.average_memory = df[label].mean()
             test_run_benchmark.peak_memory = df[label].max()
+            sampler.to_pandas(align=True).to_csv(f"ms-{test_run_benchmark.name}.csv")
 
     yield _benchmark_memory
 
