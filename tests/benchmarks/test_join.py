@@ -4,6 +4,7 @@ import pytest
 
 from ..utils_test import cluster_memory, run_up_to_nthreads, timeseries_of_size
 
+# (mem_mult, shuffle)
 params = [
     (0.1, "tasks"),
     # shuffling takes a long time with 1 or higher
