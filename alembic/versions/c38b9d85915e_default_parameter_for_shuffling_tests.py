@@ -34,7 +34,7 @@ def rename_h2o_tests() -> None:
                 """)           
 
 def rename_join_tests() -> None:
-    for test in ("test_join_big", "test_join_small"):
+    for test in ("test_join_big", "test_join_big_small"):
         op.execute(f"""
             update test_run
                 set name = '{test}[0.1-tasks]'
