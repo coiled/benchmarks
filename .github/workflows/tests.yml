@@ -23,6 +23,7 @@ defaults:
 
 jobs:
   tests:
+    if: ${{ false }} # skip CI during holidays revert on Jan 3rd
     name: Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
