@@ -23,6 +23,7 @@ defaults:
 
 jobs:
   tests:
+    if: ${{ false }} # skip CI during holidays revert on Jan 3rd
     name: Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
@@ -175,7 +176,8 @@ jobs:
     needs: [tests, process-results]
     # Always check for regressions, as this can be skipped even if an indirect dependency fails (like a test run)
     # Not running regressions when tests are cancelled, and on PRs because of volatility of single runs
-    if: always() && github.event_name != 'pull_request' && needs.tests.result != 'cancelled'
+    if: ${{ false }} # skip CI during holidays revert on Jan 3rd
+    # if: always() && github.event_name != 'pull_request' && needs.tests.result != 'cancelled'
     name: Detect regressions
     runs-on: ubuntu-latest
     steps:
@@ -213,11 +215,12 @@ jobs:
   report:
     name: report
     needs: [tests, regressions]
-    if: |
-      always()
-      && github.event_name != 'pull_request'
-      && github.repository == 'coiled/coiled-runtime'
-      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
+    if: ${{ false }} # skip CI during holidays revert on Jan 3rd
+    # if: |
+    #   always()
+    #   && github.event_name != 'pull_request'
+    #   && github.repository == 'coiled/coiled-runtime'
+    #   && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
 
     runs-on: ubuntu-latest
     defaults:
@@ -243,7 +246,8 @@ jobs:
   static-site:
     needs: process-results
     # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
-    if: always()
+    if: ${{ false }} # skip CI during holidays revert on Jan 3rd
+    # if: always()
     name: Build static dashboards
     runs-on: ubuntu-latest
     steps:
