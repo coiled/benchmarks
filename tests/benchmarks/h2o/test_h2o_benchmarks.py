@@ -1,5 +1,7 @@
 """
 h2o-ai benchmark groupby part running on coiled.
+
+Note: Only holistic aggregations (median and groupby-apply) use a shuffle with the default split_out=1.
 """
 
 import dask
@@ -55,13 +57,13 @@ def ddf(request):
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q1(ddf, small_client, configure_shuffling):
+def test_q1(ddf, small_client):
     ddf = ddf[["id1", "v1"]]
     ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"}).compute()
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q2(ddf, small_client, configure_shuffling):
+def test_q2(ddf, small_client):
     ddf = ddf[["id1", "id2", "v1"]]
     (
         ddf.groupby(["id1", "id2"], dropna=False, observed=True)
@@ -71,7 +73,7 @@ def test_q2(ddf, small_client, configure_shuffling):
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q3(ddf, small_client, configure_shuffling):
+def test_q3(ddf, small_client):
     ddf = ddf[["id3", "v1", "v3"]]
     (
         ddf.groupby("id3", dropna=False, observed=True)
@@ -81,7 +83,7 @@ def test_q3(ddf, small_client, configure_shuffling):
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q4(ddf, small_client, configure_shuffling):
+def test_q4(ddf, small_client):
     ddf = ddf[["id4", "v1", "v2", "v3"]]
     (
         ddf.groupby("id4", dropna=False, observed=True)
@@ -91,7 +93,7 @@ def test_q4(ddf, small_client, configure_shuffling):
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q5(ddf, small_client, configure_shuffling):
+def test_q5(ddf, small_client):
     ddf = ddf[["id6", "v1", "v2", "v3"]]
     (
         ddf.groupby("id6", dropna=False, observed=True)
@@ -108,6 +110,7 @@ def test_q5(ddf, small_client, configure_shuffling):
     reason="No support for median in dask < 2022.10.0",
 )
 def test_q6(ddf, small_client, shuffle):
+    # Median aggregation uses an explicitly-set shuffle
     ddf = ddf[["id4", "id5", "v3"]]
     (
         ddf.groupby(["id4", "id5"], dropna=False, observed=True)
@@ -117,7 +120,7 @@ def test_q6(ddf, small_client, shuffle):
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q7(ddf, small_client, configure_shuffling):
+def test_q7(ddf, small_client):
     ddf = ddf[["id3", "v1", "v2"]]
     (
         ddf.groupby("id3", dropna=False, observed=True)
@@ -129,6 +132,7 @@ def test_q7(ddf, small_client, configure_shuffling):
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
 def test_q8(ddf, small_client, configure_shuffling):
+    # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
     ddf = ddf[["id6", "v1", "v2", "v3"]]
     (
         ddf[~ddf["v3"].isna()][["id6", "v3"]]
@@ -143,6 +147,7 @@ def test_q8(ddf, small_client, configure_shuffling):
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
 def test_q9(ddf, small_client, configure_shuffling):
+    # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
     ddf = ddf[["id2", "id4", "v1", "v2"]]
     (
         ddf[["id2", "id4", "v1", "v2"]]
