@@ -7,14 +7,10 @@ from ..utils_test import cluster_memory, run_up_to_nthreads, timeseries_of_size,
 # (mem_mult, shuffle)
 params = [
     (0.1, "tasks"),
-    # shuffling takes a long time with 1 or higher
     (0.1, "p2p"),
-    pytest.param(
-        1, "p2p", marks=pytest.mark.skip(reason="client OOMs, see coiled-runtime#633")
-    ),
-    pytest.param(
-        10, "p2p", marks=pytest.mark.skip(reason="client OOMs, see coiled-runtime#633")
-    ),
+    (1, "p2p"),
+    # shuffling takes a long time with 10
+    (10, "p2p"),
 ]
 
 
