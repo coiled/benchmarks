@@ -50,7 +50,7 @@ def test_shuffle(small_client, configure_shuffling):
         start="2020-01-01",
         freq="1200ms",
         partition_freq="24h",
-        dtypes={i: float for i in range(100)},
+        dtypes={str(i): float for i in range(100)},
     )
     print_dataframe_info(df)
     # ~25,488,000 rows x 100 columns, 19.18 GiB total, 354 55.48 MiB partitions
