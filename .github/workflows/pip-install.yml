@@ -20,7 +20,6 @@ defaults:
 
 jobs:
   build:
-    if: ${{ false }} # skip CI during holidays revert on Jan 3rd
     runs-on: "ubuntu-latest"
     steps:
       - uses: actions/checkout@v2
