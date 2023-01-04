@@ -55,6 +55,6 @@ def test_shuffle(small_client, configure_shuffling):
     print_dataframe_info(df)
     # ~25,488,000 rows x 100 columns, 19.18 GiB total, 354 55.48 MiB partitions
 
-    shuf = df.shuffle(0)
+    shuf = df.shuffle("0")
     result = shuf.size
     wait(result, small_client, 20 * 60)
