@@ -4,7 +4,7 @@ import pytest
 
 
 @pytest.mark.stability
-def test_shuffle_simple(small_client):
+def test_shuffle_simple(small_client, configure_shuffling):
     df = dask.datasets.timeseries(
         start="2000-01-01", end="2000-12-31", freq="1s", partition_freq="1D"
     )
@@ -16,7 +16,7 @@ def test_shuffle_simple(small_client):
 
 
 @pytest.mark.stability
-def test_shuffle_parquet(small_client, s3_url, s3_storage_options):
+def test_shuffle_parquet(small_client, s3_url, s3_storage_options, configure_shuffling):
     # Write synthetic dataset to S3
     # Notes on how `freq` impacts total dataset size:
     #   - 100ms ~12GB
