@@ -22,7 +22,8 @@ def upgrade() -> None:
         update test_run 
         set name = 'test_spilling[uncompressible-release]',
         path = 'benchmarks/test_spill.py'
-        where name == 'test_spilling[False]';
+        where name == 'test_spilling[False]'
+        and python_version like '3.9%';
         """
     )
     op.execute(
@@ -30,7 +31,15 @@ def upgrade() -> None:
         update test_run 
         set name = 'test_spilling[uncompressible-keep]',
         path = 'benchmarks/test_spill.py'
-        where name == 'test_spilling[True]';
+        where name == 'test_spilling[True]'
+        and python_version like '3.9%';
+        """
+    )
+    op.execute(
+        """
+        delete from test_run
+        where originalname = 'test_spilling'
+        and python_version not like '3.9%';
         """
     )
     op.execute(
