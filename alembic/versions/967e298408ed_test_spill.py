@@ -1,8 +1,8 @@
 """test_spill
 
-Revision ID: fe461c88ee1b
-Revises: 912c8e30690a
-Create Date: 2023-01-05 15:07:16.542361
+Revision ID: 967e298408ed
+Revises: a9363331e323
+Create Date: 2023-01-09 17:05:13.568510
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'fe461c88ee1b'
-down_revision = '912c8e30690a'
+revision = '967e298408ed'
+down_revision = 'a9363331e323'
 branch_labels = None
 depends_on = None
 
