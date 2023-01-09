@@ -35,7 +35,7 @@ parquet_cluster:
 spill_cluster:
   n_workers: 5
   worker_disk_size: 64
-  worker_vm_types: [m6i.large]
+  worker_vm_types: [m6i.large]  # 2CPU, 8GiB
 
 # Specific tests
 test_work_stealing_on_scaling_up:
