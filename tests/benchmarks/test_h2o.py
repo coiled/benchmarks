@@ -1,42 +1,50 @@
 """
 h2o-ai benchmark groupby part running on coiled.
 
-Note: Only holistic aggregations (median and groupby-apply) use a shuffle with the default split_out=1.
+Note: Only holistic aggregations (median and groupby-apply) use a shuffle with the
+default split_out=1.
 """
+import os
 
-import dask
 import dask.dataframe as dd
 import pandas as pd
 import pytest
-from packaging.version import Version
 
-from ...utils_test import run_up_to_nthreads
+from ..utils_test import run_up_to_nthreads
+
+DATASETS = {
+    "0.5 GB (csv)": "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_single.csv",
+    "5 GB (csv)": "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_single.csv",
+    "50 GB (csv)": "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_single.csv",
+    "0.5 GB (parquet)": "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_parquet/*.parquet",
+    "5 GB (parquet)": "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_parquet/*.parquet",
+    "50 GB (parquet)": "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_parquet/*.parquet",
+}
+
+enabled_datasets = os.getenv("H2O_DATASETS")
+if enabled_datasets is not None:
+    enabled_datasets = {k.strip() for k in enabled_datasets.split(",")}
+    if unknown_datasets := enabled_datasets - DATASETS.keys():
+        raise ValueError("Unknown h2o dataset(s): ", unknown_datasets)
+else:
+    enabled_datasets = {"0.5 GB (csv)", "0.5 GB (parquet)", "5 GB (parquet)"}
 
 
-@pytest.fixture(
-    scope="module",
-    params=[
-        "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_single.csv",
-        # "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_single.csv",
-        # "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_single.csv",
-        "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_parquet/*.parquet",
-        "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_parquet/*.parquet",
-        # "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_parquet/*.parquet",
-    ],
-    ids=[
-        "0.5 GB (csv)",
-        # "5 GB (csv)",
-        # "50 GB (csv)",
-        "0.5 GB (parquet)",
-        "5 GB (parquet)",
-        # "50 GB (parquet)",
-    ],
-)
-def ddf(request):
+@pytest.fixture(params=list(DATASETS))
+def ddf(request, small_client):
+    if request.param not in enabled_datasets:
+        raise pytest.skip("Disabled by default config or H2O_DATASETS env variable")
 
-    if request.param.endswith("csv"):
+    n_gib = float(request.param.split(" GB ")[0])
+    if n_gib <= 5:
+        run_up_to_nthreads(
+            "small_cluster", 100, reason="fixed data size", as_decorator=False
+        )
+    uri = DATASETS[request.param]
+
+    if uri.endswith("csv"):
         yield dd.read_csv(
-            request.param,
+            uri,
             dtype={
                 "id1": "category",
                 "id2": "category",
@@ -51,19 +59,15 @@ def ddf(request):
             storage_options={"anon": True},
         )
     else:
-        yield dd.read_parquet(
-            request.param, engine="pyarrow", storage_options={"anon": True}
-        )
+        yield dd.read_parquet(uri, engine="pyarrow", storage_options={"anon": True})
 
 
-@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q1(ddf, small_client):
+def test_q1(ddf):
     ddf = ddf[["id1", "v1"]]
     ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"}).compute()
 
 
-@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q2(ddf, small_client):
+def test_q2(ddf):
     ddf = ddf[["id1", "id2", "v1"]]
     (
         ddf.groupby(["id1", "id2"], dropna=False, observed=True)
@@ -72,8 +76,7 @@ def test_q2(ddf, small_client):
     )
 
 
-@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q3(ddf, small_client):
+def test_q3(ddf):
     ddf = ddf[["id3", "v1", "v3"]]
     (
         ddf.groupby("id3", dropna=False, observed=True)
@@ -82,8 +85,7 @@ def test_q3(ddf, small_client):
     )
 
 
-@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q4(ddf, small_client):
+def test_q4(ddf):
     ddf = ddf[["id4", "v1", "v2", "v3"]]
     (
         ddf.groupby("id4", dropna=False, observed=True)
@@ -92,8 +94,7 @@ def test_q4(ddf, small_client):
     )
 
 
-@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q5(ddf, small_client):
+def test_q5(ddf):
     ddf = ddf[["id6", "v1", "v2", "v3"]]
     (
         ddf.groupby("id6", dropna=False, observed=True)
@@ -104,12 +105,7 @@ def test_q5(ddf, small_client):
     )
 
 
-@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-@pytest.mark.skipif(
-    Version(dask.__version__) < Version("2022.10.0"),
-    reason="No support for median in dask < 2022.10.0",
-)
-def test_q6(ddf, small_client, shuffle):
+def test_q6(ddf, shuffle):
     # Median aggregation uses an explicitly-set shuffle
     ddf = ddf[["id4", "id5", "v3"]]
     (
@@ -119,8 +115,7 @@ def test_q6(ddf, small_client, shuffle):
     )
 
 
-@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q7(ddf, small_client):
+def test_q7(ddf):
     ddf = ddf[["id3", "v1", "v2"]]
     (
         ddf.groupby("id3", dropna=False, observed=True)
@@ -130,8 +125,7 @@ def test_q7(ddf, small_client):
     )
 
 
-@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q8(ddf, small_client, configure_shuffling):
+def test_q8(ddf, configure_shuffling):
     # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
     ddf = ddf[["id6", "v1", "v2", "v3"]]
     (
@@ -145,8 +139,7 @@ def test_q8(ddf, small_client, configure_shuffling):
     )
 
 
-@run_up_to_nthreads("small_cluster", 100, reason="fixed size data")
-def test_q9(ddf, small_client, configure_shuffling):
+def test_q9(ddf, configure_shuffling):
     # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
     ddf = ddf[["id2", "id4", "v1", "v2"]]
     (

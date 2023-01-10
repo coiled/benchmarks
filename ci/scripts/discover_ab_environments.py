@@ -14,6 +14,7 @@ class JSONOutput(TypedDict):
     runtime: list[str]
     max_parallel: int
     pytest_args: list[str]
+    h2o_datasets: list[str]
 
 
 DO_NOT_RUN: JSONOutput = {
@@ -22,6 +23,7 @@ DO_NOT_RUN: JSONOutput = {
     "runtime": [],
     "max_parallel": 1,
     "pytest_args": [],
+    "h2o_datasets": [],
 }
 
 
@@ -65,6 +67,7 @@ def build_json() -> JSONOutput:
         "runtime": runtimes,
         "max_parallel": cfg["max_parallel"]["ci_jobs"],
         "pytest_args": [xdist_args + " ".join(f"tests/{c}" for c in cfg["categories"])],
+        "h2o_datasets": [",".join(cfg["h2o_datasets"])],
     }
 
 
