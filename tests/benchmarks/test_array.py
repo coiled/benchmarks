@@ -7,12 +7,13 @@ import distributed
 import numpy as np
 import pytest
 import xarray as xr
-from dask.utils import format_bytes, parse_bytes
+from dask.utils import parse_bytes
 from packaging.version import Version
 
 from ..utils_test import (
     arr_to_devnull,
     cluster_memory,
+    print_size_info,
     run_up_to_nthreads,
     scaled_array_shape,
     scaled_array_shape_quadratic,
@@ -27,18 +28,6 @@ def zarr_dataset():
         "synth_random_int_array_2000_cubed.zarr"
     )
     return da.from_zarr(s3_uri)
-
-
-def print_size_info(memory: int, target_nbytes: int, *arrs: da.Array) -> None:
-    print(
-        f"Cluster memory: {format_bytes(memory)}, "
-        f"target data size: {format_bytes(target_nbytes)}"
-    )
-    for i, arr in enumerate(arrs, 1):
-        print(
-            f"Input {i}: {format_bytes(arr.nbytes)} - {arr.npartitions} "
-            f"{format_bytes(arr.blocks[(0,) * arr.ndim].nbytes)} chunks"
-        )
 
 
 def test_anom_mean(small_client):
@@ -224,13 +213,16 @@ def test_double_diff(small_client):
 
 
 def test_dot_product(small_client):
+    """See also test_spill.py::test_dot_product_spill
+    for variant that hits the spill threshold
+    """
     memory = cluster_memory(small_client)  # 76.66 GiB
     shape = scaled_array_shape_quadratic(memory // 17, "4.5 GiB", ("x", "x"))
     a = da.random.random(shape, chunks="128 MiB")
     print_size_info(memory, memory // 17, a)
     # Input 1: 4.51 GiB - 49 128.00 MiB chunks
 
-    b = (a @ a.T).sum().round(3)
+    b = (a @ a.T).sum()
     wait(b, small_client, 10 * 60)
 
 
