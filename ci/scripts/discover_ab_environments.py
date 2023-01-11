@@ -31,11 +31,12 @@ def build_json() -> JSONOutput:
 
     if not isinstance(cfg.get("repeat"), int) or cfg["repeat"] < 0:
         raise ValueError("AB_environments/config.yaml: missing key {repeat: N}")
-    for category in cfg["categories"]:
-        if not glob.glob(f"tests/{category}/test_*.py"):
-            raise ValueError("fNot a valid test category: {category}")
+    for target in cfg["targets"]:
+        target = target.split("::")[0]
+        if not os.path.exists(target):
+            raise FileNotFoundError(target)
 
-    if not cfg["repeat"] or not cfg["categories"]:
+    if not cfg["repeat"] or not cfg["targets"]:
         return DO_NOT_RUN
 
     runtimes = []
@@ -64,7 +65,7 @@ def build_json() -> JSONOutput:
         "repeat": list(range(1, cfg["repeat"] + 1)),
         "runtime": runtimes,
         "max_parallel": cfg["max_parallel"]["ci_jobs"],
-        "pytest_args": [xdist_args + " ".join(f"tests/{c}" for c in cfg["categories"])],
+        "pytest_args": [xdist_args + " ".join(cfg["targets"])],
     }
 
 
