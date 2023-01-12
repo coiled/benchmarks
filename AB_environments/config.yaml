@@ -9,11 +9,13 @@ repeat: 0
 # that the 'repeat' setting is high enough.
 test_null_hypothesis: true
 
-# Tests categories to run. These are subdirectories of tests/.
-categories:
-  - benchmarks
-  # - runtime
-  # - stability
+# Test directories, test files, or individual tests to run.
+targets:
+  - tests/benchmarks
+  # - tests/runtime
+  # - tests/stability
+  # - tests/benchmarks/test_futures.py
+  # - tests/benchmarks/test_array.py::test_basic_sum
 
 # Enable specific H2O datasets
 h2o_datasets:
