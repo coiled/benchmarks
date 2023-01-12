@@ -13,12 +13,15 @@ import pytest
 from ..utils_test import run_up_to_nthreads
 
 DATASETS = {
-    "0.5 GB (csv)": "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_single.csv",
-    "5 GB (csv)": "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_single.csv",
-    "50 GB (csv)": "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_single.csv",
+    "0.5 GB (csv)": "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2/*.csv",
+    "5 GB (csv)": "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2/*.csv",
+    "50 GB (csv)": "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2/*.csv",
     "0.5 GB (parquet)": "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2_parquet/*.parquet",
     "5 GB (parquet)": "s3://coiled-datasets/h2o-benchmark/N_1e8_K_1e2_parquet/*.parquet",
     "50 GB (parquet)": "s3://coiled-datasets/h2o-benchmark/N_1e9_K_1e2_parquet/*.parquet",
+    "5 GB (parquet+pyarrow)": "s3://coiled-datasets/h2o-benchmark/pyarrow_strings/N_1e8_K_1e2/*.parquet",
+    "50 GB (parquet+pyarrow)": "s3://coiled-datasets/h2o-benchmark/pyarrow_strings/N_1e9_K_1e2/*.parquet",
+    "500 GB (parquet+pyarrow)": "s3://coiled-datasets/h2o-benchmark/pyarrow_strings/N_1e10_K_1e2/*.parquet",
 }
 
 enabled_datasets = os.getenv("H2O_DATASETS")
@@ -27,7 +30,12 @@ if enabled_datasets is not None:
     if unknown_datasets := enabled_datasets - DATASETS.keys():
         raise ValueError("Unknown h2o dataset(s): ", unknown_datasets)
 else:
-    enabled_datasets = {"0.5 GB (csv)", "0.5 GB (parquet)", "5 GB (parquet)"}
+    enabled_datasets = {
+        "0.5 GB (csv)",
+        "0.5 GB (parquet)",
+        "5 GB (parquet)",
+        "5 GB (parquet+pyarrow)",
+    }
 
 
 @pytest.fixture(params=list(DATASETS))
@@ -36,10 +44,15 @@ def ddf(request, small_client):
         raise pytest.skip("Disabled by default config or H2O_DATASETS env variable")
 
     n_gib = float(request.param.split(" GB ")[0])
-    if n_gib <= 5:
-        run_up_to_nthreads(
-            "small_cluster", 100, reason="fixed data size", as_decorator=False
-        )
+    # 0.5 GB datasets are broken in 5~10 files
+    # 5 GB -> 100 files
+    # 50 GB -> 1000 files
+    # 500 GB -> 10,000 files
+    max_threads = min(20, int(n_gib * 20))
+    run_up_to_nthreads(
+        "small_cluster", max_threads, reason="fixed data size", as_decorator=False
+    )
+
     uri = DATASETS[request.param]
 
     if uri.endswith("csv"):

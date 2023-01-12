@@ -2,12 +2,12 @@
 # Lower values are faster and cheaper but will result in higher variance.
 # This must remain set to 0 in the main branch, thus completely disabling
 # A/B tests, in order to avoid unnecessary runs.
-repeat: 0
+repeat: 1  # DNM
 
 # Set to true to automatically create a verbatim copy of AB_baseline and then compare
 # the two in the A/B tests. Set to false to save some money if you are already confident
 # that the 'repeat' setting is high enough.
-test_null_hypothesis: true
+test_null_hypothesis: false  # DNM
 
 # Test directories, test files, or individual tests to run.
 targets:
@@ -19,12 +19,15 @@ targets:
 
 # Enable specific H2O datasets
 h2o_datasets:
-  # - 0.5 GB (csv)
-  # - 5 GB (csv)
-  # - 50 GB (csv)
-  # - 0.5 GB (parquet)
+  - 0.5 GB (csv)
+  - 5 GB (csv)
+  - 50 GB (csv)
+  - 0.5 GB (parquet)
   - 5 GB (parquet)
-  # - 50 GB (parquet)
+  - 50 GB (parquet)
+  - 5 GB (parquet+pyarrow)
+  - 50 GB (parquet+pyarrow)
+  - 500 GB (parquet+pyarrow)
 
 # AWS implements limiters to how many EC2 instances you can spawn in parallel on the
 # same AWS account. If such limit is reached, tests will randomly fail when trying to

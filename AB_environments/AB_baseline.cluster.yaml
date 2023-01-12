@@ -4,3 +4,6 @@
 
 # Overrides ../cluster_kwargs.yaml.
 # Leave empty if you don't want to override anything.
+
+small_cluster:
+  n_workers: 200  # DNM
