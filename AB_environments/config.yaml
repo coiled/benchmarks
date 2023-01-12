@@ -11,7 +11,8 @@ test_null_hypothesis: false  # DNM
 
 # Test directories, test files, or individual tests to run.
 targets:
-  - tests/benchmarks
+  # - tests/benchmarks
+  - tests/benchmarks/test_h2o.py  # DNM
   # - tests/runtime
   # - tests/stability
   # - tests/benchmarks/test_futures.py
