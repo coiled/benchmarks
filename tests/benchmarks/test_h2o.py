@@ -48,7 +48,7 @@ def ddf(request, small_client):
     # 5 GB -> 100 files
     # 50 GB -> 1000 files
     # 500 GB -> 10,000 files
-    max_threads = min(20, int(n_gib * 20))
+    max_threads = max(20, int(n_gib * 20))
     run_up_to_nthreads(
         "small_cluster", max_threads, reason="fixed data size", as_decorator=False
     )
