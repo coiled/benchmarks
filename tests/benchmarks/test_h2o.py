@@ -34,7 +34,6 @@ else:
         "0.5 GB (csv)",
         "0.5 GB (parquet)",
         "5 GB (parquet)",
-        "5 GB (parquet+pyarrow)",
     }
 
 

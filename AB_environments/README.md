@@ -163,7 +163,7 @@ targets:
   - tests/benchmarks
   - tests/stability
 h2o_datasets:
-  - 5 GB (parquet)
+  - 5 GB (parquet+pyarrow)
 max_parallel:
   ci_jobs: 5
   pytest_workers_per_job: 4
