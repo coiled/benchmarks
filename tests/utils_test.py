@@ -246,7 +246,12 @@ def ec2_instance_cpus(name: str) -> int:
     raise ValueError(f"Unknown instance type: {name}")
 
 
-def run_up_to_nthreads(cluster_name: str, nthreads_max: int, reason: str | None = None):
+def run_up_to_nthreads(
+    cluster_name: str,
+    nthreads_max: int,
+    reason: str | None = None,
+    as_decorator: bool = True,
+):
     from .conftest import load_cluster_kwargs
 
     cluster_kwargs = load_cluster_kwargs()[cluster_name]
@@ -257,6 +262,8 @@ def run_up_to_nthreads(cluster_name: str, nthreads_max: int, reason: str | None 
     instance_type = cluster_kwargs["worker_vm_types"][0]
     nthreads = nworkers * ec2_instance_cpus(instance_type)
 
-    return pytest.mark.skipif(
-        nthreads > nthreads_max, reason=reason or "cluster too large"
-    )
+    reason = reason or "cluster too large"
+    if as_decorator:
+        return pytest.mark.skipif(nthreads > nthreads_max, reason=reason)
+    elif nthreads > nthreads_max:
+        raise pytest.skip(reason)

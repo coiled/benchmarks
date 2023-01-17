@@ -115,6 +115,9 @@ setting is high enough.
 The file offers a `targets` list. These can be test directories, individual test files,
 or individual tests that you wish to run.
 
+`h2o_datasets` is a list of datasets to run through in
+`tests/benchmarks/test_h2o.py`. Refer to the file for the possible choices.
+
 Finally, the `max_parallel` setting lets you tweak maximum test parallelism, both in
 github actions and in pytest-xdist. Reducing parallelism is useful when testing on very
 large clusters (e.g. to avoid having 20 clusters with 1000 workers each at the same
@@ -159,6 +162,8 @@ targets:
   - tests/runtime
   - tests/benchmarks
   - tests/stability
+h2o_datasets:
+  - 5 GB (parquet+pyarrow)
 max_parallel:
   ci_jobs: 5
   pytest_workers_per_job: 4
