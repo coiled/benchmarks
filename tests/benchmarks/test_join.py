@@ -10,8 +10,6 @@ params = [
     (0.1, "p2p"),
     (1, "tasks"),
     (1, "p2p"),
-    # shuffling takes a long time with 10
-    (10, "p2p"),
 ]
 
 
