@@ -49,7 +49,7 @@ def test_join_big_small(small_client, mem_mult, shuffle):
 
         # Control cardinality on column to join - this produces cardinality ~ to len(df)
         df_big["predicate"] = df_big["0"] * 1e9
-        df_big = df_big.astype({"x2": "int"})
+        df_big = df_big.astype({"predicate": "int"})
 
         df_small = timeseries_of_size(
             "100 MB", dtypes={str(i): float for i in range(100)}
