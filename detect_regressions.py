@@ -45,7 +45,7 @@ def detect_regressions(database_file, is_pr=False):
         n_std = 3  # be a bit more aggressive on PRs
     else:
         n_last = 3
-        n_std = 2
+        n_std = 3
 
     runtimes = list(df.runtime.unique())
     for runtime in runtimes:

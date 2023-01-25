@@ -1,52 +1,63 @@
+import dask
 import dask.dataframe as dd
 import pytest
 
-from ..utils_test import cluster_memory, run_up_to_nthreads, timeseries_of_size
+from ..utils_test import cluster_memory, run_up_to_nthreads, timeseries_of_size, wait
 
-mem_mult = [
-    0.1,
-    pytest.param(
-        1,
-        marks=pytest.mark.skip(reason="Does not finish"),
-    ),
-    pytest.param(
-        10,
-        marks=pytest.mark.skip(reason="Does not finish"),
-    ),
+# (mem_mult, shuffle)
+params = [
+    (0.1, "tasks"),
+    (0.1, "p2p"),
+    (1, "tasks"),
+    (1, "p2p"),
 ]
 
 
 @run_up_to_nthreads("small_cluster", 40, reason="Does not finish")
-@pytest.mark.parametrize("mem_mult", mem_mult)  # [0.1, 1, 10]
-def test_join_big(small_client, mem_mult):
-    memory = cluster_memory(small_client)  # 76.66 GiB
+@pytest.mark.parametrize("mem_mult, shuffle", params)
+def test_join_big(small_client, mem_mult, shuffle):
+    with dask.config.set(shuffle=shuffle):
+        memory = cluster_memory(small_client)  # 76.66 GiB
 
-    df1_big = timeseries_of_size(memory * mem_mult)
-    df1_big["x2"] = df1_big["x"] * 1e9
-    df1_big = df1_big.astype({"x2": "int"})
+        df1_big = timeseries_of_size(
+            memory * mem_mult, dtypes={str(i): float for i in range(100)}
+        )  # 66.58 MiB partitions
+        df1_big["predicate"] = df1_big["0"] * 1e9
+        df1_big = df1_big.astype({"predicate": "int"})
 
-    df2_big = timeseries_of_size(memory * mem_mult)
+        df2_big = timeseries_of_size(
+            memory * mem_mult, dtypes={str(i): float for i in range(100)}
+        )  # 66.58 MiB partitions
 
-    # Control cardinality on column to join - this produces cardinality ~ to len(df)
-    df2_big["x2"] = df2_big["x"] * 1e9
-    df2_big = df2_big.astype({"x2": "int"})
+        # Control cardinality on column to join - this produces cardinality ~ to len(df)
+        df2_big["predicate"] = df2_big["0"] * 1e9
+        df2_big = df2_big.astype({"predicate": "int"})
 
-    dd.merge(df1_big, df2_big, on="x2", how="inner").compute()
+        join = dd.merge(df1_big, df2_big, on="predicate", how="inner")
+        result = join.size
+        wait(result, small_client, 20 * 60)
 
 
-@pytest.mark.parametrize("mem_mult", mem_mult)  # [0.1, 1, 10]
-def test_join_big_small(small_client, mem_mult):
-    memory = cluster_memory(small_client)  # 76.66 GiB
+@pytest.mark.parametrize("mem_mult, shuffle", params)
+def test_join_big_small(small_client, mem_mult, shuffle):
+    with dask.config.set(shuffle=shuffle):
+        memory = cluster_memory(small_client)  # 76.66 GiB
 
-    df_big = timeseries_of_size(memory * mem_mult)
+        df_big = timeseries_of_size(
+            memory * mem_mult, dtypes={str(i): float for i in range(100)}
+        )  # 66.58 MiB partitions
 
-    # Control cardinality on column to join - this produces cardinality ~ to len(df)
-    df_big["x2"] = df_big["x"] * 1e9
-    df_big = df_big.astype({"x2": "int"})
+        # Control cardinality on column to join - this produces cardinality ~ to len(df)
+        df_big["predicate"] = df_big["0"] * 1e9
+        df_big = df_big.astype({"predicate": "int"})
 
-    df_small = timeseries_of_size("50 MB")  # make it obviously small
+        df_small = timeseries_of_size(
+            "100 MB", dtypes={str(i): float for i in range(100)}
+        )  # make it obviously small
 
-    df_small["x2"] = df_small["x"] * 1e9
-    df_small_pd = df_small.astype({"x2": "int"}).compute()
+        df_small["predicate"] = df_small["0"] * 1e9
+        df_small_pd = df_small.astype({"predicate": "int"}).compute()
 
-    dd.merge(df_big, df_small_pd, on="x2", how="inner").compute()
+        join = dd.merge(df_big, df_small_pd, on="predicate", how="inner")
+        result = join.size
+        wait(result, small_client, 20 * 60)

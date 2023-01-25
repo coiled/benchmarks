@@ -21,9 +21,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
       - name: Install Python
         uses: actions/setup-python@v4
@@ -59,12 +57,11 @@ jobs:
         pytest_args: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).pytest_args }}
         runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
         repeat: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).repeat }}
+        h2o_datasets: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).h2o_datasets }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
@@ -103,6 +100,7 @@ jobs:
           BENCHMARK: true
           CLUSTER_DUMP: always
           CLUSTER_KWARGS: AB_environments/${{ matrix.runtime-version }}.cluster.yaml
+          H2O_DATASETS: ${{ matrix.h2o_datasets }}
         run: bash ci/scripts/run_tests.sh ${{ matrix.pytest_args }}
 
       - name: Dump coiled.Cluster kwargs
@@ -127,7 +125,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Python
         uses: actions/setup-python@v4
@@ -161,9 +159,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
       - name: Download artifacts
         uses: actions/download-artifact@v3

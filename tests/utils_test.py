@@ -15,7 +15,7 @@ from dask.utils import format_bytes, parse_bytes
 
 
 def scaled_array_shape(
-    target_nbytes: int | str,
+    target_nbytes: float | str,
     shape: tuple[int | str, ...],
     *,
     dtype: np.dtype | type = np.dtype(float),
@@ -38,8 +38,7 @@ def scaled_array_shape(
     >>> scaled_array_shape("10kb", ("x", "1kb"), dtype=bool)
     (10, 1000)
     """
-    if isinstance(target_nbytes, str):
-        target_nbytes = parse_bytes(target_nbytes)
+    target_nbytes = parse_bytes(target_nbytes)
 
     dtype = np.dtype(dtype)
     # Given a shape like:
@@ -79,15 +78,21 @@ def scaled_array_shape(
     final = tuple(s for s in resolved_shape if s is not None)
     assert len(final) == len(resolved_shape), resolved_shape
 
-    actual_nbytes = np.prod(final) * dtype.itemsize
+    actual_nbytes = math.prod(final) * dtype.itemsize
     error = (actual_nbytes - target_nbytes) / actual_nbytes
-    assert abs(error) < max_error, (error, actual_nbytes, target_nbytes, final)
+    assert abs(error) < max_error, (
+        error,
+        actual_nbytes,
+        target_nbytes,
+        final,
+        dtype.itemsize,
+    )
     return final
 
 
 def scaled_array_shape_quadratic(
-    target_nbytes: int | str,
-    baseline_nbytes: int | str,
+    target_nbytes: float | str,
+    baseline_nbytes: float | str,
     shape: tuple[int | str, ...],
     *,
     dtype: np.dtype | type = np.dtype(float),
@@ -102,6 +107,18 @@ def scaled_array_shape_quadratic(
     baseline_nbytes = parse_bytes(baseline_nbytes)
     scaled_nbytes = int(baseline_nbytes * math.sqrt(target_nbytes / baseline_nbytes))
     return scaled_array_shape(scaled_nbytes, shape, dtype=dtype, max_error=max_error)
+
+
+def print_size_info(memory: int, target_nbytes: float, *arrs: da.Array) -> None:
+    print(
+        f"Cluster memory: {format_bytes(memory)}, "
+        f"target data size: {format_bytes(target_nbytes)}"
+    )
+    for i, arr in enumerate(arrs, 1):
+        print(
+            f"Input {i}: {format_bytes(arr.nbytes)} - {arr.npartitions} "
+            f"{format_bytes(arr.blocks[(0,) * arr.ndim].nbytes)} chunks"
+        )
 
 
 def wait(thing, client, timeout):
@@ -229,7 +246,12 @@ def ec2_instance_cpus(name: str) -> int:
     raise ValueError(f"Unknown instance type: {name}")
 
 
-def run_up_to_nthreads(cluster_name: str, nthreads_max: int, reason: str | None = None):
+def run_up_to_nthreads(
+    cluster_name: str,
+    nthreads_max: int,
+    reason: str | None = None,
+    as_decorator: bool = True,
+):
     from .conftest import load_cluster_kwargs
 
     cluster_kwargs = load_cluster_kwargs()[cluster_name]
@@ -240,6 +262,8 @@ def run_up_to_nthreads(cluster_name: str, nthreads_max: int, reason: str | None 
     instance_type = cluster_kwargs["worker_vm_types"][0]
     nthreads = nworkers * ec2_instance_cpus(instance_type)
 
-    return pytest.mark.skipif(
-        nthreads > nthreads_max, reason=reason or "cluster too large"
-    )
+    reason = reason or "cluster too large"
+    if as_decorator:
+        return pytest.mark.skipif(nthreads > nthreads_max, reason=reason)
+    elif nthreads > nthreads_max:
+        raise pytest.skip(reason)

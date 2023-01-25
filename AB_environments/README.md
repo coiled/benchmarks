@@ -112,8 +112,11 @@ automatically create a verbatim copy of AB_baseline and then compare the two in 
 tests. Set it to false to save some money if you are already confident that the 'repeat'
 setting is high enough.
 
-The file offers a `categories` list. These are the subdirectories of `tests/`
-which you wish to run.
+The file offers a `targets` list. These can be test directories, individual test files,
+or individual tests that you wish to run.
+
+`h2o_datasets` is a list of datasets to run through in
+`tests/benchmarks/test_h2o.py`. Refer to the file for the possible choices.
 
 Finally, the `max_parallel` setting lets you tweak maximum test parallelism, both in
 github actions and in pytest-xdist. Reducing parallelism is useful when testing on very
@@ -122,11 +125,10 @@ time).
 
 
 ### 5. (optional) Tweak tests
-Nothing prevents you from changing the tests themselves.
+Nothing prevents you from changing the tests themselves; for example, you may be
+interested in some specific test, but on double the regular size, half the chunk size,
+etc.
 
-For example, you may be interested in a single test, but you don't want to run its
-whole category; all you need to do is open the test files and delete what you don't care
-about.
 
 ### Complete example
 You want to test the impact of disabling work stealing. You'll create at least 4 files:
@@ -156,10 +158,12 @@ distributed:
 ```yaml
 repeat: 5
 test_null_hypothesis: true
-categories:
-  - runtime
-  - benchmarks
-  - stability
+targets:
+  - tests/runtime
+  - tests/benchmarks
+  - tests/stability
+h2o_datasets:
+  - 5 GB (parquet+pyarrow)
 max_parallel:
   ci_jobs: 5
   pytest_workers_per_job: 4
