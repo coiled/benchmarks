@@ -84,7 +84,11 @@ def get_coiled_runtime_version():
 
 
 dask.config.set(
-    {"coiled.account": "dask-engineering", "dataframe.nullable_backend": "pyarrow"}
+    {
+        "coiled.account": "dask-engineering",
+        "dataframe.nullable_dtypes": True,
+        "dataframe.dtype_backend": "pyarrow",
+    }
 )
 
 COILED_RUNTIME_VERSION = get_coiled_runtime_version()

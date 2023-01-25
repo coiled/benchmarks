@@ -45,7 +45,7 @@ def main():
             {
                 "pip": [
                     "git+https://github.com/dask/distributed@main",
-                    "git+https://github.com/jrbourbeau/dask@pyarrow-use-nullable-dtypes",
+                    "git+https://github.com/jrbourbeau/dask@nullable-config",
                 ]
             }
         )

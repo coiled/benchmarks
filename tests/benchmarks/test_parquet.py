@@ -50,7 +50,6 @@ def test_read_spark_generated_data(parquet_client):
         "s3://coiled-runtime-ci/thousandgenomes_dagen/NA21**.parquet",
         engine="pyarrow",
         index="sample_id",
-        use_nullable_dtypes=True,
     )
     ddf.groupby(ddf.index).first().compute()
 
@@ -66,7 +65,6 @@ def test_read_hive_partitioned_data(parquet_client):
     ddf = dd.read_parquet(
         "s3://coiled-runtime-ci/ookla-open-data/type=fixed/**.parquet",
         engine="pyarrow",
-        use_nullable_dtypes=True,
     )
 
     ddf.groupby(["year", "quarter"]).first().compute()
@@ -110,6 +108,4 @@ def test_download_throughput(parquet_client, kind):
             parquet_client.submit(pandas.read_parquet, path, engine="pyarrow")
         )
     elif kind == "dask":
-        distributed.wait(
-            dd.read_parquet(path, engine="pyarrow", use_nullable_dtypes=True).persist()
-        )
+        distributed.wait(dd.read_parquet(path, engine="pyarrow").persist())
