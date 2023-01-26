@@ -49,6 +49,8 @@ requirements:
     - xgboost ==1.7.1
     - dask-ml ==2022.5.27
     - openssl >1.1.0g
+    - optuna ==3.1.0
+    - scipy ==1.10.0
     - pynvml ==11.4.1
     - bokeh ==2.4.3
 

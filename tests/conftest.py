@@ -15,12 +15,13 @@ from functools import lru_cache
 import dask
 import distributed
 import filelock
+import pandas
 import pytest
 import s3fs
 import sqlalchemy
 import yaml
 from coiled import Cluster
-from distributed import Client
+from distributed import Client, WorkerPlugin
 from distributed.diagnostics.memory_sampler import MemorySampler
 from distributed.scheduler import logger as scheduler_logger
 from packaging.version import Version
@@ -632,3 +633,30 @@ def shuffle(request):
 def configure_shuffling(shuffle):
     with dask.config.set(shuffle=shuffle):
         yield
+
+
+@pytest.fixture
+def read_parquet_with_pyarrow():
+    """Force dask.dataframe.read_parquet() to return strings with dtype=string[pyarrow]
+    FIXME https://github.com/dask/dask/issues/9840
+    """
+    client = distributed.get_client()
+
+    # Set option on the workers
+    class SetPandasStringsToPyArrow(WorkerPlugin):
+        name = "set_pandas_strings_to_pyarrow"
+
+        def setup(self, worker):
+            pandas.set_option("string_storage", "pyarrow")
+
+    client.register_worker_plugin(SetPandasStringsToPyArrow())
+
+    # Set option on the client
+    bak = pandas.get_option("string_storage")
+    pandas.set_option("string_storage", "pyarrow")
+
+    yield
+
+    pandas.set_option("string_storage", bak)
+    # Workers will lose the setting at the next call to client.restart()
+    client.unregister_worker_plugin("set_pandas_strings_to_pyarrow")
