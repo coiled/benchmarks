@@ -10,6 +10,7 @@ import pathlib
 from collections.abc import Callable
 from textwrap import dedent
 from typing import Any, Literal, NamedTuple
+from urllib.parse import quote
 
 import altair
 import numpy
@@ -36,7 +37,7 @@ SPECS = [
     ChartSpec("average_memory", "Average Memory", "(GiB)", 2**30),
     ChartSpec("peak_memory", "Peak Memory", "(GiB)", 2**30),
 ]
-
+PROMETHEUS_DATASOURCE = "AWS Prometheus - Sandbox (us east 2)"
 
 source: dict[str, str] = {}
 
@@ -595,7 +596,8 @@ def make_details_html_report(
             end_ts = int((row["end"] + ts_padding).timestamp() * 1000)
             row["grafana_url"] = (
                 "https://grafana.dev-sandbox.coiledhq.com/d/eU1bT-nVz/cluster-metrics-prometheus"
-                f"?from={start_ts}&to={end_ts}&var-cluster={cluster_name}"
+                f"?var-datasource={quote(PROMETHEUS_DATASOURCE)}"
+                f"&from={start_ts}&to={end_ts}&var-cluster={cluster_name}"
             )
         else:
             row["grafana_url"] = None
