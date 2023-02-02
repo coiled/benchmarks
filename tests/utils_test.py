@@ -109,6 +109,50 @@ def scaled_array_shape_quadratic(
     return scaled_array_shape(scaled_nbytes, shape, dtype=dtype, max_error=max_error)
 
 
+def downscale_dataframe(ddf: dd.DataFrame, target_memory: float | str) -> dd.DataFrame:
+    """Dynamically reduce the size of a dask DataFrame depending on how much RAM is
+    available on the cluster.
+
+    Parameters
+    ----------
+    ddf: dask.dataframe.DataFrame
+        Input dataframe, typically just loaded from s3
+    target_memory: float | str
+        Minimum size of the cluster that would not require downscaling
+
+    If the cluster mounts less than the target memory, pick a random subset of the
+    input partitions and forget about the rest. If this call is immediately after
+    read_parquet() / read_csv(), the remaining partitions will never leave the disk.
+
+    This is similar to writing:
+    >>> available_memory = cluster_memory(distributed.get_client())
+    >>> scale = min(1.0, available_memory / target_memory)
+    >>> ddf, _ = ddf.random_split([scale, 1 - scale])
+
+    but instead of reading everything from disk, it only reads selected partitions.
+    This works well as long as
+    1. all partitions are roughly the same size, and
+    2. data is uniformely spread across partitions.
+
+    Note that the latter would likely be a very big and unpalatable assumption in a data
+    science context; here it's OK because we're focusing on performance testing.
+    """
+    target_memory = parse_bytes(target_memory)
+
+    client = distributed.get_client()
+    memory = cluster_memory(client)
+    npartitions = ddf.npartitions * memory // target_memory
+    if npartitions >= ddf.npartitions:
+        return ddf
+
+    # Fixed random seed is important to avoid unpredictable behaviour when the input
+    # partitions are not the same size: if you run twice using the same cluster size,
+    # you'll get exactly the same partitions.
+    rng = np.random.RandomState(0)
+    idx = rng.choice(np.arange(ddf.npartitions), npartitions, replace=False)
+    return ddf.partitions[idx]
+
+
 def print_size_info(memory: int, target_nbytes: float, *arrs: da.Array) -> None:
     print(
         f"Cluster memory: {format_bytes(memory)}, "
