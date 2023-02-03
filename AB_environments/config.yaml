@@ -2,7 +2,7 @@
 # Lower values are faster and cheaper but will result in higher variance.
 # This must remain set to 0 in the main branch, thus completely disabling
 # A/B tests, in order to avoid unnecessary runs.
-repeat: 1
+repeat: 5
 
 # Set to true to automatically create a verbatim copy of AB_baseline and then compare
 # the two in the A/B tests. Set to false to save some money if you are already confident
@@ -11,7 +11,10 @@ test_null_hypothesis: true
 
 # Test directories, test files, or individual tests to run.
 targets:
-  - tests/benchmarks
+  - tests/benchmarks/test_dataframe.py
+  - tests/benchmarks/test_h20.py
+  - tests/benchmarks/test_join.py
+  - tests/benchmarks/test_xgboost.py
   # - tests/runtime
   # - tests/stability
   # - tests/benchmarks/test_futures.py
