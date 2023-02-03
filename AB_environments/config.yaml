@@ -12,7 +12,7 @@ test_null_hypothesis: true
 # Test directories, test files, or individual tests to run.
 targets:
   - tests/benchmarks/test_dataframe.py
-  - tests/benchmarks/test_h20.py
+  - tests/benchmarks/test_h2o.py
   - tests/benchmarks/test_join.py
   - tests/benchmarks/test_xgboost.py
   # - tests/runtime
