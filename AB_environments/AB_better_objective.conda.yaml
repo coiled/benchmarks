@@ -14,4 +14,4 @@ dependencies:
     - coiled-runtime=0.2.1
     - pip:
       - dask==2022.12.0
-      - distributed==2022.12.0
+      - git+https://github.com/fjetter/distributed@00edbc883e6d8290dfd8a6e0dbac2ac261eacc5e

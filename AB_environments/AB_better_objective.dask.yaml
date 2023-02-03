@@ -8,6 +8,6 @@
 
 # Leave empty if you don't want to override anything.
 
-# distributed:
-#   scheduler:
-#     worker-saturation: 1.2
+distributed:
+  scheduler:
+    worker-saturation: inf
