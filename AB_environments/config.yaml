@@ -15,6 +15,7 @@ targets:
   - tests/benchmarks/test_h2o.py
   - tests/benchmarks/test_join.py
   - tests/benchmarks/test_xgboost.py
+  - tests/benchmarks/test_array.py
   # - tests/runtime
   # - tests/stability
   # - tests/benchmarks/test_futures.py
