@@ -10,3 +10,5 @@ dependencies:
   - sqlalchemy
   - alembic
   - filelock
+  - cftime
+  - conda

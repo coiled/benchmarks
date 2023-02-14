@@ -1,25 +1,29 @@
 from __future__ import annotations
 
+import math
+
 import dask
 import dask.array as da
 import dask.dataframe as dd
 import distributed
 import numpy as np
 import pandas as pd
+import pytest
 from dask.datasets import timeseries
 from dask.sizeof import sizeof
 from dask.utils import format_bytes, parse_bytes
 
 
 def scaled_array_shape(
-    target_nbytes: int | str,
+    target_nbytes: float | str,
     shape: tuple[int | str, ...],
     *,
     dtype: np.dtype | type = np.dtype(float),
     max_error: float = 0.1,
 ) -> tuple[int, ...]:
     """
-    Given a shape with free variables in it, generate the shape that results in the target array size.
+    Given a shape with free variables in it, generate the shape that results in the
+    target array size.
 
     Example
     -------
@@ -34,8 +38,7 @@ def scaled_array_shape(
     >>> scaled_array_shape("10kb", ("x", "1kb"), dtype=bool)
     (10, 1000)
     """
-    if isinstance(target_nbytes, str):
-        target_nbytes = parse_bytes(target_nbytes)
+    target_nbytes = parse_bytes(target_nbytes)
 
     dtype = np.dtype(dtype)
     # Given a shape like:
@@ -75,10 +78,91 @@ def scaled_array_shape(
     final = tuple(s for s in resolved_shape if s is not None)
     assert len(final) == len(resolved_shape), resolved_shape
 
-    actual_nbytes = np.prod(final) * dtype.itemsize
+    actual_nbytes = math.prod(final) * dtype.itemsize
     error = (actual_nbytes - target_nbytes) / actual_nbytes
-    assert abs(error) < max_error, (error, actual_nbytes, target_nbytes, final)
+    assert abs(error) < max_error, (
+        error,
+        actual_nbytes,
+        target_nbytes,
+        final,
+        dtype.itemsize,
+    )
     return final
+
+
+def scaled_array_shape_quadratic(
+    target_nbytes: float | str,
+    baseline_nbytes: float | str,
+    shape: tuple[int | str, ...],
+    *,
+    dtype: np.dtype | type = np.dtype(float),
+    max_error: float = 0.1,
+) -> tuple[int, ...]:
+    """Variant of `scaled_array_shape` for algorithms that scale quadratically with the
+    amount of data. This function automatically reduces `target_nbytes` when larger than
+    baseline_nbytes, and increases it when smaller, in order to keep a constant-ish
+    runtime.
+    """
+    target_nbytes = parse_bytes(target_nbytes)
+    baseline_nbytes = parse_bytes(baseline_nbytes)
+    scaled_nbytes = int(baseline_nbytes * math.sqrt(target_nbytes / baseline_nbytes))
+    return scaled_array_shape(scaled_nbytes, shape, dtype=dtype, max_error=max_error)
+
+
+def downscale_dataframe(ddf: dd.DataFrame, target_memory: float | str) -> dd.DataFrame:
+    """Dynamically reduce the size of a dask DataFrame depending on how much RAM is
+    available on the cluster.
+
+    Parameters
+    ----------
+    ddf: dask.dataframe.DataFrame
+        Input dataframe, typically just loaded from s3
+    target_memory: float | str
+        Minimum size of the cluster that would not require downscaling
+
+    If the cluster mounts less than the target memory, pick a random subset of the
+    input partitions and forget about the rest. If this call is immediately after
+    read_parquet() / read_csv(), the remaining partitions will never leave the disk.
+
+    This is similar to writing:
+    >>> available_memory = cluster_memory(distributed.get_client())
+    >>> scale = min(1.0, available_memory / target_memory)
+    >>> ddf, _ = ddf.random_split([scale, 1 - scale])
+
+    but instead of reading everything from disk, it only reads selected partitions.
+    This works well as long as
+    1. all partitions are roughly the same size, and
+    2. data is uniformely spread across partitions.
+
+    Note that the latter would likely be a very big and unpalatable assumption in a data
+    science context; here it's OK because we're focusing on performance testing.
+    """
+    target_memory = parse_bytes(target_memory)
+
+    client = distributed.get_client()
+    memory = cluster_memory(client)
+    npartitions = ddf.npartitions * memory // target_memory
+    if npartitions >= ddf.npartitions:
+        return ddf
+
+    # Fixed random seed is important to avoid unpredictable behaviour when the input
+    # partitions are not the same size: if you run twice using the same cluster size,
+    # you'll get exactly the same partitions.
+    rng = np.random.RandomState(0)
+    idx = rng.choice(np.arange(ddf.npartitions), npartitions, replace=False)
+    return ddf.partitions[idx]
+
+
+def print_size_info(memory: int, target_nbytes: float, *arrs: da.Array) -> None:
+    print(
+        f"Cluster memory: {format_bytes(memory)}, "
+        f"target data size: {format_bytes(target_nbytes)}"
+    )
+    for i, arr in enumerate(arrs, 1):
+        print(
+            f"Input {i}: {format_bytes(arr.nbytes)} - {arr.npartitions} "
+            f"{format_bytes(arr.blocks[(0,) * arr.ndim].nbytes)} chunks"
+        )
 
 
 def wait(thing, client, timeout):
@@ -94,7 +178,7 @@ def wait(thing, client, timeout):
 
 
 def cluster_memory(client: distributed.Client) -> int:
-    "Total memory available on the cluster, in bytes"
+    """Total memory available on the cluster, in bytes"""
     return int(
         sum(w["memory_limit"] for w in client.scheduler_info()["workers"].values())
     )
@@ -187,3 +271,43 @@ def arr_to_devnull(arr: da.Array) -> dask.delayed:
 
     # TODO `da.store` should use blockwise to be much more efficient https://github.com/dask/dask/issues/9381
     return da.store(arr, _DevNull(), lock=False, compute=False)
+
+
+def ec2_instance_cpus(name: str) -> int:
+    kind, _, size = name.partition(".")
+
+    if size == "large":
+        return 2
+    if size == "xlarge":
+        return 4
+    if size.endswith("xlarge"):
+        return int(size[len("xlarge") :]) * 4
+
+    # nano, micro, small, and medium instances are probably uninteresting for dask.
+    # metal is interesting, but every architecture has its own number of cores and it
+    # would be too much of an effort to hardcode them all here.
+
+    raise ValueError(f"Unknown instance type: {name}")
+
+
+def run_up_to_nthreads(
+    cluster_name: str,
+    nthreads_max: int,
+    reason: str | None = None,
+    as_decorator: bool = True,
+):
+    from .conftest import load_cluster_kwargs
+
+    cluster_kwargs = load_cluster_kwargs()[cluster_name]
+    nworkers = cluster_kwargs["n_workers"]
+    # This does not consider that there may be a fallback to smaller/larger workers.
+    # It doesn't really make sense to have fallbacks in case of performance benchmarks
+    # anyway.
+    instance_type = cluster_kwargs["worker_vm_types"][0]
+    nthreads = nworkers * ec2_instance_cpus(instance_type)
+
+    reason = reason or "cluster too large"
+    if as_decorator:
+        return pytest.mark.skipif(nthreads > nthreads_max, reason=reason)
+    elif nthreads > nthreads_max:
+        raise pytest.skip(reason)

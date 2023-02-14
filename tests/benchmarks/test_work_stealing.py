@@ -10,7 +10,10 @@ from distributed import Client
 from packaging.version import Version
 from tornado.ioloop import PeriodicCallback
 
+from ..utils_test import run_up_to_nthreads
 
+
+@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 def test_trivial_workload_should_not_cause_work_stealing(small_client):
     root = delayed(lambda n: "x" * n)(utils.parse_bytes("1MiB"), dask_key_name="root")
     results = [delayed(lambda *args: None)(root, i) for i in range(10000)]
@@ -18,26 +21,29 @@ def test_trivial_workload_should_not_cause_work_stealing(small_client):
     small_client.gather(futs)
 
 
+@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 @pytest.mark.xfail(
     Version(distributed.__version__) < Version("2022.6.1"),
     reason="https://github.com/dask/distributed/issues/6624",
 )
 def test_work_stealing_on_scaling_up(
-    test_name_uuid, upload_cluster_dump, benchmark_all, dask_env_variables
+    test_name_uuid,
+    upload_cluster_dump,
+    benchmark_all,
+    cluster_kwargs,
+    dask_env_variables,
+    gitlab_cluster_tags,
 ):
     with Cluster(
         name=test_name_uuid,
-        n_workers=1,
-        worker_vm_types=["t3.medium"],
-        scheduler_vm_types=["t3.xlarge"],
-        wait_for_workers=True,
-        package_sync=True,
         environ=dask_env_variables,
+        tags=gitlab_cluster_tags,
+        **cluster_kwargs["test_work_stealing_on_scaling_up"],
     ) as cluster:
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103
             client.wait_for_workers(1)
-            with upload_cluster_dump(client, cluster), benchmark_all(client):
+            with upload_cluster_dump(client), benchmark_all(client):
                 # Slow task.
                 def func1(chunk):
                     if sum(chunk.shape) != 0:  # Make initialization fast
@@ -65,6 +71,7 @@ def test_work_stealing_on_scaling_up(
                 _ = future.result()
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed dataset")
 def test_work_stealing_on_inhomogeneous_workload(small_client):
     np.random.seed(42)
     delays = np.random.lognormal(1, 1.3, 500)
@@ -79,21 +86,26 @@ def test_work_stealing_on_inhomogeneous_workload(small_client):
     small_client.gather(futs)
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed dataset")
 def test_work_stealing_on_straggling_worker(
-    test_name_uuid, upload_cluster_dump, benchmark_all, dask_env_variables
+    test_name_uuid,
+    upload_cluster_dump,
+    benchmark_all,
+    cluster_kwargs,
+    dask_env_variables,
+    gitlab_cluster_tags,
 ):
+    kwargs = cluster_kwargs["test_work_stealing_on_straggling_worker"]
     with Cluster(
         name=test_name_uuid,
-        n_workers=10,
-        worker_vm_types=["t3.medium"],
-        scheduler_vm_types=["t3.xlarge"],
-        wait_for_workers=True,
         environ=dask_env_variables,
+        tags=gitlab_cluster_tags,
+        **kwargs,
     ) as cluster:
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103
-            client.wait_for_workers(10)
-            with upload_cluster_dump(client, cluster), benchmark_all(client):
+            client.wait_for_workers(kwargs["n_workers"])
+            with upload_cluster_dump(client), benchmark_all(client):
 
                 def clog():
                     time.sleep(1)

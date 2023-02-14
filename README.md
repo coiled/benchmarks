@@ -105,7 +105,7 @@ We use `alembic` to manage SQLAlchemy migrations.
 In the simple case of simply adding or removing a column to the schema, you can do the following:
 
 ```bash
-# First, edit the `benchmark_schema.py`
+# First, edit the `benchmark_schema.py` and commit the changes.
 
 alembic revision --autogenerate -m "Description of migration"
 git add alembic/versions/name_of_new_migration.py
@@ -140,12 +140,11 @@ The most relevant ones are summarized here:
 
 **`benchmark_task_durations`**: Record time spent computing, transferring data, spilling to disk, and deserializing data.
 
+**`get_cluster_info`**: Record cluster id, name, etc.
+
 **`benchmark_all`**: Record all available metrics.
 
 For more information on all available fixtures and examples on how to use them, please refer to their documentation.
-
-**`benchmark_all`**: This convenience fixture yields a context manager which takes a distributed `Client` object,
-and combines `benchmark_time`, `benchmark_task_durations`, and `benchmark_memory` into a single fixture.
 
 Writing a new benchmark fixture would generally look like:
 1. Requesting the `test_run_benchmark` fixture, which yields an ORM object.
@@ -156,6 +155,78 @@ Writing a new benchmark fixture would generally look like:
 
 The `benchmark_time` fixture provides a fairly simple example.
 
+## Investigating performance regressions
+
+It is not always obvious what the cause of a seeming performance regression is.
+It could be due to a new version of a direct or transitive dependency,
+and it could be due to a change in the Coiled platform.
+But often it is due to a change in `dask` or `distributed`.
+If you suspect that is the case, Coiled's `package_sync` feature combines well with the benchmarking infrastructure here and `git bisect`.
+
+The following is an example workflow which could be used to identify a specific commit in `dask` which introduced a performance regression.
+This workflow presumes you have two terminal windows open, one with the `coiled-runtime` test suite,
+and one with a `dask` repository with which to drive bisecting.
+
+#### Create your software environment
+
+You should create a software environment which can run this test suite, but with an editable install of `dask`.
+You can do this in any of a number of ways, but one approach coule be
+```bash
+conda env create -n test-env --file ci/environment.yml  # Create a test environment
+conda activate test-env  # Activate your test environment
+pip install .  # Install the `coiled-runtime` metapackage dependencies.
+(cd <your-dask-dir> && pip install -e .)  # Do an editable install for dask
+```
+
+#### Start bisecting
+
+Let's say the current `HEAD` of `dask` is known to be bad, and `$REF` is known to be good. If you are looking at an upstream run where you have access to the static page, you can check the dates reported for each run and do a `git log` with the corresponding dates to get a list of commits to use in the bisecting process.
+
+`git log --since='2022-08-15 14:15' --until='2022-08-18 14:15' --pretty=oneline`
+In the terminal opened to your dask repository you can initialize a bisect workflow with
+
+```bash
+cd <your-dask-dir>
+git bisect start
+git bisect bad
+git bisect good $REF
+```
+
+#### Test for regressions
+
+Now that your editable install is bisecting, run a test or subset of tests which demonstrate the regression in your `coiled-runtime` terminal.
+Presume that `tests/benchmarks/test_parquet.py::test_write_wide_data` is such a test:
+
+```bash
+pytest tests/benchmarks/test_parquet.py::test_write_wide_data --benchmark
+```
+
+Once the test is done, it will have written a new entry to a local sqlite file `benchmark.db`.
+You will want to check whether that entry displays the regression.
+Exactly what that check will look like will depend on the test and the regression.
+You might have a script that builds a chart from `benchmark.db` similar to `dashboard.py`,
+or a script that performs some kind of statistical analysis.
+But let's assume a simpler case where you can recognize it from the `average_memory`.
+You can query that with
+
+```bash
+sqlite3 benchmark.db "select dask_version, average_memory from test_run where name = 'test_write_wide_data';"
+```
+
+If the last entry displays the regression, mark the commit in your dask terminal as `bad`:
+
+```bash
+git bisect bad
+```
+
+If the last entry doesn't display the regression, mark the commit in your dask terminal as `good`:
+
+```bash
+git bisect good
+```
+
+Proceed with this process until you have narrowed it down to a single commit.
+Congratulations! You've identified the source of your regression.
 
 ## A/B testing
 

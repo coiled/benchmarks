@@ -9,34 +9,34 @@ import distributed
 import fsspec
 import pandas
 import pytest
-from coiled.v2 import Cluster
+from coiled import Cluster
 
-N_WORKERS = 15
+from ..utils_test import run_up_to_nthreads
 
 
 @pytest.fixture(scope="module")
-def parquet_cluster(dask_env_variables):
+def parquet_cluster(dask_env_variables, cluster_kwargs, gitlab_cluster_tags):
     with Cluster(
         f"parquet-{uuid.uuid4().hex[:8]}",
-        n_workers=N_WORKERS,
-        worker_vm_types=["m5.xlarge"],
-        scheduler_vm_types=["m5.xlarge"],
-        package_sync=True,
         environ=dask_env_variables,
+        tags=gitlab_cluster_tags,
+        **cluster_kwargs["parquet_cluster"],
     ) as cluster:
         yield cluster
 
 
 @pytest.fixture
-def parquet_client(parquet_cluster, upload_cluster_dump, benchmark_all):
+def parquet_client(parquet_cluster, cluster_kwargs, upload_cluster_dump, benchmark_all):
+    n_workers = cluster_kwargs["parquet_cluster"]["n_workers"]
     with distributed.Client(parquet_cluster) as client:
-        parquet_cluster.scale(N_WORKERS)
-        client.wait_for_workers(N_WORKERS)
+        parquet_cluster.scale(n_workers)
+        client.wait_for_workers(n_workers)
         client.restart()
-        with upload_cluster_dump(client, parquet_cluster), benchmark_all(client):
+        with upload_cluster_dump(client), benchmark_all(client):
             yield client
 
 
+@run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
 def test_read_spark_generated_data(parquet_client):
     """
     Read a ~15 GB subset of a ~800 GB spark-generated
@@ -54,6 +54,7 @@ def test_read_spark_generated_data(parquet_client):
     ddf.groupby(ddf.index).first().compute()
 
 
+@run_up_to_nthreads("parquet_cluster", 50, reason="fixed dataset")
 def test_read_hive_partitioned_data(parquet_client):
     """
     Read a dataset partitioned by year and quarter.
@@ -69,6 +70,7 @@ def test_read_hive_partitioned_data(parquet_client):
     ddf.groupby(["year", "quarter"]).first().compute()
 
 
+@run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
 def test_write_wide_data(parquet_client, s3_url):
     # Write a ~700 partition, ~200 GB dataset with a lot of columns
     ddf = dask.datasets.timeseries(
@@ -86,6 +88,7 @@ def test_write_wide_data(parquet_client, s3_url):
     ddf.to_parquet(s3_url + "/wide-data/")
 
 
+@run_up_to_nthreads("parquet_cluster", 50, reason="fixed dataset")
 @pytest.mark.parametrize("kind", ("s3fs", "pandas", "dask"))
 def test_download_throughput(parquet_client, kind):
     # Test throughput for downloading and parsing a ~500 MB file

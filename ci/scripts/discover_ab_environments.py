@@ -12,7 +12,19 @@ class JSONOutput(TypedDict):
     run_AB: bool
     repeat: list[int]
     runtime: list[str]
+    max_parallel: int
     pytest_args: list[str]
+    h2o_datasets: list[str]
+
+
+DO_NOT_RUN: JSONOutput = {
+    "run_AB": False,
+    "repeat": [],
+    "runtime": [],
+    "max_parallel": 1,
+    "pytest_args": [],
+    "h2o_datasets": [],
+}
 
 
 def build_json() -> JSONOutput:
@@ -21,12 +33,13 @@ def build_json() -> JSONOutput:
 
     if not isinstance(cfg.get("repeat"), int) or cfg["repeat"] < 0:
         raise ValueError("AB_environments/config.yaml: missing key {repeat: N}")
-    for category in cfg["categories"]:
-        if not glob.glob(f"tests/{category}/test_*.py"):
-            raise ValueError("fNot a valid test category: {category}")
+    for target in cfg["targets"]:
+        target = target.split("::")[0]
+        if not os.path.exists(target):
+            raise FileNotFoundError(target)
 
-    if not cfg["repeat"] or not cfg["categories"]:
-        return {"run_AB": False, "repeat": [], "runtime": [], "pytest_args": []}
+    if not cfg["repeat"] or not cfg["targets"]:
+        return DO_NOT_RUN
 
     runtimes = []
     for conda_fname in sorted(glob.glob("AB_environments/AB_*.conda.yaml")):
@@ -37,7 +50,7 @@ def build_json() -> JSONOutput:
         runtimes.append(env_name)
 
     if not runtimes:
-        return {"run_AB": False, "repeat": [], "runtime": [], "pytest_args": []}
+        return DO_NOT_RUN
 
     if "AB_baseline" not in runtimes:
         # If any A/B environments are defined, AB_baseline is required
@@ -46,11 +59,16 @@ def build_json() -> JSONOutput:
     if cfg["test_null_hypothesis"]:
         runtimes += ["AB_null_hypothesis"]
 
+    n = cfg["max_parallel"]["pytest_workers_per_job"]
+    xdist_args = f"-n {n} --dist loadscope " if n > 1 else ""
+
     return {
         "run_AB": True,
         "repeat": list(range(1, cfg["repeat"] + 1)),
         "runtime": runtimes,
-        "pytest_args": [" ".join(f"tests/{c}" for c in cfg["categories"])],
+        "max_parallel": cfg["max_parallel"]["ci_jobs"],
+        "pytest_args": [xdist_args + " ".join(cfg["targets"])],
+        "h2o_datasets": [",".join(cfg["h2o_datasets"])],
     }
 
 

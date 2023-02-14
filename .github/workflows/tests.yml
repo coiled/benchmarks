@@ -31,58 +31,48 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
-        pytest_args: [tests/benchmarks/test_dataframe.py]
-        runtime-version: [upstream, latest, "0.0.4", "0.1.0"]
-        # include:
-        #   # Run stability tests on Python 3.8
-        #   - pytest_args: tests/stability
-        #     python-version: "3.8"
-        #     runtime-version: upstream
-        #     os: ubuntu-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.8"
-        #     runtime-version: latest
-        #     os: ubuntu-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.8"
-        #     runtime-version: "0.0.4"
-        #     os: ubuntu-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.8"
-        #     runtime-version: "0.1.0"
-        #     os: ubuntu-latest
-        #   # Run stability tests on Python 3.10
-        #   - pytest_args: tests/stability
-        #     python-version: "3.10"
-        #     runtime-version: upstream
-        #     os: ubuntu-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.10"
-        #     runtime-version: latest
-        #     os: ubuntu-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.10"
-        #     runtime-version: "0.0.4"
-        #     os: ubuntu-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.10"
-        #     runtime-version: "0.1.0"
-        #     os: ubuntu-latest
-        #   # Run stability tests on Python Windows and MacOS (latest py39 only)
-        #   - pytest_args: tests/stability
-        #     python-version: "3.9"
-        #     runtime-version: latest
-        #     os: windows-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.9"
-        #     runtime-version: latest
-        #     os: macos-latest
+        pytest_args: [tests]
+        runtime-version: [upstream, latest, "0.2.1"]
+        include:
+          # Run stability tests on Python 3.8
+          - pytest_args: tests/stability
+            python-version: "3.8"
+            runtime-version: upstream
+            os: ubuntu-latest
+          - pytest_args: tests/stability
+            python-version: "3.8"
+            runtime-version: latest
+            os: ubuntu-latest
+          - pytest_args: tests/stability
+            python-version: "3.8"
+            runtime-version: "0.2.1"
+            os: ubuntu-latest
+          # Run stability tests on Python 3.10
+          - pytest_args: tests/stability
+            python-version: "3.10"
+            runtime-version: upstream
+            os: ubuntu-latest
+          - pytest_args: tests/stability
+            python-version: "3.10"
+            runtime-version: latest
+            os: ubuntu-latest
+          - pytest_args: tests/stability
+            python-version: "3.10"
+            runtime-version: "0.2.1"
+            os: ubuntu-latest
+          # Run stability tests on Python Windows and MacOS (latest py39 only)
+          - pytest_args: tests/stability
+            python-version: "3.9"
+            runtime-version: latest
+            os: windows-latest
+          - pytest_args: tests/stability
+            python-version: "3.9"
+            runtime-version: latest
+            os: macos-latest
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
@@ -109,8 +99,11 @@ jobs:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
           BENCHMARK: true
-          CLUSTER_DUMP: true
-        run: bash ci/scripts/run_tests.sh ${{ matrix.pytest_args }}
+          CLUSTER_DUMP: always
+        run: bash ci/scripts/run_tests.sh -n 4 --dist loadscope ${{ matrix.pytest_args }}
+
+      - name: Dump coiled.Cluster kwargs
+        run: cat cluster_kwargs.merged.yaml
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
@@ -131,7 +124,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Install Python
         uses: actions/setup-python@v4
@@ -177,16 +170,15 @@ jobs:
           path: benchmark.db
 
   regressions:
-    needs: process-results
+    needs: [tests, process-results]
     # Always check for regressions, as this can be skipped even if an indirect dependency fails (like a test run)
-    if: always()
+    # Not running regressions when tests are cancelled, and on PRs because of volatility of single runs
+    if: always() && github.event_name != 'pull_request' && needs.tests.result != 'cancelled'
     name: Detect regressions
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
       - uses: actions/download-artifact@v3
         with:
@@ -208,7 +200,7 @@ jobs:
           fi
           echo "IS_PR=$IS_PR"
           python detect_regressions.py
-      
+
       - name: Create regressions summary
         if: always()
         run: |
@@ -221,14 +213,14 @@ jobs:
       always()
       && github.event_name != 'pull_request'
       && github.repository == 'coiled/coiled-runtime'
-      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure') 
+      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
 
     runs-on: ubuntu-latest
     defaults:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Report failures
         uses: actions/github-script@v3
         with:
@@ -252,9 +244,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
+        uses: actions/checkout@v3
 
       - name: Download tests database
         uses: actions/download-artifact@v3
@@ -270,7 +260,8 @@ jobs:
           environment-file: ci/environment-dashboard.yml
 
       - name: Generate dashboards
-        run: python dashboard.py -d benchmark.db -o static -b coiled-latest-py3.9 coiled-0.1.0-py3.9
+        # Show differences of upstream vs. latest unpublished vs. latest publshed
+        run: python dashboard.py -d benchmark.db -o static -b coiled-latest-py3.9 coiled-0.2.1-py3.9
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
