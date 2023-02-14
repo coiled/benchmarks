@@ -7,7 +7,6 @@ import sqlalchemy
 
 
 def detect_regressions(database_file, is_pr=False):
-
     engine = sqlalchemy.create_engine(f"sqlite:///{database_file}")
 
     # regression analysis only on tests that passed
@@ -82,7 +81,6 @@ def detect_regressions(database_file, is_pr=False):
                         )
 
                         if (df_test[metric].iloc[-n_last:] >= metric_threshold).all():
-
                             last_three = (
                                 df_test[metric].iloc[-1] * units_norm,
                                 df_test[metric].iloc[-2] * units_norm,
@@ -112,7 +110,6 @@ def detect_regressions(database_file, is_pr=False):
 
 
 def regressions_report(reg_df):
-
     # write reg_df to markdown for GHA summary
     cols_for_report = [
         "category",
@@ -134,7 +131,6 @@ def regressions_report(reg_df):
 
 
 if __name__ == "__main__":
-
     DB_FILE = pathlib.Path("./benchmark.db")
 
     IS_PR = strtobool(os.environ.get("IS_PR", "false"))
