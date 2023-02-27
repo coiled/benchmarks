@@ -1,0 +1,17 @@
+# Sample conda environment file for A/B testing.
+# Change contents/delete/rename as needed.
+
+# Every A/B environment *must* present these three files:
+# - AB_<name>.conda.yaml
+# - AB_<name>.dask.yaml
+# - AB_<name>.cluster.yaml
+
+# See notes in AB_baseline.conda.yaml
+channels:
+  - conda-forge
+dependencies:
+    - python=3.9
+    - coiled-runtime=0.2.1
+    - pip:
+      - dask==2023.2.1
+      - git+https://github.com/fjetter/distributed@p2p_offload_disk_read
