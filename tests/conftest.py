@@ -610,7 +610,7 @@ def upload_cluster_dump(
 
 
 # Include https://github.com/dask/distributed/pull/7410 for categorical support
-P2P_AVAILABLE = Version(distributed.__version__) > Version("2022.12.1")
+P2P_SHUFFLE_AVAILABLE = Version(distributed.__version__) > Version("2022.12.1")
 
 
 @pytest.fixture(
@@ -619,18 +619,43 @@ P2P_AVAILABLE = Version(distributed.__version__) > Version("2022.12.1")
         pytest.param(
             "p2p",
             marks=pytest.mark.skipif(
-                not P2P_AVAILABLE, reason="p2p shuffle not available"
+                not P2P_SHUFFLE_AVAILABLE, reason="p2p shuffle not available"
             ),
         ),
     ]
 )
-def shuffle(request):
+def shuffle_algo(request):
     return request.param
 
 
 @pytest.fixture
-def configure_shuffling(shuffle):
-    with dask.config.set(shuffle=shuffle):
+def configure_shuffling(shuffle_algo):
+    with dask.config.set({"dataframe.shuffle.algorithm": shuffle_algo}):
+        yield
+
+
+# Include https://github.com/dask/distributed/pull/7534
+P2P_RECHUNK_AVAILABLE = Version(distributed.__version__) > Version("2023.2.1")
+
+
+@pytest.fixture(
+    params=[
+        "tasks",
+        pytest.param(
+            "p2p",
+            marks=pytest.mark.skipif(
+                not P2P_RECHUNK_AVAILABLE, reason="p2p rechunk not available"
+            ),
+        ),
+    ]
+)
+def rechunk_algo(request):
+    return request.param
+
+
+@pytest.fixture
+def configure_rechunking(rechunk_algo):
+    with dask.config.set({"array.rechunk.algorithm": rechunk_algo}):
         yield
 
 
