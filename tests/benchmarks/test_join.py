@@ -35,24 +35,30 @@ def dtypes(request, num_cols_freq):
     dtypes: dict[str, type] = {
         str(ix): float for ix in range(0, num_cols - num_str_cols)
     }
-    for ix in range(num_cols - num_str_cols, num_str_cols):
+    for ix in range(num_cols - num_str_cols, num_cols):
         dtypes[str(ix)] = str
     return dtypes
 
 
 @run_up_to_nthreads("small_cluster", 40, reason="Does not finish")
-def test_join_big(small_client, memory_multiplier, configure_shuffling, dtypes, num_cols_freq):
+def test_join_big(
+    small_client, memory_multiplier, configure_shuffling, dtypes, num_cols_freq
+):
     _, partition_freq = num_cols_freq
     memory = cluster_memory(small_client)  # 76.66 GiB
 
     df1_big = timeseries_of_size(
-        memory * memory_multiplier, dtypes=dtypes, partition_freq=partition_freq,
+        memory * memory_multiplier,
+        dtypes=dtypes,
+        partition_freq=partition_freq,
     )  # 66.58 MiB partitions
     df1_big["predicate"] = df1_big["0"] * 1e9
     df1_big = df1_big.astype({"predicate": "int"})
 
     df2_big = timeseries_of_size(
-        memory * memory_multiplier, dtypes=dtypes, partition_freq=partition_freq,
+        memory * memory_multiplier,
+        dtypes=dtypes,
+        partition_freq=partition_freq,
     )  # 66.58 MiB partitions
 
     # Control cardinality on column to join - this produces cardinality ~ to len(df)
@@ -64,12 +70,15 @@ def test_join_big(small_client, memory_multiplier, configure_shuffling, dtypes, 
     wait(result, small_client, 20 * 60)
 
 
-def test_join_big_small(small_client, memory_multiplier, configure_shuffling, dtypes, num_cols_freq):
+def test_join_big_small(
+    small_client, memory_multiplier, configure_shuffling, dtypes, num_cols_freq
+):
     _, partition_freq = num_cols_freq
     memory = cluster_memory(small_client)  # 76.66 GiB
 
     df_big = timeseries_of_size(
-        memory * memory_multiplier, dtypes=dtypes,
+        memory * memory_multiplier,
+        dtypes=dtypes,
         partition_freq=partition_freq,
     )  # 66.58 MiB partitions
 
@@ -78,7 +87,8 @@ def test_join_big_small(small_client, memory_multiplier, configure_shuffling, dt
     df_big = df_big.astype({"predicate": "int"})
 
     df_small = timeseries_of_size(
-        "100 MB", dtypes=dtypes,
+        "100 MB",
+        dtypes=dtypes,
         partition_freq=partition_freq,
     )  # make it obviously small
 
@@ -91,12 +101,15 @@ def test_join_big_small(small_client, memory_multiplier, configure_shuffling, dt
 
 
 @pytest.mark.parametrize("persist", [True, False])
-def test_set_index(small_client, persist, memory_multiplier, configure_shuffling, dtypes, num_cols_freq):
+def test_set_index(
+    small_client, persist, memory_multiplier, configure_shuffling, dtypes, num_cols_freq
+):
     _, partition_freq = num_cols_freq
     memory = cluster_memory(small_client)  # 76.66 GiB
 
     df_big = timeseries_of_size(
-        memory * memory_multiplier, dtypes=dtypes,
+        memory * memory_multiplier,
+        dtypes=dtypes,
         partition_freq=partition_freq,
     )  # 66.58 MiB partitions
     df_big["predicate"] = df_big["0"] * 1e9
