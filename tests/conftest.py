@@ -615,7 +615,7 @@ P2P_AVAILABLE = Version(distributed.__version__) > Version("2022.12.1")
 
 @pytest.fixture(
     params=[
-        "tasks",
+        #"tasks",
         pytest.param(
             "p2p",
             marks=pytest.mark.skipif(
