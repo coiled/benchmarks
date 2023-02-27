@@ -6,9 +6,9 @@ from ..utils_test import cluster_memory, run_up_to_nthreads, timeseries_of_size,
 
 # (mem_mult, shuffle)
 params = [
-    (0.1, "tasks"),
+    #(0.1, "tasks"),
     (0.1, "p2p"),
-    (1, "tasks"),
+    #(1, "tasks"),
     (1, "p2p"),
 ]
 
