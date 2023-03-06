@@ -14,12 +14,14 @@ def test_rechunk_in_memory(small_client, configure_rechunking):
 
 def test_rechunk_squares_to_stripes(small_client, configure_rechunking):
     x = da.random.random((100_000, 100_000))
-    x.rechunk((100_000, 100)).rechunk((100, 100_000)).sum().compute()  # ~76 MiB chunks
+    x.rechunk((100_000, 200)).rechunk(
+        (200, 100_000)
+    ).sum().compute()  # 152.59 MiB chunks
 
 
 def test_rechunk_stripes_swap_axes(small_client, configure_rechunking):
-    x = da.random.random((100_000, 100_000), chunks=(100_000, 100))
-    x.rechunk((100, 100_000)).sum().compute()  # ~76 MiB chunks
+    x = da.random.random((100_000, 100_000), chunks=(100_000, 200))
+    x.rechunk((200, 100_000)).sum().compute()  # 152.59 MiB chunks
 
 
 @pytest.mark.skip(reason="this runs forever")
