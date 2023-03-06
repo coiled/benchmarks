@@ -657,7 +657,7 @@ def rechunk_algo(request):
 def configure_rechunking(rechunk_algo):
     config = {"optimization.fuse.active": False} if rechunk_algo == "p2p" else {}
     config["array.rechunk.algorithm"] = rechunk_algo
-    with dask.config.set(config=config):
+    with dask.config.set(config):
         yield
 
 
