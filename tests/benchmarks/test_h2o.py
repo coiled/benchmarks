@@ -117,12 +117,12 @@ def test_q5(ddf):
     )
 
 
-def test_q6(ddf, shuffle):
+def test_q6(ddf, shuffle_algo):
     # Median aggregation uses an explicitly-set shuffle
     ddf = ddf[["id4", "id5", "v3"]]
     (
         ddf.groupby(["id4", "id5"], dropna=False, observed=True)
-        .agg({"v3": ["median", "std"]}, shuffle=shuffle)
+        .agg({"v3": ["median", "std"]}, shuffle=shuffle_algo)
         .compute()  # requires shuffle arg to be set explicitly
     )
 
