@@ -277,13 +277,13 @@ def test_rechunk_in_memory(small_client, configure_rechunking):
 
 
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
-def test_rechunk_squares_to_stripes(small_client, configure_rechunking):
+def test_rechunk_striping(small_client, configure_rechunking):
     x = da.random.random((100_000, 100_000))
     x.rechunk((100_000, 100)).rechunk((100, 100_000)).sum().compute()  # ~76 MiB chunks
 
 
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
-def test_rechunk_stripes_swap_axes(small_client, configure_rechunking):
+def test_rechunk_swap_axes(small_client, configure_rechunking):
     x = da.random.random((100_000, 100_000), chunks=(100_000, 100))
     x.rechunk((100, 100_000)).sum().compute()  # ~76 MiB chunks
 
