@@ -19,7 +19,8 @@ depends_on = None
 def upgrade() -> None:
     op.execute(f"""
         update test_run
-            set name = 'test_rechunk_in_memory[tasks]'
+            set name = 'test_rechunk_in_memory[tasks]',
+            path = 'benchmarks/test_array.py'
             where name == 'test_rechunk_in_memory';
         """)
 
