@@ -21,8 +21,16 @@ def upgrade() -> None:
         update test_run
             set name = 'test_rechunk_in_memory[tasks]',
             path = 'benchmarks/test_array.py'
-            where name == 'test_rechunk_in_memory';
+            where name == 'test_rechunk_in_memory'
+            and python_version like '3.9%';;
         """)
+    op.execute(
+        """
+        delete from test_run
+        where name == 'test_rechunk_in_memory'
+        and python_version not like '3.9%';
+        """
+    )
 
 
 def downgrade() -> None:
