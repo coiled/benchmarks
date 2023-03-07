@@ -22,7 +22,7 @@ def upgrade() -> None:
             set name = 'test_rechunk_in_memory[tasks]',
             path = 'benchmarks/test_array.py'
             where name == 'test_rechunk_in_memory'
-            and python_version like '3.9%';;
+            and python_version like '3.9%';
         """)
     op.execute(
         """
