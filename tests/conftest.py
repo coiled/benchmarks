@@ -610,7 +610,7 @@ def upload_cluster_dump(
 
 
 # Include https://github.com/dask/distributed/pull/7410 for categorical support
-P2P_SHUFFLE_AVAILABLE = Version(distributed.__version__) > Version("2023.1.0")
+P2P_SHUFFLE_AVAILABLE = Version(distributed.__version__) >= Version("2023.1.0")
 
 
 @pytest.fixture(
@@ -624,13 +624,13 @@ P2P_SHUFFLE_AVAILABLE = Version(distributed.__version__) > Version("2023.1.0")
         ),
     ]
 )
-def shuffle_algo(request):
+def shuffle_method(request):
     return request.param
 
 
 @pytest.fixture
-def configure_shuffling(shuffle_algo):
-    with dask.config.set({"dataframe.shuffle.algorithm": shuffle_algo}):
+def configure_shuffling(shuffle_method):
+    with dask.config.set({"dataframe.shuffle.method": shuffle_method}):
         yield
 
 
@@ -649,14 +649,14 @@ P2P_RECHUNK_AVAILABLE = Version(distributed.__version__) >= Version("2023.2.1")
         ),
     ]
 )
-def rechunk_algo(request):
+def rechunk_method(request):
     return request.param
 
 
 @pytest.fixture
-def configure_rechunking(rechunk_algo):
-    config = {"optimization.fuse.active": False} if rechunk_algo == "p2p" else {}
-    config["array.rechunk.algorithm"] = rechunk_algo
+def configure_rechunking(rechunk_method):
+    config = {"optimization.fuse.active": False} if rechunk_method == "p2p" else {}
+    config["array.rechunk.method"] = rechunk_method
     with dask.config.set(config):
         yield
 
