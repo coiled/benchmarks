@@ -53,3 +53,18 @@ def test_join_big_small(small_client, memory_multiplier, configure_shuffling):
     join = dd.merge(df_big, df_small_pd, on="predicate", how="inner")
     result = join.size
     wait(result, small_client, 20 * 60)
+
+
+@pytest.mark.parametrize("persist", [True, False])
+def test_set_index(small_client, persist, memory_multiplier, configure_shuffling):
+    memory = cluster_memory(small_client)  # 76.66 GiB
+
+    df_big = timeseries_of_size(
+        memory * memory_multiplier, dtypes={str(i): float for i in range(100)}
+    )  # 66.58 MiB partitions
+    df_big["predicate"] = df_big["0"] * 1e9
+    df_big = df_big.astype({"predicate": "int"})
+    if persist:
+        df_big = df_big.persist()
+    df_indexed = df_big.set_index("0")
+    wait(df_indexed.size, small_client, 20 * 60)
