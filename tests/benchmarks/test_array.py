@@ -3,7 +3,6 @@ from __future__ import annotations
 import time
 
 import dask.array as da
-import distributed
 import numpy as np
 import pytest
 import xarray as xr
