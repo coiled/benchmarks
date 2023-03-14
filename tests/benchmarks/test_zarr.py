@@ -9,6 +9,9 @@ from ..utils_test import run_up_to_nthreads, wait
 
 @pytest.fixture(scope="module")
 def zarr_dataset():
+    # shape = (2000, 2000, 2000)
+    # chunks = (200, 200, 200)
+    # Compresses to ~42% of its original size (tested on lz4 4.0)
     store = (
         "s3://coiled-runtime-ci/synthetic-zarr/synth_random_int_array_2000_cubed.zarr"
     )
