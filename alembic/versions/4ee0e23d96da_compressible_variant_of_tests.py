@@ -1,17 +1,16 @@
 """compressible variant of tests
 
-Revision ID: 17298d6fac4a
-Revises: d58983739401
-Create Date: 2023-03-13 12:21:42.341492
+Revision ID: 4ee0e23d96da
+Revises: 2381a77e8487
+Create Date: 2023-03-14 16:13:23.809226
 
 """
 from alembic import op
-import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = "17298d6fac4a"
-down_revision = "d58983739401"
+revision = '4ee0e23d96da'
+down_revision = '2381a77e8487'
 branch_labels = None
 depends_on = None
 
