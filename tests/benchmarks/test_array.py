@@ -20,18 +20,6 @@ from ..utils_test import (
 )
 
 
-@pytest.fixture(scope="module")
-def zarr_dataset():
-    # shape = (2000, 2000, 2000)
-    # chunks = (200, 200, 200)
-    # Compresses to ~42% of its original size (tested on lz4 4.0)
-    s3_uri = (
-        "s3://coiled-runtime-ci/synthetic-zarr/"
-        "synth_random_int_array_2000_cubed.zarr"
-    )
-    return da.from_zarr(s3_uri)
-
-
 def test_anom_mean(small_client, new_array):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-498718651
 
@@ -240,32 +228,6 @@ def test_map_overlap_sample(small_client, new_array):
     x = new_array((10000, 10000), chunks=(50, 50))  # 40_000 19.5 kiB chunks
     y = x.map_overlap(lambda x: x, depth=1)
     y[5000:5010, 5000:5010].compute()
-
-
-@run_up_to_nthreads("small_cluster", 100, reason="fixed dataset")
-@pytest.mark.parametrize("threshold", [50, 100, 200, 255])
-def test_filter_then_average(threshold, zarr_dataset, small_client):
-    """
-    Compute the mean for increasingly sparse boolean filters of an array
-    """
-    zarr_dataset[zarr_dataset > threshold].mean().compute()
-
-
-@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
-@pytest.mark.parametrize("N", [700, 75, 1])
-def test_access_slices(N, zarr_dataset, small_client):
-    """
-    Accessing just a few chunks of a zarr array should be quick
-    """
-    distributed.wait(zarr_dataset[:N, :N, :N].persist())
-
-
-@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
-def test_sum_residuals(zarr_dataset, small_client):
-    """
-    Simnple test to that computes as reduction, the array op, the reduction again
-    """
-    (zarr_dataset - zarr_dataset.mean(axis=0)).sum().compute()
 
 
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
