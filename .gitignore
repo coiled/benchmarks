@@ -136,3 +136,5 @@ dmypy.json
 
 # Project-specific files
 cluster_kwargs.merged.yaml
+benchmark.db
+static/

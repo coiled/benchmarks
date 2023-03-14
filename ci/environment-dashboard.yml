@@ -16,3 +16,5 @@ dependencies:
   - pandas=1.4  # 1.5 is incompatibile with altair 4.2
   - tabulate
   - conda
+  - filelock
+  - s3fs
