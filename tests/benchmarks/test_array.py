@@ -8,7 +8,6 @@ import numpy as np
 import pytest
 import xarray as xr
 from dask.utils import parse_bytes
-from packaging.version import Version
 
 from ..utils_test import (
     arr_to_devnull,
@@ -23,6 +22,9 @@ from ..utils_test import (
 
 @pytest.fixture(scope="module")
 def zarr_dataset():
+    # shape = (2000, 2000, 2000)
+    # chunks = (200, 200, 200)
+    # Compresses to ~42% of its original size (tested on lz4 4.0)
     s3_uri = (
         "s3://coiled-runtime-ci/synthetic-zarr/"
         "synth_random_int_array_2000_cubed.zarr"
@@ -30,12 +32,12 @@ def zarr_dataset():
     return da.from_zarr(s3_uri)
 
 
-def test_anom_mean(small_client):
+def test_anom_mean(small_client, new_array):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-498718651
 
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory // 2
-    data = da.random.random(
+    data = new_array(
         scaled_array_shape(target_nbytes, ("x", "10MiB")),
         chunks=(1, parse_bytes("10MiB") // 8),
     )
@@ -128,14 +130,14 @@ def test_basic_sum(small_client, speed, chunk_shape):
 @pytest.mark.skip(
     "fails in actual CI; see https://github.com/coiled/coiled-runtime/issues/253"
 )
-def test_climatic_mean(small_client):
+def test_climatic_mean(small_client, new_array):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-535009454
 
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory * 2
     chunks = (1, 1, 96, 21, 90, 144)
     shape = (28, "x", 96, 21, 90, 144)
-    data = da.random.random(scaled_array_shape(target_nbytes, shape), chunks=chunks)
+    data = new_array(scaled_array_shape(target_nbytes, shape), chunks=chunks)
     print_size_info(memory, target_nbytes, data)
     # 152.62 GiB - 784 199.34 MiB chunks
 
@@ -151,21 +153,21 @@ def test_climatic_mean(small_client):
     wait(arr_clim, small_client, 15 * 60)
 
 
-def test_vorticity(small_client):
+def test_vorticity(small_client, new_array):
     # From https://github.com/dask/distributed/issues/6571
 
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = int(memory * 0.85)
     shape = scaled_array_shape(target_nbytes, (5000, 5000, "x"))
 
-    u = da.random.random(shape, chunks=(5000, 5000, 1))
-    v = da.random.random(shape, chunks=(5000, 5000, 1))
+    u = new_array(shape, chunks=(5000, 5000, 1))
+    v = new_array(shape, chunks=(5000, 5000, 1))
     print_size_info(memory, target_nbytes, u, v)
     # Input 1: 65.19 GiB - 350 190.73 MiB chunks
     # Input 2: 65.19 GiB - 350 190.73 MiB chunks
 
-    dx = da.random.random((5001, 5000), chunks=(5001, 5000))
-    dy = da.random.random((5001, 5000), chunks=(5001, 5000))
+    dx = new_array((5001, 5000), chunks=(5001, 5000))
+    dy = new_array((5001, 5000), chunks=(5001, 5000))
 
     def pad_rechunk(arr):
         """
@@ -197,28 +199,28 @@ def test_vorticity(small_client):
     wait(arr_to_devnull(result), small_client, 10 * 60)
 
 
-def test_double_diff(small_client):
+def test_double_diff(small_client, new_array):
     # Variant of https://github.com/dask/distributed/issues/6597
     memory = cluster_memory(small_client)  # 76.66 GiB
     # FIXME https://github.com/coiled/coiled-runtime/issues/564
     #       this algorithm is supposed to scale linearly!
     shape = scaled_array_shape_quadratic(memory, "76.66 GiB", ("x", "x"))
 
-    a = da.random.random(shape, chunks="20MiB")
-    b = da.random.random(shape, chunks="20MiB")
+    a = new_array(shape, chunks="20MiB")
+    b = new_array(shape, chunks="20MiB")
     print_size_info(memory, memory, a, b)
 
     diff = a[1:, 1:] - b[:-1, :-1]
     wait(arr_to_devnull(diff), small_client, 10 * 60)
 
 
-def test_dot_product(small_client):
+def test_dot_product(small_client, new_array):
     """See also test_spill.py::test_dot_product_spill
     for variant that hits the spill threshold
     """
     memory = cluster_memory(small_client)  # 76.66 GiB
     shape = scaled_array_shape_quadratic(memory // 17, "4.5 GiB", ("x", "x"))
-    a = da.random.random(shape, chunks="128 MiB")
+    a = new_array(shape, chunks="128 MiB")
     print_size_info(memory, memory // 17, a)
     # Input 1: 4.51 GiB - 49 128.00 MiB chunks
 
@@ -226,11 +228,7 @@ def test_dot_product(small_client):
     wait(b, small_client, 10 * 60)
 
 
-@pytest.mark.xfail(
-    Version(distributed.__version__) < Version("2022.6.1"),
-    reason="https://github.com/dask/distributed/issues/6624",
-)
-def test_map_overlap_sample(small_client):
+def test_map_overlap_sample(small_client, new_array):
     """
     This is from Napari like workloads where they have large images and
     commonly use map_overlap.  They care about rapid (sub-second) access to
@@ -239,7 +237,7 @@ def test_map_overlap_sample(small_client):
     At the time of writing, data creation took 300ms and the
     map_overlap/getitem, took 2-3s
     """
-    x = da.random.random((10000, 10000), chunks=(50, 50))  # 40_000 19.5 kiB chunks
+    x = new_array((10000, 10000), chunks=(50, 50))  # 40_000 19.5 kiB chunks
     y = x.map_overlap(lambda x: x, depth=1)
     y[5000:5010, 5000:5010].compute()
 
