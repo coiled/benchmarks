@@ -31,6 +31,17 @@ def upgrade() -> None:
             where name == '{name}';
             """
         )
+    op.execute(
+        """
+        delete from test_run
+        where path = 'benchmarks/test_spill.py'
+        and name in (
+            'test_dot_product_spill[compressible]',
+            'test_spilling[compressible-keep]',
+            'test_spilling[compressible-release]'
+        )
+        """
+    )
 
 
 def downgrade() -> None:
