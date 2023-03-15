@@ -689,7 +689,7 @@ def read_parquet_with_pyarrow():
     client.unregister_worker_plugin("set_pandas_strings_to_pyarrow")
 
 
-@pytest.fixture(params=["uncompressible", "dummy", "compressible"])
+@pytest.fixture(params=["uncompressible", "compressible"])
 def new_array(request):
     """Constructor function for a new dask array.
     This fixture causes the test to run twice, first with uncompressible data and then
@@ -697,10 +697,7 @@ def new_array(request):
     """
     if request.param == "uncompressible":
         return da.random.random
-    # assert request.param == "compressible"
-
-    def dummy(x):
-        return x.reshape(x.shape)
+    assert request.param == "compressible"
 
     def compressible(x):
         """Convert a random array, that is uncompressible, to one that is
@@ -718,13 +715,8 @@ def new_array(request):
         y[::2] = 0
         return y.reshape(x.shape)
 
-    if request.param == "compressible":
-        def _(*args, **kwargs):
-            a = da.random.random(*args, **kwargs)
-            return a.map_blocks(compressible, dtype=a.dtype)
-    else:
-        def _(*args, **kwargs):
-            a = da.random.random(*args, **kwargs)
-            return a.map_blocks(dummy, dtype=a.dtype)
+    def _(*args, **kwargs):
+        a = da.random.random(*args, **kwargs)
+        return a.map_blocks(compressible, dtype=a.dtype)
 
     return _
