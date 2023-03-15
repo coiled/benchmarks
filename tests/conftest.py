@@ -704,7 +704,7 @@ def new_array(request):
 
     def compressible(x):
         """Convert a random array, that is uncompressible, to one that is
-        compressible to 42% to its original size and takes 1.8s/GiB to compress
+        compressible to 42% to its original size and takes 570 MiB/s to compress
         (both measured on lz4 4.0). This exhibits a fundamentally different
         performance profile from e.g. numpy.zeros_like, which would compress to 1%
         of its original size in just 140ms/GiB.
