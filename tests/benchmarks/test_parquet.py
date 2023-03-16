@@ -15,11 +15,11 @@ from ..utils_test import run_up_to_nthreads
 
 
 @pytest.fixture(scope="module")
-def parquet_cluster(dask_env_variables, cluster_kwargs, gitlab_cluster_tags):
+def parquet_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
     with Cluster(
         f"parquet-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
-        tags=gitlab_cluster_tags,
+        tags=github_cluster_tags,
         **cluster_kwargs["parquet_cluster"],
     ) as cluster:
         yield cluster

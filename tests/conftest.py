@@ -399,7 +399,7 @@ def benchmark_all(
 
 
 @pytest.fixture(scope="session")
-def gitlab_cluster_tags():
+def github_cluster_tags():
     tag_names = [
         "GITHUB_JOB",
         "GITHUB_REF",
@@ -457,12 +457,12 @@ def cluster_kwargs():
 
 
 @pytest.fixture(scope="module")
-def small_cluster(request, dask_env_variables, cluster_kwargs, gitlab_cluster_tags):
+def small_cluster(request, dask_env_variables, cluster_kwargs, github_cluster_tags):
     module = os.path.basename(request.fspath).split(".")[0]
     with Cluster(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
-        tags=gitlab_cluster_tags,
+        tags=github_cluster_tags,
         **cluster_kwargs["small_cluster"],
     ) as cluster:
         yield cluster
