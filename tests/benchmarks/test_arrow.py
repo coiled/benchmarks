@@ -22,39 +22,30 @@ def test_unique(series_with_client):
     wait(result, client, 10 * 60)
 
 
-# def test_contains(small_client):
-#     """String contains"""
-#     memory = cluster_memory(small_client)
-#     df = timeseries_of_size(memory)
-#     s = df.name.astype(pd.StringDtype("pyarrow")).persist()
-#     result = s.str.contains("a")
-#     wait(result, small_client, 10 * 60)
-#
-#
-# def test_startswith(small_client):
-#     """String starts with"""
-#     memory = cluster_memory(small_client)
-#     df = timeseries_of_size(memory)
-#     s = df.name.astype(pd.StringDtype("pyarrow")).persist()
-#     result = s.str.startswith("B")
-#     wait(result, small_client, 10 * 60)
-#
-#
-# def test_filter(small_client):
-#     """How fast can we filter a DataFrame?"""
-#     memory = cluster_memory(small_client)
-#     df = timeseries_of_size(memory)
-#     df.name = df.name.astype(pd.StringDtype("pyarrow"))
-#     df = df.persist()
-#     name = df.head(1).name.iloc[0]  # Get first name that appears
-#     result = df[df.name == name]
-#     wait(result, small_client, 10 * 60)
-#
-#
-# def test_value_counts(small_client):
-#     """Value counts on string values"""
-#     memory = cluster_memory(small_client)
-#     df = timeseries_of_size(memory)
-#     s = df.name.astype(pd.StringDtype("pyarrow")).persist()
-#     result = s.value_counts()
-#     wait(result, small_client, 10 * 60)
+def test_contains(series_with_client):
+    """String contains"""
+    series, client = series_with_client
+    result = series.str.contains("a")
+    wait(result, client, 10 * 60)
+
+
+def test_startswith(series_with_client):
+    """String starts with"""
+    series, client = series_with_client
+    result = series.str.startswith("B")
+    wait(result, client, 10 * 60)
+
+
+def test_filter(series_with_client):
+    """How fast can we filter the Series"""
+    series, client = series_with_client
+    name = series.iloc[0]  # Get first name that appears
+    result = series[series == name]
+    wait(result, client, 10 * 60)
+
+
+def test_value_counts(series_with_client):
+    """Value counts on string values"""
+    series, client = series_with_client
+    result = series.value_counts()
+    wait(result, client, 10 * 60)
