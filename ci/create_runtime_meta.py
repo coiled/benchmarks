@@ -44,8 +44,8 @@ def main():
         requirements.append(
             {
                 "pip": [
-                    "git+https://github.com/dask/dask@main",
                     "git+https://github.com/dask/distributed@main",
+                    "git+https://github.com/jrbourbeau/dask@nullable-config",
                 ]
             }
         )
