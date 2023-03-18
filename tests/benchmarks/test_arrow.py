@@ -39,7 +39,7 @@ def test_startswith(series_with_client):
 def test_filter(series_with_client):
     """How fast can we filter the Series"""
     series, client = series_with_client
-    name = series.iloc[0]  # Get first name that appears
+    name = series.head(1)[0]  # Get first name that appears
     result = series[series == name]
     wait(result, client, 10 * 60)
 
