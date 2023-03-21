@@ -14,4 +14,4 @@ dependencies:
     - coiled-runtime=0.2.1
     - pip:
       - git+https://github.com/fjetter/dask@drop_distributed_pack
-      - git+https://github.com/fjetter/distributed@drop_distributed_pack
+      - git+https://github.com/fjetter/distributed@hlg_pickle
