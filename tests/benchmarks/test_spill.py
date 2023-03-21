@@ -16,7 +16,7 @@ from ..utils_test import (
 
 
 @pytest.fixture(scope="module")
-def spill_cluster(dask_env_variables, cluster_kwargs, gitlab_cluster_tags):
+def spill_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
     with Cluster(
         name=f"spill-{uuid.uuid4().hex[:8]}",
         environ=merge(
@@ -27,7 +27,7 @@ def spill_cluster(dask_env_variables, cluster_kwargs, gitlab_cluster_tags):
                 "DASK_DISTRIBUTED__SCHEDULER__ALLOWED_FAILURES": "0",
             },
         ),
-        tags=gitlab_cluster_tags,
+        tags=github_cluster_tags,
         **cluster_kwargs["spill_cluster"],
     ) as cluster:
         yield cluster

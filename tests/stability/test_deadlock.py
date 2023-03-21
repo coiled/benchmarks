@@ -17,12 +17,12 @@ def test_repeated_merge_spill(
     benchmark_all,
     cluster_kwargs,
     dask_env_variables,
-    gitlab_cluster_tags,
+    github_cluster_tags,
 ):
     with Cluster(
         name=f"test_repeated_merge_spill-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
-        tags=gitlab_cluster_tags,
+        tags=github_cluster_tags,
         **cluster_kwargs["test_repeated_merge_spill"],
     ) as cluster:
         with Client(cluster) as client:
