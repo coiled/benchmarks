@@ -32,7 +32,6 @@ def embarrassingly_parallel_client(
 ):
     n_workers = cluster_kwargs["embarrassingly_parallel_cluster"]["n_workers"]
     with Client(embarrassingly_parallel_cluster) as client:
-        print(f"{client.dashboard_link = }")
         embarrassingly_parallel_cluster.scale(n_workers)
         client.wait_for_workers(n_workers)
         client.restart()
