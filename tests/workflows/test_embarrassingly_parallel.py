@@ -12,12 +12,12 @@ from dask.distributed import Client, wait
 def embarrassingly_parallel_cluster(
     dask_env_variables,
     cluster_kwargs,
-    gitlab_cluster_tags,
+    github_cluster_tags,
 ):
     with coiled.Cluster(
         f"embarrassingly-parallel-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
-        tags=gitlab_cluster_tags,
+        tags=github_cluster_tags,
         **cluster_kwargs["embarrassingly_parallel_cluster"],
     ) as cluster:
         yield cluster
