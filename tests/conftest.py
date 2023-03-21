@@ -530,6 +530,7 @@ def s3():
     return s3fs.S3FileSystem(
         key=os.environ.get("AWS_ACCESS_KEY_ID"),
         secret=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+        requester_pays=True,
     )
 
 
