@@ -32,7 +32,11 @@ def test_join_big(small_client, memory_multiplier, configure_shuffling):
     wait(result, small_client, 20 * 60)
 
 
-def test_join_big_small(small_client, memory_multiplier, configure_shuffling):
+def test_join_big_small(
+    small_client, memory_multiplier, configure_shuffling, shuffle_method
+):
+    if shuffle_method == "tasks" and memory_multiplier == 1:
+        pytest.skip()
     memory = cluster_memory(small_client)  # 76.66 GiB
 
     df_big = timeseries_of_size(

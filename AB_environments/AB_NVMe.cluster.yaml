@@ -1,0 +1,51 @@
+# Static kwargs passed to coiled.Cluster
+# In A/B tests, these can be overridden by AB_environments/AB_<name>.cluster.yaml
+
+# The override priority is as follows (bottom wins):
+# 1. default parameters of coiled.Cluster
+# 2. default section of this file
+# 3. default section of AB_environments/AB_<name>.cluster.yaml
+# 4. specific sections of this file
+# 5. specific sections of AB_environments/AB_<name>.cluster.yaml
+
+# The keys 'name', 'environ', and 'tags' must not be used.
+
+# Settings for all clusters, unless overriden below
+default:
+  package_sync: true
+  wait_for_workers: true
+  scheduler_vm_types: [m6id.large]
+  backend_options:
+    send_prometheus_metrics: true
+    spot: true
+    spot_on_demand_fallback: true
+    multizone: true
+
+# For all tests using the small_client fixture
+small_cluster:
+  n_workers: 10
+  worker_vm_types: [m6id.large]  # 2CPU, 8GiB
+
+# For test_parquet.py
+parquet_cluster:
+  n_workers: 15
+  worker_vm_types: [m5.xlarge]  # 4 CPU, 16 GiB
+
+# For test_spill.py
+spill_cluster:
+  n_workers: 5
+  worker_disk_size: 64
+  worker_vm_types: [m6id.large]  # 2CPU, 8GiB
+
+# Specific tests
+test_work_stealing_on_scaling_up:
+  n_workers: 1
+  worker_vm_types: [t3.medium]
+
+test_work_stealing_on_straggling_worker:
+  n_workers: 10
+  worker_vm_types: [t3.medium]
+
+test_repeated_merge_spill:
+  n_workers: 20
+  worker_vm_types: [m6id.large]
