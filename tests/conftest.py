@@ -526,12 +526,17 @@ def s3_storage_options():
 
 
 @pytest.fixture(scope="session")
-def s3():
-    return s3fs.S3FileSystem(
-        key=os.environ.get("AWS_ACCESS_KEY_ID"),
-        secret=os.environ.get("AWS_SECRET_ACCESS_KEY"),
-        requester_pays=True,
-    )
+def s3(s3_storage_options):
+    return s3fs.S3FileSystem(**s3_storage_options)
+
+
+@pytest.fixture
+def s3_factory(s3_storage_options):
+    def _(**exta_options):
+        kwargs = {**s3_storage_options, **exta_options}
+        return s3fs.S3FileSystem(**kwargs)
+
+    return _
 
 
 @pytest.fixture(scope="session")

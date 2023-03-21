@@ -39,8 +39,9 @@ def embarrassingly_parallel_client(
             yield client
 
 
-def test_embarassingly_parallel(embarrassingly_parallel_client, s3):
+def test_embarassingly_parallel(embarrassingly_parallel_client, s3_factory):
     # How popular is matplotlib?
+    s3 = s3_factory(requester_pays=True)
     directories = s3.ls("s3://arxiv/pdf")
 
     def extract(filename: str, fs):
