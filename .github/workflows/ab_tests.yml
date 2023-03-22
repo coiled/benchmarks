@@ -4,9 +4,6 @@ on:
     branches-ignore:
       - main
 
-env:
-  PIP_NO_DEPS: 1
-
 concurrency:
   # Include `github.event_name` to avoid pushes to `main` and
   # scheduled jobs canceling one another
