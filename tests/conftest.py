@@ -13,6 +13,7 @@ import uuid
 from functools import lru_cache
 
 import dask
+import dask.array as da
 import distributed
 import filelock
 import pandas
@@ -686,3 +687,36 @@ def read_parquet_with_pyarrow():
     pandas.set_option("string_storage", bak)
     # Workers will lose the setting at the next call to client.restart()
     client.unregister_worker_plugin("set_pandas_strings_to_pyarrow")
+
+
+@pytest.fixture(params=["uncompressible", "compressible"])
+def new_array(request):
+    """Constructor function for a new dask array.
+    This fixture causes the test to run twice, first with uncompressible data and then
+    when compressible data.
+    """
+    if request.param == "uncompressible":
+        return da.random.random
+    assert request.param == "compressible"
+
+    def compressible(x):
+        """Convert a random array, that is uncompressible, to one that is
+        compressible to 42% to its original size and takes 570 MiB/s to compress
+        (both measured on lz4 4.0). This exhibits a fundamentally different
+        performance profile from e.g. numpy.zeros_like, which would compress to 1%
+        of its original size in just 140ms/GiB.
+
+        Note
+        ----
+        This function must be defined inside a local scope, so that it is pickled with
+        cloudpickle, or it will fail to unpickle on the workers.
+        """
+        y = x.reshape(-1)
+        y[::2] = 0
+        return y.reshape(x.shape)
+
+    def _(*args, **kwargs):
+        a = da.random.random(*args, **kwargs)
+        return a.map_blocks(compressible, dtype=a.dtype)
+
+    return _
