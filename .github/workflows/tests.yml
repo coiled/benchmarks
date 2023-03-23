@@ -90,6 +90,17 @@ jobs:
           python ci/create_runtime_meta.py
           source ci/scripts/install_coiled_runtime.sh coiled_software_environment.yaml
 
+      - name: Determine if workflows should be run
+        # Run workflows on PRs with `workflows` label and nightly cron job
+        if: |
+          github.event_name == 'schedule'
+          || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'workflows'))
+        run: |
+          # Put EXTRA_OPTIONS into $GITHUB_ENV so it can be used in subsequent workflow steps
+          export EXTRA_OPTIONS="--run-workflows"
+          echo $EXTRA_OPTIONS
+          echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
+
       - name: Run Coiled Runtime Tests
         id: test
         env:
@@ -100,7 +111,7 @@ jobs:
           DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
           BENCHMARK: true
           CLUSTER_DUMP: always
-        run: bash ci/scripts/run_tests.sh -n 4 --dist loadscope ${{ matrix.pytest_args }}
+        run: bash ci/scripts/run_tests.sh -n 4 --dist loadscope ${{ env.EXTRA_OPTIONS }} ${{ matrix.pytest_args }}
 
       - name: Dump coiled.Cluster kwargs
         run: cat cluster_kwargs.merged.yaml
