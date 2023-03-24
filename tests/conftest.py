@@ -85,7 +85,7 @@ def get_coiled_runtime_version():
             return "unknown"
 
 
-dask.config.set({"coiled.account": "dask-benchmarks"})
+dask.config.set({"coiled.account": "dask-engineering"})
 
 COILED_RUNTIME_VERSION = get_coiled_runtime_version()
 COILED_SOFTWARE_NAME = "package_sync"
