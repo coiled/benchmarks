@@ -4,7 +4,7 @@ import pytest
 from ..utils_test import cluster_memory, timeseries_of_size, wait
 
 
-@pytest.fixture(params=[True, False])
+@pytest.fixture(params=[True, False], ids=["string[pyarrow]", "object"])
 def series_with_client(request, small_client):
     memory = cluster_memory(small_client)
     df = timeseries_of_size(memory)
