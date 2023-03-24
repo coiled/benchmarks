@@ -13,5 +13,5 @@ dependencies:
     - python=3.9
     - coiled-runtime=0.2.1
     - pip:
-      - git+https://github.com/fjetter/dask@drop_distributed_pack
-      - git+https://github.com/fjetter/distributed@hlg_pickle
+      - git+https://github.com/fjetter/dask@6682361054eb54cbcae5bf991f495fcfb1f23438
+      - git+https://github.com/fjetter/distributed@e003ec6d7bbdc4f2b2997df47580f977fbcf577a
