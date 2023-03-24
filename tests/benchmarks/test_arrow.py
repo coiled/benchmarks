@@ -36,6 +36,13 @@ def test_startswith(series_with_client):
     wait(result, client, 10 * 60)
 
 
+def test_upper(series_with_client):
+    """String upper"""
+    series, client = series_with_client
+    result = series.str.upper()
+    wait(result, client, 10 * 60)
+
+
 def test_filter(series_with_client):
     """How fast can we filter the Series"""
     series, client = series_with_client
