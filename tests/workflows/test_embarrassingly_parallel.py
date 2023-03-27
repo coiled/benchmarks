@@ -44,6 +44,15 @@ def test_embarassingly_parallel(embarrassingly_parallel_client, s3_factory):
     s3 = s3_factory(requester_pays=True)
     directories = s3.ls("s3://arxiv/pdf")
 
+    # We only analyze files from 1991-2022 here in order to have a consistent data volume.
+    # This is benchmarking purposes only, as this dataset is updated monthly.
+    years = list(range(91, 100)) + list(range(23))
+    directories = [
+        d
+        for d in directories
+        if d.endswith(".tar") and int(d.split("_")[2][:2]) in years
+    ]
+
     def extract(filename: str, fs):
         """Extract and process one directory of arXiv data
 
