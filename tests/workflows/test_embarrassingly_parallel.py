@@ -95,4 +95,9 @@ def test_embarassingly_parallel(embarrassingly_parallel_client, s3_factory):
         return pd.Timestamp(year=year, month=month, day=1)
 
     df["date"] = df.filename.map(filename_to_date)
-    df.groupby("date").has_matplotlib.mean()
+    result = df.groupby("date").has_matplotlib.mean()
+    # Some light validation to ensure results are consistent.
+    # This is only for benchmarking.
+    assert result.idxmin() == pd.Timestamp("1991-07-01")  # Earliest timestamp
+    assert result.idxmax() == pd.Timestamp("2022-10-01")  # Row with maximum value
+    assert result.ne(0).idxmax() == pd.Timestamp("2005-06-01")  # First non-zero row
