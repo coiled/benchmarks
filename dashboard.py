@@ -9,7 +9,7 @@ import operator
 import pathlib
 from collections.abc import Callable
 from textwrap import dedent
-from typing import Any, Literal, NamedTuple
+from typing import Any, Literal, NamedTuple, Optional
 from urllib.parse import quote
 
 import altair
@@ -37,7 +37,7 @@ SPECS = [
     ChartSpec("average_memory", "Average Memory", "(GiB)", 2**30),
     ChartSpec("peak_memory", "Peak Memory", "(GiB)", 2**30),
 ]
-PROMETHEUS_DATASOURCE = "AWS Prometheus - Sandbox (us east 2)"
+OLD_PROMETHEUS_DATASOURCE = "AWS Prometheus - Sandbox (us east 2)"
 
 source: dict[str, str] = {}
 
@@ -587,20 +587,9 @@ def make_details_html_report(
     for id_, ds_row in df.iterrows():
         row = ds_row.to_dict()
 
-        if cluster_name := row["cluster_name"]:
-            # Add some padding to compensate for clock differences between
-            # GitHub actions and Prometheus, as well for sample granularity
-            # (at the moment of writing, Prometheus data is sampled every 5s)
-            ts_padding = pandas.Timedelta("10s")
-            start_ts = int((row["start"] - ts_padding).timestamp() * 1000)
-            end_ts = int((row["end"] + ts_padding).timestamp() * 1000)
-            row["grafana_url"] = (
-                "https://grafana.dev-sandbox.coiledhq.com/d/eU1bT-nVz/cluster-metrics-prometheus"
-                f"?var-datasource={quote(PROMETHEUS_DATASOURCE)}"
-                f"&from={start_ts}&to={end_ts}&var-cluster={cluster_name}"
-            )
-        else:
-            row["grafana_url"] = None
+        row["grafana_url"] = make_grafana_url(
+            cluster_name=row["cluster_name"], start=row["start"], end=row["end"]
+        )
 
         for k, v in row.items():
             if v is None or (isinstance(v, float) and math.isnan(v)):
@@ -623,6 +612,33 @@ def make_details_html_report(
         title=f"{runtime} - {fullname}",
         resources=CDN,
     )
+
+
+def make_grafana_url(cluster_name, start, end) -> Optional[str]:
+    if cluster_name:
+        # Add some padding to compensate for clock differences between
+        # GitHub actions and Prometheus, as well for sample granularity
+        # (at the moment of writing, Prometheus data is sampled every 5s)
+        ts_padding = pandas.Timedelta("10s")
+        start_ts = int((start - ts_padding).timestamp() * 1000)
+        end_ts = int((end + ts_padding).timestamp() * 1000)
+
+        # We switched to new datasource and new (now public) Grafana instance,
+        # so use different URL depending on when this test ran
+        if start_ts < 1679590932198:
+            return (
+                "https://grafana.dev-sandbox.coiledhq.com/d/eU1bT-nVz/cluster-metrics-prometheus"
+                f"?var-datasource={quote(OLD_PROMETHEUS_DATASOURCE)}"
+                f"&from={start_ts}&to={end_ts}&var-cluster={cluster_name}"
+            )
+        else:
+            return (
+                "https://benchmarks-grafana.oss.coiledhq.com/d/GvbFsqKVk/coiled-cluster-metrics-basic"
+                "?var-datasource=Benchmarks&var-account=dask-benchmarks&"
+                f"var-cluster={cluster_name}&from={start_ts}&to={end_ts}"
+            )
+    else:
+        return None
 
 
 def make_index_html_report(
