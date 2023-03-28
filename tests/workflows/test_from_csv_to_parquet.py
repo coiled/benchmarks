@@ -2,9 +2,8 @@ import uuid
 
 import coiled
 import dask.dataframe as dd
-import pandas as pd
 import pytest
-from distributed import Client, LocalCluster, wait
+from distributed import Client, LocalCluster, wait  # noqa
 
 
 @pytest.fixture(scope="module")
@@ -114,6 +113,6 @@ def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory):
 
     df = df.partitions[-10:]
 
-    result = from_csv_to_parquet_client.compute(df.GoldsteinScale.mean())
+    result = from_csv_to_parquet_client.compute(df.GoldsteinScale.mean())  # noqa
 
     assert df.GlobalEventID.dtype == "Int64"
