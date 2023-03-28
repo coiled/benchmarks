@@ -1,9 +1,12 @@
+import os
 import uuid
 
 import coiled
 import dask.dataframe as dd
 import pytest
 from distributed import Client, LocalCluster, wait  # noqa
+
+LOCAL_RUN = os.environ.get("LOCAL_WORKFLOW_RUN")
 
 
 @pytest.fixture(scope="module")
@@ -12,15 +15,17 @@ def from_csv_to_parquet_cluster(
     cluster_kwargs,
     github_cluster_tags,
 ):
-    with coiled.Cluster(
-        f"from-csv-to-parquet-{uuid.uuid4().hex[:8]}",
-        environ=dask_env_variables,
-        tags=github_cluster_tags,
-        **cluster_kwargs["from_csv_to_parquet_cluster"],
-    ) as cluster:
-        yield cluster
-    # with LocalCluster() as cluster:
-    #     yield cluster
+    if LOCAL_RUN is not None:
+        with LocalCluster() as cluster:
+            yield cluster
+    else:
+        with coiled.Cluster(
+            f"from-csv-to-parquet-{uuid.uuid4().hex[:8]}",
+            environ=dask_env_variables,
+            tags=github_cluster_tags,
+            **cluster_kwargs["from_csv_to_parquet_cluster"],
+        ) as cluster:
+            yield cluster
 
 
 @pytest.fixture
@@ -30,13 +35,17 @@ def from_csv_to_parquet_client(
     upload_cluster_dump,
     benchmark_all,
 ):
-    n_workers = cluster_kwargs["from_csv_to_parquet_cluster"]["n_workers"]
-    with Client(from_csv_to_parquet_cluster) as client:
-        from_csv_to_parquet_cluster.scale(n_workers)
-        client.wait_for_workers(n_workers)
-        client.restart()
-        with upload_cluster_dump(client), benchmark_all(client):
+    if LOCAL_RUN is not None:
+        with Client(from_csv_to_parquet_cluster) as client:
             yield client
+    else:
+        n_workers = cluster_kwargs["from_csv_to_parquet_cluster"]["n_workers"]
+        with Client(from_csv_to_parquet_cluster) as client:
+            from_csv_to_parquet_cluster.scale(n_workers)
+            client.wait_for_workers(n_workers)
+            client.restart()
+            with upload_cluster_dump(client), benchmark_all(client):
+                yield client
 
 
 COLUMNSV1 = {
@@ -114,5 +123,5 @@ def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory):
     df = df.partitions[-10:]
 
     result = from_csv_to_parquet_client.compute(df.GoldsteinScale.mean())  # noqa
-
+    print(result)
     assert df.GlobalEventID.dtype == "Int64"
