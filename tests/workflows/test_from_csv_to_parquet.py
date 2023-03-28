@@ -4,7 +4,7 @@ import uuid
 import coiled
 import dask.dataframe as dd
 import pytest
-from distributed import Client, LocalCluster, wait  # noqa
+from distributed import Client, LocalCluster, wait
 
 LOCAL_RUN = os.environ.get("LOCAL_WORKFLOW_RUN")
 
@@ -122,7 +122,7 @@ def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory):
 
     df = df.partitions[-10:]
 
-    future = from_csv_to_parquet_client.compute(df.GoldsteinScale.mean())  # noqa
+    future = from_csv_to_parquet_client.compute(df.GoldsteinScale.mean())
     wait(future)
     print(future.result())
 
