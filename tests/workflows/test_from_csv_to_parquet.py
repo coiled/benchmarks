@@ -122,6 +122,8 @@ def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory):
 
     df = df.partitions[-10:]
 
-    result = from_csv_to_parquet_client.compute(df.GoldsteinScale.mean())  # noqa
-    print(result)
+    future = from_csv_to_parquet_client.compute(df.GoldsteinScale.mean())  # noqa
+    wait(future)
+    print(future.result())
+
     assert df.GlobalEventID.dtype == "Int64"
