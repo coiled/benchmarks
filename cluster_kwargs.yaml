@@ -49,3 +49,12 @@ test_work_stealing_on_straggling_worker:
 test_repeated_merge_spill:
   n_workers: 20
   worker_vm_types: [m6i.large]
+
+# For tests/workflows/test_from_csv_to_parquet.py
+from_csv_to_parquet_cluster:
+  n_workers: 5
+  # TODO: Remove the `m6i.xlarge` worker specification below
+  # once it's the default worker instance type
+  worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB
+  backend_options:
+    region: "us-east-1"  # Same region as dataset
