@@ -58,16 +58,19 @@ def pytest_addoption(parser):
     parser.addoption(
         "--benchmark", action="store_true", help="Collect benchmarking data for tests"
     )
+    parser.addoption("--run-workflows", action="store_true", help="Run workflow tests")
 
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--run-latest"):
-        # --run-latest given in cli: do not skip latest coiled-runtime tests
-        return
     skip_latest = pytest.mark.skip(reason="need --run-latest option to run")
+    skip_workflows = pytest.mark.skip(reason="need --run-workflows option to run")
     for item in items:
-        if "latest_runtime" in item.keywords:
+        if not config.getoption("--run-latest") and "latest_runtime" in item.keywords:
             item.add_marker(skip_latest)
+        if not config.getoption("--run-workflows") and (
+            (TEST_DIR / "workflows") in item.path.parents
+        ):
+            item.add_marker(skip_workflows)
 
 
 def get_coiled_runtime_version():
@@ -527,11 +530,17 @@ def s3_storage_options():
 
 
 @pytest.fixture(scope="session")
-def s3():
-    return s3fs.S3FileSystem(
-        key=os.environ.get("AWS_ACCESS_KEY_ID"),
-        secret=os.environ.get("AWS_SECRET_ACCESS_KEY"),
-    )
+def s3(s3_storage_options):
+    return s3fs.S3FileSystem(**s3_storage_options)
+
+
+@pytest.fixture
+def s3_factory(s3_storage_options):
+    def _(**exta_options):
+        kwargs = {**s3_storage_options, **exta_options}
+        return s3fs.S3FileSystem(**kwargs)
+
+    return _
 
 
 @pytest.fixture(scope="session")
