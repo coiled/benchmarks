@@ -6,7 +6,7 @@ import dask.dataframe as dd
 import pytest
 from distributed import Client, LocalCluster, wait
 
-LOCAL_RUN = os.environ.get("LOCAL_WORKFLOW_RUN")
+LOCAL_WORKFLOW_RUN = os.environ.get("LOCAL_WORKFLOW_RUN")
 
 
 @pytest.fixture(scope="module")
@@ -15,7 +15,7 @@ def from_csv_to_parquet_cluster(
     cluster_kwargs,
     github_cluster_tags,
 ):
-    if LOCAL_RUN is not None:
+    if LOCAL_WORKFLOW_RUN is not None:
         with LocalCluster() as cluster:
             yield cluster
     else:
@@ -35,7 +35,7 @@ def from_csv_to_parquet_client(
     upload_cluster_dump,
     benchmark_all,
 ):
-    if LOCAL_RUN is not None:
+    if LOCAL_WORKFLOW_RUN is not None:
         with Client(from_csv_to_parquet_cluster) as client:
             yield client
     else:
