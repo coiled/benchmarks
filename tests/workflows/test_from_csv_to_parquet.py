@@ -110,7 +110,11 @@ COLUMNSV1 = {
 }
 
 
-def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory):
+def drop_dupe_per_partition(df):
+    return df.drop_duplicates(subset=["SOURCEURL"], keep="first")
+
+
+def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory, s3_url):
     s3 = s3_factory(anon=True)
     df = dd.read_csv(
         "s3://gdelt-open-data/events/*.csv",
@@ -121,9 +125,20 @@ def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory):
     )
 
     df = df.partitions[-10:]
+    df = df.map_partitions(drop_dupe_per_partition)
+    national_paper = df.SOURCEURL.str.contains("washingtonpost|nytimes", regex=True)
+    df["national_paper"] = national_paper
+    df = df[df["national_paper"]]
 
-    future = from_csv_to_parquet_client.compute(df.GoldsteinScale.mean())
+    if LOCAL_WORKFLOW_RUN:
+        output = "test-output"
+    else:
+        output = s3_url + "/from-csv-to-parquet/"
+
+
+    to_pq = df.to_parquet(output, compute=False)
+
+    future = from_csv_to_parquet_client.compute(to_pq)
     wait(future)
-    print(future.result())
-
-    assert df.GlobalEventID.dtype == "Int64"
+    newdf = dd.read_parquet(output)
+    assert "DATEADDED" in list(newdf.columns)
