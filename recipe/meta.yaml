@@ -34,7 +34,6 @@ requirements:
     - jupyterlab ==3.6.2
     - dask-labextension ==6.1.0
     - lz4 ==4.3.2
-    # - ipykernel ==6.21.3  # FIXME https://github.com/dask/distributed/issues/7688
     - ipywidgets ==8.0.4  # FIXME https://github.com/dask/distributed/issues/7688
     - numba ==0.56.4
     - scikit-learn ==1.2.2
