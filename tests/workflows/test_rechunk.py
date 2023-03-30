@@ -38,6 +38,6 @@ def rechunk_client(
 
 
 def test_rechunk(rechunk_client, s3_url):
-    x = da.random.random((5_000, 5_000, 5_000, 2), chunks="50 MB")  # 1.82 TiB
+    x = da.from_zarr("s3://mur-sst/zarr", component="sea_ice_fraction")  # 3.80 TiB
     y = x.rechunk("200 MB")
     y.to_zarr(s3_url)
