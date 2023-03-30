@@ -16,7 +16,7 @@ def rechunk_cluster(
         f"test-rechunk-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
         tags=github_cluster_tags,
-        **cluster_kwargs["embarrassingly_parallel_cluster"],
+        **cluster_kwargs["rechunk_cluster"],
     ) as cluster:
         yield cluster
 
@@ -28,7 +28,7 @@ def rechunk_client(
     upload_cluster_dump,
     benchmark_all,
 ):
-    n_workers = cluster_kwargs["embarrassingly_parallel_cluster"]["n_workers"]
+    n_workers = cluster_kwargs["rechunk_cluster"]["n_workers"]
     with Client(rechunk_cluster) as client:
         rechunk_cluster.scale(n_workers)
         client.wait_for_workers(n_workers)
@@ -38,6 +38,12 @@ def rechunk_client(
 
 
 def test_rechunk(rechunk_client, s3_url):
-    x = da.from_zarr("s3://mur-sst/zarr", component="sea_ice_fraction")  # 3.80 TiB
-    y = x.rechunk("200 MB")
+    # Dataset is 3.80 TiB (https://registry.opendata.aws/mur)
+    x = da.from_zarr(
+        "s3://mur-sst/zarr",
+        component="sea_ice_fraction",
+        storage_options={"anon": True, "client_kwargs": {"region_name": "us-west-2"}},
+    )
+    assert x.chunksize == (6443, 100, 100)  # 61.45 MiB (dtype = int8)
+    y = x.rechunk((6443, 100, 200))  # 122.89 MiB
     y.to_zarr(s3_url)
