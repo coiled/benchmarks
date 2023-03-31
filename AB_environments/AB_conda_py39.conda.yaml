@@ -12,7 +12,7 @@ channels:
 dependencies:
     - python=3.9
     - pip
-    - coiled >=0.5.8
+    - coiled >=0.2.54
     - numpy ==1.23.5
     - pandas ==1.5.3
     - dask ==2023.3.2
