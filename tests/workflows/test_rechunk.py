@@ -37,7 +37,7 @@ def rechunk_client(
             yield client
 
 
-def test_rechunk(rechunk_client, s3_url):
+def test_rechunk_simple(rechunk_client, s3_url):
     # Dataset is 3.80 TiB (https://registry.opendata.aws/mur)
     x = da.from_zarr(
         "s3://mur-sst/zarr",
