@@ -43,5 +43,5 @@ dependencies:
     - bokeh ==2.4.3  # FIXME https://github.com/dask/distributed/issues/7173
     - pip:
       - dask ==2023.3.2
-      - git+https://github.com/dask/distributed@31b398b6f26fffcec500cdcce2f758f204ebae24
-      - zict ==2.2.0
+      - git+https://github.com/crusaderky/distributed@2f3c5ae4f0ecf0c8cbaa7ad3a73c2d3514016a0b
+      - git+https://github.com/crusaderky/zict@426ca0b43cd7988cd69a506140b604fe3d560723
