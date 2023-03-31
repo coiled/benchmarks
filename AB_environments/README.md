@@ -35,15 +35,15 @@ dependencies:
     - python=3.9
     - <copy-paste from recipe/meta.yaml, minus bits you want to change>
     - pip:
-      - dask==2023.3.1
-      - distributed==2023.3.1
+      - dask ==2023.3.1
+      - distributed ==2023.3.1
 ```
 Instead of published packages, you could also use arbitrary git hashes of arbitrary
 forks, e.g.
 
 ```yaml
     - pip:
-      - dask==2023.3.1
+      - dask ==2023.3.1
       - git+https://github.com/yourname/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
 ```
 The second file in each triplet is a dask config file. If you don't want to change the
@@ -134,8 +134,7 @@ channels:
   - conda-forge
 dependencies:
     - python=3.9
-    - dask==2023.3.1
-    - distributed==2023.3.1
+    - pip
     - coiled >=0.2.54
     - numpy ==1.23.5
     - pandas ==1.5.3
@@ -166,6 +165,9 @@ dependencies:
     - sqlalchemy ==1.4.46
     - pynvml ==11.5.0
     - bokeh ==2.4.3
+    - pip:
+      - dask ==2023.3.1
+      - distributed ==2023.3.1
 ```
 - `AB_environments/AB_baseline.dask.yaml`: (empty file)
 - `AB_environments/AB_baseline.cluster.yaml`: (empty file)
