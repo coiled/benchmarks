@@ -22,12 +22,12 @@ dependencies:
     - jupyterlab ==3.6.2
     - dask-labextension ==6.1.0
     - lz4 ==4.3.2
-    - ipywidgets ==8.0.4  # FIXME https://github.com/dask/distributed/issues/7688
+    - ipywidgets ==8.0.4
     - numba ==0.56.4
     - scikit-learn ==1.2.2
     - ipycytoscape ==1.3.3
     - click ==8.1.3
-    - xarray ==2023.1.0  # Last version supporting Python 3.8
+    - xarray ==2023.1.0
     - zarr ==2.14.2
     - msgpack-python ==1.0.5
     - cloudpickle ==2.2.1
@@ -38,10 +38,10 @@ dependencies:
     - openssl >1.1.0g
     - optuna ==3.1.0
     - scipy ==1.10.1
-    - sqlalchemy ==1.4.46  # FIXME https://github.com/dask/dask/issues/9896
+    - sqlalchemy ==1.4.46
     - pynvml ==11.5.0
-    - bokeh ==2.4.3  # FIXME https://github.com/dask/distributed/issues/7173
+    - bokeh ==2.4.3
     - pip:
       - dask ==2023.3.2
       - git+https://github.com/crusaderky/distributed@2f3c5ae4f0ecf0c8cbaa7ad3a73c2d3514016a0b
-      - git+https://github.com/crusaderky/zict@426ca0b43cd7988cd69a506140b604fe3d560723
+      - git+https://github.com/crusaderky/zict@196becfe279f36813382e7f2aa5b893a6e2f9534
