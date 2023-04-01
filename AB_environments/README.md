@@ -235,7 +235,13 @@ Double check that you're not mix-n-matching conda and pip packages within the sa
 environment file. You should never have a package listed under the conda package and the
 same package under the special `- pip:` tag.
 
-Additionally, you should have ``dask`` and ``distributed`` listed either both as conda
+Additionally, you should have `dask` and `distributed` listed either both as conda
 packages or both as pip packages, but not one in conda and one in pip (this is because
-they pull in the ``dask-core`` dependency).
+they pull in the `dask-core` dependency).
 
+#### Problem:
+The conda environment fails to build, citing incompatibilities with openssl
+
+#### Solution:
+Double check that you didn't accidentally type `- python ==3.9`, which means 3.9.0,
+instead of `- python =3.9`, which means the latest available patch version of 3.9.
