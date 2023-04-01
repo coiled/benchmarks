@@ -10,7 +10,7 @@
 channels:
   - conda-forge
 dependencies:
-    - python ==3.9
+    - python =3.9
     - pip
     - coiled >=0.2.54
     - numpy ==1.23.5
