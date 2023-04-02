@@ -44,4 +44,4 @@ dependencies:
     - pip:
       - git+https://github.com//dask/dask@f607cd61bf5c91abbca9d2d821cb1532ca67843e
       - git+https://github.com/dask/distributed@31b398b6f26fffcec500cdcce2f758f204ebae24
-      - zict ==2.2.0
+      - git+https://github.com/crusaderky/zict@1ab62c046d86e8c9665154a6dedae3b421b28e8d
