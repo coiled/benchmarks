@@ -35,15 +35,15 @@ dependencies:
     - python=3.9
     - <copy-paste from recipe/meta.yaml, minus bits you want to change>
     - pip:
-      - dask ==2023.3.1
-      - distributed ==2023.3.1
+      - dask ==2023.4.1
+      - distributed ==2023.4.1
 ```
 Instead of published packages, you could also use arbitrary git hashes of arbitrary
 forks, e.g.
 
 ```yaml
     - pip:
-      - dask ==2023.3.1
+      - dask ==2023.4.2
       - git+https://github.com/yourname/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
 ```
 The second file in each triplet is a dask config file. If you don't want to change the
@@ -166,8 +166,8 @@ dependencies:
     - pynvml ==11.5.0
     - bokeh ==2.4.3
     - pip:
-      - dask ==2023.3.1
-      - distributed ==2023.3.1
+      - dask ==2023.4.1
+      - distributed ==2023.4.1
 ```
 - `AB_environments/AB_baseline.dask.yaml`: (empty file)
 - `AB_environments/AB_baseline.cluster.yaml`: (empty file)
@@ -231,13 +231,45 @@ $ git push origin --tags     # Or whatever name the fork was added as above
 You get very obscure failures in the workflows, which you can't seem to replicate
 
 #### Solution:
-Double check that you're not mix-n-matching conda and pip packages within the same
-environment file. You should never have a package listed under the conda package and the
-same package under the special `- pip:` tag.
+Double check that you don't have the same packages listed as conda package and under the
+special `- pip:` tag. Installing a package with conda and then upgrading it with pip
+*typically* works, but it's been observed not to (e.g. xgboost).
 
-Additionally, you should have `dask` and `distributed` listed either both as conda
-packages or both as pip packages, but not one in conda and one in pip (this is because
-they pull in the `dask-core` dependency).
+Specifically, `dask` and `distributed` *can* be installed with conda and then upgraded
+with pip, *but* they must be *both* upgraded. Note that specifying the same version with
+pip of a package won't upgrade it.
+
+This is bad:
+```yaml
+dependencies:
+  - dask ==2023.3.2
+  - pip:
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+(distributed-2023.3.2 will be installed from conda anyway, e.g. by coiled)
+
+This is bad:
+```yaml
+dependencies:
+  - dask ==2023.3.2
+  - distributed ==2023.3.2
+  - pip:
+      - dask ==2023.3.2
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+(the dask version is the same in pip and conda, so conda wins)
+
+This is good:
+```yaml
+dependencies:
+  - dask ==2023.3.2
+  - distributed ==2023.3.2
+  - pip:
+      - dask ==2023.4.1
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+dask and distributed versions from conda above are properly uninstalled after they serve
+as a dependency for the other conda packages.
 
 #### Problem:
 The conda environment fails to build, citing incompatibilities with openssl
