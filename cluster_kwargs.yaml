@@ -43,6 +43,8 @@ embarrassingly_parallel_cluster:
 # For tests/workflows/test_uber_lyft.py
 uber_lyft_cluster:
   n_workers: 30
+  backend_options:
+    region: "us-east-1"  # Same region as dataset
 
 # For test_spill.py
 spill_cluster:
