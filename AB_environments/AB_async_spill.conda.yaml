@@ -5,6 +5,6 @@ dependencies:
     - pip
     - coiled-runtime ==0.2.1
     - pip:
-      - git+https://github.com/dask/dask@58ef6a6c17804ebe26c70ddba1dfd7765761c72f  # 10121
-      - git+https://github.com/crusaderky/distributed@7ae9f0e0b1e487ea1c008f6c9f20553b813a2908
-      - git+https://github.com/crusaderky/zict@1c6518d3c0794ba4b4bae762412f0102551a6097
+      - git+https://github.com/dask/dask@58ef6a6c17804ebe26c70ddba1dfd7765761c72f  # dask/dask#10121
+      - git+https://github.com/crusaderky/distributed@2114a7b3452c011c2534bf8c23cc219516d8cdd9
+      - git+https://github.com/crusaderky/zict@1c6518d3c0794ba4b4bae762412f0102551a6097  # dask/zict#88
