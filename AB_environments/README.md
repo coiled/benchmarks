@@ -32,15 +32,15 @@ tests; e.g.
 channels:
   - conda-forge
 dependencies:
-    - python=3.9
-    - coiled-runtime=0.1.1
+    - python =3.9
+    - coiled-runtime ==0.2.1
     - pip:
-      - dask==2022.11.1
-      - distributed==2022.11.1
+      - dask ==2023.3.2
+      - distributed ==2023.3.2
 ```
 In this example it's using `coiled-runtime` as a base, but it doesn't have to. If you do
 use `coiled-runtime` though, you must install any conflicting packages with pip; in the
-example above, `coiled-runtime-0.1.0` pins `dask=2022.6.0` and `distributed=2022.6.0`,
+example above, `coiled-runtime-0.2.1` pins `dask=2022.11.0` and `distributed=2022.11.0`,
 so if you want to install a different version you need to use pip to circumvent the pin.
 
 Instead of published packages, you could also use arbitrary git hashes of arbitrary
@@ -48,7 +48,7 @@ forks, e.g.
 
 ```yaml
     - pip:
-      - dask==2022.9.0
+      - dask ==2023.3.2
       - git+https://github.com/yourname/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
 ```
 The second file in each triplet is a dask config file. If you don't want to change the
@@ -139,10 +139,10 @@ channels:
   - conda-forge
 dependencies:
     - python=3.9
-    - coiled-runtime=0.1.0
+    - coiled-runtime ==0.2.1
     - pip:
-      - dask==2022.9.0
-      - distributed==2022.9.0
+      - dask ==2023.3.2
+      - distributed ==2023.3.2
 ```
 - `AB_environments/AB_baseline.dask.yaml`: (empty file)
 - `AB_environments/AB_baseline.cluster.yaml`: (empty file)
@@ -201,3 +201,54 @@ upstream        https://github.com/dask/distributed.git (push)
 $ git fetch upstream --tags  # Or whatever name dask was added as above
 $ git push origin --tags     # Or whatever name the fork was added as above
 ```
+
+#### Problem:
+You get very obscure failures in the workflows, which you can't seem to replicate
+
+#### Solution:
+Double check that you don't have the same packages listed as conda package and under the
+special `- pip:` tag. Installing a package with conda and then upgrading it with pip
+*typically* works, but it's been observed not to (e.g. xgboost).
+
+Specifically, `dask` and `distributed` *can* be installed with conda and then upgraded
+with pip, *but* they must be *both* upgraded. Note that specifying the same version with
+pip of a package won't upgrade it.
+
+This is bad:
+```yaml
+dependencies:
+  - dask ==2023.3.2
+  - pip:
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+(distributed-2023.3.2 will be installed from conda anyway, e.g. by coiled)
+
+This is bad:
+```yaml
+dependencies:
+  - dask ==2023.3.2
+  - distributed ==2023.3.2
+  - pip:
+      - dask ==2023.3.2
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+(the dask version is the same in pip and conda, so conda wins)
+
+This is good:
+```yaml
+dependencies:
+  - dask ==2023.3.2
+  - distributed ==2023.3.2
+  - pip:
+      - dask ==2023.4.1
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+dask and distributed versions from conda above are properly uninstalled after they serve
+as a dependency for the other conda packages.
+
+#### Problem:
+The conda environment fails to build, citing incompatibilities with openssl
+
+#### Solution:
+Double check that you didn't accidentally type `- python ==3.9`, which means 3.9.0,
+instead of `- python =3.9`, which means the latest available patch version of 3.9.
