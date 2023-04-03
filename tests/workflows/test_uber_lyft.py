@@ -38,13 +38,13 @@ def uber_lyft_client(
 
 
 @pytest.fixture
-def ddf(uber_lyft_client):
+def ddf(uber_lyft_client, read_parquet_with_pyarrow):
     """NYC taxi Uber/Lyft dataset"""
-    paths = [
-        f"s3://coiled-datasets/mrocklin/nyc-taxi-fhv/{year}-*.parquet"
-        for year in range(2019, 2023)
-    ]
-    return dd.read_parquet(paths, engine="pyarrow", storage_options={"anon": True})
+    return dd.read_parquet(
+        "s3://coiled-datasets/uber-lyft-tlc/",
+        engine="pyarrow",
+        storage_options={"anon": True},
+    )
 
 
 def test_mean_tips(ddf):
