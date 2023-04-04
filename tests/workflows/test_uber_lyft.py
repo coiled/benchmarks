@@ -38,30 +38,43 @@ def uber_lyft_client(
 
 
 @pytest.fixture
-def ddf(uber_lyft_client, read_parquet_with_pyarrow):
+def ddf(uber_lyft_client):
     """NYC taxi Uber/Lyft dataset"""
-    return dd.read_parquet(
-        "s3://coiled-datasets/uber-lyft-tlc/",
-        engine="pyarrow",
-        storage_options={"anon": True},
-    )
+    return dd.read_parquet("s3://coiled-datasets/uber-lyft-tlc/")
 
 
-def test_mean_tips(ddf):
-    """How many passengers tip"""
+def test_explore_dataset(ddf):
+    """Run some exploratory aggs on the dataset"""
+
+    # how many riders tip, in general
     (ddf.tips != 0).mean().compute()
 
+    taxi_companies = {
+        "HV0002": "Juno",
+        "HV0003": "Uber",
+        "HV0004": "Via",
+        "HV0005": "Lyft",
+    }
 
-def test_max_pay(ddf):
-    """Max driver pay"""
-    ddf.driver_pay.max().compute()
+    # add a column to indicate company, instead of license number
+    ddf["company"] = ddf.hvfhs_license_num.replace(taxi_companies)
 
+    # how many riders tip, grouped by company
+    def over_zero(x):
+        return x[x > 0].count() / x.count()
 
-def test_max_distance(ddf):
-    """Ride count per rideshare company"""
-    ddf.groupby("hvfhs_license_num").count().compute()
+    ddf.groupby("company").tips.apply(over_zero, meta=("tips", float)).compute()
 
+    # what's the largest pay that driver got, by company
+    ddf.groupby("company").driver_pay.max().compute()
 
-def test_longer_trips(ddf):
-    """How many passengers ride over 5 miles"""
-    (ddf.trip_miles > 5).mean().compute()
+    # ride count per company
+    ddf.groupby("company").count().compute()
+
+    # how many passengers ride over 5 miles, per company
+    def over_five(x):
+        return x[x > 5].count() / x.count()
+
+    ddf.groupby("company").trip_miles.apply(
+        over_five, meta=("trip_miles", float)
+    ).compute()
