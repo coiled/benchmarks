@@ -16,4 +16,4 @@ dependencies:
     - pip:
       - git+https://github.com/dask/dask@58ef6a6c17804ebe26c70ddba1dfd7765761c72f  # dask/dask#10121
       - git+https://github.com/dask/distributed@28a28d7092dc24a1521931b0e331a861eb821251  # dask/distributed#7739
-      - git+https://github.com/dask/zict@29410ddf8b98618b36c687c471ff5abe95808e2a  # dask/zict#83
+      - git+https://github.com/dask/zict@b96afc4158c8b129e1729b75def67d87982dc41c  # dask/zict#92
