@@ -40,11 +40,26 @@ def uber_lyft_client(
 @pytest.fixture
 def ddf(uber_lyft_client):
     """NYC taxi Uber/Lyft dataset"""
-    return dd.read_parquet("s3://coiled-datasets/uber-lyft-tlc/")
+    columns = [
+        "hvfhs_license_num",
+        "tips",
+        "base_passenger_fare",
+        "driver_pay",
+        "trip_miles",
+        "trip_time",
+        "shared_request_flag",
+    ]
+    return dd.read_parquet("s3://coiled-datasets/uber-lyft-tlc/", columns=columns)
 
 
 def test_explore_dataset(ddf):
     """Run some exploratory aggs on the dataset"""
+
+    # convert object column to arrow string
+    ddf["hvfhs_license_num"] = ddf["hvfhs_license_num"].astype("string[pyarrow]")
+
+    # persist so we only read once
+    ddf = ddf.persist()
 
     # how many riders tip, in general
     (ddf.tips != 0).mean().compute()
@@ -65,8 +80,10 @@ def test_explore_dataset(ddf):
 
     ddf.groupby("company").tips.apply(over_zero, meta=("tips", float)).compute()
 
-    # what's the largest pay that driver got, by company
-    ddf.groupby("company").driver_pay.max().compute()
+    # what's the largest and average pay and tips that driver got, by company
+    ddf.groupby("company").agg(
+        {"driver_pay": ["max", "mean"], "tips": ["max", "mean"]}
+    ).compute()
 
     # ride count per company
     ddf.groupby("company").count().compute()
