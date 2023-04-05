@@ -133,11 +133,13 @@ You want to test the impact of disabling work stealing. You'll create at least 4
 channels:
   - conda-forge
 dependencies:
-    - python=3.9
+    - python =3.9
     - pip
     - coiled >=0.2.54
     - numpy ==1.23.5
-    - pandas ==2.0.0
+    - pandas ==1.5.3
+    - dask ==2023.3.2
+    - distributed ==2023.3.2
     - fsspec ==2023.3.0
     - s3fs ==2023.3.0
     - gcsfs ==2023.3.0
@@ -165,9 +167,6 @@ dependencies:
     - sqlalchemy ==1.4.46
     - pynvml ==11.5.0
     - bokeh ==2.4.3
-    - pip:
-      - dask ==2023.4.1
-      - distributed ==2023.4.1
 ```
 - `AB_environments/AB_baseline.dask.yaml`: (empty file)
 - `AB_environments/AB_baseline.cluster.yaml`: (empty file)
