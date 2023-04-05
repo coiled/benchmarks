@@ -109,7 +109,7 @@ def test_latest_coiled():
 
     # Get latest `coiled` release version from conda-forge
     output = subprocess.check_output(
-        shlex.split("conda search --override-channels --json -c conda-forge")
+        shlex.split("conda search --override-channels --json -c conda-forge coiled")
     )
     result = json.loads(output)
     v_latest = Version(result["coiled"][-1]["version"])
