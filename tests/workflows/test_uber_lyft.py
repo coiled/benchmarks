@@ -37,9 +37,10 @@ def uber_lyft_client(
             yield client
 
 
-@pytest.fixture
-def ddf(uber_lyft_client):
-    """NYC taxi Uber/Lyft dataset"""
+def test_explore_dataset(uber_lyft_client):
+    """Run some exploratory aggs on the dataset"""
+
+    # NYC taxi Uber/Lyft dataset
     columns = [
         "hvfhs_license_num",
         "tips",
@@ -49,20 +50,10 @@ def ddf(uber_lyft_client):
         "trip_time",
         "shared_request_flag",
     ]
-    return dd.read_parquet("s3://coiled-datasets/uber-lyft-tlc/", columns=columns)
-
-
-def test_explore_dataset(ddf):
-    """Run some exploratory aggs on the dataset"""
+    ddf = dd.read_parquet("s3://coiled-datasets/uber-lyft-tlc/", columns=columns)
 
     # convert object column to arrow string
     ddf["hvfhs_license_num"] = ddf["hvfhs_license_num"].astype("string[pyarrow]")
-
-    # persist so we only read once
-    ddf = ddf.persist()
-
-    # how many riders tip, in general
-    (ddf.tips != 0).mean().compute()
 
     taxi_companies = {
         "HV0002": "Juno",
@@ -73,6 +64,12 @@ def test_explore_dataset(ddf):
 
     # add a column to indicate company, instead of license number
     ddf["company"] = ddf.hvfhs_license_num.replace(taxi_companies)
+
+    # persist so we only read once
+    ddf = ddf.persist()
+
+    # how many riders tip, in general
+    (ddf.tips != 0).mean().compute()
 
     # how many riders tip, grouped by company
     def over_zero(x):
