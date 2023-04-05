@@ -24,7 +24,7 @@ requirements:
     - pip
     - coiled >=0.2.54
     - numpy ==1.23.5
-    - pandas ==2.0.0
+    - pandas ==1.5.3
     - dask =={{ dask_version }}
     - distributed =={{ distributed_version }}
     - fsspec ==2023.3.0
