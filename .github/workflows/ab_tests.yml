@@ -92,7 +92,8 @@ jobs:
       - name: Run Coiled Runtime Tests
         id: test
         env:
-          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+          DASK_COILED__TOKEN: ${{ secrets.COILED_STAGING_BENCHMARK_BOT_TOKEN }}
+          DASK_COILED__SERVER: https://staging.coiledhq.com
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
