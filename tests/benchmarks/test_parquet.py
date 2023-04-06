@@ -54,7 +54,7 @@ def test_read_spark_generated_data(parquet_client):
     ddf.groupby(ddf.index).first().compute()
 
 
-@run_up_to_nthreads("parquet_cluster", 50, reason="fixed dataset")
+@run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
 def test_read_hive_partitioned_data(parquet_client):
     """
     Read a dataset partitioned by year and quarter.
@@ -88,7 +88,7 @@ def test_write_wide_data(parquet_client, s3_url):
     ddf.to_parquet(s3_url + "/wide-data/")
 
 
-@run_up_to_nthreads("parquet_cluster", 50, reason="fixed dataset")
+@run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
 @pytest.mark.parametrize("kind", ("s3fs", "pandas", "dask"))
 def test_download_throughput(parquet_client, kind):
     # Test throughput for downloading and parsing a ~500 MB file

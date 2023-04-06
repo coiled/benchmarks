@@ -31,6 +31,15 @@ parquet_cluster:
   n_workers: 15
   worker_vm_types: [m5.xlarge]  # 4 CPU, 16 GiB
 
+# For tests/workflows/test_embarrassingly_parallel.py
+embarrassingly_parallel_cluster:
+  n_workers: 100
+  # TODO: Remove the `m6i.xlarge` worker specification below
+  # once it's the default worker instance type
+  worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB
+  backend_options:
+    region: "us-east-1"  # Same region as dataset
+
 # For test_spill.py
 spill_cluster:
   n_workers: 5
