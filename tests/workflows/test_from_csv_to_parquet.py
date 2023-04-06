@@ -123,3 +123,5 @@ def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory, s3_url):
     output = s3_url + "/from-csv-to-parquet/"
 
     df.to_parquet(output)
+    df = dd.read_parquet(output)
+    df.compute()
