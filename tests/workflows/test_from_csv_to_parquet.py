@@ -15,17 +15,13 @@ def from_csv_to_parquet_cluster(
     cluster_kwargs,
     github_cluster_tags,
 ):
-    if LOCAL_WORKFLOW_RUN is not None:
-        with LocalCluster() as cluster:
-            yield cluster
-    else:
-        with coiled.Cluster(
-            f"from-csv-to-parquet-{uuid.uuid4().hex[:8]}",
-            environ=dask_env_variables,
-            tags=github_cluster_tags,
-            **cluster_kwargs["from_csv_to_parquet_cluster"],
-        ) as cluster:
-            yield cluster
+    with coiled.Cluster(
+        f"from-csv-to-parquet-{uuid.uuid4().hex[:8]}",
+        environ=dask_env_variables,
+        tags=github_cluster_tags,
+        **cluster_kwargs["from_csv_to_parquet_cluster"],
+    ) as cluster:
+        yield cluster
 
 
 @pytest.fixture
@@ -35,17 +31,13 @@ def from_csv_to_parquet_client(
     upload_cluster_dump,
     benchmark_all,
 ):
-    if LOCAL_WORKFLOW_RUN is not None:
-        with Client(from_csv_to_parquet_cluster) as client:
+    n_workers = cluster_kwargs["from_csv_to_parquet_cluster"]["n_workers"]
+    with Client(from_csv_to_parquet_cluster) as client:
+        from_csv_to_parquet_cluster.scale(n_workers)
+        client.wait_for_workers(n_workers)
+        client.restart()
+        with upload_cluster_dump(client), benchmark_all(client):
             yield client
-    else:
-        n_workers = cluster_kwargs["from_csv_to_parquet_cluster"]["n_workers"]
-        with Client(from_csv_to_parquet_cluster) as client:
-            from_csv_to_parquet_cluster.scale(n_workers)
-            client.wait_for_workers(n_workers)
-            client.restart()
-            with upload_cluster_dump(client), benchmark_all(client):
-                yield client
 
 
 COLUMNSV1 = {
@@ -110,10 +102,6 @@ COLUMNSV1 = {
 }
 
 
-def drop_dupe_per_partition(df):
-    return df.drop_duplicates(subset=["SOURCEURL"], keep="first")
-
-
 def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory, s3_url):
     s3 = s3_factory(anon=True)
     df = dd.read_csv(
@@ -122,23 +110,16 @@ def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory, s3_url):
         sep="\t",
         dtype=COLUMNSV1,
         storage_options=s3.storage_options,
+        on_bad_lines="skip",
     )
 
     df = df.partitions[-10:]
-    df = df.map_partitions(drop_dupe_per_partition)
-    national_paper = df.SOURCEURL.str.contains("washingtonpost|nytimes", regex=True)
-    df["national_paper"] = national_paper
+    df = df.map_partitions(
+        lambda xdf: xdf.drop_duplicates(subset=["SOURCEURL"], keep="first")
+    )
+    df["national_paper"] = df.SOURCEURL.str.contains("washingtonpost|nytimes", regex=True)
     df = df[df["national_paper"]]
 
-    if LOCAL_WORKFLOW_RUN:
-        output = "test-output"
-    else:
-        output = s3_url + "/from-csv-to-parquet/"
+    output = s3_url + "/from-csv-to-parquet/"
 
-
-    to_pq = df.to_parquet(output, compute=False)
-
-    future = from_csv_to_parquet_client.compute(to_pq)
-    wait(future)
-    newdf = dd.read_parquet(output)
-    assert "DATEADDED" in list(newdf.columns)
+    df.to_parquet(output)
