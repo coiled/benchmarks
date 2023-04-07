@@ -113,12 +113,10 @@ def test_explore_dataset(uber_lyft_client):
     ddf.groupby("company").tip_percentage.mean().compute()
 
     # average trip time by provider
-    ddf.groupby("hvfhs_license_num").trip_time.agg(
-        ["min", "max", "mean", "std"]
-    ).compute()
+    ddf.groupby("company").trip_time.agg(["min", "max", "mean", "std"]).compute()
 
     # ride count per company
-    ddf.groupby("company").count().compute()
+    ddf.company.value_counts().compute()
 
     # how many passengers ride over 5 miles, per company
     def over_five(x):
