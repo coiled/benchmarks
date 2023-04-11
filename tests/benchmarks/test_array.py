@@ -115,7 +115,7 @@ def test_basic_sum(small_client, speed, chunk_shape):
 
 
 @pytest.mark.skip(
-    "fails in actual CI; see https://github.com/coiled/coiled-runtime/issues/253"
+    "fails in actual CI; see https://github.com/coiled/benchmarks/issues/253"
 )
 def test_climatic_mean(small_client, new_array):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-535009454
@@ -189,7 +189,7 @@ def test_vorticity(small_client, new_array):
 def test_double_diff(small_client, new_array):
     # Variant of https://github.com/dask/distributed/issues/6597
     memory = cluster_memory(small_client)  # 76.66 GiB
-    # FIXME https://github.com/coiled/coiled-runtime/issues/564
+    # FIXME https://github.com/coiled/benchmarks/issues/564
     #       this algorithm is supposed to scale linearly!
     shape = scaled_array_shape_quadratic(memory, "76.66 GiB", ("x", "x"))
 

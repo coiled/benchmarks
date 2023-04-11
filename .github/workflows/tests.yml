@@ -118,7 +118,7 @@ jobs:
   process-results:
     needs: tests
     name: Combine separate benchmark results
-    if: always() && github.repository == 'coiled/coiled-runtime'
+    if: always() && github.repository == 'coiled/benchmarks'
     runs-on: ubuntu-latest
     concurrency:
       # Fairly strict concurrency rule to avoid stepping on benchmark db.
@@ -157,7 +157,7 @@ jobs:
           bash ci/scripts/combine-dbs.sh
 
       - name: Upload benchmark db
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/benchmarks'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
@@ -215,7 +215,7 @@ jobs:
     if: |
       always()
       && github.event_name != 'pull_request'
-      && github.repository == 'coiled/coiled-runtime'
+      && github.repository == 'coiled/benchmarks'
       && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
 
     runs-on: ubuntu-latest
@@ -274,7 +274,7 @@ jobs:
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.7
-        if:  github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if:  github.ref == 'refs/heads/main' && github.repository == 'coiled/benchmarks'
         with:
           branch: gh-pages
           folder: static
