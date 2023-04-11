@@ -62,7 +62,7 @@ test:
     - pyarrow
 
 about:
-  home: https://github.com/coiled/coiled-runtime
+  home: https://github.com/coiled/benchmarks
   summary:  "Simple and fast way to get started with Dask"
   license: BSD-3-Clause
   license_family: BSD

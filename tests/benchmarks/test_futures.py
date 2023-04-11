@@ -25,7 +25,7 @@ def test_large_map(small_client):
 
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 @pytest.mark.skip(
-    reason="Skip until https://github.com/coiled/coiled-runtime/issues/521 is fixed"
+    reason="Skip until https://github.com/coiled/benchmarks/issues/521 is fixed"
 )
 def test_large_map_first_work(small_client):
     """

@@ -11,8 +11,8 @@ To run an A/B test:
 
 Branch from main, on the coiled repo itself. Preferably, call the branch
 something meaningful, e.g. `AB/jobstealing`.
-You *must* create the branch on the Coiled repo (`coiled/coiled-runtime`); CI
-workflows will not work on a fork (`yourname/coiled-runtime`).
+You *must* create the branch on the Coiled repo (`coiled/benchmarks`); CI
+workflows will not work on a fork (`yourname/benchmarks`).
 
 ### 2. Create files in AB_environments/
 
@@ -195,7 +195,7 @@ max_parallel:
 
 ### 6. Run CI
 - `git push`. Note: you should *not* open a Pull Request. 
-- Open https://github.com/coiled/coiled-runtime/actions/workflows/ab_tests.yml and wait
+- Open https://github.com/coiled/benchmarks/actions/workflows/ab_tests.yml and wait
   for the run to complete.
 - Open the run from the link above. In the Summary tab, scroll down and download the
   `static-dashboard` artifact. 

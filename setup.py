@@ -51,7 +51,7 @@ setup(
     name="coiled-runtime",
     version="0.2.1",
     description="Simple and fast way to get started with Dask",
-    url="https://github.com/coiled/coiled-runtime",
+    url="https://github.com/coiled/benchmarks",
     license="BSD",
     classifiers=[
         "Programming Language :: Python :: 3",
