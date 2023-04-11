@@ -6,8 +6,6 @@ import dask.dataframe as dd
 import pytest
 from distributed import Client, LocalCluster, wait
 
-LOCAL_WORKFLOW_RUN = os.environ.get("LOCAL_WORKFLOW_RUN")
-
 
 @pytest.fixture(scope="module")
 def from_csv_to_parquet_cluster(
