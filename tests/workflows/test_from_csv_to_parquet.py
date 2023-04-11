@@ -104,8 +104,26 @@ COLUMNSV1 = {
 
 def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory, s3_url):
     s3 = s3_factory(anon=True)
+
+    bad_files = [
+        "gdelt-open-data/events/20161004.export.csv",
+        "gdelt-open-data/events/20170106.export.csv",
+        "gdelt-open-data/events/20170422.export.csv",
+        "gdelt-open-data/events/20170802.export.csv",
+        "gdelt-open-data/events/20170920.export.csv",
+        "gdelt-open-data/events/20171021.export.csv",
+        "gdelt-open-data/events/20180415.export.csv",
+        "gdelt-open-data/events/20180416.export.csv",
+        "gdelt-open-data/events/20180613.export.csv",
+        "gdelt-open-data/events/20180806.export.csv",
+        "gdelt-open-data/events/20190217.export.csv",
+        "gdelt-open-data/events/20190613.export.csv",
+    ]
+    files = s3.ls("s3://gdelt-open-data/events/")[120:]
+    files = [f"s3://{f}" for f in files if f not in bad_files]
+
     df = dd.read_csv(
-        "s3://gdelt-open-data/events/*.csv",
+        files,
         names=COLUMNSV1.keys(),
         sep="\t",
         dtype=COLUMNSV1,
@@ -113,15 +131,14 @@ def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory, s3_url):
         on_bad_lines="skip",
     )
 
-    df = df.partitions[-10:]
     df = df.map_partitions(
         lambda xdf: xdf.drop_duplicates(subset=["SOURCEURL"], keep="first")
     )
-    df["national_paper"] = df.SOURCEURL.str.contains("washingtonpost|nytimes", regex=True)
+    df["national_paper"] = df.SOURCEURL.str.contains(
+        "washingtonpost|nytimes", regex=True
+    )
     df = df[df["national_paper"]]
 
     output = s3_url + "/from-csv-to-parquet/"
 
     df.to_parquet(output)
-    df = dd.read_parquet(output)
-    df.compute()
