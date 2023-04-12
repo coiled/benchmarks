@@ -45,6 +45,10 @@ optuna_cluster:
   n_workers: 50
   # TODO: Remove the `m6i.xlarge` worker specification below
   # once it's the default worker instance type
+
+# For tests/workflows/test_uber_lyft.py
+uber_lyft_cluster:
+  n_workers: 20
   worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB
 
 # For test_spill.py
