@@ -69,17 +69,22 @@ def pytorch_optuna_cluster(
     #             "pynvml=11.4.1",
     #         ],
     #     },
+    #     pip=[
+    #         "git+https://github.com/coiled/benchmarks.git@pytorch-optuna-workflow",
+    #         "pytest"
+    #     ],
     #     gpu_enabled=True,
     # )
 
     # Remove auto default 'package_sync', error having both
     # package_sync and software specified
     kwargs = cluster_kwargs["pytorch_optuna_cluster"]
-    kwargs.pop("package_sync", None)
+    # kwargs.pop("package_sync", True)
+    kwargs['package_sync'] = True
 
     with coiled.Cluster(
         name=name,
-        software="pytorch-optuna-18febb2f",
+        software=name,
         environ=dask_env_variables,
         tags=github_cluster_tags,
         **kwargs,
@@ -265,7 +270,7 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
 
     study = optuna.create_study(
         direction="minimize",
-        storage=DaskStorage(),
+        storage=DaskStorage(client=pytorch_optuna_client),
     )
     futures = [
         pytorch_optuna_client.submit(study.optimize, objective, n_trials=1, pure=False)
