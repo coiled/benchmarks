@@ -84,7 +84,7 @@ def pytorch_optuna_cluster(
 
     with coiled.Cluster(
         name=name,
-        software=name,
+        # software=name,
         environ=dask_env_variables,
         tags=github_cluster_tags,
         **kwargs,
@@ -279,7 +279,6 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
 
     _ = wait(futures)
 
-    breakpoint()
 
 
 class FakeImageDataset(torch.utils.data.Dataset):
