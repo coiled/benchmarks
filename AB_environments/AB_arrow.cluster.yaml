@@ -1,6 +1,14 @@
-# Special environment file for A/B testing, used to define cluster creation options for
-# the baseline environment.
-# Change contents, but do not rename.
+# Sample cluster creation options file for A/B testing.
+# Change contents/delete/rename as needed.
+
+# Every A/B environment *must* present these three files:
+# - AB_<name>.conda.yaml
+# - AB_<name>.dask.yaml
+# - AB_<name>.cluster.yaml
 
 # Overrides ../cluster_kwargs.yaml.
 # Leave empty if you don't want to override anything.
+
+# small_cluster:
+#   n_workers: 5
+#   worker_vm_types: [m6i.xlarge]  # 4CPU, 16GiB
