@@ -191,7 +191,7 @@ def make_barchart(
 
     by_test = len(df["fullname"].unique()) == 1
     if by_test:
-        df = df.sort_values("runtime", key=natural_sort_key)
+        df = df.sort_values("runtime", key=natural_sort_key_pd)
         y = altair.Y("runtime", title="Runtime", sort=None)
         n_bars = df["runtime"].unique().size
     else:
@@ -664,6 +664,10 @@ def make_index_html_report(
         title="Coiled Runtime Benchmarks",
         resources=CDN,
     )
+
+
+def natural_sort_key_pd(s: pandas.Series) -> pandas.Series:
+    return pandas.Series([natural_sort_key(v) for v in s], index=s.index)
 
 
 def parse_args() -> argparse.Namespace:
