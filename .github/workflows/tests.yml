@@ -26,7 +26,6 @@ defaults:
 jobs:
   tests:
     name: Tests - ${{ matrix.os }} py${{ matrix.python-version }}
-    # name: Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -95,14 +94,12 @@ jobs:
           echo $EXTRA_OPTIONS
           echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
 
-      - name: Run Coiled Runtime Tests
+      - name: Run tests
         id: test
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          # COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          # DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
           DB_NAME: ${{ matrix.os }}-py${{ matrix.python-version }}.db
           BENCHMARK: true
           CLUSTER_DUMP: always
@@ -117,8 +114,6 @@ jobs:
         with:
           name: ${{ matrix.os }}-py${{ matrix.python-version }}
           path: ${{ matrix.os }}-py${{ matrix.python-version }}.db
-          # name: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-          # path: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
   process-results:
     needs: tests
@@ -214,35 +209,35 @@ jobs:
         run: |
           echo "$(<regressions_summary.md)" >> $GITHUB_STEP_SUMMARY
 
-  report:
-    name: report
-    needs: [tests, regressions]
-    if: |
-      always()
-      && github.event_name != 'pull_request'
-      && github.repository == 'coiled/benchmarks'
-      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
+  # report:
+  #   name: report
+  #   needs: [tests, regressions]
+  #   if: |
+  #     always()
+  #     && github.event_name != 'pull_request'
+  #     && github.repository == 'coiled/benchmarks'
+  #     && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
 
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v3
-      - name: Report failures
-        uses: actions/github-script@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-            const issue_body = `[Workflow Run URL](${workflow_url})`
-            github.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: issue_body,
-                title: "⚠️ CI failed ⚠️",
-                labels: ["ci-failure"],
-            })
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Report failures
+  #       uses: actions/github-script@v3
+  #       with:
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         script: |
+  #           const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+  #           const issue_body = `[Workflow Run URL](${workflow_url})`
+  #           github.issues.create({
+  #               owner: context.repo.owner,
+  #               repo: context.repo.repo,
+  #               body: issue_body,
+  #               title: "⚠️ CI failed ⚠️",
+  #               labels: ["ci-failure"],
+  #           })
 
   static-site:
     needs: process-results

@@ -18,6 +18,7 @@ import pandas
 import panel
 import sqlalchemy
 from bokeh.resources import Resources
+from dask.utils import natural_sort_key
 
 CDN = Resources("cdn")
 
@@ -190,7 +191,7 @@ def make_barchart(
 
     by_test = len(df["fullname"].unique()) == 1
     if by_test:
-        df = df.sort_values("runtime", key=runtime_sort_key_pd)
+        df = df.sort_values("runtime", key=natural_sort_key)
         y = altair.Y("runtime", title="Runtime", sort=None)
         n_bars = df["runtime"].unique().size
     else:
@@ -473,7 +474,7 @@ def make_barchart_html_report(
                     kind="barchart",
                     title=runtime,
                 )
-                for runtime in sorted(df_by_runtime.groups, key=runtime_sort_key)
+                for runtime in sorted(df_by_runtime.groups, key=natural_sort_key)
             ]
         flex = panel.FlexBox(*panes, align_items="start", justify_content="start")
         tabs.append((category.title(), flex))
@@ -531,7 +532,7 @@ def make_ab_html_report(
                 title=runtime,
                 baseline=baseline,
             )
-            for runtime in sorted(df_by_runtime.groups, key=runtime_sort_key)
+            for runtime in sorted(df_by_runtime.groups, key=natural_sort_key)
             if runtime != baseline
         ]
         flex = panel.FlexBox(*panes, align_items="start", justify_content="start")
@@ -665,34 +666,6 @@ def make_index_html_report(
     )
 
 
-def runtime_sort_key(runtime: str) -> tuple:
-    """Runtimes are in the format coiled-<coiled-runtime version>-py<python version>
-    e.g. coiled-latest-py3.8
-
-    Sort them by coiled-runtime and python version, both descending.
-    """
-    t = runtime.split("-")
-    assert len(t) == 3
-    assert t[0] == "coiled"
-    # AB_a > AB_b > upstream > latest > 0.1.0 > 0.0.4
-    if t[1].startswith("AB_"):
-        coiled_version = [-3, t[1]]
-    elif t[1] == "upstream":
-        coiled_version = [-2]
-    elif t[1] == "latest":
-        coiled_version = [-1]
-    else:
-        coiled_version = [0] + [-int(v) for v in t[1].split(".")]
-
-    assert t[2][:2] == "py"
-    py_version = [-int(v) for v in t[2][2:].split(".")]
-    return coiled_version, py_version
-
-
-def runtime_sort_key_pd(s: pandas.Series) -> pandas.Series:
-    return pandas.Series([runtime_sort_key(v) for v in s], index=s.index)
-
-
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Generate a static HTML report comparing metrics from the runs"
@@ -735,17 +708,15 @@ def main() -> None:
     df = pandas.read_sql(
         "select * from test_run where platform = 'linux' "
         "and call_outcome in ('passed', 'failed')"
-        "and coiled_runtime_version >= '0.2.1' ",
+        "and coiled_runtime_version = 'upstream'",
         engine,
     )
     df = df.assign(
         start=pandas.to_datetime(df.start),
         end=pandas.to_datetime(df.end),
-        runtime=(
-            "coiled-"
-            + df.coiled_runtime_version
-            + "-py"
-            + df.python_version.str.split(".", n=2).str[:2].str.join(".")
+        # TODO: Rename this something other than `runtime`
+        runtime=df.python_version.apply(
+            lambda v: "Python " + ".".join(v.split(".")[:2])
         ),
         category=df.path.str.split("/", n=1).str[0],
         sourcename=df.path.str.cat(df.originalname, "::"),
@@ -762,12 +733,12 @@ def main() -> None:
         df.to_pickle(out_fname)
 
     # Generate HTML pages
-    runtimes = sorted(df.runtime.unique(), key=runtime_sort_key)
+    runtimes = sorted(df.runtime.unique(), key=natural_sort_key)
     for runtime in runtimes:
         make_timeseries_html_report(df, output_dir, runtime)
 
-    for (runtime, fullname), df2 in df.groupby(["runtime", "fullname"]):
-        make_details_html_report(df2, output_dir, runtime, fullname)
+    # for (runtime, fullname), df2 in df.groupby(["runtime", "fullname"]):
+    #     make_details_html_report(df2, output_dir, runtime, fullname)
 
     # Do not use data that is more than a week old in statistical analysis.
     # Also exclude failed tests.
