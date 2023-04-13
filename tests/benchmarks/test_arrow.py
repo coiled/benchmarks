@@ -5,54 +5,48 @@ from ..utils_test import cluster_memory, timeseries_of_size, wait
 
 
 @pytest.fixture(params=[True, False], ids=["string[pyarrow]", "object"])
-def series_with_client(request, small_client):
+def series(request, small_client):
     memory = cluster_memory(small_client)
     df = timeseries_of_size(memory)
     series = df.name
     if request.param:
         series = series.astype(pd.StringDtype("pyarrow"))
     series = series.persist()
-    yield series, small_client
+    yield series
 
 
-def test_unique(series_with_client):
+def test_unique(series, small_client):
     """Find unique values"""
-    series, client = series_with_client
     result = series.unique()
-    wait(result, client, 10 * 60)
+    wait(result, small_client, 10 * 60)
 
 
-def test_contains(series_with_client):
+def test_contains(series, small_client):
     """String contains"""
-    series, client = series_with_client
     result = series.str.contains("a")
-    wait(result, client, 10 * 60)
+    wait(result, small_client, 10 * 60)
 
 
-def test_startswith(series_with_client):
+def test_startswith(series, small_client):
     """String starts with"""
-    series, client = series_with_client
     result = series.str.startswith("B")
-    wait(result, client, 10 * 60)
+    wait(result, small_client, 10 * 60)
 
 
-def test_upper(series_with_client):
+def test_upper(series, small_client):
     """String upper"""
-    series, client = series_with_client
     result = series.str.upper()
-    wait(result, client, 10 * 60)
+    wait(result, small_client, 10 * 60)
 
 
-def test_filter(series_with_client):
+def test_filter(series, small_client):
     """How fast can we filter the Series"""
-    series, client = series_with_client
     name = series.head(1)[0]  # Get first name that appears
     result = series[series == name]
-    wait(result, client, 10 * 60)
+    wait(result, small_client, 10 * 60)
 
 
-def test_value_counts(series_with_client):
+def test_value_counts(series, small_client):
     """Value counts on string values"""
-    series, client = series_with_client
     result = series.value_counts()
-    wait(result, client, 10 * 60)
+    wait(result, small_client, 10 * 60)
