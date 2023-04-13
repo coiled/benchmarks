@@ -45,6 +45,14 @@ uber_lyft_cluster:
   n_workers: 20
   worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB
 
+# For tests/workflows/test_pytorch_optuna.py
+pytorch_optuna_cluster:
+  n_workers: 8
+  package_sync: null,
+  worker_gpu: True
+  worker_options:
+    nthreads: 1
+
 # For test_spill.py
 spill_cluster:
   n_workers: 5
