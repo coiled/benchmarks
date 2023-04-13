@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+      - "*"
     tags:
       - "*"
   pull_request:
@@ -24,7 +25,8 @@ defaults:
 
 jobs:
   tests:
-    name: Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
+    name: Tests - ${{ matrix.os }} py${{ matrix.python-version }}
+    # name: Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -32,36 +34,36 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
-        pytest_args: [tests]
-        runtime-version: [upstream, latest]
-        include:
-          # Run stability tests on Python 3.8
-          - pytest_args: tests/stability
-            python-version: "3.8"
-            runtime-version: upstream
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.8"
-            runtime-version: latest
-            os: ubuntu-latest
-          # Run stability tests on Python 3.10
-          - pytest_args: tests/stability
-            python-version: "3.10"
-            runtime-version: upstream
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.10"
-            runtime-version: latest
-            os: ubuntu-latest
-          # Run stability tests on Python Windows and MacOS (latest py39 only)
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            runtime-version: latest
-            os: windows-latest
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            runtime-version: latest
-            os: macos-latest
+        pytest_args: [tests/runtime/test_coiled.py]
+        # runtime-version: [upstream, latest]
+        # include:
+        #   # Run stability tests on Python 3.8
+        #   - pytest_args: tests/stability
+        #     python-version: "3.8"
+        #     runtime-version: upstream
+        #     os: ubuntu-latest
+        #   - pytest_args: tests/stability
+        #     python-version: "3.8"
+        #     runtime-version: latest
+        #     os: ubuntu-latest
+        #   # Run stability tests on Python 3.10
+        #   - pytest_args: tests/stability
+        #     python-version: "3.10"
+        #     runtime-version: upstream
+        #     os: ubuntu-latest
+        #   - pytest_args: tests/stability
+        #     python-version: "3.10"
+        #     runtime-version: latest
+        #     os: ubuntu-latest
+        #   # Run stability tests on Python Windows and MacOS (latest py39 only)
+        #   - pytest_args: tests/stability
+        #     python-version: "3.9"
+        #     runtime-version: latest
+        #     os: windows-latest
+        #   - pytest_args: tests/stability
+        #     python-version: "3.9"
+        #     runtime-version: latest
+        #     os: macos-latest
 
     steps:
       - name: Checkout
@@ -76,12 +78,11 @@ jobs:
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
-      - name: Install coiled-runtime
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+      - name: Dump environment
         run: |
-          python ci/create_runtime_meta.py
-          source ci/scripts/install_coiled_runtime.sh coiled_software_environment.yaml
+          # For debugging
+          echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
+          mamba env export | grep -E -v '^prefix:.*$'
 
       - name: Determine if workflows should be run
         # Run workflows on PRs with `workflows` label and nightly cron job
@@ -100,8 +101,9 @@ jobs:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          # COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          # DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          DB_NAME: ${{ matrix.os }}-py${{ matrix.python-version }}.db
           BENCHMARK: true
           CLUSTER_DUMP: always
         run: bash ci/scripts/run_tests.sh -n 4 --dist loadscope ${{ env.EXTRA_OPTIONS }} ${{ matrix.pytest_args }}
@@ -113,8 +115,10 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-          path: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          name: ${{ matrix.os }}-py${{ matrix.python-version }}
+          path: ${{ matrix.os }}-py${{ matrix.python-version }}.db
+          # name: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
+          # path: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
 
   process-results:
     needs: tests
