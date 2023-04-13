@@ -1,12 +1,14 @@
 import uuid
 
 import coiled
+import distributed
 import optuna
 import pytest
 import xgboost as xgb
 from dask.distributed import Client, wait
 from optuna.integration.dask import DaskStorage
 from optuna.samplers import RandomSampler
+from packaging.version import Version
 from sklearn.datasets import fetch_covtype
 from sklearn.model_selection import KFold, cross_val_score
 from sklearn.preprocessing import LabelEncoder
@@ -43,6 +45,14 @@ def optuna_client(
             yield client
 
 
+@pytest.mark.skipif(
+    Version(distributed.__version__) >= Version("2023.3.2")
+    and Version(optuna.__version__) < Version("3.2.0"),
+    reason=(
+        "There was a change in distributed that broke the dask + optuna integration. "
+        "A fix will be included in optuna=3.2.0."
+    ),
+)
 def test_optuna(optuna_client):
     # We use a random sampler with a seed to get deterministic results.
     # This is just for benchmarking purposes.
