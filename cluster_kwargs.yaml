@@ -40,6 +40,11 @@ embarrassingly_parallel_cluster:
   backend_options:
     region: "us-east-1"  # Same region as dataset
 
+# For tests/workflows/test_uber_lyft.py
+uber_lyft_cluster:
+  n_workers: 20
+  worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB
+
 # For test_spill.py
 spill_cluster:
   n_workers: 5
