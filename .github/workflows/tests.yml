@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - main
-      - "*"
     tags:
       - "*"
   pull_request:
@@ -33,36 +32,29 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
-        pytest_args: [tests/runtime/test_coiled.py]
-        # runtime-version: [upstream, latest]
-        # include:
-        #   # Run stability tests on Python 3.8
-        #   - pytest_args: tests/stability
-        #     python-version: "3.8"
-        #     runtime-version: upstream
-        #     os: ubuntu-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.8"
-        #     runtime-version: latest
-        #     os: ubuntu-latest
-        #   # Run stability tests on Python 3.10
-        #   - pytest_args: tests/stability
-        #     python-version: "3.10"
-        #     runtime-version: upstream
-        #     os: ubuntu-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.10"
-        #     runtime-version: latest
-        #     os: ubuntu-latest
-        #   # Run stability tests on Python Windows and MacOS (latest py39 only)
-        #   - pytest_args: tests/stability
-        #     python-version: "3.9"
-        #     runtime-version: latest
-        #     os: windows-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.9"
-        #     runtime-version: latest
-        #     os: macos-latest
+        pytest_args: [tests]
+        include:
+          # Run stability tests on Python 3.8
+          - pytest_args: tests/stability
+            python-version: "3.8"
+            os: ubuntu-latest
+          - pytest_args: tests/stability
+            python-version: "3.8"
+            os: ubuntu-latest
+          # Run stability tests on Python 3.10
+          - pytest_args: tests/stability
+            python-version: "3.10"
+            os: ubuntu-latest
+          - pytest_args: tests/stability
+            python-version: "3.10"
+            os: ubuntu-latest
+          # Run stability tests on Python Windows and MacOS (latest py39 only)
+          - pytest_args: tests/stability
+            python-version: "3.9"
+            os: windows-latest
+          - pytest_args: tests/stability
+            python-version: "3.9"
+            os: macos-latest
 
     steps:
       - name: Checkout
@@ -209,35 +201,35 @@ jobs:
         run: |
           echo "$(<regressions_summary.md)" >> $GITHUB_STEP_SUMMARY
 
-  # report:
-  #   name: report
-  #   needs: [tests, regressions]
-  #   if: |
-  #     always()
-  #     && github.event_name != 'pull_request'
-  #     && github.repository == 'coiled/benchmarks'
-  #     && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
+  report:
+    name: report
+    needs: [tests, regressions]
+    if: |
+      always()
+      && github.event_name != 'pull_request'
+      && github.repository == 'coiled/benchmarks'
+      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
 
-  #   runs-on: ubuntu-latest
-  #   defaults:
-  #     run:
-  #       shell: bash
-  #   steps:
-  #     - uses: actions/checkout@v3
-  #     - name: Report failures
-  #       uses: actions/github-script@v3
-  #       with:
-  #         github-token: ${{ secrets.GITHUB_TOKEN }}
-  #         script: |
-  #           const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-  #           const issue_body = `[Workflow Run URL](${workflow_url})`
-  #           github.issues.create({
-  #               owner: context.repo.owner,
-  #               repo: context.repo.repo,
-  #               body: issue_body,
-  #               title: "⚠️ CI failed ⚠️",
-  #               labels: ["ci-failure"],
-  #           })
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v3
+      - name: Report failures
+        uses: actions/github-script@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+            const issue_body = `[Workflow Run URL](${workflow_url})`
+            github.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: issue_body,
+                title: "⚠️ CI failed ⚠️",
+                labels: ["ci-failure"],
+            })
 
   static-site:
     needs: process-results
