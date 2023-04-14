@@ -43,7 +43,7 @@ jobs:
   # and AB_environments/config.yaml set repeat > 0
 
   tests:
-    name: A/B Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
+    name: A/B Tests - ${{ matrix.runtime-version }} ${{ matrix.os }}
     needs: discover_ab_envs
     if: fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
     runs-on: ${{ matrix.os }}
@@ -53,7 +53,6 @@ jobs:
       max-parallel: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).max_parallel }}
       matrix:
         os: [ubuntu-latest]
-        python-version: ["3.9"]
         pytest_args: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).pytest_args }}
         runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
         repeat: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).repeat }}
@@ -69,7 +68,6 @@ jobs:
           miniforge-variant: Mambaforge
           use-mamba: true
           condarc-file: ci/condarc
-          python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
       - name: Create null hypothesis as a copy of baseline
@@ -96,7 +94,7 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
+          DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}.db
           BENCHMARK: true
           CLUSTER_DUMP: always
           CLUSTER_KWARGS: AB_environments/${{ matrix.runtime-version }}.cluster.yaml
@@ -110,8 +108,8 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}
-          path: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
+          name: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}
+          path: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}.db
 
   process-results:
     needs: [discover_ab_envs, tests]
@@ -171,7 +169,6 @@ jobs:
         with:
           miniforge-variant: Mambaforge
           use-mamba: true
-          python-version: "3.9"
           environment-file: ci/environment-dashboard.yml
 
       - name: Generate dashboards
