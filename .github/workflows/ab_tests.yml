@@ -62,14 +62,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-variant: Mambaforge
-          use-mamba: true
-          condarc-file: ci/condarc
-          environment-file: ci/environment.yml
-
       - name: Create null hypothesis as a copy of baseline
         if: matrix.runtime-version == 'AB_null_hypothesis'
         run: |
@@ -78,11 +70,17 @@ jobs:
           cp AB_baseline.dask.yaml AB_null_hypothesis.dask.yaml
           cp AB_baseline.cluster.yaml AB_null_hypothesis.cluster.yaml
 
-      - name: Install coiled-runtime
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          condarc-file: ci/condarc
+          environment-file: AB_environments/${{ matrix.runtime-version }}.conda.yaml
+
+      - name: mamba env export
         run: |
-          source ci/scripts/install_coiled_runtime.sh AB_environments/${{ matrix.runtime-version }}.conda.yaml
+          mamba env export | grep -E -v '^prefix:.*$'
 
       - name: Convert dask config into environment variables
         run: python ci/scripts/dask_config_to_env.py AB_environments/${{ matrix.runtime-version }}.dask.yaml >> $GITHUB_ENV
