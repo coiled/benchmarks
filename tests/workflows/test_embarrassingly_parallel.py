@@ -7,6 +7,8 @@ import pandas as pd
 import pytest
 from dask.distributed import Client, wait
 
+from ..conftest import dump_cluster_kwargs
+
 
 @pytest.fixture(scope="module")
 def embarrassingly_parallel_cluster(
@@ -14,12 +16,14 @@ def embarrassingly_parallel_cluster(
     cluster_kwargs,
     github_cluster_tags,
 ):
-    with coiled.Cluster(
-        f"embarrassingly-parallel-{uuid.uuid4().hex[:8]}",
+    kwargs = dict(
+        name=f"embarrassingly_parallel-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
         tags=github_cluster_tags,
         **cluster_kwargs["embarrassingly_parallel_cluster"],
-    ) as cluster:
+    )
+    dump_cluster_kwargs(kwargs, "embarassingly_parallel")
+    with coiled.Cluster(**kwargs) as cluster:
         yield cluster
 
 

@@ -5,6 +5,8 @@ import dask.dataframe as dd
 import pytest
 from dask.distributed import Client
 
+from ..conftest import dump_cluster_kwargs
+
 
 @pytest.fixture(scope="module")
 def uber_lyft_cluster(
@@ -12,12 +14,14 @@ def uber_lyft_cluster(
     cluster_kwargs,
     github_cluster_tags,
 ):
-    with coiled.Cluster(
-        f"uber-lyft-{uuid.uuid4().hex[:8]}",
+    kwargs = dict(
+        name=f"uber_lyft-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
         tags=github_cluster_tags,
         **cluster_kwargs["uber_lyft_cluster"],
-    ) as cluster:
+    )
+    dump_cluster_kwargs(kwargs, "uber_lyft")
+    with coiled.Cluster() as cluster:
         yield cluster
 
 
