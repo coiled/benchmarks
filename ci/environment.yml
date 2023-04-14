@@ -5,11 +5,9 @@ dependencies:
   - packaging
   - pytest
   - pytest-xdist
-  - python
   - pyyaml
   - sqlalchemy
   - alembic
   # Temporary workaround for `filelock=3.11.0` causing package sync to deadlock
   - filelock=3.10.7
   - cftime
-  - conda

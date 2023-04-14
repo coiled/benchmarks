@@ -78,6 +78,9 @@ jobs:
           condarc-file: ci/condarc
           environment-file: AB_environments/${{ matrix.runtime-version }}.conda.yaml
 
+      - name: Add extra packages to environment
+        run: mamba env update -f ci/environment.yml
+
       - name: mamba env export
         run: |
           mamba env export | grep -E -v '^prefix:.*$'
