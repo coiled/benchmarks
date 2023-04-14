@@ -453,10 +453,10 @@ def load_cluster_kwargs() -> dict:
 
 def dump_cluster_kwargs(kwargs: dict, name: str) -> None:
     """Dump Cluster **kwargs to disk for forensic analysis"""
-    assert 'DASK_COILED__TOKEN' in kwargs["environ"]
+    assert "DASK_COILED__TOKEN" in kwargs["environ"]
     kwargs = kwargs.copy()
     kwargs["environ"] = kwargs["environ"].copy()
-    kwargs["environ"]['DASK_COILED__TOKEN'] = "<redacted for dump>"
+    kwargs["environ"]["DASK_COILED__TOKEN"] = "<redacted for dump>"
 
     base_dir = os.path.join(os.path.dirname(__file__), "..")
     prefix = os.path.join(base_dir, "cluster_kwargs")
