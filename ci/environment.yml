@@ -1,11 +1,14 @@
 channels:
   - conda-forge
+  - pytorch
 dependencies:
   - jinja2
+  - optuna
   - packaging
   - pytest
   - pytest-xdist
   - python
+  - pytorch
   - pyyaml
   - sqlalchemy
   - alembic
