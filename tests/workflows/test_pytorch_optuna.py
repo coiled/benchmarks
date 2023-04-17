@@ -111,19 +111,20 @@ def pytorch_optuna_client(
 def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
     """Run example of running PyTorch and Optuna together on Dask"""
 
-    dataset = FakeImageDataset()
 
-    # Create the dataloader
-    dataloader = torch.utils.data.DataLoader(
-        dataset, batch_size=batch_size, shuffle=True, num_workers=2
-    )
-
-    # Decide which device we want to run on
-    device = torch.device(
-        "cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu"
-    )
 
     def objective(trial):
+
+        # Create the dataloader
+        dataset = FakeImageDataset()
+        dataloader = torch.utils.data.DataLoader(
+            dataset, batch_size=batch_size, shuffle=True, num_workers=0
+        )
+
+        # Decide which device we want to run on
+        device = torch.device(
+            "cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu"
+        )
         print(f"Cuda is available: {torch.cuda.is_available()}")
 
         ########################
