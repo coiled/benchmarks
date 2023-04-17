@@ -3,17 +3,15 @@
 import uuid
 
 import coiled
+import numpy as np
 import optuna
+import pytest
 import torch
 import torch.nn as nn
 import torch.nn.parallel
 import torch.optim as optim
 import torch.utils.data
-import numpy as np
-
-import pytest
-from dask.distributed import Client, PipInstall
-from dask.distributed import wait
+from dask.distributed import Client, PipInstall, wait
 
 # Root directory for dataset
 dataroot = "data/celeba"
@@ -104,8 +102,8 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
             "cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu"
         )
 
-        ############################
-        ### Create the generator ###
+        ########################
+        # Create the generator #
         netG = Generator.from_trial(trial).to(device)
 
         # Handle multi-GPU if desired
@@ -116,8 +114,8 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
         #  to ``mean=0``, ``stdev=0.02``.
         netG.apply(weights_init)
 
-        ################################
-        ### Create the Discriminator ###
+        ############################
+        # Create the Discriminator #
         netD = Discriminator.from_trial(trial).to(device)
 
         # Handle multi-GPU if desired
@@ -128,8 +126,8 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
         # like this: ``to mean=0, stdev=0.2``.
         netD.apply(weights_init)
 
-        ############################################
-        ### Remaining crierion, optimizers, etc. ###
+        ########################################
+        # Remaining crierion, optimizers, etc. #
         # Initialize the ``BCELoss`` function
         criterion = nn.BCELoss()
 
@@ -144,8 +142,8 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
         optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, 0.999))
         optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
 
-        #####################
-        ### Training Loop ###
+        #################
+        # Training Loop #
 
         # Lists to keep track of progress
         G_losses = []
@@ -174,7 +172,6 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
                 errD_real = criterion(output, label)
                 # Calculate gradients for D in backward pass
                 errD_real.backward()
-                D_x = output.mean().item()
 
                 # Train with all-fake batch
                 # Generate batch of latent vectors
@@ -182,13 +179,14 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
                 # Generate fake image batch with G
                 fake = netG(noise)
                 label.fill_(fake_label)
+
                 # Classify all fake batch with D
                 output = netD(fake.detach()).view(-1)
                 # Calculate D's loss on the all-fake batch
                 errD_fake = criterion(output, label)
                 # Calculate the gradients for this batch, accumulated (summed) with previous gradients
                 errD_fake.backward()
-                D_G_z1 = output.mean().item()
+
                 # Compute error of D as sum over the fake and the real batches
                 errD = errD_real + errD_fake
                 # Update D
@@ -206,7 +204,7 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
                 errG = criterion(output, label)
                 # Calculate gradients for G
                 errG.backward()
-                D_G_z2 = output.mean().item()
+
                 # Update G
                 optimizerG.step()
 
