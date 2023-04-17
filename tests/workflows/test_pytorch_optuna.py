@@ -2,6 +2,7 @@
 # - https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
 import uuid
 
+import coiled
 import optuna
 from optuna.integration.dask import DaskStorage
 
@@ -13,16 +14,19 @@ import torch.utils.data
 import torchvision.utils as vutils
 import numpy as np
 
-import coiled
 import pytest
 from dask.distributed import Client
 from dask.distributed import wait
 
-# Number of training epochs
-num_epochs = 20
+# Root directory for dataset
+dataroot = "data/celeba"
+
+# Number of workers for dataloader
+# IMPORTANT w/ optuna; it launches a daemonic process, so PyTorch can't itself use it then.
+workers = 0
 
 # Batch size during training
-batch_size = 128
+batch_size = 64
 
 # Spatial size of training images. All images will be resized to this
 #   size using a transformer.
@@ -40,6 +44,9 @@ ngf = 64
 # Size of feature maps in discriminator
 ndf = 64
 
+# Number of training epochs
+num_epochs = 5
+
 # Beta1 hyperparameter for Adam optimizers
 beta1 = 0.5
 
@@ -55,39 +62,11 @@ def pytorch_optuna_cluster(
 ):
     name = f"pytorch-optuna-{uuid.uuid4().hex[:8]}"
 
-    # coiled.create_software_environment(
-    #     name=name,
-    #     conda={
-    #         "channels": ["pytorch", "nvidia", "conda-forge", "defaults"],
-    #         "dependencies": [
-    #             "dask=2023.2",
-    #             "pytorch=2.0.0",
-    #             "pytorch-cuda=11.8",
-    #             "optuna=3.1.0",
-    #             "torchvision",
-    #             "cudatoolkit=11.8.0",
-    #             "pynvml=11.4.1",
-    #         ],
-    #     },
-    #     pip=[
-    #         "git+https://github.com/coiled/benchmarks.git@pytorch-optuna-workflow",
-    #         "pytest"
-    #     ],
-    #     gpu_enabled=True,
-    # )
-
-    # Remove auto default 'package_sync', error having both
-    # package_sync and software specified
-    kwargs = cluster_kwargs["pytorch_optuna_cluster"]
-    # kwargs.pop("package_sync", True)
-    kwargs['package_sync'] = True
-
     with coiled.Cluster(
         name=name,
-        # software=name,
         environ=dask_env_variables,
         tags=github_cluster_tags,
-        **kwargs,
+        **cluster_kwargs["pytorch_optuna_cluster"],
     ) as cluster:
         yield cluster
 
@@ -111,48 +90,45 @@ def pytorch_optuna_client(
 def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
     """Run example of running PyTorch and Optuna together on Dask"""
 
-
-
     def objective(trial):
+        dataset = FakeImageDataset()
 
         # Create the dataloader
-        dataset = FakeImageDataset()
         dataloader = torch.utils.data.DataLoader(
-            dataset, batch_size=batch_size, shuffle=True, num_workers=0
+            dataset, batch_size=batch_size, shuffle=True, num_workers=workers
         )
 
         # Decide which device we want to run on
         device = torch.device(
             "cuda:0" if (torch.cuda.is_available() and ngpu > 0) else "cpu"
         )
-        print(f"Cuda is available: {torch.cuda.is_available()}")
 
-        ########################
-        # Create the generator #
+        ############################
+        ### Create the generator ###
         netG = Generator.from_trial(trial).to(device)
 
         # Handle multi-GPU if desired
         if (device.type == "cuda") and (ngpu > 1):
             netG = nn.DataParallel(netG, list(range(ngpu)))
 
-        # Apply the ``weights_init`` function to randomly initialize all
-        # weights to ``mean=0``, ``stdev=0.02``.
+        # Apply the ``weights_init`` function to randomly initialize all weights
+        #  to ``mean=0``, ``stdev=0.02``.
         netG.apply(weights_init)
 
-        ############################
-        # Create the Discriminator #
+        ################################
+        ### Create the Discriminator ###
         netD = Discriminator.from_trial(trial).to(device)
 
         # Handle multi-GPU if desired
         if (device.type == "cuda") and (ngpu > 1):
             netD = nn.DataParallel(netD, list(range(ngpu)))
 
-        # Apply the ``weights_init`` function to randomly initialize all
-        # weights like this: ``to mean=0, stdev=0.2``.
+        # Apply the ``weights_init`` function to randomly initialize all weights
+        # like this: ``to mean=0, stdev=0.2``.
         netD.apply(weights_init)
 
-        ########################################
-        # Remaining crierion, optimizers, etc. #
+        ############################################
+        ### Remaining crierion, optimizers, etc. ###
         # Initialize the ``BCELoss`` function
         criterion = nn.BCELoss()
 
@@ -171,8 +147,8 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
         optimizerD = optim.Adam(netD.parameters(), lr=lr, betas=(beta1, 0.999))
         optimizerG = optim.Adam(netG.parameters(), lr=lr, betas=(beta1, 0.999))
 
-        #################
-        # Training Loop #
+        #####################
+        ### Training Loop ###
 
         # Lists to keep track of progress
         img_list = []
@@ -187,9 +163,8 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
             for i, data in enumerate(dataloader, 0):
                 ############################
                 # (1) Update D network: maximize log(D(x)) + log(1 - D(G(z)))
-                #############################
-
-                # Train with all-real batch #
+                ###########################
+                # Train with all-real batch
                 netD.zero_grad()
                 # Format batch
                 real_cpu = data[0].to(device)
@@ -215,8 +190,7 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
                 output = netD(fake.detach()).view(-1)
                 # Calculate D's loss on the all-fake batch
                 errD_fake = criterion(output, label)
-                # Calculate the gradients for this batch, accumulated (summed)
-                # with previous gradients
+                # Calculate the gradients for this batch, accumulated (summed) with previous gradients
                 errD_fake.backward()
                 D_G_z1 = output.mean().item()
                 # Compute error of D as sum over the fake and the real batches
@@ -230,8 +204,7 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
                 netG.zero_grad()
                 # fake labels are real for generator cost
                 label.fill_(real_label)
-                # Since we just updated D, perform another forward pass
-                # of all-fake batch through D
+                # Since we just updated D, perform another forward pass of all-fake batch through D
                 output = netD(fake).view(-1)
                 # Calculate G's loss based on this output
                 errG = criterion(output, label)
@@ -244,9 +217,18 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
                 # Output training stats
                 if i % 50 == 0:
                     print(
-                        f"[{epoch}/{num_epochs}][{i}/{len(dataloader)}]"
-                        f"\tLoss_D: {errD.item():.4f}\tLoss_G: {errG.item():.4f}"
-                        f"\tD(x): {D_x:.4f}\tD(G(z)): {D_G_z1:.4f} / {D_G_z2:.4f}"
+                        "[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f"
+                        % (
+                            epoch,
+                            num_epochs,
+                            i,
+                            len(dataloader),
+                            errD.item(),
+                            errG.item(),
+                            D_x,
+                            D_G_z1,
+                            D_G_z2,
+                        )
                     )
 
                 # Save Losses for plotting later
@@ -269,26 +251,23 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
                 raise optuna.exceptions.TrialPruned()
         return errD.item()
 
+    n_trials = 500
+
     study = optuna.create_study(
-        direction="minimize",
-        storage=DaskStorage(client=pytorch_optuna_client),
+        direction="minimize", storage=DaskStorage(client=pytorch_optuna_client)
     )
-    futures = [
+    jobs = [
         pytorch_optuna_client.submit(study.optimize, objective, n_trials=1, pure=False)
-        for _ in range(50)
+        for _ in range(n_trials)
     ]
+    _ = wait(jobs)
+    [r.result() for r in jobs]
 
-    _ = wait(futures)
 
-
-
+# We create a fake image dataset. This ought to be replaced by
+# your actual dataset or pytorch's example datasets. We do this here
+# to focus more on computation than actual convergence.
 class FakeImageDataset(torch.utils.data.Dataset):
-    """
-    We create a fake image dataset. This ought to be replaced by
-    your actual dataset or pytorch's example datasets. We do this here
-    to focus more on computation than actual convergence.
-    """
-
     def __init__(self, count=1_000):
         self.labels = np.random.randint(0, 5, size=count)
 
@@ -312,7 +291,7 @@ def weights_init(m):
 
 
 class Generator(nn.Module):
-    def __init__(self, ngpu, activation=nn.Sigmoid()):
+    def __init__(self, ngpu, activation=None):
         super(Generator, self).__init__()
         self.ngpu = ngpu
         self.main = nn.Sequential(
@@ -334,7 +313,7 @@ class Generator(nn.Module):
             nn.ReLU(True),
             # state size. ``(ngf) x 32 x 32``
             nn.ConvTranspose2d(ngf, nc, 4, 2, 1, bias=False),
-            activation
+            activation or nn.Sigmoid()
             # state size. ``(nc) x 64 x 64``
         )
 
@@ -343,7 +322,7 @@ class Generator(nn.Module):
 
     @classmethod
     def from_trial(cls, trial):
-        activations = [nn.Sigmoid, nn.Tanh]
+        activations = [nn.Sigmoid]
         idx = trial.suggest_categorical(
             "generator_activation", list(range(len(activations)))
         )
@@ -352,7 +331,7 @@ class Generator(nn.Module):
 
 
 class Discriminator(nn.Module):
-    def __init__(self, ngpu, leaky_relu_slope=0.2, activation=nn.Sigmoid()):
+    def __init__(self, ngpu, leaky_relu_slope=0.2, activation=None):
         super(Discriminator, self).__init__()
         self.ngpu = ngpu
         self.main = nn.Sequential(
@@ -373,7 +352,7 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(leaky_relu_slope, inplace=True),
             # state size. ``(ndf*8) x 4 x 4``
             nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
-            activation,
+            activation or nn.Sigmoid(),
         )
 
     def forward(self, input):
@@ -381,7 +360,7 @@ class Discriminator(nn.Module):
 
     @classmethod
     def from_trial(cls, trial):
-        activations = [nn.Sigmoid, nn.Tanh]
+        activations = [nn.Sigmoid]
         idx = trial.suggest_categorical(
             "descriminator_activation", list(range(len(activations)))
         )
