@@ -15,11 +15,14 @@ import torchvision.utils as vutils
 import numpy as np
 
 import pytest
-from dask.distributed import Client
+from dask.distributed import Client, PipInstall
 from dask.distributed import wait
 
 # Root directory for dataset
 dataroot = "data/celeba"
+
+# Number of Optuna trials
+n_trials = 500
 
 # Number of workers for dataloader
 # IMPORTANT w/ optuna; it launches a daemonic process, so PyTorch can't itself use it then.
@@ -251,7 +254,14 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
                 raise optuna.exceptions.TrialPruned()
         return errD.item()
 
-    n_trials = 500
+
+    # sync_packages won't work b/c local env won't have Cuda/GPU stuff
+    # and using only software environments won't pick up local project.
+    # Therefore, we'll install the stuff we need at runtime.
+    plugin = PipInstall(['torch', 'torchvision', 'torchaudio'], pip_options=['--force-reinstall'])
+    pytorch_optuna_client.register_worker_plugin(plugin)
+
+    pytorch_optuna_client.restart()
 
     study = optuna.create_study(
         direction="minimize", storage=DaskStorage(client=pytorch_optuna_client)
