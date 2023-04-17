@@ -4,14 +4,11 @@ import uuid
 
 import coiled
 import optuna
-from optuna.integration.dask import DaskStorage
-
 import torch
 import torch.nn as nn
 import torch.nn.parallel
 import torch.optim as optim
 import torch.utils.data
-import torchvision.utils as vutils
 import numpy as np
 
 import pytest
@@ -85,6 +82,7 @@ def pytorch_optuna_client(
     with Client(pytorch_optuna_cluster) as client:
         pytorch_optuna_cluster.scale(n_workers)
         client.wait_for_workers(n_workers)
+        client.upload_file(__file__)
         client.restart()
         with upload_cluster_dump(client), benchmark_all(client):
             yield client
@@ -135,10 +133,6 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
         # Initialize the ``BCELoss`` function
         criterion = nn.BCELoss()
 
-        # Create batch of latent vectors that we will use to visualize
-        #  the progression of the generator
-        fixed_noise = torch.randn(64, nz, 1, 1, device=device)
-
         # Establish convention for real and fake labels during training
         real_label = 1.0
         fake_label = 0.0
@@ -154,7 +148,6 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
         ### Training Loop ###
 
         # Lists to keep track of progress
-        img_list = []
         G_losses = []
         D_losses = []
         iters = 0
@@ -217,34 +210,9 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
                 # Update G
                 optimizerG.step()
 
-                # Output training stats
-                if i % 50 == 0:
-                    print(
-                        "[%d/%d][%d/%d]\tLoss_D: %.4f\tLoss_G: %.4f\tD(x): %.4f\tD(G(z)): %.4f / %.4f"
-                        % (
-                            epoch,
-                            num_epochs,
-                            i,
-                            len(dataloader),
-                            errD.item(),
-                            errG.item(),
-                            D_x,
-                            D_G_z1,
-                            D_G_z2,
-                        )
-                    )
-
                 # Save Losses for plotting later
                 G_losses.append(errG.item())
                 D_losses.append(errD.item())
-
-                # Check how the generator is doing by saving G's output on fixed_noise
-                if (iters % 500 == 0) or (
-                    (epoch == num_epochs - 1) and (i == len(dataloader) - 1)
-                ):
-                    with torch.no_grad():
-                        fake = netG(fixed_noise).detach().cpu()
-                    img_list.append(vutils.make_grid(fake, padding=2, normalize=True))
 
                 iters += 1
 
@@ -254,24 +222,22 @@ def test_pytorch_optuna_hyper_parameter_optimization(pytorch_optuna_client):
                 raise optuna.exceptions.TrialPruned()
         return errD.item()
 
-
     # sync_packages won't work b/c local env won't have Cuda/GPU stuff
     # and using only software environments won't pick up local project.
     # Therefore, we'll install the stuff we need at runtime.
-    plugin = PipInstall(['torch', 'torchvision', 'torchaudio'], pip_options=['--force-reinstall'])
+    plugin = PipInstall(
+        ["torch==2.0.0", "optuna==3.1.1"], pip_options=["--force-reinstall"]
+    )
     pytorch_optuna_client.register_worker_plugin(plugin)
-
     pytorch_optuna_client.restart()
 
-    study = optuna.create_study(
-        direction="minimize", storage=DaskStorage(client=pytorch_optuna_client)
-    )
+    study = optuna.create_study(direction="minimize")
     jobs = [
         pytorch_optuna_client.submit(study.optimize, objective, n_trials=1, pure=False)
         for _ in range(n_trials)
     ]
     _ = wait(jobs)
-    [r.result() for r in jobs]
+    _ = [j.result() for j in jobs]
 
 
 # We create a fake image dataset. This ought to be replaced by
