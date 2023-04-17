@@ -47,7 +47,8 @@ def optuna_client(
 
 @pytest.mark.skipif(
     Version(distributed.__version__) >= Version("2023.3.2")
-    and Version(optuna.__version__) < Version("3.2.0"),
+    # Use `.base_version` to account for `optuna` `main` branch
+    and Version(Version(optuna.__version__).base_version) < Version("3.2.0"),
     reason=(
         "There was a change in distributed that broke the dask + optuna integration. "
         "A fix will be included in optuna=3.2.0."
