@@ -1,8 +1,8 @@
 # Coiled Runtime
 
-[![Tests](https://github.com/coiled/coiled-runtime/actions/workflows/tests.yml/badge.svg)](https://github.com/coiled/coiled-runtime/actions/workflows/tests.yml)
-[![Linting](https://github.com/coiled/coiled-runtime/actions/workflows/lint.yml/badge.svg)](https://github.com/coiled/coiled-runtime/actions/workflows/lint.yml)
-[![Benchmarks](https://shields.io/badge/-Benchmarks-blue)](https://coiled.github.io/coiled-runtime/index.html)
+[![Tests](https://github.com/coiled/benchmarks/actions/workflows/tests.yml/badge.svg)](https://github.com/coiled/benchmarks/actions/workflows/tests.yml)
+[![Linting](https://github.com/coiled/benchmarks/actions/workflows/lint.yml/badge.svg)](https://github.com/coiled/benchmarks/actions/workflows/lint.yml)
+[![Benchmarks](https://shields.io/badge/-Benchmarks-blue)](https://benchmarks.coiled.io)
 
 The Coiled Runtime is a conda metapackage which makes it easy to get started with Dask.
 
@@ -36,7 +36,7 @@ To build and install `coiled-runtime` locally, use the following steps:
 
 ```bash
 # Have a local copy of the `coiled-runtime` repository
-git clone https://github.com/coiled/coiled-runtime
+git clone https://github.com/coiled/benchmarks
 cd coiled-runtime
 
 # Make sure conda-build is installed
@@ -239,7 +239,7 @@ It's possible to run the Coiled Runtime benchmarks for A/B comparisons.
 This repository uses GitHub Actions secrets for managing authentication tokens used
 to access resources like Coiled clusters, S3 buckets, etc. However, because GitHub Actions [doesn't
 grant access to secrets for forked repositories](https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow),
-**please submit pull requests directly from the `coiled/coiled-runtime` repository,
+**please submit pull requests directly from the `coiled/benchmarks` repository,
 not a personal fork**.
 
 ## Release

@@ -11,8 +11,8 @@ To run an A/B test:
 
 Branch from main, on the coiled repo itself. Preferably, call the branch
 something meaningful, e.g. `AB/jobstealing`.
-You *must* create the branch on the Coiled repo (`coiled/coiled-runtime`); CI
-workflows will not work on a fork (`yourname/coiled-runtime`).
+You *must* create the branch on the Coiled repo (`coiled/benchmarks`); CI
+workflows will not work on a fork (`yourname/benchmarks`).
 
 ### 2. Create files in AB_environments/
 
@@ -33,22 +33,17 @@ channels:
   - conda-forge
 dependencies:
     - python=3.9
-    - coiled-runtime=0.1.1
+    - <copy-paste from recipe/meta.yaml, minus bits you want to change>
     - pip:
-      - dask==2022.11.1
-      - distributed==2022.11.1
+      - dask ==2023.4.1
+      - distributed ==2023.4.1
 ```
-In this example it's using `coiled-runtime` as a base, but it doesn't have to. If you do
-use `coiled-runtime` though, you must install any conflicting packages with pip; in the
-example above, `coiled-runtime-0.1.0` pins `dask=2022.6.0` and `distributed=2022.6.0`,
-so if you want to install a different version you need to use pip to circumvent the pin.
-
 Instead of published packages, you could also use arbitrary git hashes of arbitrary
 forks, e.g.
 
 ```yaml
     - pip:
-      - dask==2022.9.0
+      - dask ==2023.4.2
       - git+https://github.com/yourname/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
 ```
 The second file in each triplet is a dask config file. If you don't want to change the
@@ -138,11 +133,40 @@ You want to test the impact of disabling work stealing. You'll create at least 4
 channels:
   - conda-forge
 dependencies:
-    - python=3.9
-    - coiled-runtime=0.1.0
-    - pip:
-      - dask==2022.9.0
-      - distributed==2022.9.0
+    - python =3.9
+    - pip
+    - coiled >=0.2.54
+    - numpy ==1.23.5
+    - pandas ==1.5.3
+    - dask ==2023.3.2
+    - distributed ==2023.3.2
+    - fsspec ==2023.3.0
+    - s3fs ==2023.3.0
+    - gcsfs ==2023.3.0
+    - pyarrow ==11.0.0
+    - jupyterlab ==3.6.2
+    - dask-labextension ==6.1.0
+    - lz4 ==4.3.2
+    - ipywidgets ==8.0.4
+    - numba ==0.56.4
+    - scikit-learn ==1.2.2
+    - ipycytoscape ==1.3.3
+    - click ==8.1.3
+    - xarray ==2023.1.0
+    - zarr ==2.14.2
+    - msgpack-python ==1.0.5
+    - cloudpickle ==2.2.1
+    - tornado ==6.2
+    - toolz ==0.12.0
+    - zict ==2.2.0
+    - xgboost ==1.7.4
+    - dask-ml ==2023.3.24
+    - openssl >1.1.0g
+    - optuna ==3.1.0
+    - scipy ==1.10.1
+    - sqlalchemy ==1.4.46
+    - pynvml ==11.5.0
+    - bokeh ==2.4.3
 ```
 - `AB_environments/AB_baseline.dask.yaml`: (empty file)
 - `AB_environments/AB_baseline.cluster.yaml`: (empty file)
@@ -171,7 +195,7 @@ max_parallel:
 
 ### 6. Run CI
 - `git push`. Note: you should *not* open a Pull Request. 
-- Open https://github.com/coiled/coiled-runtime/actions/workflows/ab_tests.yml and wait
+- Open https://github.com/coiled/benchmarks/actions/workflows/ab_tests.yml and wait
   for the run to complete.
 - Open the run from the link above. In the Summary tab, scroll down and download the
   `static-dashboard` artifact. 
@@ -201,3 +225,54 @@ upstream        https://github.com/dask/distributed.git (push)
 $ git fetch upstream --tags  # Or whatever name dask was added as above
 $ git push origin --tags     # Or whatever name the fork was added as above
 ```
+
+#### Problem:
+The conda environment fails to build, citing incompatibilities with openssl
+
+#### Solution:
+Double check that you didn't accidentally type `- python ==3.9`, which means 3.9.0,
+instead of `- python =3.9`, which means the latest available patch version of 3.9.
+
+#### Problem:
+You get very obscure failures in the workflows, which you can't seem to replicate
+
+#### Solution:
+Double check that you don't have the same packages listed as conda package and under the
+special `- pip:` tag. Installing a package with conda and then upgrading it with pip
+*typically* works, but it's been observed not to (e.g. xgboost).
+
+Specifically, `dask` and `distributed` *can* be installed with conda and then upgraded
+with pip, *but* they must be *both* upgraded. Note that specifying the same version with
+pip of a package won't upgrade it.
+
+This is bad:
+```yaml
+dependencies:
+  - pip:
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+dask-2023.3.2 and distributed-2023.3.2 will be installed from conda anyway, e.g. by
+coiled.
+
+This is bad:
+```yaml
+dependencies:
+  - dask ==2023.3.2
+  - distributed ==2023.3.2
+  - pip:
+      - dask ==2023.3.2
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+The dask version is the same in pip and conda, so conda wins.
+
+This is good:
+```yaml
+dependencies:
+  - dask ==2023.3.2
+  - distributed ==2023.3.2
+  - pip:
+      - dask ==2023.4.1
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+dask and distributed versions from conda are properly uninstalled after they serve as a
+dependency for the other conda packages.

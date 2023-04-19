@@ -115,7 +115,7 @@ def test_basic_sum(small_client, speed, chunk_shape):
 
 
 @pytest.mark.skip(
-    "fails in actual CI; see https://github.com/coiled/coiled-runtime/issues/253"
+    "fails in actual CI; see https://github.com/coiled/benchmarks/issues/253"
 )
 def test_climatic_mean(small_client, new_array):
     # From https://github.com/dask/distributed/issues/2602#issuecomment-535009454
@@ -189,7 +189,7 @@ def test_vorticity(small_client, new_array):
 def test_double_diff(small_client, new_array):
     # Variant of https://github.com/dask/distributed/issues/6597
     memory = cluster_memory(small_client)  # 76.66 GiB
-    # FIXME https://github.com/coiled/coiled-runtime/issues/564
+    # FIXME https://github.com/coiled/benchmarks/issues/564
     #       this algorithm is supposed to scale linearly!
     shape = scaled_array_shape_quadratic(memory, "76.66 GiB", ("x", "x"))
 
@@ -231,24 +231,28 @@ def test_map_overlap_sample(small_client, new_array):
 
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 def test_rechunk_in_memory(small_client, configure_rechunking):
-    x = da.random.random((50000, 50000))
+    rng = da.random.default_rng()
+    x = rng.random((50000, 50000))
     x.rechunk((50000, 20)).rechunk((20, 50000)).sum().compute()
 
 
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 def test_rechunk_striping(small_client, configure_rechunking):
-    x = da.random.random((100_000, 100_000))
+    rng = da.random.default_rng()
+    x = rng.random((100_000, 100_000))
     x.rechunk((100_000, 100)).rechunk((100, 100_000)).sum().compute()  # ~76 MiB chunks
 
 
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 def test_rechunk_swap_axes(small_client, configure_rechunking):
-    x = da.random.random((100_000, 100_000), chunks=(100_000, 100))
+    rng = da.random.default_rng()
+    x = rng.random((100_000, 100_000), chunks=(100_000, 100))
     x.rechunk((100, 100_000)).sum().compute()  # ~76 MiB chunks
 
 
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 @pytest.mark.skip(reason="this runs forever")
 def test_rechunk_out_of_memory(small_client, configure_rechunking):
-    x = da.random.random((100000, 100000))
+    rng = da.random.default_rng()
+    x = rng.random((100000, 100000))
     x.rechunk((50000, 20)).rechunk((20, 50000)).sum().compute()
