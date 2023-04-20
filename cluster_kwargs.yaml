@@ -48,7 +48,7 @@ uber_lyft_cluster:
 # For tests/workflows/test_pytorch_optuna.py
 pytorch_optuna_cluster:
   n_workers: 4
-  worker_gpu: True
+  worker_gpu: 1
   worker_options:
     nthreads: 1
 
