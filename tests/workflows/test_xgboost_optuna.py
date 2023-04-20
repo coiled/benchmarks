@@ -21,7 +21,7 @@ def optuna_cluster(
     github_cluster_tags,
 ):
     with coiled.Cluster(
-        f"optuna-{uuid.uuid4().hex[:8]}",
+        f"xgboost-optuna-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
         tags=github_cluster_tags,
         **cluster_kwargs["optuna_cluster"],
@@ -54,7 +54,7 @@ def optuna_client(
         "A fix will be included in optuna=3.2.0."
     ),
 )
-def test_optuna(optuna_client):
+def test_hpo(optuna_client):
     # We use a random sampler with a seed to get deterministic results.
     # This is just for benchmarking purposes.
     study = optuna.create_study(
@@ -75,12 +75,11 @@ def test_optuna(optuna_client):
             "max_depth": trial.suggest_int("max_depth", 2, 10),
             "learning_rate": trial.suggest_float("learning_rate", 1e-8, 1.0, log=True),
             "subsample": trial.suggest_float("subsample", 0.2, 1.0),
-            "eval_metric": "mlogloss",
             "n_jobs": 1,  # Avoid thread oversubscription
         }
         model = xgb.XGBClassifier(**params)
         cv = KFold(n_splits=3, shuffle=True, random_state=2)
-        score = cross_val_score(model, X, y, cv=cv, scoring="accuracy")
+        score = cross_val_score(model, X, y, cv=cv)
         return score.mean()
 
     # Run HPO trials on a cluster
