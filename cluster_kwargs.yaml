@@ -32,19 +32,19 @@ parquet_cluster:
   worker_vm_types: [m5.xlarge]  # 4 CPU, 16 GiB
 
 # For tests/workflows/test_embarrassingly_parallel.py
-embarrassingly_parallel_cluster:
+embarrassingly_parallel:
   n_workers: 100
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
   backend_options:
     region: "us-east-1"  # Same region as dataset
 
-# For tests/workflows/test_optuna.py
-optuna_cluster:
+# For tests/workflows/test_xgboost_optuna.py
+xgboost_optuna:
   n_workers: 50
   worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB (preferred default instance)
 
 # For tests/workflows/test_uber_lyft.py
-uber_lyft_cluster:
+uber_lyft:
   n_workers: 20
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
