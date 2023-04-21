@@ -31,7 +31,7 @@ dependencies:
     - cloudpickle ==2.2.1
     - tornado ==6.2
     - toolz ==0.12.0
-    - zict ==2.2.0
+    - zict ==3.0.0
     - xgboost ==1.7.4
     - dask-ml ==2023.3.24
     - openssl >1.1.0g
