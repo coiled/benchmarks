@@ -5,7 +5,6 @@ import time
 import dask.array as da
 import numpy as np
 import pytest
-import xarray as xr
 from dask.utils import parse_bytes
 
 from ..utils_test import (
@@ -20,7 +19,8 @@ from ..utils_test import (
 
 
 def test_anom_mean(small_client, new_array):
-    # From https://github.com/dask/distributed/issues/2602#issuecomment-498718651
+    """From https://github.com/dask/distributed/issues/2602#issuecomment-498718651"""
+    xarray = pytest.importorskip("xarray")
 
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory // 2
@@ -32,7 +32,7 @@ def test_anom_mean(small_client, new_array):
     # 38.32 GiB - 3925 10.00 MiB chunks
 
     ngroups = data.shape[0] // 100
-    arr = xr.DataArray(
+    arr = xarray.DataArray(
         data,
         dims=["time", "x"],
         coords={"day": ("time", np.arange(data.shape[0]) % ngroups)},

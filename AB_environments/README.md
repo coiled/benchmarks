@@ -32,7 +32,7 @@ tests; e.g.
 channels:
   - conda-forge
 dependencies:
-    - python=3.9
+    - python =3.9
     - <copy-paste from recipe/meta.yaml, minus bits you want to change>
     - pip:
       - dask ==2023.4.1
@@ -46,6 +46,23 @@ forks, e.g.
       - dask ==2023.4.2
       - git+https://github.com/yourname/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
 ```
+
+You may also ignore the recipe file and go for a barebones environment. The bare
+minimum you need to install is ``dask``, ``distributed``, ``coiled`` and ``s3fs``.
+This will however skip some tests, e.g. zarr and ML-related ones, and it will also
+expose you to less controlled behaviour e.g. dependent on which versions of numpy and
+pandas are pulled in:
+```yaml
+channels:
+  - conda-forge
+dependencies:
+    - python =3.9
+    - dask ==2023.4.0
+    - distributed ==2023.4.0
+    - coiled
+    - s3fs
+```
+
 The second file in each triplet is a dask config file. If you don't want to change the
 config, you must create an empty file.
 
@@ -154,6 +171,7 @@ dependencies:
     - click ==8.1.3
     - xarray ==2023.1.0
     - zarr ==2.14.2
+    - cftime ==1.6.2
     - msgpack-python ==1.0.5
     - cloudpickle ==2.2.1
     - tornado ==6.2
