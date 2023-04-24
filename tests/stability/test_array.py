@@ -3,13 +3,14 @@ import sys
 import dask.array as da
 import pytest
 
-from ..utils_test import cluster_memory, scaled_array_shape, wait
+from ..utils_test import cluster_memory, requires, scaled_array_shape, wait
 
 
 @pytest.mark.stability
 @pytest.mark.skipif(
     sys.platform.startswith("win"), reason="scaled_array_shape fails on windows"
 )
+@requires("scipy")
 def test_ols(small_client):
     chunksize = int(1e6)
     memory = cluster_memory(small_client)

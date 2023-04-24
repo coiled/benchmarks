@@ -118,7 +118,8 @@ def test_basic_sum(small_client, speed, chunk_shape):
     "fails in actual CI; see https://github.com/coiled/benchmarks/issues/253"
 )
 def test_climatic_mean(small_client, new_array):
-    # From https://github.com/dask/distributed/issues/2602#issuecomment-535009454
+    """From https://github.com/dask/distributed/issues/2602#issuecomment-535009454"""
+    xarray = pytest.importorskip("xarray")
 
     memory = cluster_memory(small_client)  # 76.66 GiB
     target_nbytes = memory * 2
@@ -128,7 +129,7 @@ def test_climatic_mean(small_client, new_array):
     print_size_info(memory, target_nbytes, data)
     # 152.62 GiB - 784 199.34 MiB chunks
 
-    array = xr.DataArray(
+    array = xarray.DataArray(
         data,
         dims=["ensemble", "init_date", "lat", "lead_time", "level", "lon"],
         # coords={"init_date": pd.date_range(start="1960", periods=arr.shape[1])},

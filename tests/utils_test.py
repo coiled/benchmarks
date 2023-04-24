@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import math
 
 import dask
@@ -12,6 +13,15 @@ import pytest
 from dask.datasets import timeseries
 from dask.sizeof import sizeof
 from dask.utils import format_bytes, parse_bytes
+
+
+def requires(pkg_name):
+    try:
+        importlib.import_module(pkg_name)
+        has = True
+    except ImportError:
+        has = False
+    return pytest.mark.skipif(not has, reason=f"requires {pkg_name}")
 
 
 def scaled_array_shape(
