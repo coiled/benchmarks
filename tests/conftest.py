@@ -531,6 +531,34 @@ def small_client(
         client.run(lambda: None)
 
 
+@pytest.fixture
+def client(
+    request,
+    dask_env_variables,
+    cluster_kwargs,
+    github_cluster_tags,
+    upload_cluster_dump,
+    benchmark_all,
+):
+    name = request.param
+    with Cluster(
+        f"{name}-{uuid.uuid4().hex[:8]}",
+        environ=dask_env_variables,
+        tags=github_cluster_tags,
+        **cluster_kwargs[name],
+    ) as cluster:
+        with Client(cluster) as client:
+            with upload_cluster_dump(client), benchmark_all(client):
+                yield client
+
+
+def _mark_client(name):
+    return pytest.mark.parametrize("client", [name], indirect=True)
+
+
+pytest.mark.client = _mark_client
+
+
 S3_REGION = "us-east-2"
 S3_BUCKET = "s3://coiled-runtime-ci"
 

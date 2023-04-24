@@ -38,18 +38,21 @@ spill_cluster:
   worker_vm_types: [m6i.large]  # 2CPU, 8GiB
 
 # For tests/workflows/test_embarrassingly_parallel.py
-embarrassingly_parallel_cluster:
+embarrassingly_parallel:
   n_workers: 100
-  # TODO: Remove the `m6i.xlarge` worker specification below
-  # once it's the default worker instance type
-  worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB
+  worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
   backend_options:
     region: "us-east-1"  # Same region as dataset
 
+# For tests/workflows/test_xgboost_optuna.py
+xgboost_optuna:
+  n_workers: 50
+  worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB (preferred default instance)
+
 # For tests/workflows/test_uber_lyft.py
-uber_lyft_cluster:
+uber_lyft:
   n_workers: 20
-  worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB
+  worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
 # Specific tests
 test_work_stealing_on_scaling_up:

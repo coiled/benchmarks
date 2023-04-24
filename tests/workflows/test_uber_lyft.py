@@ -1,47 +1,10 @@
-import uuid
-
-import coiled
 import dask.dataframe as dd
 import pytest
-from dask.distributed import Client
 
 from ..conftest import dump_cluster_kwargs
 
-
-@pytest.fixture(scope="module")
-def uber_lyft_cluster(
-    dask_env_variables,
-    cluster_kwargs,
-    github_cluster_tags,
-):
-    kwargs = dict(
-        name=f"uber_lyft-{uuid.uuid4().hex[:8]}",
-        environ=dask_env_variables,
-        tags=github_cluster_tags,
-        **cluster_kwargs["uber_lyft_cluster"],
-    )
-    dump_cluster_kwargs(kwargs, "uber_lyft")
-    with coiled.Cluster() as cluster:
-        yield cluster
-
-
-@pytest.fixture
-def uber_lyft_client(
-    uber_lyft_cluster,
-    cluster_kwargs,
-    upload_cluster_dump,
-    benchmark_all,
-):
-    n_workers = cluster_kwargs["uber_lyft_cluster"]["n_workers"]
-    with Client(uber_lyft_cluster) as client:
-        uber_lyft_cluster.scale(n_workers)
-        client.wait_for_workers(n_workers)
-        client.restart()
-        with upload_cluster_dump(client), benchmark_all(client):
-            yield client
-
-
-def test_exploratory_analysis(uber_lyft_client):
+@pytest.mark.client("uber_lyft")
+def test_exploratory_analysis(client):
     """Run some exploratory aggs on the dataset"""
 
     # NYC taxi Uber/Lyft dataset

@@ -1,49 +1,14 @@
 import io
 import tarfile
-import uuid
 
-import coiled
 import pandas as pd
 import pytest
-from dask.distributed import Client, wait
+from dask.distributed import wait
 
 from ..conftest import dump_cluster_kwargs
 
-
-@pytest.fixture(scope="module")
-def embarrassingly_parallel_cluster(
-    dask_env_variables,
-    cluster_kwargs,
-    github_cluster_tags,
-):
-    kwargs = dict(
-        name=f"embarrassingly_parallel-{uuid.uuid4().hex[:8]}",
-        environ=dask_env_variables,
-        tags=github_cluster_tags,
-        **cluster_kwargs["embarrassingly_parallel_cluster"],
-    )
-    dump_cluster_kwargs(kwargs, "embarassingly_parallel")
-    with coiled.Cluster(**kwargs) as cluster:
-        yield cluster
-
-
-@pytest.fixture
-def embarrassingly_parallel_client(
-    embarrassingly_parallel_cluster,
-    cluster_kwargs,
-    upload_cluster_dump,
-    benchmark_all,
-):
-    n_workers = cluster_kwargs["embarrassingly_parallel_cluster"]["n_workers"]
-    with Client(embarrassingly_parallel_cluster) as client:
-        embarrassingly_parallel_cluster.scale(n_workers)
-        client.wait_for_workers(n_workers)
-        client.restart()
-        with upload_cluster_dump(client), benchmark_all(client):
-            yield client
-
-
-def test_embarassingly_parallel(embarrassingly_parallel_client, s3_factory):
+@pytest.mark.client("embarrassingly_parallel")
+def test_embarassingly_parallel(client, s3_factory):
     # How popular is matplotlib?
     s3 = s3_factory(requester_pays=True)
     directories = s3.ls("s3://arxiv/pdf")
@@ -78,11 +43,11 @@ def test_embarassingly_parallel(embarrassingly_parallel_client, s3_factory):
                             out.append((member.name, b"matplotlib" in data.lower()))
                 return out
 
-    futures = embarrassingly_parallel_client.map(extract, directories, fs=s3)
+    futures = client.map(extract, directories, fs=s3)
     wait(futures)
     # We had one error in one file.  Let's just ignore and move on.
     good = [future for future in futures if future.status == "finished"]
-    data = embarrassingly_parallel_client.gather(good)
+    data = client.gather(good)
 
     # Convert to Pandas
     dfs = [pd.DataFrame(d, columns=["filename", "has_matplotlib"]) for d in data]
