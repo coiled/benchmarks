@@ -10,3 +10,4 @@ dependencies:
     - optuna
     - scikit-learn
     - dask-ml
+    - pandas =1.5

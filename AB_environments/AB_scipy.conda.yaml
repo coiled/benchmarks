@@ -7,3 +7,4 @@ dependencies:
     - distributed ==2023.4.0
     - s3fs
     - scipy
+    - pandas =1.5

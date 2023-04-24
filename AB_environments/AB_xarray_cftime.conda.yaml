@@ -8,3 +8,4 @@ dependencies:
     - s3fs
     - xarray
     - cftime
+    - pandas =1.5

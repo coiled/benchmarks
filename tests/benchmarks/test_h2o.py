@@ -10,7 +10,7 @@ import dask.dataframe as dd
 import pandas as pd
 import pytest
 
-from ..utils_test import requires, run_up_to_nthreads
+from ..utils_test import run_up_to_nthreads
 
 DATASETS = {
     "0.5 GB (csv)": "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2/*.csv",
@@ -151,7 +151,6 @@ def test_q8(ddf, configure_shuffling):
     )
 
 
-@requires("pyarrow")
 def test_q9(ddf, configure_shuffling):
     # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
     ddf = ddf[["id2", "id4", "v1", "v2"]]
