@@ -1,7 +1,6 @@
 import dask.dataframe as dd
 import pytest
 
-from ..conftest import dump_cluster_kwargs
 
 @pytest.mark.client("uber_lyft")
 def test_exploratory_analysis(client):
