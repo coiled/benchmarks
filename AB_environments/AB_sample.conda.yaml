@@ -46,6 +46,7 @@ dependencies:
     - sqlalchemy ==1.4.46  # FIXME https://github.com/dask/dask/issues/9896
     - pynvml ==11.5.0
     - bokeh ==3.1.0
+    - gilknocker ==0.4.1
     # End copy-paste from AB_baseline.conda.yaml
 
     - pip:
