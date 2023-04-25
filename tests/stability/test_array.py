@@ -5,6 +5,9 @@ import pytest
 
 from ..utils_test import cluster_memory, scaled_array_shape, wait
 
+# Don't use `scipy = pytest.importorskip("scipy") inside the test.
+# Since there's only one test in this module, the cluster would be started needlessly
+# if scipy is missing.
 try:
     import scipy  # noqa: F401
 
