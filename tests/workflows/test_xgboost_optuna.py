@@ -1,14 +1,17 @@
 import distributed
-import optuna
 import pytest
-import xgboost as xgb
 from dask.distributed import wait
-from optuna.integration.dask import DaskStorage
-from optuna.samplers import RandomSampler
 from packaging.version import Version
-from sklearn.datasets import fetch_covtype
-from sklearn.model_selection import KFold, cross_val_score
-from sklearn.preprocessing import LabelEncoder
+
+optuna = pytest.importorskip("optuna")
+xgb = pytest.importorskip("xgboost")
+pytest.importorskip("sklearn")
+
+from optuna.integration.dask import DaskStorage  # noqa: E402
+from optuna.samplers import RandomSampler  # noqa: E402
+from sklearn.datasets import fetch_covtype  # noqa: E402
+from sklearn.model_selection import KFold, cross_val_score  # noqa: E402
+from sklearn.preprocessing import LabelEncoder  # noqa: E402
 
 
 @pytest.mark.skipif(

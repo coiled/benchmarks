@@ -5,6 +5,7 @@ from coiled import Cluster
 from dask.distributed import Client, wait
 from toolz import merge
 
+from ..conftest import dump_cluster_kwargs
 from ..utils_test import (
     cluster_memory,
     print_size_info,
@@ -15,7 +16,7 @@ from ..utils_test import (
 
 @pytest.fixture(scope="module")
 def spill_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
-    with Cluster(
+    kwargs = dict(
         name=f"spill-{uuid.uuid4().hex[:8]}",
         environ=merge(
             dask_env_variables,
@@ -27,7 +28,9 @@ def spill_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
         ),
         tags=github_cluster_tags,
         **cluster_kwargs["spill_cluster"],
-    ) as cluster:
+    )
+    dump_cluster_kwargs(kwargs, "spill")
+    with Cluster(**kwargs) as cluster:
         yield cluster
 
 

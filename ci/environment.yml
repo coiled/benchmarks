@@ -10,9 +10,7 @@ dependencies:
   - python
   - pytorch
   - pyyaml
-  - sqlalchemy
+  - sqlalchemy ==1.4.46  # FIXME https://github.com/dask/dask/issues/9896
   - alembic
-  # Temporary workaround for `filelock=3.11.0` causing package sync to deadlock
-  - filelock=3.10.7
-  - cftime
+  - filelock
   - conda
