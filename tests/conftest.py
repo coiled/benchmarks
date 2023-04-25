@@ -526,7 +526,7 @@ def client(
     upload_cluster_dump,
     benchmark_all,
 ):
-    name = request.param
+    name = request.param["name"]
     with Cluster(
         f"{name}-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
@@ -534,12 +534,20 @@ def client(
         **cluster_kwargs[name],
     ) as cluster:
         with Client(cluster) as client:
+            if request.param["upload_file"] is not None:
+                client.upload_file(request.param["upload_file"])
+            if request.param["worker_plugin"] is not None:
+                client.register_worker_plugin(request.param["worker_plugin"])
             with upload_cluster_dump(client), benchmark_all(client):
                 yield client
 
 
-def _mark_client(name):
-    return pytest.mark.parametrize("client", [name], indirect=True)
+def _mark_client(name, *, upload_file=None, worker_plugin=None):
+    return pytest.mark.parametrize(
+        "client",
+        [{"name": name, "upload_file": upload_file, "worker_plugin": worker_plugin}],
+        indirect=True,
+    )
 
 
 pytest.mark.client = _mark_client

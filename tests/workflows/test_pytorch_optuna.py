@@ -1,8 +1,4 @@
-# Derived partially from
-# - https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
-import uuid
-
-import coiled
+# Derived partially from https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
 import numpy as np
 import optuna
 import pytest
@@ -11,54 +7,10 @@ import torch.nn as nn
 import torch.nn.parallel
 import torch.optim as optim
 import torch.utils.data
-from dask.distributed import Client, PipInstall, wait
+from dask.distributed import PipInstall, wait
 
 NC = 3  # Number of channels in the training images. For color images this is 3
 NZ = 100  # Size of z latent vector (i.e. size of generator input)
-
-
-@pytest.fixture(scope="module")
-def pytorch_optuna_cluster(
-    dask_env_variables,
-    cluster_kwargs,
-    github_cluster_tags,
-):
-    with coiled.Cluster(
-        name=f"pytorch-optuna-{uuid.uuid4().hex[:8]}",
-        environ=dask_env_variables,
-        tags=github_cluster_tags,
-        **cluster_kwargs["pytorch_optuna_cluster"],
-    ) as cluster:
-        yield cluster
-
-
-@pytest.fixture
-def pytorch_optuna_client(
-    pytorch_optuna_cluster,
-    cluster_kwargs,
-    upload_cluster_dump,
-    benchmark_all,
-):
-    n_workers = cluster_kwargs["pytorch_optuna_cluster"]["n_workers"]
-    with Client(pytorch_optuna_cluster) as client:
-        pytorch_optuna_cluster.scale(n_workers)
-        client.wait_for_workers(n_workers)
-        client.upload_file(__file__)
-        # sync_packages won't work b/c local env won't have Cuda/GPU stuff
-        # and using only software environments won't pick up local project.
-        # Therefore, we'll install the stuff we need at runtime.
-        plugin = PipInstall(
-            [
-                "torch==2.0.0",
-                "git+https://github.com/optuna/optuna.git@378508ab6bddbad182bdfa0e8b3ad4bbb7040f00",
-            ],
-            pip_options=["--force-reinstall"],
-            restart=True,
-        )
-        client.register_worker_plugin(plugin)
-        client.restart()
-        with upload_cluster_dump(client), benchmark_all(client):
-            yield client
 
 
 # We create a fake image dataset. This ought to be replaced by
@@ -81,17 +33,16 @@ class FakeImageDataset(torch.utils.data.Dataset):
 
 
 def weights_init(m):
-    classname = m.__class__.__name__
-    if classname.find("Conv") != -1:
+    if isinstance(m, (nn.ConvTranspose2d, nn.Conv2d)):
         nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif classname.find("BatchNorm") != -1:
+    elif isinstance(m, nn.BatchNorm2d):
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
 
 
 def get_generator(trial):
     # Create and randomly initialize generator model
-    activations = ["Sigmoid"]
+    activations = ["Sigmoid", "Tanh"]
     activation = trial.suggest_categorical("generator_activation", activations)
     ngf = 64  # Size of feature maps in generator
     model = nn.Sequential(
@@ -152,7 +103,19 @@ def get_discriminator(trial):
     return model
 
 
-def test_hpo(pytorch_optuna_client):
+@pytest.mark.client(
+    "pytorch_optuna",
+    upload_file=__file__,
+    worker_plugin=PipInstall(
+        [
+            "torch==2.0.0",
+            "git+https://github.com/optuna/optuna.git@378508ab6bddbad182bdfa0e8b3ad4bbb7040f00",
+        ],
+        pip_options=["--force-reinstall"],
+        restart=True,
+    ),
+)
+def test_hpo(client):
     """Run example of running PyTorch and Optuna together on Dask"""
 
     def objective(trial):
@@ -235,9 +198,9 @@ def test_hpo(pytorch_optuna_client):
         storage=optuna.integration.DaskStorage(), direction="minimize"
     )
 
-    n_trials = 500
+    n_trials = 100
     futures = [
-        pytorch_optuna_client.submit(study.optimize, objective, n_trials=1, pure=False)
+        client.submit(study.optimize, objective, n_trials=1, pure=False)
         for _ in range(n_trials)
     ]
     wait(futures)

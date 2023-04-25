@@ -49,7 +49,7 @@ uber_lyft:
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
 # For tests/workflows/test_pytorch_optuna.py
-pytorch_optuna_cluster:
+pytorch_optuna:
   n_workers: 4
   worker_gpu: 1
   worker_options:
