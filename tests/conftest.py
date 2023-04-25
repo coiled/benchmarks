@@ -4,6 +4,7 @@ import json
 import logging
 import os
 import pathlib
+import pickle
 import shlex
 import subprocess
 import sys
@@ -446,13 +447,23 @@ def load_cluster_kwargs() -> dict:
 
     default = config.pop("default")
     config = {k: dask.config.merge(default, v) for k, v in config.items()}
-
-    # For forensic analysis
-    output_fname = os.path.join(base_dir, "cluster_kwargs.merged.yaml")
-    with open(output_fname, "w") as fh:
-        yaml.dump(config, fh)
-
+    dump_cluster_kwargs(config, "merged")
     return config
+
+
+def dump_cluster_kwargs(kwargs: dict, name: str) -> None:
+    """Dump Cluster **kwargs to disk for forensic analysis"""
+    if "DASK_COILED__TOKEN" in kwargs.get("environ", {}):
+        kwargs = kwargs.copy()
+        kwargs["environ"] = kwargs["environ"].copy()
+        kwargs["environ"]["DASK_COILED__TOKEN"] = "<redacted for dump>"
+
+    base_dir = os.path.join(os.path.dirname(__file__), "..")
+    prefix = os.path.join(base_dir, "cluster_kwargs")
+    with open(f"{prefix}.{name}.yaml", "w") as fh:
+        yaml.dump(kwargs, fh)
+    with open(f"{prefix}.{name}.pickle", "wb") as fh:
+        pickle.dump(kwargs, fh)
 
 
 @pytest.fixture(scope="session")
@@ -463,12 +474,15 @@ def cluster_kwargs():
 @pytest.fixture(scope="module")
 def small_cluster(request, dask_env_variables, cluster_kwargs, github_cluster_tags):
     module = os.path.basename(request.fspath).split(".")[0]
-    with Cluster(
+    module = module.replace("test_", "")
+    kwargs = dict(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
         tags=github_cluster_tags,
         **cluster_kwargs["small_cluster"],
-    ) as cluster:
+    )
+    dump_cluster_kwargs(kwargs, f"small_cluster.{module}")
+    with Cluster(**kwargs) as cluster:
         yield cluster
 
 

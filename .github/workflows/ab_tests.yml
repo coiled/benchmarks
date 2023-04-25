@@ -111,7 +111,10 @@ jobs:
         if: always()
         with:
           name: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}
-          path: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
+          path: |
+            ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
+            cluster_kwargs.*.*
+            mamba_env_export.yml
 
   process-results:
     needs: [discover_ab_envs, tests]
