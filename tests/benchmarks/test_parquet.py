@@ -10,17 +10,21 @@ import pandas
 import pytest
 from coiled import Cluster
 
+from ..conftest import dump_cluster_kwargs
 from ..utils_test import run_up_to_nthreads
 
 
 @pytest.fixture(scope="module")
 def parquet_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
-    with Cluster(
-        f"parquet-{uuid.uuid4().hex[:8]}",
+    kwargs = dict(
+        name=f"parquet-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
         tags=github_cluster_tags,
         **cluster_kwargs["parquet_cluster"],
-    ) as cluster:
+    )
+    dump_cluster_kwargs(kwargs, "parquet")
+
+    with Cluster(**kwargs) as cluster:
         yield cluster
 
 

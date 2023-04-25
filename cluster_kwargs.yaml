@@ -26,10 +26,16 @@ small_cluster:
   n_workers: 10
   worker_vm_types: [m6i.large]  # 2CPU, 8GiB
 
-# For test_parquet.py
+# For tests/benchmarks/test_parquet.py
 parquet_cluster:
   n_workers: 15
   worker_vm_types: [m5.xlarge]  # 4 CPU, 16 GiB
+
+# For tests/benchmarks/test_spill.py
+spill_cluster:
+  n_workers: 5
+  worker_disk_size: 64
+  worker_vm_types: [m6i.large]  # 2CPU, 8GiB
 
 # For tests/workflows/test_embarrassingly_parallel.py
 embarrassingly_parallel:
@@ -47,12 +53,6 @@ xgboost_optuna:
 uber_lyft:
   n_workers: 20
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
-
-# For test_spill.py
-spill_cluster:
-  n_workers: 5
-  worker_disk_size: 64
-  worker_vm_types: [m6i.large]  # 2CPU, 8GiB
 
 # Specific tests
 test_work_stealing_on_scaling_up:
