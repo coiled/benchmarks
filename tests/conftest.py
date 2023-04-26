@@ -11,6 +11,7 @@ import sys
 import threading
 import time
 import uuid
+from concurrent.futures import ProcessPoolExecutor
 from functools import lru_cache
 
 import dask
@@ -93,6 +94,7 @@ dask.config.set(
     {
         "coiled.account": "dask-benchmarks",
         "distributed.admin.system-monitor.gil.enabled": True,
+        "distributed.worker.daemon": False,
     }
 )
 
@@ -513,6 +515,15 @@ def small_client(
         client.restart()
         small_cluster.scale(n_workers)
         client.wait_for_workers(n_workers)
+
+        # Swap out the default threadpool for a processpool on workers
+        class ProcessPoolWorkers(WorkerPlugin):
+            def setup(self, worker):
+                worker.executors["default"] = ProcessPoolExecutor(
+                    max_workers=worker.state.nthreads
+                )
+
+        client.register_worker_plugin(ProcessPoolWorkers())
 
         with upload_cluster_dump(client):
             log_on_scheduler(client, "Finished client setup of %s", test_label)
