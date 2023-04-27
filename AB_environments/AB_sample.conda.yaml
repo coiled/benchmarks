@@ -10,7 +10,8 @@
 channels:
   - conda-forge
 dependencies:
-    - python =3.9  # Single '=' means latest patch version available
+    # Single '=' means latest patch version available
+    - python =3.9
     # Copy-paste from recipe/meta.yaml
     - pip
     - coiled >=0.2.54
