@@ -179,7 +179,7 @@ jobs:
 
       - name: Generate dashboards
         run: |
-          PY_VER=$(sed -n 's/.*python[[:blank:]]=//p' AB_environments/AB_baseline.conda.yaml)
+          PY_VER=$(sed -n 's/.*- python[[:blank:]]=//p' AB_environments/AB_baseline.conda.yaml)
           python dashboard.py -d benchmark.db -o static -b coiled-AB_baseline-py$PY_VER
 
       - name: Upload artifact
