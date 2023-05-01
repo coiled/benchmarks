@@ -100,6 +100,7 @@ def test_install_dist():
         raise RuntimeError(mismatches)
 
 
+@pytest.mark.xfail(reason="Inconsistencies between PyPI and conda-forge")
 @pytest.mark.latest_runtime
 def test_latest_coiled():
     # Ensure `coiled-runtime` installs the latest version of `coiled` by default

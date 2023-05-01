@@ -2,7 +2,7 @@
 
 [![Tests](https://github.com/coiled/benchmarks/actions/workflows/tests.yml/badge.svg)](https://github.com/coiled/benchmarks/actions/workflows/tests.yml)
 [![Linting](https://github.com/coiled/benchmarks/actions/workflows/lint.yml/badge.svg)](https://github.com/coiled/benchmarks/actions/workflows/lint.yml)
-[![Benchmarks](https://shields.io/badge/-Benchmarks-blue)](https://coiled.github.io/coiled-runtime/index.html)
+[![Benchmarks](https://shields.io/badge/-Benchmarks-blue)](https://benchmarks.coiled.io)
 
 The Coiled Runtime is a conda metapackage which makes it easy to get started with Dask.
 

@@ -135,6 +135,8 @@ dmypy.json
 .pyre/
 
 # Project-specific files
-cluster_kwargs.merged.yaml
+cluster_kwargs.*.pickle
+cluster_kwargs.*.yaml
 benchmark.db
 static/
+mamba_env_export.yml

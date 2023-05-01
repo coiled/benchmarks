@@ -2,8 +2,6 @@ import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 import pytest
-import xgboost.dask
-from dask_ml.metrics import mean_squared_error
 
 from ..utils_test import downscale_dataframe, run_up_to_nthreads, wait
 
@@ -148,9 +146,9 @@ def test_preprocess(small_client, taxi_zone_lookup, read_parquet_with_pyarrow):
 
 @run_up_to_nthreads("small_cluster", 200, reason="fixed size dataset")
 def test_optuna_hpo(small_client):
-    # Needs either coiled-runtime >0.2.1 or explicitly adding the package to the A/B
-    # test environment
+    xgb = pytest.importorskip("xgboost.dask")
     optuna = pytest.importorskip("optuna")
+    mean_squared_error = pytest.importorskip("dask_ml.metrics").mean_squared_error
 
     #############################
     # Dataset load and preprocess
@@ -193,7 +191,7 @@ def test_optuna_hpo(small_client):
     del ddf, train, test
 
     # Build XGBoost matrix. This is automatically persisted.
-    d_train = xgboost.dask.DaskDMatrix(None, x_train, y_train, enable_categorical=True)
+    d_train = xgb.DaskDMatrix(None, x_train, y_train, enable_categorical=True)
 
     del x_train, y_train
 
@@ -202,14 +200,14 @@ def test_optuna_hpo(small_client):
     # times with different hyperparameters
     #########################################
     def train_model(**study_params):
-        model = xgboost.dask.train(
+        model = xgb.train(
             None,
             {"tree_method": "hist", **study_params},
             d_train,
             num_boost_round=4,
             evals=[(d_train, "train")],
         )
-        predictions = xgboost.dask.predict(None, model, x_test)
+        predictions = xgb.predict(None, model, x_test)
         return mean_squared_error(
             y_test.to_dask_array(),
             predictions.to_dask_array(),
