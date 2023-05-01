@@ -69,7 +69,7 @@ def build_json() -> JSONOutput:
         "runtime": runtimes,
         "max_parallel": cfg["max_parallel"]["ci_jobs"],
         "pytest_args": [xdist_args + " ".join(cfg["targets"])],
-        "h2o_datasets": [",".join(h2o_datasets)],
+        "h2o_datasets": h2o_datasets,
     }
 
 
