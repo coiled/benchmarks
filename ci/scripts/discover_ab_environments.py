@@ -61,6 +61,7 @@ def build_json() -> JSONOutput:
 
     n = cfg["max_parallel"]["pytest_workers_per_job"]
     xdist_args = f"-n {n} --dist loadscope " if n > 1 else ""
+    h2o_datasets = cfg["h2o_datasets"] or []
 
     return {
         "run_AB": True,
@@ -68,7 +69,7 @@ def build_json() -> JSONOutput:
         "runtime": runtimes,
         "max_parallel": cfg["max_parallel"]["ci_jobs"],
         "pytest_args": [xdist_args + " ".join(cfg["targets"])],
-        "h2o_datasets": [",".join(cfg["h2o_datasets"])],
+        "h2o_datasets": [",".join(h2o_datasets)],
     }
 
 
