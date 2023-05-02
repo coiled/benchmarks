@@ -44,26 +44,27 @@ def get_generator(trial):
     # Create and randomly initialize generator model
     activations = ["Sigmoid", "Tanh"]
     activation = trial.suggest_categorical("generator_activation", activations)
+    bias = bool(trial.suggest_int("generator_bias", 0, 1))
     ngf = 64  # Size of feature maps in generator
     model = nn.Sequential(
         # input is Z, going into a convolution
-        nn.ConvTranspose2d(NZ, ngf * 8, 4, 1, 0, bias=False),
+        nn.ConvTranspose2d(NZ, ngf * 8, 4, 1, 0, bias=bias),
         nn.BatchNorm2d(ngf * 8),
         nn.ReLU(True),
         # state size. ``(ngf*8) x 4 x 4``
-        nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=False),
+        nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=bias),
         nn.BatchNorm2d(ngf * 4),
         nn.ReLU(True),
         # state size. ``(ngf*4) x 8 x 8``
-        nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=False),
+        nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=bias),
         nn.BatchNorm2d(ngf * 2),
         nn.ReLU(True),
         # state size. ``(ngf*2) x 16 x 16``
-        nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1, bias=False),
+        nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1, bias=bias),
         nn.BatchNorm2d(ngf),
         nn.ReLU(True),
         # state size. ``(ngf) x 32 x 32``
-        nn.ConvTranspose2d(ngf, NC, 4, 2, 1, bias=False),
+        nn.ConvTranspose2d(ngf, NC, 4, 2, 1, bias=bias),
         getattr(nn, activation)(),
         # state size. ``(NC) x 64 x 64``
     )
@@ -73,30 +74,33 @@ def get_generator(trial):
 
 def get_discriminator(trial):
     # Create and randomly initialize discriminator model
-    activations = ["Sigmoid"]
+    activations = ["Sigmoid", "Tanh"]
     activation = trial.suggest_categorical("discriminator_activation", activations)
+    bias = bool(trial.suggest_int("discriminator_bias", 0, 1))
+    dropout = trial.suggest_float("discriminator_dropout", 0, 0.3)
     leaky_relu_slope = trial.suggest_float(
         "discriminator_leaky_relu_slope", 0.1, 0.4, step=0.1
     )
     ndf = 64  # Size of feature maps in discriminator
     model = nn.Sequential(
         # input is ``(NC) x 64 x 64``
-        nn.Conv2d(NC, ndf, 4, 2, 1, bias=False),
+        nn.Conv2d(NC, ndf, 4, 2, 1, bias=bias),
         nn.LeakyReLU(leaky_relu_slope, inplace=True),
+        nn.Dropout2d(p=dropout),
         # state size. ``(ndf) x 32 x 32``
-        nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=False),
+        nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=bias),
         nn.BatchNorm2d(ndf * 2),
         nn.LeakyReLU(leaky_relu_slope, inplace=True),
         # state size. ``(ndf*2) x 16 x 16``
-        nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=False),
+        nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=bias),
         nn.BatchNorm2d(ndf * 4),
         nn.LeakyReLU(leaky_relu_slope, inplace=True),
         # state size. ``(ndf*4) x 8 x 8``
-        nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=False),
+        nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=bias),
         nn.BatchNorm2d(ndf * 8),
         nn.LeakyReLU(leaky_relu_slope, inplace=True),
         # state size. ``(ndf*8) x 4 x 4``
-        nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=False),
+        nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=bias),
         getattr(nn, activation)(),
     )
     model.apply(weights_init)
