@@ -1,6 +1,5 @@
 channels:
   - conda-forge
-  - pytorch
 dependencies:
   - jinja2
   - optuna
