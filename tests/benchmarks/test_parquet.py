@@ -106,8 +106,7 @@ def test_download_throughput(parquet_client, kind):
 
     def boto3_load(path):
         s3 = boto3.client("s3")
-        bucket_name = path.split("/")[2]
-        key = path.split("/", maxsplit=3)[3]
+        _, _, bucket_name, key = path.split("/", maxsplit=3)
         response = s3.get_object(Bucket=bucket_name, Key=key)
         return response["Body"].read()
 
