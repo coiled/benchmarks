@@ -1,6 +1,7 @@
 """
 Parquet-related benchmarks.
 """
+import io
 import uuid
 
 import dask.dataframe as dd
@@ -11,7 +12,7 @@ import pytest
 from coiled import Cluster
 
 from ..conftest import dump_cluster_kwargs
-from ..utils_test import run_up_to_nthreads
+from ..utils_test import run_up_to_nthreads, wait
 
 
 @pytest.fixture(scope="module")
@@ -92,25 +93,48 @@ def test_write_wide_data(parquet_client, s3_url):
 
 
 @run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
-@pytest.mark.parametrize("kind", ("s3fs", "pandas", "dask"))
+@pytest.mark.parametrize("kind", ("boto3", "s3fs", "pandas", "pandas+boto3", "dask"))
 def test_download_throughput(parquet_client, kind):
+    boto3 = pytest.importorskip("boto3")
     fsspec = pytest.importorskip("fsspec")
 
-    # Test throughput for downloading and parsing a ~500 MB file
+    # Test throughput for downloading and parsing a single 563 MB file
     path = (
         "s3://coiled-runtime-ci/ookla-open-data/"
         "type=fixed/year=2022/quarter=1/2022-01-01_performance_fixed_tiles.parquet"
     )
-    if kind == "s3fs":
+
+    def boto3_load(path):
+        s3 = boto3.client("s3")
+        bucket_name = path.split("/")[2]
+        key = path.split("/", maxsplit=3)[3]
+        response = s3.get_object(Bucket=bucket_name, Key=key)
+        return response["Body"].read()
+
+    if kind == "boto3":
+        fut = parquet_client.submit(boto3_load, path)
+
+    elif kind == "s3fs":
 
         def load(path):
             with fsspec.open(path) as f:
-                f.read()
+                return f.read()
 
-        distributed.wait(parquet_client.submit(load, path))
+        fut = parquet_client.submit(load, path)
+
     elif kind == "pandas":
-        distributed.wait(
-            parquet_client.submit(pandas.read_parquet, path, engine="pyarrow")
-        )
+        fut = parquet_client.submit(pandas.read_parquet, path, engine="pyarrow")
+
+    elif kind == "pandas+boto3":
+
+        def load(path):
+            raw = boto3_load(path)
+            buf = io.BytesIO(raw)
+            return pandas.read_parquet(buf, engine="pyarrow")
+
+        fut = parquet_client.submit(load, path)
+
     elif kind == "dask":
-        distributed.wait(dd.read_parquet(path, engine="pyarrow").persist())
+        fut = dd.read_parquet(path, engine="pyarrow")
+
+    wait(fut, parquet_client, timeout=60)
