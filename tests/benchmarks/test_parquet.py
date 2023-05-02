@@ -4,9 +4,11 @@ Parquet-related benchmarks.
 import io
 import uuid
 
+import boto3
 import dask.dataframe as dd
 import dask.datasets
 import distributed
+import fsspec
 import pandas
 import pytest
 from coiled import Cluster
@@ -95,9 +97,6 @@ def test_write_wide_data(parquet_client, s3_url):
 @run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
 @pytest.mark.parametrize("kind", ("boto3", "s3fs", "pandas", "pandas+boto3", "dask"))
 def test_download_throughput(parquet_client, kind):
-    boto3 = pytest.importorskip("boto3")
-    fsspec = pytest.importorskip("fsspec")
-
     # Test throughput for downloading and parsing a single 563 MB file
     path = (
         "s3://coiled-runtime-ci/ookla-open-data/"
