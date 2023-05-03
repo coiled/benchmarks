@@ -1,5 +1,6 @@
 {% set name = "coiled-runtime" %}
 {% set version = "0.3.0" + environ.get("VERSION_SUFFIX", '') %}
+{% set python_version = environ.get("PYTHON_VERSION", '') %}
 {% set dask_version = environ.get("DASK_VERSION", "2023.4.0") %}
 {% set distributed_version = environ.get("DISTRIBUTED_VERSION", "2023.4.0") %}
 
@@ -26,7 +27,9 @@ requirements:
     - numpy ==1.23.5
     - pandas ==1.5.3  # 2.0.0 requires a newer version of xarray
     - dask =={{ dask_version }}
+{% if python_version in ["3.8", "3.9"] -%}
     - dask-snowflake
+{%- endif %}
     - distributed =={{ distributed_version }}
     - fsspec ==2023.3.0
     - s3fs ==2023.3.0
@@ -63,6 +66,9 @@ test:
     - dask
     - distributed
     - pyarrow
+{% if python_version in ["3.8", "3.9"] -%}
+    - dask_snowflake
+{%- endif %}
 
 about:
   home: https://github.com/coiled/benchmarks
