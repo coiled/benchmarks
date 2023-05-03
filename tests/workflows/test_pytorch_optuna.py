@@ -42,7 +42,7 @@ def weights_init(m):
 
 def get_generator(trial):
     # Create and randomly initialize generator model
-    activations = ["Sigmoid", "Tanh"]
+    activations = ["Sigmoid", "Softmax"]
     activation = trial.suggest_categorical("generator_activation", activations)
     bias = bool(trial.suggest_int("generator_bias", 0, 1))
     ngf = 64  # Size of feature maps in generator
@@ -74,7 +74,7 @@ def get_generator(trial):
 
 def get_discriminator(trial):
     # Create and randomly initialize discriminator model
-    activations = ["Sigmoid", "Tanh"]
+    activations = ["Sigmoid", "Softmax"]
     activation = trial.suggest_categorical("discriminator_activation", activations)
     bias = bool(trial.suggest_int("discriminator_bias", 0, 1))
     dropout = trial.suggest_float("discriminator_dropout", 0, 0.3)
