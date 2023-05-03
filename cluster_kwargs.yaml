@@ -59,6 +59,9 @@ pytorch_optuna:
   n_workers: 4
   worker_gpu: 1
   worker_options:
+    # Making workers single-threaded to avoid GPU contention. See discussion in
+    # https://github.com/coiled/benchmarks/pull/787#discussion_r1177004248 for
+    # more details.
     nthreads: 1
 
 # Specific tests
