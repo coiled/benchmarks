@@ -4,3 +4,7 @@
 
 # Overrides ../cluster_kwargs.yaml.
 # Leave empty if you don't want to override anything.
+
+parquet_cluster:
+  n_workers: 5
+  worker_vm_types: [m5.xlarge]  # 4 CPU, 16 GiB
