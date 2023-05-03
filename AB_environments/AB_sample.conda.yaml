@@ -1,7 +1,12 @@
-# Special environment file for A/B testing, used to define the conda environment for the
-# baseline environment.
-# Change contents, but do not rename.
+# Sample conda environment file for A/B testing.
+# Change contents/delete/rename as needed.
 
+# Every A/B environment *must* present these three files:
+# - AB_<name>.conda.yaml
+# - AB_<name>.dask.yaml
+# - AB_<name>.cluster.yaml
+
+# You should always start from a copy-paste from AB_baseline.conda.yaml
 channels:
   - conda-forge
 dependencies:
@@ -42,12 +47,12 @@ dependencies:
     - pynvml ==11.5.0
     - bokeh ==3.1.0
     - gilknocker ==0.4.1
-    # End copy-paste
+    # End copy-paste from AB_baseline.conda.yaml
 
-    # - pip:
+    - pip:
       # Make sure you install dask and distributed either both from pip or both from
       # conda. You may alternatively point to your own git fork (but make sure you
       # sync'ed tags!)
       # Read README.md for troubleshooting.
-      # - git+https://github.com/dask/dask@b85bf5be72b02342222c8a0452596539fce19bce
-      # - git+https://github.com/dask/distributed@6dc4c24b7a01b93952bbfd95d3ecba043580c245
+      - git+https://github.com/dask/dask@b85bf5be72b02342222c8a0452596539fce19bce
+      - git+https://github.com/dask/distributed@6dc4c24b7a01b93952bbfd95d3ecba043580c245
