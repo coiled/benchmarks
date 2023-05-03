@@ -33,7 +33,7 @@ def connection_kwargs():
 @pytest.fixture
 def table(connection_kwargs):
     """Connect to snowflake and create table"""
-    name = f"test_table_{uuid.uuid4().hex}"
+    name = f"citibike_tripdata_{uuid.uuid4().hex}"
     engine = create_engine(URL(**connection_kwargs))
     engine.execute(f"DROP TABLE IF EXISTS {name}")
     engine.execute(
@@ -54,20 +54,25 @@ def table(connection_kwargs):
             )"""
     )
     yield name
+    # after the data is written, delete table
+    engine.execute(f"DROP TABLE IF EXISTS {name}")
 
 
 @pytest.mark.client("snowflake")
-def test_exploratory_analysis(client, connection_kwargs, table):
-    """Upload NYC bike dataset to Snowflake. Then read
-    and explore the data."""
-
+def test_write(client, connection_kwargs, table):
     csv_path = "nyc-bike-data"
 
     def unzip(filename: str):
         """Unzip csv file to csv_path"""
         if not os.path.exists(f"{csv_path}/{filename}"):
             url = f"https://s3.amazonaws.com/tripdata/{filename}.zip"
-            zip_path, _ = urllib.request.urlretrieve(url)
+            try:
+                zip_path, _ = urllib.request.urlretrieve(url)
+            except urllib.error.HTTPError:
+                # some of the filenames have "citbike" vs "citibike"
+                zip_path, _ = urllib.request.urlretrieve(
+                    url.replace("-citibike-", "-citbike-")
+                )
             with zipfile.ZipFile(zip_path, "r") as f:
                 f.extractall(csv_path)
         return filename
@@ -109,26 +114,31 @@ def test_exploratory_analysis(client, connection_kwargs, table):
     # repartition to ensure even chunks
     ddf = ddf.repartition(partition_size="100Mb")
 
-    input_npartitions = ddf.npartitions
-
     wait(ddf)
 
     # save data to Snowflake
     to_snowflake(ddf, name=table, connection_kwargs=connection_kwargs)
 
-    # read the data back
-    ddf_out = read_snowflake(
+
+@pytest.mark.client("snowflake")
+def test_read_explore(client, connection_kwargs, table):
+    """Read and explore NYC bike dataset from Snowflake"""
+    table = "citibike_tripdata"  # persistent table
+
+    ddf = read_snowflake(
         f"SELECT * FROM {table}",
         connection_kwargs=connection_kwargs,
-        npartitions=input_npartitions,
+        npartitions=200,
     ).rename(
         columns=str.lower
     )  # snowflake has all uppercase
 
-    ddf_out["is_roundtrip"] = ddf_out["start_station_id"] == ddf_out["end_station_id"]
+    ddf["is_roundtrip"] = ddf["start_station_id"] == ddf["end_station_id"]
 
-    # compute counts of roundtrips vs non-roundtrips
-    roundtrips = ddf_out.is_roundtrip.value_counts().compute()  # noqa: F841
+    # compute counts of roundtrips vs one-way
+    roundtrips = (  # noqa: F841
+        ddf.is_roundtrip.value_counts().compute().reset_index(name="count")
+    )
 
     """
     # maybe plot roundtrips vs one-way
@@ -137,27 +147,27 @@ def test_exploratory_analysis(client, connection_kwargs, table):
     """
 
     # explore trip duration
-    ddf_out["trip_duration"] = ddf_out["ended_at"] - ddf_out["started_at"]
-    ddf_out["trip_minutes"] = ddf_out["trip_duration"].apply(
-        lambda x: x.total_seconds() // 60, meta=("trip_duration", int)
-    )
+    ddf["trip_duration"] = ddf["ended_at"] - ddf["started_at"]
+    ddf["trip_minutes"] = ddf["trip_duration"].dt.total_seconds() // 60
 
-    # find quantiles, then filter out some outliers
-    duration_quantile = ddf_out["trip_minutes"].quantile([0.05, 0.95]).compute()
+    # find quantiles
+    duration_quantile = ddf["trip_minutes"].quantile([0.05, 0.95]).compute()
     min_duration, max_duration = duration_quantile[0.05], duration_quantile[0.95]
-    ddf_out = ddf_out[
-        (ddf_out.trip_duration_minutes >= min_duration)
-        & (ddf_out.trip_duration_minutes <= max_duration)
+
+    # filter out outliers
+    ddf = ddf[
+        (ddf.trip_duration_minutes >= min_duration)
+        & (ddf.trip_duration_minutes <= max_duration)
     ]
 
     durations = (  # noqa: F841
-        ddf_out.trip_duration_minutes.value_counts()
+        ddf.trip_duration_minutes.value_counts()
         .compute()
         .reset_index(name="count")
         .rename(columns={"index": "trip_minutes"})
     )
 
     """
-    # maybe plot the counts
+    # maybe plot the durations / counts
     sns.barplot(durations, x="trip_minutes", y="count")
     """
