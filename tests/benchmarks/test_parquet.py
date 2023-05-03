@@ -2,7 +2,6 @@
 Parquet-related benchmarks.
 """
 import io
-import random
 import uuid
 
 import boto3
@@ -96,20 +95,15 @@ def test_write_wide_data(parquet_client, s3_url):
 
 
 @run_up_to_nthreads("parquet_cluster", 60, reason="fixed dataset")
-@pytest.mark.parametrize(
-    "kind",
-    random.sample(  # Read below
-        kinds := ["boto3", "s3fs", "pandas", "pandas+boto3", "dask"], len(kinds)
-    ),
-)
+@pytest.mark.parametrize("kind", ["boto3", "s3fs", "pandas", "pandas+boto3", "dask"])
 def test_download_throughput(parquet_client, kind):
     """Test throughput for downloading and parsing a single 563 MB parquet file.
 
+    Note
+    ----
     I/O performance on S3 is heavily dependent on how many times the same file has been
     requested over the last few seconds. In A/B tests, this could lead to a false
-    impression that test cases later in this list are faster than the earlier ones. For
-    this reason, the order of the use cases is randomized at every interpreter restart
-    to get an homogeneous distribution.
+    impression that test cases later in this list are faster than the earlier ones.
     Read more: https://github.com/coiled/benchmarks/issues/821
     """
     path = (
