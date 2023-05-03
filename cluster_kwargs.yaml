@@ -58,7 +58,8 @@ uber_lyft:
 pytorch_optuna:
   n_workers: 4
   worker_gpu: 1
-  worker_class: dask_cuda.CUDAWorker
+  worker_options:
+    nthreads: 1
 
 # Specific tests
 test_work_stealing_on_scaling_up:
