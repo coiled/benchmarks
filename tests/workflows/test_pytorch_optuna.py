@@ -1,5 +1,10 @@
 # Derived partially from https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
-import numpy as np
+import functools
+import pathlib
+import tempfile
+import zipfile
+
+import boto3
 import optuna
 import pytest
 import torch
@@ -7,29 +12,12 @@ import torch.nn as nn
 import torch.nn.parallel
 import torch.optim as optim
 import torch.utils.data
+import torchvision.datasets as dset
+import torchvision.transforms as transforms
 from dask.distributed import PipInstall, wait
 
 NC = 3  # Number of channels in the training images. For color images this is 3
 NZ = 100  # Size of z latent vector (i.e. size of generator input)
-
-
-# We create a fake image dataset. This ought to be replaced by
-# your actual dataset or pytorch's example datasets. We do this here
-# to focus more on computation than actual convergence.
-class FakeImageDataset(torch.utils.data.Dataset):
-    def __init__(self, count=1_000):
-        self.labels = np.random.randint(0, 5, size=count)
-
-    def __len__(self):
-        return len(self.labels)
-
-    def __getitem__(self, idx):
-        label = self.labels[idx]
-        torch.random.seed = label
-        # Spatial size of training images. All images will be resized to this
-        # size using a transformer.
-        img = torch.rand(3, 64, 64)
-        return img, label
 
 
 def weights_init(m):
@@ -38,6 +26,20 @@ def weights_init(m):
     elif isinstance(m, nn.BatchNorm2d):
         nn.init.normal_(m.weight.data, 1.0, 0.02)
         nn.init.constant_(m.bias.data, 0)
+
+
+@functools.lru_cache()
+def get_raw_dataset() -> pathlib.Path:
+    dir = tempfile.gettempdir()
+    zip = pathlib.Path(dir).joinpath("img_align_celeba.zip")
+    dst = zip.parent.joinpath("img_align_celeba")
+
+    boto3.client("s3").download_file(
+        "coiled-datasets", "CelebA-Faces/img_align_celeba.zip", str(zip)
+    )
+    with zipfile.ZipFile(str(zip), "r") as zipped:
+        zipped.extractall(dst)
+    return dst
 
 
 def get_generator(trial):
@@ -123,13 +125,26 @@ def test_hpo(client):
     """Run example of running PyTorch and Optuna together on Dask"""
 
     def objective(trial):
-        dataset = FakeImageDataset()
+        dataset_dir = get_raw_dataset()
 
-        # Create the dataloader
-        # NOTE: IMPORTANT w/ optuna; it launches a daemonic process, so PyTorch can't itself use it then.
-        dataloader = torch.utils.data.DataLoader(
-            dataset, batch_size=64, shuffle=True, num_workers=0
+        dataset = dset.ImageFolder(
+            root=str(dataset_dir),
+            transform=transforms.Compose(
+                [
+                    transforms.Resize(64),
+                    transforms.CenterCrop(64),
+                    transforms.ToTensor(),
+                    transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
+                ]
+            ),
         )
+
+        # Datset is just over 200k, for this example we'll use the first 10k
+        subset = torch.utils.data.Subset(dataset, torch.arange(10_000))
+        dataloader = torch.utils.data.DataLoader(
+            subset, batch_size=128, shuffle=True, num_workers=0
+        )
+
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # Create models
