@@ -33,6 +33,9 @@ def test_join_big(small_client, memory_multiplier, configure_shuffling):
 
 
 def test_join_big_small(small_client, memory_multiplier, configure_shuffling):
+    if memory_multiplier == 0.1:
+        raise pytest.skip(reason="Too noisy; not adding anything to multiplier=1")
+
     memory = cluster_memory(small_client)  # 76.66 GiB
 
     df_big = timeseries_of_size(

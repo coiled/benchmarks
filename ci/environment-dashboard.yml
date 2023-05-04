@@ -7,14 +7,19 @@ dependencies:
   - altair=4.2
   - bokeh
   - panel=0.13
+  - pandas=1.4  # 1.5 is incompatibile with altair 4.2
+  - tabulate
+
+  # These imports are only needed to parse the source code of the tests and embed it in
+  # the dashboard
   - coiled
+  - conda
   - dask
   - dask-ml
   - distributed
+  - filelock
+  - optuna
+  - s3fs
   - xarray
   - xgboost
-  - pandas=1.4  # 1.5 is incompatibile with altair 4.2
-  - tabulate
-  - conda
-  - filelock
-  - s3fs
+  - zarr

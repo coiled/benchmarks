@@ -86,7 +86,12 @@ jobs:
           echo $EXTRA_OPTIONS
           echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
 
-      - name: Run tests
+          # Need to use `main` branch of optuna until https://github.com/optuna/optuna/pull/4589
+          # is released in `optuna=3.2.0`. Currently only doing this when workflows are run
+          # as that's the only place where the optuna + dask integration is being used.
+          python -m pip install git+https://github.com/optuna/optuna
+
+      - name: Run Coiled Runtime Tests
         id: test
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
@@ -105,7 +110,10 @@ jobs:
         if: always()
         with:
           name: ${{ matrix.os }}-py${{ matrix.python-version }}
-          path: ${{ matrix.os }}-py${{ matrix.python-version }}.db
+          path: |
+            ${{ matrix.os }}-py${{ matrix.python-version }}.db
+            cluster_kwargs.*.*
+            mamba_env_export.yml
 
   process-results:
     needs: tests
