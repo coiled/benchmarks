@@ -12,8 +12,6 @@ import torch.nn as nn
 import torch.nn.parallel
 import torch.optim as optim
 import torch.utils.data
-import torchvision.datasets as dset
-import torchvision.transforms as transforms
 from dask.distributed import PipInstall, wait
 
 NC = 3  # Number of channels in the training images. For color images this is 3
@@ -115,6 +113,7 @@ def get_discriminator(trial):
     worker_plugin=PipInstall(
         [
             "torch==2.0.0",
+            "torchvision",
             "git+https://github.com/optuna/optuna.git@378508ab6bddbad182bdfa0e8b3ad4bbb7040f00",
         ],
         pip_options=["--force-reinstall"],
@@ -125,6 +124,11 @@ def test_hpo(client):
     """Run example of running PyTorch and Optuna together on Dask"""
 
     def objective(trial):
+        # FIXME: Windows package-sync doesn't like torchvision, installed w/ PipInstall
+        # ref: https://github.com/coiled/benchmarks/pull/787#issuecomment-1532882045
+        import torchvision.datasets as dset
+        import torchvision.transforms as transforms
+
         dataset_dir = get_raw_dataset()
 
         dataset = dset.ImageFolder(
