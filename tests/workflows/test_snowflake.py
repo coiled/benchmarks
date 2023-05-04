@@ -1,7 +1,5 @@
 import os
-import urllib
 import uuid
-import zipfile
 
 import dask.dataframe as dd
 import pandas as pd
@@ -60,31 +58,10 @@ def table(connection_kwargs):
 
 @pytest.mark.client("snowflake")
 def test_write(client, connection_kwargs, table):
-    csv_path = "nyc-bike-data"
-
-    def unzip(filename: str):
-        """Unzip csv file to csv_path"""
-        if not os.path.exists(f"{csv_path}/{filename}"):
-            url = f"https://s3.amazonaws.com/tripdata/{filename}.zip"
-            try:
-                zip_path, _ = urllib.request.urlretrieve(url)
-            except urllib.error.HTTPError:
-                # some of the filenames have "citbike" vs "citibike"
-                zip_path, _ = urllib.request.urlretrieve(
-                    url.replace("-citibike-", "-citbike-")
-                )
-            with zipfile.ZipFile(zip_path, "r") as f:
-                f.extractall(csv_path)
-        return filename
-
-    filenames = [
-        f"{ts.year}{ts.month:02}-citibike-tripdata.csv"
+    csv_paths = [
+        f"tripdata/{ts.year}{ts.month:02}-*.csv.zip"
         for ts in pd.date_range(start="2022-01-01", end="2023-03-01", freq="MS")
     ]
-
-    # download and unzip files
-    futures = client.map(unzip, filenames)
-    wait(futures)
 
     # preprocess data
     def safe_int(x):
@@ -96,7 +73,9 @@ def test_write(client, connection_kwargs, table):
             return -1
 
     ddf = dd.read_csv(
-        f"{csv_path}/*.csv",
+        csv_paths,
+        compression="zip",
+        blocksize=None,
         converters={"start_station_id": safe_int, "end_station_id": safe_int},
     )
 
