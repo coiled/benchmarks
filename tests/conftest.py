@@ -1,11 +1,9 @@
 import contextlib
 import datetime
-import json
 import logging
 import os
 import pathlib
 import pickle
-import shlex
 import subprocess
 import sys
 import threading
@@ -74,21 +72,6 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_workflows)
 
 
-def get_coiled_runtime_version():
-    try:
-        return os.environ["COILED_RUNTIME_VERSION"]
-    except KeyError:
-        # Determine software environment from local `coiled-runtime` version (if installed)
-        out = subprocess.check_output(
-            shlex.split("conda list --json coiled-runtime"), text=True
-        ).rstrip()
-        runtime_info = json.loads(out)
-        if runtime_info:
-            return runtime_info[0]["version"]
-        else:
-            return "unknown"
-
-
 dask.config.set(
     {
         "coiled.account": "dask-benchmarks",
@@ -96,7 +79,7 @@ dask.config.set(
     }
 )
 
-COILED_RUNTIME_VERSION = get_coiled_runtime_version()
+COILED_RUNTIME_VERSION = "upstream"
 COILED_SOFTWARE_NAME = "package_sync"
 
 

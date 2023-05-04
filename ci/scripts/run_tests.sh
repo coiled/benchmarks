@@ -4,7 +4,7 @@ set -o xtrace
 
 BENCHMARK="${BENCHMARK:-false}"
 
-EXTRA_OPTIONS="--run-latest"
+EXTRA_OPTIONS=""
 if [[ $BENCHMARK = 'true' ]]
 then
   EXTRA_OPTIONS="$EXTRA_OPTIONS --benchmark"

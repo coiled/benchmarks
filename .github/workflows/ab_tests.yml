@@ -80,11 +80,11 @@ jobs:
           cp AB_baseline.dask.yaml AB_null_hypothesis.dask.yaml
           cp AB_baseline.cluster.yaml AB_null_hypothesis.cluster.yaml
 
-      - name: Install coiled-runtime
+      - name: Install conda environment
         env:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
         run: |
-          source ci/scripts/install_coiled_runtime.sh AB_environments/${{ matrix.runtime-version }}.conda.yaml
+          source ci/scripts/install_conda_env.sh AB_environments/${{ matrix.runtime-version }}.conda.yaml
 
       - name: Convert dask config into environment variables
         run: python ci/scripts/dask_config_to_env.py AB_environments/${{ matrix.runtime-version }}.dask.yaml >> $GITHUB_ENV
