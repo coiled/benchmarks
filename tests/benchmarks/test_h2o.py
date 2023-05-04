@@ -158,7 +158,7 @@ def test_q9(ddf, configure_shuffling):
         ddf[["id2", "id4", "v1", "v2"]]
         .groupby(["id2", "id4"], dropna=False, observed=True)
         .apply(
-            lambda x: pd.Series({"r2": x.corr()["v1"]["v2"] ** 2}),
+            lambda x: pd.Series({"r2": x.corr(numeric_only=True)["v1"]["v2"] ** 2}),
             meta={"r2": "float64"},
         )
         .compute()

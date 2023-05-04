@@ -2,9 +2,10 @@ from __future__ import annotations
 
 import dask.array as da
 import pytest
-import xarray
 
 from ..utils_test import run_up_to_nthreads, wait
+
+pytest.importorskip("zarr")
 
 
 @pytest.fixture(scope="module")
@@ -20,6 +21,9 @@ def zarr_dataset():
 
 @pytest.fixture(scope="module")
 def cmip6():
+    xarray = pytest.importorskip("xarray")
+    pytest.importorskip("cftime")
+
     store = "s3://coiled-runtime-ci/CMIP6/CMIP/AS-RCEC/TaiESM1/1pctCO2/r1i1p1f1/Amon/zg/gn/v20200225/"
     return xarray.open_dataset(store, engine="zarr", chunks={})
 
