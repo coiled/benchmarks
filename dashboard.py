@@ -741,8 +741,8 @@ def main() -> None:
     for runtime in runtimes:
         make_timeseries_html_report(df, output_dir, runtime)
 
-    # for (runtime, fullname), df2 in df.groupby(["runtime", "fullname"]):
-    #     make_details_html_report(df2, output_dir, runtime, fullname)
+    for (runtime, fullname), df2 in df.groupby(["runtime", "fullname"]):
+        make_details_html_report(df2, output_dir, runtime, fullname)
 
     # Do not use data that is more than a week old in statistical analysis.
     # Also exclude failed tests.
