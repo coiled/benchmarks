@@ -34,7 +34,11 @@ requirements:
     - fsspec ==2023.3.0
     - s3fs ==2023.3.0
     - gcsfs ==2023.3.0
+{% if python_version in ["3.8", "3.9"] %}
+    - pyarrow <11
+{% else %}
     - pyarrow ==11.0.0
+{% endif %}
     - jupyterlab ==3.6.2
     - dask-labextension ==6.1.0
     - lz4 ==4.3.2
@@ -65,9 +69,11 @@ test:
   imports:
     - dask
     - distributed
-    - pyarrow
 {% if python_version in ["3.8", "3.9"] %}
     - dask_snowflake
+    - pyarrow<11
+{% else %}
+    - pyarrow
 {% endif %}
 
 about:
