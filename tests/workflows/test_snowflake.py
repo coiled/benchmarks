@@ -106,9 +106,8 @@ def test_write(client, connection_kwargs, table):
     )
 
     # create boolean is_member and drop member_casual
-    ddf["is_member"] = ddf.member_casual.apply(
-        lambda x: x == "member", meta=("is_member", bool)
-    )
+    ddf["is_member"] = ddf.member_casual == "member"
+
     ddf = ddf.drop(columns="member_casual")
 
     # repartition to ensure even chunks
