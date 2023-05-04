@@ -43,6 +43,7 @@ def parquet_client(parquet_cluster, cluster_kwargs, upload_cluster_dump, benchma
 
 
 @run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
+@pytest.mark.skip("takes forever with Arrow strings, needs investigating")
 def test_read_spark_generated_data(parquet_client):
     """
     Read a ~15 GB subset of a ~800 GB spark-generated

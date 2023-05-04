@@ -47,7 +47,7 @@ jobs:
     needs: discover_ab_envs
     if: fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 180
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       max-parallel: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).max_parallel }}
