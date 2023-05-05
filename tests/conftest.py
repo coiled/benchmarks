@@ -91,7 +91,7 @@ def get_coiled_runtime_version():
 
 dask.config.set(
     {
-        "coiled.account": "dask-benchmarks",
+        "coiled.account": "dask-engineering",
         "distributed.admin.system-monitor.gil.enabled": True,
     }
 )
