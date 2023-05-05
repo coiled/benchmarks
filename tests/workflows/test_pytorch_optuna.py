@@ -1,12 +1,11 @@
 # Derived partially from https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
-import functools
 import pathlib
 import tempfile
 import zipfile
 
-import boto3
 import optuna
 import pytest
+import s3fs
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -14,102 +13,9 @@ import torch.optim as optim
 import torch.utils.data
 from dask.distributed import PipInstall, wait
 
-NC = 3  # Number of channels in the training images. For color images this is 3
-NZ = 100  # Size of z latent vector (i.e. size of generator input)
-
-
-def weights_init(m):
-    if isinstance(m, (nn.ConvTranspose2d, nn.Conv2d)):
-        nn.init.normal_(m.weight.data, 0.0, 0.02)
-    elif isinstance(m, nn.BatchNorm2d):
-        nn.init.normal_(m.weight.data, 1.0, 0.02)
-        nn.init.constant_(m.bias.data, 0)
-
-
-@functools.lru_cache()
-def get_raw_dataset() -> pathlib.Path:
-    dir = tempfile.gettempdir()
-    zip = pathlib.Path(dir).joinpath("img_align_celeba.zip")
-    dst = zip.parent.joinpath("img_align_celeba")
-
-    boto3.client("s3").download_file(
-        "coiled-datasets", "CelebA-Faces/img_align_celeba.zip", str(zip)
-    )
-    with zipfile.ZipFile(str(zip), "r") as zipped:
-        zipped.extractall(dst)
-    return dst
-
-
-def get_generator(trial):
-    # Create and randomly initialize generator model
-    activations = ["Sigmoid", "Softmax"]
-    activation = trial.suggest_categorical("generator_activation", activations)
-    bias = bool(trial.suggest_int("generator_bias", 0, 1))
-    ngf = 64  # Size of feature maps in generator
-    model = nn.Sequential(
-        # input is Z, going into a convolution
-        nn.ConvTranspose2d(NZ, ngf * 8, 4, 1, 0, bias=bias),
-        nn.BatchNorm2d(ngf * 8),
-        nn.ReLU(True),
-        # state size. ``(ngf*8) x 4 x 4``
-        nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=bias),
-        nn.BatchNorm2d(ngf * 4),
-        nn.ReLU(True),
-        # state size. ``(ngf*4) x 8 x 8``
-        nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=bias),
-        nn.BatchNorm2d(ngf * 2),
-        nn.ReLU(True),
-        # state size. ``(ngf*2) x 16 x 16``
-        nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1, bias=bias),
-        nn.BatchNorm2d(ngf),
-        nn.ReLU(True),
-        # state size. ``(ngf) x 32 x 32``
-        nn.ConvTranspose2d(ngf, NC, 4, 2, 1, bias=bias),
-        getattr(nn, activation)(),
-        # state size. ``(NC) x 64 x 64``
-    )
-    model.apply(weights_init)
-    return model
-
-
-def get_discriminator(trial):
-    # Create and randomly initialize discriminator model
-    activations = ["Sigmoid", "Softmax"]
-    activation = trial.suggest_categorical("discriminator_activation", activations)
-    bias = bool(trial.suggest_int("discriminator_bias", 0, 1))
-    dropout = trial.suggest_float("discriminator_dropout", 0, 0.3)
-    leaky_relu_slope = trial.suggest_float(
-        "discriminator_leaky_relu_slope", 0.1, 0.4, step=0.1
-    )
-    ndf = 64  # Size of feature maps in discriminator
-    model = nn.Sequential(
-        # input is ``(NC) x 64 x 64``
-        nn.Conv2d(NC, ndf, 4, 2, 1, bias=bias),
-        nn.LeakyReLU(leaky_relu_slope, inplace=True),
-        nn.Dropout2d(p=dropout),
-        # state size. ``(ndf) x 32 x 32``
-        nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=bias),
-        nn.BatchNorm2d(ndf * 2),
-        nn.LeakyReLU(leaky_relu_slope, inplace=True),
-        # state size. ``(ndf*2) x 16 x 16``
-        nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=bias),
-        nn.BatchNorm2d(ndf * 4),
-        nn.LeakyReLU(leaky_relu_slope, inplace=True),
-        # state size. ``(ndf*4) x 8 x 8``
-        nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=bias),
-        nn.BatchNorm2d(ndf * 8),
-        nn.LeakyReLU(leaky_relu_slope, inplace=True),
-        # state size. ``(ndf*8) x 4 x 4``
-        nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=bias),
-        getattr(nn, activation)(),
-    )
-    model.apply(weights_init)
-    return model
-
 
 @pytest.mark.client(
     "pytorch_optuna",
-    upload_file=__file__,
     worker_plugin=PipInstall(
         [
             "torch==2.0.0",
@@ -122,6 +28,98 @@ def get_discriminator(trial):
 )
 def test_hpo(client):
     """Run example of running PyTorch and Optuna together on Dask"""
+    NC = 3  # Number of channels in the training images. For color images this is 3
+    NZ = 100  # Size of z latent vector (i.e. size of generator input)
+
+    def weights_init(m):
+        if isinstance(m, (nn.ConvTranspose2d, nn.Conv2d)):
+            nn.init.normal_(m.weight.data, 0.0, 0.02)
+        elif isinstance(m, nn.BatchNorm2d):
+            nn.init.normal_(m.weight.data, 1.0, 0.02)
+            nn.init.constant_(m.bias.data, 0)
+
+    dataset_dir = None
+
+    def download_data():
+        nonlocal dataset_dir
+        if dataset_dir is not None:
+            return
+        dir = tempfile.gettempdir()
+        zip = pathlib.Path(dir).joinpath("img_align_celeba.zip")
+        dataset_dir = zip.parent.joinpath("img_align_celeba")
+
+        print("Downloading dataset...")
+        fs = s3fs.S3FileSystem()
+        fs.download("s3://coiled-datasets/CelebA-Faces/img_align_celeba.zip", str(zip))
+
+        print(f"Unzipping into {dataset_dir}")
+        with zipfile.ZipFile(str(zip), "r") as zipped:
+            zipped.extractall(dataset_dir)
+
+    def get_generator(trial):
+        # Create and randomly initialize generator model
+        activations = ["Sigmoid", "Softmax"]
+        activation = trial.suggest_categorical("generator_activation", activations)
+        bias = bool(trial.suggest_int("generator_bias", 0, 1))
+        ngf = 64  # Size of feature maps in generator
+        model = nn.Sequential(
+            # input is Z, going into a convolution
+            nn.ConvTranspose2d(NZ, ngf * 8, 4, 1, 0, bias=bias),
+            nn.BatchNorm2d(ngf * 8),
+            nn.ReLU(True),
+            # state size. ``(ngf*8) x 4 x 4``
+            nn.ConvTranspose2d(ngf * 8, ngf * 4, 4, 2, 1, bias=bias),
+            nn.BatchNorm2d(ngf * 4),
+            nn.ReLU(True),
+            # state size. ``(ngf*4) x 8 x 8``
+            nn.ConvTranspose2d(ngf * 4, ngf * 2, 4, 2, 1, bias=bias),
+            nn.BatchNorm2d(ngf * 2),
+            nn.ReLU(True),
+            # state size. ``(ngf*2) x 16 x 16``
+            nn.ConvTranspose2d(ngf * 2, ngf, 4, 2, 1, bias=bias),
+            nn.BatchNorm2d(ngf),
+            nn.ReLU(True),
+            # state size. ``(ngf) x 32 x 32``
+            nn.ConvTranspose2d(ngf, NC, 4, 2, 1, bias=bias),
+            getattr(nn, activation)(),
+            # state size. ``(NC) x 64 x 64``
+        )
+        model.apply(weights_init)
+        return model
+
+    def get_discriminator(trial):
+        # Create and randomly initialize discriminator model
+        activations = ["Sigmoid", "Softmax"]
+        activation = trial.suggest_categorical("discriminator_activation", activations)
+        bias = bool(trial.suggest_int("discriminator_bias", 0, 1))
+        dropout = trial.suggest_float("discriminator_dropout", 0, 0.3)
+        leaky_relu_slope = trial.suggest_float(
+            "discriminator_leaky_relu_slope", 0.1, 0.4, step=0.1
+        )
+        ndf = 64  # Size of feature maps in discriminator
+        model = nn.Sequential(
+            # input is ``(NC) x 64 x 64``
+            nn.Conv2d(NC, ndf, 4, 2, 1, bias=bias),
+            nn.LeakyReLU(leaky_relu_slope, inplace=True),
+            nn.Dropout2d(p=dropout),
+            # state size. ``(ndf) x 32 x 32``
+            nn.Conv2d(ndf, ndf * 2, 4, 2, 1, bias=bias),
+            nn.BatchNorm2d(ndf * 2),
+            nn.LeakyReLU(leaky_relu_slope, inplace=True),
+            # state size. ``(ndf*2) x 16 x 16``
+            nn.Conv2d(ndf * 2, ndf * 4, 4, 2, 1, bias=bias),
+            nn.BatchNorm2d(ndf * 4),
+            nn.LeakyReLU(leaky_relu_slope, inplace=True),
+            # state size. ``(ndf*4) x 8 x 8``
+            nn.Conv2d(ndf * 4, ndf * 8, 4, 2, 1, bias=bias),
+            nn.BatchNorm2d(ndf * 8),
+            nn.LeakyReLU(leaky_relu_slope, inplace=True),
+            # state size. ``(ndf*8) x 4 x 4``
+            nn.Conv2d(ndf * 8, 1, 4, 1, 0, bias=bias),
+            getattr(nn, activation)(),
+        )
+        model.apply(weights_init)
+        return model
 
     def objective(trial):
         # FIXME: Windows package-sync doesn't like torchvision, installed w/ PipInstall
@@ -129,7 +127,7 @@ def test_hpo(client):
         import torchvision.datasets as dset
         import torchvision.transforms as transforms
 
-        dataset_dir = get_raw_dataset()
+        download_data()
 
         dataset = dset.ImageFolder(
             root=str(dataset_dir),
