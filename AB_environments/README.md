@@ -114,7 +114,7 @@ If you create *any* files in `AB_environments/`, you *must* create the baseline 
 Open `AB_environments/config.yaml` and set the `repeat` setting to a number higher than 0.
 This enables the A/B tests.
 Setting a low number of repeated runs is faster and cheaper, but will result in higher
-variance.
+variance. Setting it to 5 is a good value to get statistically significant results.
 
 `repeat` must remain set to 0 in the main branch, thus completely disabling
 A/B tests, in order to avoid unnecessary runs.
