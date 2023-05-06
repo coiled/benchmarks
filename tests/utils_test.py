@@ -241,6 +241,13 @@ def timeseries_of_size(
         **kwargs,
     )
     p = example_part.compute(scheduler="threads")
+
+    # with pyarrow strings, we should create a dataframe
+    # of similar number of rows as with objects, otherwise
+    # the comparison won't be fair
+    for col in p.select_dtypes("string[pyarrow]"):
+        p[col] = p[col].astype("object")
+
     partition_size = sizeof(p)
     npartitions = round(target_nbytes / partition_size)
     assert npartitions > 0, (
