@@ -52,7 +52,7 @@ def test_hpo(client):
             return dataset_dir
 
         print("Downloading dataset...")
-        fs = s3fs.S3FileSystem()
+        fs = s3fs.S3FileSystem(anon=True)
         fs.download("s3://coiled-datasets/CelebA-Faces/img_align_celeba.zip", str(zip))
 
         print(f"Unzipping into {dataset_dir}")
