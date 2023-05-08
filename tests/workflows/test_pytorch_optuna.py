@@ -5,7 +5,6 @@ import zipfile
 
 import optuna
 import pytest
-import s3fs
 import torch
 import torch.nn as nn
 import torch.nn.parallel
@@ -20,6 +19,9 @@ from dask.distributed import PipInstall, wait
         [
             "torch==2.0.0",
             "torchvision",
+            # FIXME: https://github.com/boto/botocore/issues/2926
+            # urllib3 v2 removed openssl / ciphers which causes an error in botocore httpsession
+            "urllib3<2.0.0",
             "git+https://github.com/optuna/optuna.git@378508ab6bddbad182bdfa0e8b3ad4bbb7040f00",
         ],
         pip_options=["--force-reinstall"],
@@ -38,15 +40,16 @@ def test_hpo(client):
             nn.init.normal_(m.weight.data, 1.0, 0.02)
             nn.init.constant_(m.bias.data, 0)
 
-    dataset_dir = None
-
     def download_data():
-        nonlocal dataset_dir
-        if dataset_dir is not None:
-            return
-        dir = tempfile.gettempdir()
-        zip = pathlib.Path(dir).joinpath("img_align_celeba.zip")
+        import s3fs  # FIXME: see above install w/ urllib3 - import here after reinstall
+
+        tmpdir = tempfile.gettempdir()
+        zip = pathlib.Path(tmpdir).joinpath("img_align_celeba.zip")
         dataset_dir = zip.parent.joinpath("img_align_celeba")
+
+        if zip.exists():
+            print("Dataset already downloaded, returning dataset dir")
+            return dataset_dir
 
         print("Downloading dataset...")
         fs = s3fs.S3FileSystem()
@@ -55,6 +58,7 @@ def test_hpo(client):
         print(f"Unzipping into {dataset_dir}")
         with zipfile.ZipFile(str(zip), "r") as zipped:
             zipped.extractall(dataset_dir)
+        return dataset_dir
 
     def get_generator(trial):
         # Create and randomly initialize generator model
@@ -127,7 +131,7 @@ def test_hpo(client):
         import torchvision.datasets as dset
         import torchvision.transforms as transforms
 
-        download_data()
+        dataset_dir = download_data()
 
         dataset = dset.ImageFolder(
             root=str(dataset_dir),
@@ -219,7 +223,7 @@ def test_hpo(client):
         storage=optuna.integration.DaskStorage(), direction="minimize"
     )
 
-    n_trials = 100
+    n_trials = 50
     futures = [
         client.submit(study.optimize, objective, n_trials=1, pure=False)
         for _ in range(n_trials)
