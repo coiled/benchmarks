@@ -5,7 +5,6 @@ import io
 import uuid
 
 import boto3
-import dask.datasets
 import dask_expr as dd
 import distributed
 import fsspec
@@ -79,7 +78,7 @@ def test_read_hive_partitioned_data(parquet_client):
 @run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
 def test_write_wide_data(parquet_client, s3_url):
     # Write a ~700 partition, ~200 GB dataset with a lot of columns
-    ddf = dask.datasets.timeseries(
+    ddf = dd.datasets.timeseries(
         dtypes={
             **{f"name-{i}": str for i in range(25)},
             **{f"price-{i}": float for i in range(25)},
