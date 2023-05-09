@@ -9,7 +9,7 @@ import operator
 import pathlib
 from collections.abc import Callable
 from textwrap import dedent
-from typing import Any, Literal, NamedTuple, Optional
+from typing import Any, Literal, NamedTuple
 from urllib.parse import quote
 
 import altair
@@ -135,7 +135,7 @@ def calc_ab_confidence_intervals(
     pivot_groups = pivot.groupby(["fullname", "fullname_no_category"])[["diff"]]
     x_neg = numpy.linspace(-0.8, 0, 17)
     x_pos = numpy.linspace(0, 0.8, 17)
-    conf_neg, conf_pos = [
+    conf_neg, conf_pos = (
         # DataFrame with 1 row per element of x_neg/x_pos and columns
         # [fullname, fullname_no_category, x, xlabel, p, color]
         (
@@ -147,7 +147,7 @@ def calc_ab_confidence_intervals(
             (x_neg, "<", operator.lt, -1),
             (x_pos, ">", operator.gt, 1),
         )
-    ]
+    )
     return pandas.concat([conf_neg, conf_pos], axis=0)
 
 
@@ -614,7 +614,7 @@ def make_details_html_report(
     )
 
 
-def make_grafana_url(cluster_name, start, end) -> Optional[str]:
+def make_grafana_url(cluster_name, start, end) -> str | None:
     if cluster_name:
         # Add some padding to compensate for clock differences between
         # GitHub actions and Prometheus, as well for sample granularity
@@ -667,7 +667,7 @@ def make_index_html_report(
 
 def runtime_sort_key(runtime: str) -> tuple:
     """Runtimes are in the format coiled-<coiled-runtime version>-py<python version>
-    e.g. coiled-latest-py3.8
+    e.g. coiled-latest-py3.9
 
     Sort them by coiled-runtime and python version, both descending.
     """

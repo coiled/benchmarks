@@ -34,16 +34,16 @@ channels:
 dependencies:
     - python =3.9
     - <copy-paste from recipe/meta.yaml, minus bits you want to change>
-    - pip:
-      - dask ==2023.4.1
-      - distributed ==2023.4.1
+    # Changes from the recipe start here
+    - dask ==2023.4.1
+    - distributed ==2023.4.1
 ```
 Instead of published packages, you could also use arbitrary git hashes of arbitrary
 forks, e.g.
 
 ```yaml
     - pip:
-      - dask ==2023.4.2
+      - git+https://github.com/dask/dask@b85bf5be72b02342222c8a0452596539fce19bce
       - git+https://github.com/yourname/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
 ```
 
@@ -143,7 +143,8 @@ etc.
 
 
 ### Complete example
-You want to test the impact of disabling work stealing. You'll create at least 4 files:
+You want to test the impact of disabling work stealing on the latest version of dask.
+You'll create at least 4 files:
 
 - `AB_environments/AB_baseline.conda.yaml`:
 ```yaml
@@ -151,40 +152,10 @@ channels:
   - conda-forge
 dependencies:
     - python =3.9
-    - pip
-    - coiled >=0.2.54
-    - numpy ==1.23.5
-    - pandas ==1.5.3
-    - dask ==2023.4.0
-    - distributed ==2023.4.0
-    - fsspec ==2023.3.0
-    - s3fs ==2023.3.0
-    - gcsfs ==2023.3.0
-    - pyarrow ==11.0.0
-    - jupyterlab ==3.6.2
-    - dask-labextension ==6.1.0
-    - lz4 ==4.3.2
-    - ipywidgets ==8.0.4
-    - numba ==0.56.4
-    - scikit-learn ==1.2.2
-    - ipycytoscape ==1.3.3
-    - click ==8.1.3
-    - xarray ==2023.1.0
-    - zarr ==2.14.2
-    - cftime ==1.6.2
-    - msgpack-python ==1.0.5
-    - cloudpickle ==2.2.1
-    - tornado ==6.2
-    - toolz ==0.12.0
-    - zict ==3.0.0
-    - xgboost ==1.7.4
-    - dask-ml ==2023.3.24
-    - openssl >1.1.0g
-    - optuna ==3.1.0
-    - scipy ==1.10.1
-    - sqlalchemy ==1.4.46
-    - pynvml ==11.5.0
-    - bokeh ==3.1.0
+    - coiled
+    - dask
+    - distributed
+    - s3fs
 ```
 - `AB_environments/AB_baseline.dask.yaml`: (empty file)
 - `AB_environments/AB_baseline.cluster.yaml`: (empty file)
@@ -201,9 +172,7 @@ distributed:
 repeat: 5
 test_null_hypothesis: true
 targets:
-  - tests/runtime
   - tests/benchmarks
-  - tests/stability
 h2o_datasets:
   - 5 GB (parquet+pyarrow)
 max_parallel:
@@ -213,8 +182,9 @@ max_parallel:
 
 ### 6. Run CI
 - `git push`. Note: you should *not* open a Pull Request. 
-- Open https://github.com/coiled/benchmarks/actions/workflows/ab_tests.yml and wait
-  for the run to complete.
+- Open [the GitHub Actions tab] 
+  (https://github.com/coiled/benchmarks/actions/workflows/ab_tests.yml)
+  and wait for the run to complete.
 - Open the run from the link above. In the Summary tab, scroll down and download the
   `static-dashboard` artifact. 
   Note: artifacts will appear only after the run is complete.
