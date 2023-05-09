@@ -1,4 +1,4 @@
-import dask.dataframe as dd
+import dask_expr as dd
 import pytest
 
 # `coiled-runtime=0.0.4` don't contain `xgboost`

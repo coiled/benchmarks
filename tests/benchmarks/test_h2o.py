@@ -6,7 +6,7 @@ default split_out=1.
 """
 import os
 
-import dask.dataframe as dd
+import dask_expr as dd
 import pandas as pd
 import pytest
 

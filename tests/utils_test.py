@@ -4,7 +4,7 @@ import math
 
 import dask
 import dask.array as da
-import dask.dataframe as dd
+import dask_expr as dd
 import distributed
 import numpy as np
 import pandas as pd

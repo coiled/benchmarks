@@ -5,8 +5,8 @@ import io
 import uuid
 
 import boto3
-import dask.dataframe as dd
 import dask.datasets
+import dask_expr as dd
 import distributed
 import fsspec
 import pandas
