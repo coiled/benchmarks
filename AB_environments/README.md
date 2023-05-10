@@ -11,8 +11,8 @@ To run an A/B test:
 
 Branch from main, on the coiled repo itself. Preferably, call the branch
 something meaningful, e.g. `AB/jobstealing`.
-You *must* create the branch on the Coiled repo (`coiled/coiled-runtime`); CI
-workflows will not work on a fork (`yourname/coiled-runtime`).
+You *must* create the branch on the Coiled repo (`coiled/benchmarks`); CI
+workflows will not work on a fork (`yourname/benchmarks`).
 
 ### 2. Create files in AB_environments/
 
@@ -32,25 +32,37 @@ tests; e.g.
 channels:
   - conda-forge
 dependencies:
-    - python=3.9
-    - coiled-runtime=0.1.1
-    - pip:
-      - dask==2022.11.1
-      - distributed==2022.11.1
+    - python =3.9
+    - <copy-paste from recipe/meta.yaml, minus bits you want to change>
+    # Changes from the recipe start here
+    - dask ==2023.4.1
+    - distributed ==2023.4.1
 ```
-In this example it's using `coiled-runtime` as a base, but it doesn't have to. If you do
-use `coiled-runtime` though, you must install any conflicting packages with pip; in the
-example above, `coiled-runtime-0.1.0` pins `dask=2022.6.0` and `distributed=2022.6.0`,
-so if you want to install a different version you need to use pip to circumvent the pin.
-
 Instead of published packages, you could also use arbitrary git hashes of arbitrary
 forks, e.g.
 
 ```yaml
     - pip:
-      - dask==2022.9.0
+      - git+https://github.com/dask/dask@b85bf5be72b02342222c8a0452596539fce19bce
       - git+https://github.com/yourname/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
 ```
+
+You may also ignore the recipe file and go for a barebones environment. The bare
+minimum you need to install is ``dask``, ``distributed``, ``coiled`` and ``s3fs``.
+This will however skip some tests, e.g. zarr and ML-related ones, and it will also
+expose you to less controlled behaviour e.g. dependent on which versions of numpy and
+pandas are pulled in:
+```yaml
+channels:
+  - conda-forge
+dependencies:
+    - python =3.9
+    - dask ==2023.4.0
+    - distributed ==2023.4.0
+    - coiled
+    - s3fs
+```
+
 The second file in each triplet is a dask config file. If you don't want to change the
 config, you must create an empty file.
 
@@ -102,7 +114,7 @@ If you create *any* files in `AB_environments/`, you *must* create the baseline 
 Open `AB_environments/config.yaml` and set the `repeat` setting to a number higher than 0.
 This enables the A/B tests.
 Setting a low number of repeated runs is faster and cheaper, but will result in higher
-variance.
+variance. Setting it to 5 is a good value to get statistically significant results.
 
 `repeat` must remain set to 0 in the main branch, thus completely disabling
 A/B tests, in order to avoid unnecessary runs.
@@ -131,18 +143,19 @@ etc.
 
 
 ### Complete example
-You want to test the impact of disabling work stealing. You'll create at least 4 files:
+You want to test the impact of disabling work stealing on the latest version of dask.
+You'll create at least 4 files:
 
 - `AB_environments/AB_baseline.conda.yaml`:
 ```yaml
 channels:
   - conda-forge
 dependencies:
-    - python=3.9
-    - coiled-runtime=0.1.0
-    - pip:
-      - dask==2022.9.0
-      - distributed==2022.9.0
+    - python =3.9
+    - coiled
+    - dask
+    - distributed
+    - s3fs
 ```
 - `AB_environments/AB_baseline.dask.yaml`: (empty file)
 - `AB_environments/AB_baseline.cluster.yaml`: (empty file)
@@ -159,9 +172,7 @@ distributed:
 repeat: 5
 test_null_hypothesis: true
 targets:
-  - tests/runtime
   - tests/benchmarks
-  - tests/stability
 h2o_datasets:
   - 5 GB (parquet+pyarrow)
 max_parallel:
@@ -171,8 +182,9 @@ max_parallel:
 
 ### 6. Run CI
 - `git push`. Note: you should *not* open a Pull Request. 
-- Open https://github.com/coiled/coiled-runtime/actions/workflows/ab_tests.yml and wait
-  for the run to complete.
+- Open [the GitHub Actions tab] 
+  (https://github.com/coiled/benchmarks/actions/workflows/ab_tests.yml)
+  and wait for the run to complete.
 - Open the run from the link above. In the Summary tab, scroll down and download the
   `static-dashboard` artifact. 
   Note: artifacts will appear only after the run is complete.
@@ -201,3 +213,54 @@ upstream        https://github.com/dask/distributed.git (push)
 $ git fetch upstream --tags  # Or whatever name dask was added as above
 $ git push origin --tags     # Or whatever name the fork was added as above
 ```
+
+#### Problem:
+The conda environment fails to build, citing incompatibilities with openssl
+
+#### Solution:
+Double check that you didn't accidentally type `- python ==3.9`, which means 3.9.0,
+instead of `- python =3.9`, which means the latest available patch version of 3.9.
+
+#### Problem:
+You get very obscure failures in the workflows, which you can't seem to replicate
+
+#### Solution:
+Double check that you don't have the same packages listed as conda package and under the
+special `- pip:` tag. Installing a package with conda and then upgrading it with pip
+*typically* works, but it's been observed not to (e.g. xgboost).
+
+Specifically, `dask` and `distributed` *can* be installed with conda and then upgraded
+with pip, *but* they must be *both* upgraded. Note that specifying the same version with
+pip of a package won't upgrade it.
+
+This is bad:
+```yaml
+dependencies:
+  - pip:
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+dask-2023.3.2 and distributed-2023.3.2 will be installed from conda anyway, e.g. by
+coiled.
+
+This is bad:
+```yaml
+dependencies:
+  - dask ==2023.3.2
+  - distributed ==2023.3.2
+  - pip:
+      - dask ==2023.3.2
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+The dask version is the same in pip and conda, so conda wins.
+
+This is good:
+```yaml
+dependencies:
+  - dask ==2023.3.2
+  - distributed ==2023.3.2
+  - pip:
+      - dask ==2023.4.1
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+dask and distributed versions from conda are properly uninstalled after they serve as a
+dependency for the other conda packages.

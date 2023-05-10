@@ -6,7 +6,7 @@ This script is a work-around to not being able to upload dask config files to
 from __future__ import annotations
 
 import sys
-from typing import Iterator
+from collections.abc import Iterator
 
 import yaml
 

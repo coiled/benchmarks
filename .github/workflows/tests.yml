@@ -9,6 +9,7 @@ on:
   schedule:
     # Runs "At 00:01" (see https://crontab.guru)
     - cron: "1 0 * * *"
+  workflow_dispatch:
 
 concurrency:
   # Include `github.event_name` to avoid pushes to `main` and
@@ -31,45 +32,73 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
-        # pytest_args: [tests]
-        pytest_args: [tests/workflows/test_from_csv_to_parquet.py]
+        pytest_args: [tests]
         runtime-version: [upstream, latest, "0.2.1"]
-        # include:
-        #   # Run stability tests on Python 3.8
-        #   - pytest_args: tests/stability
-        #     python-version: "3.8"
-        #     runtime-version: upstream
-        #     os: ubuntu-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.8"
-        #     runtime-version: latest
-        #     os: ubuntu-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.8"
-        #     runtime-version: "0.2.1"
-        #     os: ubuntu-latest
-        #   # Run stability tests on Python 3.10
-        #   - pytest_args: tests/stability
-        #     python-version: "3.10"
-        #     runtime-version: upstream
-        #     os: ubuntu-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.10"
-        #     runtime-version: latest
-        #     os: ubuntu-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.10"
-        #     runtime-version: "0.2.1"
-        #     os: ubuntu-latest
-        #   # Run stability tests on Python Windows and MacOS (latest py39 only)
-        #   - pytest_args: tests/stability
-        #     python-version: "3.9"
-        #     runtime-version: latest
-        #     os: windows-latest
-        #   - pytest_args: tests/stability
-        #     python-version: "3.9"
-        #     runtime-version: latest
-        #     os: macos-latest
+        include:
+          # Run stability tests on Python 3.8
+          - pytest_args: tests/stability
+            python-version: "3.8"
+            runtime-version: upstream
+            os: ubuntu-latest
+          - pytest_args: tests/stability
+            python-version: "3.8"
+            runtime-version: latest
+            os: ubuntu-latest
+          - pytest_args: tests/stability
+            python-version: "3.8"
+            runtime-version: "0.2.1"
+            os: ubuntu-latest
+          # Run stability tests on Python 3.10
+          - pytest_args: tests/stability
+            python-version: "3.10"
+            runtime-version: upstream
+            os: ubuntu-latest
+          - pytest_args: tests/stability
+            python-version: "3.10"
+            runtime-version: latest
+            os: ubuntu-latest
+          - pytest_args: tests/stability
+            python-version: "3.10"
+            runtime-version: "0.2.1"
+            os: ubuntu-latest
+          # Run stability tests on Python Windows and MacOS (latest py39 only)
+          - pytest_args: tests/stability
+            python-version: "3.9"
+            runtime-version: latest
+            os: windows-latest
+          - pytest_args: tests/stability
+            python-version: "3.9"
+            runtime-version: latest
+            os: macos-latest
+        pytest_args: [tests]
+        runtime-version: [upstream, latest]
+        include:
+          # Run stability tests on the lowest and highest versions of Python only
+          - pytest_args: tests/stability
+            python-version: "3.9"
+            runtime-version: upstream
+            os: ubuntu-latest
+          - pytest_args: tests/stability
+            python-version: "3.9"
+            runtime-version: latest
+            os: ubuntu-latest
+          - pytest_args: tests/stability
+            python-version: "3.10"
+            runtime-version: upstream
+            os: ubuntu-latest
+          - pytest_args: tests/stability
+            python-version: "3.10"
+            runtime-version: latest
+            os: ubuntu-latest
+          # Run stability tests on Python Windows and MacOS (latest py39 only)
+          - pytest_args: tests/stability
+            python-version: "3.9"
+            runtime-version: latest
+            os: windows-latest
+          - pytest_args: tests/stability
+            python-version: "3.9"
+            runtime-version: latest
+            os: macos-latest
 
     steps:
       - name: Checkout
@@ -102,6 +131,11 @@ jobs:
           echo $EXTRA_OPTIONS
           echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
 
+          # Need to use `main` branch of optuna until https://github.com/optuna/optuna/pull/4589
+          # is released in `optuna=3.2.0`. Currently only doing this when workflows are run
+          # as that's the only place where the optuna + dask integration is being used.
+          python -m pip install git+https://github.com/optuna/optuna
+
       - name: Run Coiled Runtime Tests
         id: test
         env:
@@ -122,12 +156,15 @@ jobs:
         if: always()
         with:
           name: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
-          path: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          path: |
+            ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+            cluster_kwargs.*.*
+            mamba_env_export.yml
 
   process-results:
     needs: tests
     name: Combine separate benchmark results
-    if: always() && github.repository == 'coiled/coiled-runtime'
+    if: always() && github.repository == 'coiled/benchmarks'
     runs-on: ubuntu-latest
     concurrency:
       # Fairly strict concurrency rule to avoid stepping on benchmark db.
@@ -166,7 +203,7 @@ jobs:
           bash ci/scripts/combine-dbs.sh
 
       - name: Upload benchmark db
-        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/benchmarks'
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
@@ -224,7 +261,7 @@ jobs:
     if: |
       always()
       && github.event_name != 'pull_request'
-      && github.repository == 'coiled/coiled-runtime'
+      && github.repository == 'coiled/benchmarks'
       && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
 
     runs-on: ubuntu-latest
@@ -272,8 +309,8 @@ jobs:
           environment-file: ci/environment-dashboard.yml
 
       - name: Generate dashboards
-        # Show differences of upstream vs. latest unpublished vs. latest publshed
-        run: python dashboard.py -d benchmark.db -o static -b coiled-latest-py3.9 coiled-0.2.1-py3.9
+        # Show differences of upstream vs. latest
+        run: python dashboard.py -d benchmark.db -o static -b coiled-latest-py3.9
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -283,7 +320,7 @@ jobs:
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.7
-        if:  github.ref == 'refs/heads/main' && github.repository == 'coiled/coiled-runtime'
+        if:  github.ref == 'refs/heads/main' && github.repository == 'coiled/benchmarks'
         with:
           branch: gh-pages
           folder: static
