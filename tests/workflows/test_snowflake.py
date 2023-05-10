@@ -99,53 +99,12 @@ def test_write(client, connection_kwargs, table):
 
 
 @pytest.mark.client("snowflake")
-def test_read_explore(client, connection_kwargs, table):
+def test_read(client, connection_kwargs):
     """Read and explore NYC bike dataset from Snowflake"""
     table = "citibike_tripdata"  # persistent table
 
-    ddf = read_snowflake(
+    read_snowflake(
         f"SELECT * FROM {table}",
         connection_kwargs=connection_kwargs,
         npartitions=200,
-    ).rename(
-        columns=str.lower
-    )  # snowflake has all uppercase
-
-    ddf["is_roundtrip"] = ddf["start_station_id"] == ddf["end_station_id"]
-
-    # compute counts of roundtrips vs one-way
-    roundtrips = (  # noqa: F841
-        ddf.is_roundtrip.value_counts().compute().reset_index(name="count")
-    )
-
-    """
-    # maybe plot roundtrips vs one-way
-    import seaborn as sns
-    sns.barplot(roundtrips, x="is_roundtrip", y="count")
-    """
-
-    # explore trip duration
-    ddf["trip_duration"] = ddf["ended_at"] - ddf["started_at"]
-    ddf["trip_minutes"] = ddf["trip_duration"].dt.total_seconds() // 60
-
-    # find quantiles
-    duration_quantile = ddf["trip_minutes"].quantile([0.05, 0.95]).compute()
-    min_duration, max_duration = duration_quantile[0.05], duration_quantile[0.95]
-
-    # filter out outliers
-    ddf = ddf[
-        (ddf.trip_duration_minutes >= min_duration)
-        & (ddf.trip_duration_minutes <= max_duration)
-    ]
-
-    durations = (  # noqa: F841
-        ddf.trip_duration_minutes.value_counts()
-        .compute()
-        .reset_index(name="count")
-        .rename(columns={"index": "trip_minutes"})
-    )
-
-    """
-    # maybe plot the durations / counts
-    sns.barplot(durations, x="trip_minutes", y="count")
-    """
+    ).rename(columns=str.lower).compute()
