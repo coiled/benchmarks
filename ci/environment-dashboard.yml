@@ -1,14 +1,13 @@
 channels:
   - conda-forge
 dependencies:
-  - pytest
-  - python=3.9
-  - sqlalchemy=1.4
-  - altair=4.2
-  - bokeh
-  - panel=0.13
-  - pandas=1.4  # 1.5 is incompatibile with altair 4.2
-  - tabulate
+  - python =3.10
+  - sqlalchemy =2.0
+  - altair =5.0
+  - bokeh =2.4
+  - panel =0.14
+  - pandas =2.0
+  - tabulate =0.9
 
   # These imports are only needed to parse the source code of the tests and embed it in
   # the dashboard
@@ -19,6 +18,7 @@ dependencies:
   - distributed
   - filelock
   - optuna
+  - pytest
   - s3fs
   - xarray
   - xgboost
