@@ -35,16 +35,15 @@ jobs:
         pytest_args: [tests]
         runtime-version: [upstream, latest]
         include:
-          # Run stability tests on Python 3.8
+          # Run stability tests on the lowest and highest versions of Python only
           - pytest_args: tests/stability
-            python-version: "3.8"
+            python-version: "3.9"
             runtime-version: upstream
             os: ubuntu-latest
           - pytest_args: tests/stability
-            python-version: "3.8"
+            python-version: "3.9"
             runtime-version: latest
             os: ubuntu-latest
-          # Run stability tests on Python 3.10
           - pytest_args: tests/stability
             python-version: "3.10"
             runtime-version: upstream

@@ -7,7 +7,7 @@ dependencies:
   - pytest-xdist
   - python
   - pyyaml
-  - sqlalchemy ==1.4.46  # FIXME https://github.com/dask/dask/issues/9896
+  - sqlalchemy ==2.0.12
   - alembic
   - filelock
   - conda
