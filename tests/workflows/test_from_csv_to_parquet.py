@@ -105,29 +105,32 @@ def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory, s3_url):
     client = from_csv_to_parquet_client
 
     s3 = s3_factory(anon=True)
-    files = s3.ls("s3://gdelt-open-data/events/")[-120:]
-    files = [f"s3://{f}" for f in files]
+    bad_files = [
+        "gdelt-open-data/events/20161004.export.csv",
+        "gdelt-open-data/events/20170106.export.csv",
+        "gdelt-open-data/events/20170422.export.csv",
+        "gdelt-open-data/events/20170802.export.csv",
+        "gdelt-open-data/events/20170920.export.csv",
+        "gdelt-open-data/events/20171021.export.csv",
+        "gdelt-open-data/events/20180415.export.csv",
+        "gdelt-open-data/events/20180416.export.csv",
+        "gdelt-open-data/events/20180613.export.csv",
+        "gdelt-open-data/events/20180806.export.csv",
+        "gdelt-open-data/events/20190217.export.csv",
+        "gdelt-open-data/events/20190613.export.csv",
+    ]
+    files = s3.ls("s3://gdelt-open-data/events/")[:1000]
+    files = [f"s3://{f}" for f in files if f not in bad_files]
 
-    def download(path):
-        try:
-            df = dd.read_csv(
-                path,
-                sep='\t',
-                names=COLUMNSV1.keys(),
-                dtype=COLUMNSV1,
-                storage_options=s3.storage_options,
-                on_bad_lines="skip"
-            )
-            # TODO: Want to raise ValueError right away, not
-            # inside the graph later which persist (or nothing) would cause.
-            df = df.compute()
-            return dd.from_pandas(df, npartitions=8).persist()
-        except Exception as exc:  # Bad file
-            print(f"Failed to read {path} w/ {exc}")
+    df = dd.read_csv(
+        files,
+        names=COLUMNSV1.keys(),
+        sep="\t",
+        dtype=COLUMNSV1,
+        storage_options=s3.storage_options,
+        on_bad_lines="skip",
+    )
 
-    downloads = client.map(download, files)
-    dfs = (d.result() for d in downloads)
-    df = dd.concat([df for df in dfs if df is not None])
     df = df.map_partitions(
         lambda xdf: xdf.drop_duplicates(subset=["SOURCEURL"], keep="first")
     )
