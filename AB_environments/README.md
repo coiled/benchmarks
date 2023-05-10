@@ -57,8 +57,8 @@ channels:
   - conda-forge
 dependencies:
     - python =3.9
-    - dask ==2023.4.0
-    - distributed ==2023.4.0
+    - dask ==2023.4.1
+    - distributed ==2023.4.1
     - coiled
     - s3fs
 ```
