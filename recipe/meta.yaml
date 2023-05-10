@@ -1,7 +1,7 @@
 {% set name = "coiled-runtime" %}
 {% set version = "0.3.0" + environ.get("VERSION_SUFFIX", '') %}
-{% set dask_version = environ.get("DASK_VERSION", "2023.4.0") %}
-{% set distributed_version = environ.get("DISTRIBUTED_VERSION", "2023.4.0") %}
+{% set dask_version = environ.get("DASK_VERSION", "2023.4.1") %}
+{% set distributed_version = environ.get("DISTRIBUTED_VERSION", "2023.4.1") %}
 
 package:
   name: {{ name|lower }}
@@ -52,7 +52,7 @@ requirements:
     - openssl >1.1.0g
     - optuna ==3.1.0
     - scipy ==1.10.1
-    - sqlalchemy ==1.4.46  # FIXME https://github.com/dask/dask/issues/9896
+    - sqlalchemy ==2.0.12
     - pynvml ==11.5.0
     - bokeh ==3.1.0
     - gilknocker ==0.4.1
