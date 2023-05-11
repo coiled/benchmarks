@@ -24,16 +24,20 @@ requirements:
     - pip
     - coiled >=0.2.54
     - numpy ==1.23.5
+{% if python_version == "3.9" %}
+    - pandas  # install whatever version snowflake-connector-python wants
+{% else %}
     - pandas ==2.0.1
+{% endif %}
     - dask =={{ dask_version }}
-{% if python_version in ["3.8", "3.9"] %}
+{% if python_version == "3.9" %}
     - dask-snowflake
 {% endif %}
     - distributed =={{ distributed_version }}
     - fsspec ==2023.3.0
     - s3fs ==2023.3.0
     - gcsfs ==2023.3.0
-{% if python_version in ["3.8", "3.9"] %}
+{% if python_version == "3.9" %}
     - pyarrow <11
 {% else %}
     - pyarrow ==11.0.0
@@ -68,7 +72,7 @@ test:
   imports:
     - dask
     - distributed
-{% if python_version in ["3.8", "3.9"] %}
+{% if python_version == "3.9" %}
     - dask_snowflake
     - pyarrow<11
 {% else %}
