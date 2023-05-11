@@ -54,9 +54,8 @@ uber_lyft:
   n_workers: 20
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
-
 # For tests/workflows/test_snowflake.py
-test_snowflake:
+snowflake:
   n_workers: 20
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
