@@ -102,7 +102,9 @@ SCHEMA = OrderedDict(
 )
 
 
-def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory, s3_url):
+def test_from_csv_to_parquet(
+    from_csv_to_parquet_client, s3_factory, s3_url, configure_use_pyarrow_strings
+):
     s3 = s3_factory(anon=True)
     files = s3.ls("s3://gdelt-open-data/events/")[:1000]
     files = [f"s3://{f}" for f in files]
