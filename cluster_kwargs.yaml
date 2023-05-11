@@ -70,5 +70,6 @@ test_repeated_merge_spill:
 # For tests/workflows/test_from_csv_to_parquet.py
 from_csv_to_parquet_cluster:
   n_workers: 30
+  worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB (preferred default instance)
   backend_options:
     region: "us-east-1"  # Same region as dataset
