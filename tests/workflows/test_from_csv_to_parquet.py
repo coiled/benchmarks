@@ -114,23 +114,19 @@ def test_from_csv_to_parquet(
         sep="\t",
         names=SCHEMA.keys(),
         # 'dtype' and 'converters' cannot overlap
-        dtype={
-            col: dtype for col, dtype in SCHEMA.items() if dtype == "string[pyarrow]"
-        },
+        dtype={col: dtype for col, dtype in SCHEMA.items() if dtype != "Float64"},
         storage_options=s3.storage_options,
         on_bad_lines="skip",
-        # Some bad files have '#' in numeric values
+        # Some bad files have '#' in float values
         converters={
             col: lambda v: float(v.replace("#", "") or "NaN")
             for col, dtype in SCHEMA.items()
-            if dtype != "string[pyarrow]"
+            if dtype == "Float64"
         },
     )
 
-    # Now we can safely convert the numeric columns
-    df = df.astype(
-        {col: dtype for col, dtype in SCHEMA.items() if dtype != "string[pyarrow]"}
-    )
+    # Now we can safely convert the float columns
+    df = df.astype({col: dtype for col, dtype in SCHEMA.items() if dtype == "Float64"})
 
     df = df.map_partitions(
         lambda xdf: xdf.drop_duplicates(subset=["SOURCEURL"], keep="first")
