@@ -691,12 +691,6 @@ def configure_shuffling(shuffle_method):
         yield
 
 
-@pytest.fixture
-def configure_use_pyarrow_strings():
-    with dask.config.set({"dataframe.convert-string": True}):
-        yield
-
-
 # Include https://github.com/dask/distributed/pull/7534
 P2P_RECHUNK_AVAILABLE = Version(distributed.__version__) >= Version("2023.2.1")
 
