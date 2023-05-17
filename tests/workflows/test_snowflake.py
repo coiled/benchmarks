@@ -7,8 +7,8 @@ import pytest
 from dask.distributed import wait
 from sqlalchemy import create_engine  # noqa: E402
 
-pytest.importorskip("snowflake.sqlalchemy")
-pytest.importorskip("dask_snowflake")
+pytest.importorskip("snowflake.sqlalchemy", reason="snowflake.sqlalchemy not available")
+pytest.importorskip("dask_snowflake", reason="dask_snowflake not available")
 
 from dask_snowflake import read_snowflake, to_snowflake  # noqa: E402
 from snowflake.sqlalchemy import URL  # noqa: E402
