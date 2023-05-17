@@ -82,6 +82,13 @@ jobs:
           python ci/create_runtime_meta.py
           source ci/scripts/install_coiled_runtime.sh coiled_software_environment.yaml
 
+      # hacky way of installing dask-snowflake with snowflake-connector-python from main
+      - name: Install dask-snowflake
+        run: |
+          python -m pip install git+https://github.com/snowflakedb/snowflake-connector-python
+          python -m pip install snowflake-sqlalchemy
+          python -m pip install --no-deps dask-snowflake
+
       - name: Determine if workflows should be run
         # Run workflows on PRs with `workflows` label and nightly cron job
         if: |

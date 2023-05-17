@@ -5,14 +5,13 @@ import dask.dataframe as dd
 import pandas as pd
 import pytest
 from dask.distributed import wait
+from sqlalchemy import create_engine  # noqa: E402
 
-snowflake = pytest.importorskip("snowflake")
-sqlalchemy = pytest.importorskip("sqlalchemy")
-dask_snowflake = pytest.importorskip("dask_snowflake")
+pytest.importorskip("snowflake.sqlalchemy")
+pytest.importorskip("dask_snowflake")
 
 from dask_snowflake import read_snowflake, to_snowflake  # noqa: E402
 from snowflake.sqlalchemy import URL  # noqa: E402
-from sqlalchemy import create_engine  # noqa: E402
 
 
 @pytest.fixture(scope="module")
