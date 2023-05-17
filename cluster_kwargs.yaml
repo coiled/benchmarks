@@ -56,7 +56,7 @@ uber_lyft:
 
 # For tests/workflows/test_pytorch_optuna.py
 pytorch_optuna:
-  n_workers: 4
+  n_workers: 10
   worker_gpu: 1
   worker_options:
     # Making workers single-threaded to avoid GPU contention. See discussion in
