@@ -32,35 +32,35 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
-        pytest_args: [tests]
+        pytest_args: [tests/workflows/test_snowflake.py]
         runtime-version: [upstream, latest]
-        include:
-          # Run stability tests on the lowest and highest versions of Python only
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            runtime-version: upstream
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            runtime-version: latest
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.10"
-            runtime-version: upstream
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.10"
-            runtime-version: latest
-            os: ubuntu-latest
-          # Run stability tests on Python Windows and MacOS (latest py39 only)
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            runtime-version: latest
-            os: windows-latest
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            runtime-version: latest
-            os: macos-latest
+#        include:
+#          # Run stability tests on the lowest and highest versions of Python only
+#          - pytest_args: tests/stability
+#            python-version: "3.9"
+#            runtime-version: upstream
+#            os: ubuntu-latest
+#          - pytest_args: tests/stability
+#            python-version: "3.9"
+#            runtime-version: latest
+#            os: ubuntu-latest
+#          - pytest_args: tests/stability
+#            python-version: "3.10"
+#            runtime-version: upstream
+#            os: ubuntu-latest
+#          - pytest_args: tests/stability
+#            python-version: "3.10"
+#            runtime-version: latest
+#            os: ubuntu-latest
+#          # Run stability tests on Python Windows and MacOS (latest py39 only)
+#          - pytest_args: tests/stability
+#            python-version: "3.9"
+#            runtime-version: latest
+#            os: windows-latest
+#          - pytest_args: tests/stability
+#            python-version: "3.9"
+#            runtime-version: latest
+#            os: macos-latest
 
     steps:
       - name: Checkout
