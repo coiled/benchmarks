@@ -1,42 +1,7 @@
-import uuid
 from collections import OrderedDict
 
-import coiled
 import dask.dataframe as dd
 import pytest
-from distributed import Client
-
-
-@pytest.fixture(scope="module")
-def from_csv_to_parquet_cluster(
-    dask_env_variables,
-    cluster_kwargs,
-    github_cluster_tags,
-):
-    with coiled.Cluster(
-        f"from-csv-to-parquet-{uuid.uuid4().hex[:8]}",
-        environ=dask_env_variables,
-        tags=github_cluster_tags,
-        **cluster_kwargs["from_csv_to_parquet_cluster"],
-    ) as cluster:
-        yield cluster
-
-
-@pytest.fixture
-def from_csv_to_parquet_client(
-    from_csv_to_parquet_cluster,
-    cluster_kwargs,
-    upload_cluster_dump,
-    benchmark_all,
-):
-    n_workers = cluster_kwargs["from_csv_to_parquet_cluster"]["n_workers"]
-    with Client(from_csv_to_parquet_cluster) as client:
-        from_csv_to_parquet_cluster.scale(n_workers)
-        client.wait_for_workers(n_workers)
-        client.restart()
-        with upload_cluster_dump(client), benchmark_all(client):
-            yield client
-
 
 SCHEMA = OrderedDict(
     [
@@ -102,7 +67,8 @@ SCHEMA = OrderedDict(
 )
 
 
-def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory, s3_url):
+@pytest.mark.client("from_csv_to_parquet")
+def test_from_csv_to_parquet(client, s3_factory, s3_url):
     s3 = s3_factory(anon=True)
     files = s3.ls("s3://gdelt-open-data/events/")[:1000]
     files = [f"s3://{f}" for f in files]
@@ -133,7 +99,4 @@ def test_from_csv_to_parquet(from_csv_to_parquet_client, s3_factory, s3_url):
         "washingtonpost|nytimes", regex=True
     )
     df = df[df["national_paper"]]
-    df = df.persist()
-    assert len(df)
-
     df.to_parquet(f"{s3_url}/from-csv-to-parquet/", write_index=False)
