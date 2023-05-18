@@ -34,6 +34,7 @@ jobs:
         python-version: ["3.9"]
         pytest_args: [tests/workflows/test_snowflake.py]
         runtime-version: [upstream, latest]
+        extra: [snowflake]
 #        include:
 #          # Run stability tests on the lowest and highest versions of Python only
 #          - pytest_args: tests/stability
@@ -82,13 +83,6 @@ jobs:
           python ci/create_runtime_meta.py
           source ci/scripts/install_coiled_runtime.sh coiled_software_environment.yaml
 
-      # hacky way of installing dask-snowflake with snowflake-connector-python from main
-      - name: Install dask-snowflake
-        run: |
-          python -m pip install git+https://github.com/snowflakedb/snowflake-connector-python
-          python -m pip install snowflake-sqlalchemy
-          python -m pip install --no-deps dask-snowflake
-
       - name: Determine if workflows should be run
         # Run workflows on PRs with `workflows` label and nightly cron job
         if: |
@@ -104,6 +98,10 @@ jobs:
           # is released in `optuna=3.2.0`. Currently only doing this when workflows are run
           # as that's the only place where the optuna + dask integration is being used.
           python -m pip install git+https://github.com/optuna/optuna
+          
+          if [[ "${{ matrix.extra }}" -eq 'snowflake' ]]
+            python -m pip install dask-snowflake
+          fi
 
       - name: Run Coiled Runtime Tests
         id: test

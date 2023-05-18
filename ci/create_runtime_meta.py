@@ -27,12 +27,7 @@ def main():
         autoescape=select_autoescape(),
     )
     template = env.get_template("meta.yaml")
-    meta = yaml.safe_load(
-        template.render(
-            environ=os.environ,
-            python_version=f"{sys.version_info.major}.{sys.version_info.minor}",
-        )
-    )
+    meta = yaml.safe_load(template.render(environ=os.environ))
     requirements = meta["requirements"]["run"]
 
     # Ensure Python is pinned to X.Y.Z version currently being used
