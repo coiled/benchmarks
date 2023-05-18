@@ -54,7 +54,7 @@ def table(connection_kwargs):
 @pytest.mark.client("snowflake")
 def test_write(client, connection_kwargs, table):
     csv_paths = [
-        f"tripdata/{ts.year}{ts.month:02}-*.csv.zip"
+        f"s3://tripdata/{ts.year}{ts.month:02}-*-*.csv.zip"
         for ts in pd.date_range(start="2022-01-01", end="2023-03-01", freq="MS")
     ]
 
