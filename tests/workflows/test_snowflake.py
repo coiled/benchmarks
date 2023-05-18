@@ -72,6 +72,7 @@ def test_write(client, connection_kwargs, table):
         compression="zip",
         blocksize=None,
         converters={"start_station_id": safe_int, "end_station_id": safe_int},
+        storage_options={"anon": True},
     )
 
     # filter out incorrect station IDs
