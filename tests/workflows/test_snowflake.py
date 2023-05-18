@@ -17,7 +17,7 @@ def connection_kwargs():
         "password": os.environ["SNOWFLAKE_PASSWORD"],
         "account": os.environ["SNOWFLAKE_ACCOUNT"],
         "warehouse": os.environ["SNOWFLAKE_WAREHOUSE"],
-        "role": os.environ.get("SNOWFLAKE_ROLE", "sysadmin"),
+        "role": os.environ.get("SNOWFLAKE_ROLE", "public"),
         "database": os.environ.get("SNOWFLAKE_DATABASE") or "testdb",
         "schema": os.environ.get("SNOWFLAKE_SCHEMA") or "testschema",
     }
@@ -26,8 +26,7 @@ def connection_kwargs():
 @pytest.fixture
 def table(connection_kwargs):
     """Connect to snowflake and create table"""
-    name = "citibike_tripdata"
-    # name = f"citibike_tripdata_{uuid.uuid4().hex}"
+    name = f"citibike_tripdata_{uuid.uuid4().hex}"
     engine = create_engine(URL(**connection_kwargs))
     engine.execute(f"DROP TABLE IF EXISTS {name}")
     engine.execute(
@@ -49,7 +48,7 @@ def table(connection_kwargs):
     )
     yield name
     # after the data is written, delete table
-    # engine.execute(f"DROP TABLE IF EXISTS {name}")
+    engine.execute(f"DROP TABLE IF EXISTS {name}")
 
 
 @pytest.mark.client("snowflake")
@@ -94,13 +93,13 @@ def test_write(client, connection_kwargs, table):
     to_snowflake(ddf, name=table, connection_kwargs=connection_kwargs)
 
 
-# @pytest.mark.client("snowflake")
-# def test_read(client, connection_kwargs):
-#     """Read and explore NYC bike dataset from Snowflake"""
-#     table = "citibike_tripdata"  # persistent table
-#
-#     read_snowflake(
-#         f"SELECT * FROM {table}",
-#         connection_kwargs=connection_kwargs,
-#         npartitions=200,
-#     ).rename(columns=str.lower).compute()
+@pytest.mark.client("snowflake")
+def test_read(client, connection_kwargs):
+    """Read and explore NYC bike dataset from Snowflake"""
+    table = "citibike_tripdata"  # persistent table
+
+    read_snowflake(
+        f"SELECT * FROM {table}",
+        connection_kwargs=connection_kwargs,
+        npartitions=200,
+    ).rename(columns=str.lower).compute()
