@@ -1,13 +1,16 @@
 import os
-import uuid  # NOQA: F401
+import uuid
 
 import dask.dataframe as dd
 import pandas as pd
 import pytest
 from dask.distributed import wait
-from dask_snowflake import read_snowflake, to_snowflake  # NOQA: F401
-from snowflake.sqlalchemy import URL
-from sqlalchemy import create_engine
+
+pytest.importorskip("dask_snowflake", reason="Requires dask-snowflake")
+
+from dask_snowflake import read_snowflake, to_snowflake  # noqa: E402
+from snowflake.sqlalchemy import URL  # noqa: E402
+from sqlalchemy import create_engine  # noqa: E402
 
 
 @pytest.fixture(scope="module")
