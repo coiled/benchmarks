@@ -99,8 +99,10 @@ jobs:
           # as that's the only place where the optuna + dask integration is being used.
           python -m pip install git+https://github.com/optuna/optuna
           
-          if [[ "${{ matrix.extra }}" -eq 'snowflake' ]]
+          if [ "${{ matrix.extra }}" = "snowflake" ]; then 
             python -m pip install dask-snowflake
+          else
+            echo "Skipping snowflake installation."
           fi
 
       - name: Run Coiled Runtime Tests
