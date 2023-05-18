@@ -102,7 +102,7 @@ jobs:
           echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
 
       - name: Install Optuna
-        if: steps.workflows.outcome == 'success' && matrix.extra != 'pyarrow'
+        if: steps.workflows.outcome == 'success' && matrix.extra != 'snowflake'
         run: |
           # Need to use `main` branch of optuna until https://github.com/optuna/optuna/pull/4589
           # is released in `optuna=3.2.0`. Currently only doing this when workflows are run
@@ -110,7 +110,7 @@ jobs:
           python -m pip install git+https://github.com/optuna/optuna
 
       - name: Install dask-snowflake
-        if: steps.workflows.outcome == 'success' && matrix.extra == 'pyarrow'
+        if: steps.workflows.outcome == 'success' && matrix.extra == 'snowflake'
         run: python -m pip install dask-snowflake
 
       - name: Run Coiled Runtime Tests
