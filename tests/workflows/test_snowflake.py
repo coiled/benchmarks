@@ -99,8 +99,9 @@ def test_read(client, connection_kwargs):
     """Read and explore NYC bike dataset from Snowflake"""
     table = "citibike_tripdata"  # persistent table
 
-    read_snowflake(
+    df = read_snowflake(
         f"SELECT * FROM {table}",
         connection_kwargs=connection_kwargs,
         npartitions=200,
-    ).rename(columns=str.lower).compute()
+    )
+    df["IS_MEMBER"].mean().compute()
