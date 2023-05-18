@@ -24,7 +24,7 @@ defaults:
 
 jobs:
   tests:
-    name: Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}{{ matrix.extra }}
+    name: Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}${{ matrix.extra }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -36,33 +36,33 @@ jobs:
         # runtime-version: [upstream, latest]
         runtime-version: [latest]
         extra: [snowflake]
-#        include:
-#          # Run stability tests on the lowest and highest versions of Python only
-#          - pytest_args: tests/stability
-#            python-version: "3.9"
-#            runtime-version: upstream
-#            os: ubuntu-latest
-#          - pytest_args: tests/stability
-#            python-version: "3.9"
-#            runtime-version: latest
-#            os: ubuntu-latest
-#          - pytest_args: tests/stability
-#            python-version: "3.10"
-#            runtime-version: upstream
-#            os: ubuntu-latest
-#          - pytest_args: tests/stability
-#            python-version: "3.10"
-#            runtime-version: latest
-#            os: ubuntu-latest
-#          # Run stability tests on Python Windows and MacOS (latest py39 only)
-#          - pytest_args: tests/stability
-#            python-version: "3.9"
-#            runtime-version: latest
-#            os: windows-latest
-#          - pytest_args: tests/stability
-#            python-version: "3.9"
-#            runtime-version: latest
-#            os: macos-latest
+    #        include:
+    #          # Run stability tests on the lowest and highest versions of Python only
+    #          - pytest_args: tests/stability
+    #            python-version: "3.9"
+    #            runtime-version: upstream
+    #            os: ubuntu-latest
+    #          - pytest_args: tests/stability
+    #            python-version: "3.9"
+    #            runtime-version: latest
+    #            os: ubuntu-latest
+    #          - pytest_args: tests/stability
+    #            python-version: "3.10"
+    #            runtime-version: upstream
+    #            os: ubuntu-latest
+    #          - pytest_args: tests/stability
+    #            python-version: "3.10"
+    #            runtime-version: latest
+    #            os: ubuntu-latest
+    #          # Run stability tests on Python Windows and MacOS (latest py39 only)
+    #          - pytest_args: tests/stability
+    #            python-version: "3.9"
+    #            runtime-version: latest
+    #            os: windows-latest
+    #          - pytest_args: tests/stability
+    #            python-version: "3.9"
+    #            runtime-version: latest
+    #            os: macos-latest
 
     steps:
       - name: Checkout
@@ -96,10 +96,10 @@ jobs:
           echo $EXTRA_OPTIONS
           echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
 
-#          # Need to use `main` branch of optuna until https://github.com/optuna/optuna/pull/4589
-#          # is released in `optuna=3.2.0`. Currently only doing this when workflows are run
-#          # as that's the only place where the optuna + dask integration is being used.
-#          python -m pip install git+https://github.com/optuna/optuna
+      #          # Need to use `main` branch of optuna until https://github.com/optuna/optuna/pull/4589
+      #          # is released in `optuna=3.2.0`. Currently only doing this when workflows are run
+      #          # as that's the only place where the optuna + dask integration is being used.
+      #          python -m pip install git+https://github.com/optuna/optuna
 
       - name: Install dask-snowflake
         if: steps.workflows.outcome == 'success'
@@ -152,7 +152,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install dependencies
         run: pip install alembic
@@ -294,7 +294,7 @@ jobs:
 
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.7
-        if:  github.ref == 'refs/heads/main' && github.repository == 'coiled/benchmarks'
+        if: github.ref == 'refs/heads/main' && github.repository == 'coiled/benchmarks'
         with:
           branch: gh-pages
           folder: static
