@@ -67,3 +67,29 @@ def test_filter(small_client):
     name = df.head(1).name.iloc[0]  # Get first name that appears
     result = df[df.name == name]
     wait(result, small_client, 10 * 60)
+
+
+def test_dataframe_cow_chain(small_client):
+    memory = cluster_memory(small_client)  # 76.66 GiB
+
+    df = timeseries_of_size(
+        memory // 2,
+        start="2020-01-01",
+        freq="600ms",
+        partition_freq="12h",
+        dtypes={
+            **{i: float for i in range(40)},
+            **{i: int for i in range(41, 80)},
+            **{i: object for i in range(81, 120)},
+        },
+    )
+    print_dataframe_info(df)
+
+    result = (
+        df.rename(columns={1: 1000})
+        .replace("x", "xxx")
+        .fillna(100)
+        .astype({50: "float"})
+        .loc[:, slice(2, 100)]
+    )
+    wait(result, small_client, 10 * 60)
