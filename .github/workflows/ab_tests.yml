@@ -174,7 +174,6 @@ jobs:
         with:
           miniforge-variant: Mambaforge
           use-mamba: true
-          python-version: "3.9"
           environment-file: ci/environment-dashboard.yml
 
       - name: Generate dashboards
