@@ -13,7 +13,6 @@ from packaging.version import Version
 
 
 @pytest.mark.xfail(reason="Inconsistencies between PyPI and conda-forge")
-@pytest.mark.latest_runtime
 def test_latest_coiled():
     # Ensure `coiled-runtime` installs the latest version of `coiled` by default
     # This is installed from either conda-forge or pip, depending on which github action

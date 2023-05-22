@@ -52,20 +52,14 @@ def pytest_addoption(parser):
         os._exit(1)
 
     parser.addoption(
-        "--run-latest", action="store_true", help="Run latest coiled-runtime tests"
-    )
-    parser.addoption(
         "--benchmark", action="store_true", help="Collect benchmarking data for tests"
     )
     parser.addoption("--run-workflows", action="store_true", help="Run workflow tests")
 
 
 def pytest_collection_modifyitems(config, items):
-    skip_latest = pytest.mark.skip(reason="need --run-latest option to run")
     skip_workflows = pytest.mark.skip(reason="need --run-workflows option to run")
     for item in items:
-        if not config.getoption("--run-latest") and "latest_runtime" in item.keywords:
-            item.add_marker(skip_latest)
         if not config.getoption("--run-workflows") and (
             (TEST_DIR / "workflows") in item.path.parents
         ):
