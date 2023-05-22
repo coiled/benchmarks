@@ -43,17 +43,15 @@ jobs:
   # and AB_environments/config.yaml set repeat > 0
 
   tests:
-    name: A/B Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
+    name: A/B Tests - ${{ matrix.runtime-version }}
     needs: discover_ab_envs
     if: fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     timeout-minutes: 120
     strategy:
       fail-fast: false
       max-parallel: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).max_parallel }}
       matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.9"]
         pytest_args: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).pytest_args }}
         runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
         repeat: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).repeat }}
@@ -63,15 +61,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v2
-        with:
-          miniforge-variant: Mambaforge
-          use-mamba: true
-          condarc-file: ci/condarc
-          python-version: ${{ matrix.python-version }}
-          environment-file: ci/environment.yml
-
       - name: Create null hypothesis as a copy of baseline
         if: matrix.runtime-version == 'AB_null_hypothesis'
         run: |
@@ -80,11 +69,22 @@ jobs:
           cp AB_baseline.dask.yaml AB_null_hypothesis.dask.yaml
           cp AB_baseline.cluster.yaml AB_null_hypothesis.cluster.yaml
 
-      - name: Install conda environment
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          condarc-file: ci/condarc
+          environment-file: AB_environments/${{ matrix.runtime-version }}.conda.yaml
+
+      - name: Add test dependencies
+        run: mamba env update --file ci/environment-test.yml
+
+      - name: Dump environment
         run: |
-          source ci/scripts/install_conda_env.sh AB_environments/${{ matrix.runtime-version }}.conda.yaml
+          # For debugging
+          echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
+          mamba env export | grep -E -v '^prefix:.*$'
 
       - name: Convert dask config into environment variables
         run: python ci/scripts/dask_config_to_env.py AB_environments/${{ matrix.runtime-version }}.dask.yaml >> $GITHUB_ENV
@@ -95,8 +95,8 @@ jobs:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
+          AB_VERSION: ${{ matrix.runtime-version }}
+          DB_NAME: ${{ matrix.runtime-version }}-${{ matrix.repeat }}.db
           BENCHMARK: true
           CLUSTER_DUMP: always
           CLUSTER_KWARGS: AB_environments/${{ matrix.runtime-version }}.cluster.yaml
@@ -110,9 +110,9 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}
+          name: ${{ matrix.runtime-version }}-${{ matrix.repeat }}
           path: |
-            ${{ matrix.os }}-${{ matrix.runtime-version }}-${{ matrix.repeat }}-py${{ matrix.python-version }}.db
+            ${{ matrix.runtime-version }}-${{ matrix.repeat }}.db
             cluster_kwargs.*.*
             mamba_env_export.yml
 
@@ -179,7 +179,7 @@ jobs:
       - name: Generate dashboards
         run: |
           python dashboard.py -d benchmark.db -o static \
-            -b coiled-AB_baseline-py{3.8,3.9,3.10,3.11}
+            -b coiled-AB_baseline-py{3.9,3.10,3.11}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3

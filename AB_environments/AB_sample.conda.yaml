@@ -11,7 +11,7 @@ channels:
   - conda-forge
 dependencies:
     - python =3.9  # Single '=' means latest patch version available
-    # Copy-paste from recipe/meta.yaml
+    # Copy-paste from ci/environment.yml
     - pip
     - coiled >=0.2.54
     - numpy ==1.23.5

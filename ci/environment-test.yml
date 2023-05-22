@@ -1,0 +1,12 @@
+channels:
+  - conda-forge
+dependencies:
+  # Testing dependencies
+  - jinja2
+  - packaging
+  - pytest
+  - pytest-xdist
+  - pyyaml
+  - alembic
+  - filelock
+  - conda

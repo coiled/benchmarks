@@ -1,7 +1,0 @@
-channels:
-  - coiled/label/dev
-  - dask/label/dev
-  - conda-forge
-dependencies:
-    - python=3.9
-    - coiled-runtime

@@ -68,6 +68,9 @@ jobs:
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
+      - name: Add test dependencies
+        run: mamba env update --file ci/environment-test.yml
+
       - name: Dump environment
         run: |
           # For debugging

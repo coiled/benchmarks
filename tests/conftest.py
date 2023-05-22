@@ -79,7 +79,6 @@ dask.config.set(
     }
 )
 
-COILED_RUNTIME_VERSION = "upstream"
 COILED_SOFTWARE_NAME = "package_sync"
 
 
@@ -183,7 +182,7 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
             path=str(request.node.path.relative_to(TEST_DIR)),
             dask_version=dask.__version__,
             distributed_version=distributed.__version__,
-            coiled_runtime_version=COILED_RUNTIME_VERSION,
+            coiled_runtime_version=os.environ.get("AB_VERSION", "upstream"),
             coiled_software_name=COILED_SOFTWARE_NAME,
             python_version=".".join(map(str, sys.version_info)),
             platform=sys.platform,
