@@ -168,7 +168,7 @@ def print_size_info(memory: int, target_nbytes: float, *arrs: da.Array) -> None:
 def wait(thing, client, timeout):
     "Like `distributed.wait(thing.persist())`, but if any tasks fail, raises its error."
 
-    p = thing if isinstance(thing, distributed.Future) else thing.persist()
+    p = thing.persist() if hasattr(thing, "persist") else thing
     try:
         distributed.wait(p, timeout=timeout)
         for f in client.futures_of(p):
