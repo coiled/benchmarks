@@ -9,7 +9,7 @@ SCHEMA = OrderedDict(
         ("Day", "Int64"),
         ("MonthYear", "Int64"),
         ("Year", "Int64"),
-        ("FractionDate", "Float64"),
+        ("FractionDate", "float64"),
         ("Actor1Code", "string[pyarrow]"),
         ("Actor1Name", "string[pyarrow]"),
         ("Actor1CountryCode", "string[pyarrow]"),
@@ -35,31 +35,31 @@ SCHEMA = OrderedDict(
         ("EventBaseCode", "string[pyarrow]"),
         ("EventRootCode", "string[pyarrow]"),
         ("QuadClass", "Int64"),
-        ("GoldsteinScale", "Float64"),
+        ("GoldsteinScale", "float64"),
         ("NumMentions", "Int64"),
         ("NumSources", "Int64"),
         ("NumArticles", "Int64"),
-        ("AvgTone", "Float64"),
+        ("AvgTone", "float64"),
         ("Actor1Geo_Type", "Int64"),
         ("Actor1Geo_Fullname", "string[pyarrow]"),
         ("Actor1Geo_CountryCode", "string[pyarrow]"),
         ("Actor1Geo_ADM1Code", "string[pyarrow]"),
-        ("Actor1Geo_Lat", "Float64"),
-        ("Actor1Geo_Long", "Float64"),
+        ("Actor1Geo_Lat", "float64"),
+        ("Actor1Geo_Long", "float64"),
         ("Actor1Geo_FeatureID", "string[pyarrow]"),
         ("Actor2Geo_Type", "Int64"),
         ("Actor2Geo_Fullname", "string[pyarrow]"),
         ("Actor2Geo_CountryCode", "string[pyarrow]"),
         ("Actor2Geo_ADM1Code", "string[pyarrow]"),
-        ("Actor2Geo_Lat", "Float64"),
-        ("Actor2Geo_Long", "Float64"),
+        ("Actor2Geo_Lat", "float64"),
+        ("Actor2Geo_Long", "float64"),
         ("Actor2Geo_FeatureID", "string[pyarrow]"),
         ("ActionGeo_Type", "Int64"),
         ("ActionGeo_Fullname", "string[pyarrow]"),
         ("ActionGeo_CountryCode", "string[pyarrow]"),
         ("ActionGeo_ADM1Code", "string[pyarrow]"),
-        ("ActionGeo_Lat", "Float64"),
-        ("ActionGeo_Long", "Float64"),
+        ("ActionGeo_Lat", "float64"),
+        ("ActionGeo_Long", "float64"),
         ("ActionGeo_FeatureID", "string[pyarrow]"),
         ("DATEADDED", "Int64"),
         ("SOURCEURL", "string[pyarrow]"),
@@ -78,19 +78,19 @@ def test_from_csv_to_parquet(client, s3_factory, s3_url):
         sep="\t",
         names=SCHEMA.keys(),
         # 'dtype' and 'converters' cannot overlap
-        dtype={col: dtype for col, dtype in SCHEMA.items() if dtype != "Float64"},
+        dtype={col: dtype for col, dtype in SCHEMA.items() if dtype != "float64"},
         storage_options=s3.storage_options,
         on_bad_lines="skip",
         # Some bad files have '#' in float values
         converters={
             col: lambda v: float(v.replace("#", "") or "NaN")
             for col, dtype in SCHEMA.items()
-            if dtype == "Float64"
+            if dtype == "float64"
         },
     )
 
     # Now we can safely convert the float columns
-    df = df.astype({col: dtype for col, dtype in SCHEMA.items() if dtype == "Float64"})
+    df = df.astype({col: dtype for col, dtype in SCHEMA.items() if dtype == "float64"})
 
     df = df.map_partitions(
         lambda xdf: xdf.drop_duplicates(subset=["SOURCEURL"], keep="first")
