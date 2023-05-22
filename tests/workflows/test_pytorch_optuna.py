@@ -15,11 +15,11 @@ optuna = pytest.importorskip("optuna")
     "pytorch_optuna",
     worker_plugin=PipInstall(
         [
-            # FIXME package_sync doesn't seem to deduce GPU specific installs of
+            # FIXME https://github.com/coiled/platform/issues/1249
+            #       package_sync doesn't seem to deduce GPU specific installs of
             #       libraries like torch
             "torch==2.0.0",
-            # FIXME https://github.com/coiled/benchmarks/pull/787#issuecomment-1532882045
-            #       Windows package_sync doesn't like torchvision
+            # FIXME Windows package_sync doesn't like torchvision
             "torchvision==0.15.1",
             # FIXME https://github.com/boto/botocore/issues/2926
             #       urllib3 v2 removed openssl / ciphers which causes an error in
