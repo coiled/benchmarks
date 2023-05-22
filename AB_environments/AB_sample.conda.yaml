@@ -11,13 +11,13 @@ channels:
   - conda-forge
 dependencies:
     - python =3.9  # Single '=' means latest patch version available
-    # Copy-paste from ci/environment.yml
+    # Copy-paste from AB_baseline.conda.yaml
     - pip
     - coiled >=0.2.54
     - numpy ==1.23.5
     - pandas ==2.0.1
-    - dask ==2023.4.1
-    - distributed ==2023.4.1
+    - dask ==2023.5.0
+    - distributed ==2023.5.0
     - fsspec ==2023.3.0
     - s3fs ==2023.3.0
     - gcsfs ==2023.3.0
@@ -54,5 +54,5 @@ dependencies:
       # conda. You may alternatively point to your own git fork (but make sure you
       # sync'ed tags!)
       # Read README.md for troubleshooting.
-      - git+https://github.com/dask/dask@b85bf5be72b02342222c8a0452596539fce19bce
-      - git+https://github.com/dask/distributed@6dc4c24b7a01b93952bbfd95d3ecba043580c245
+      - git+https://github.com/dask/dask@ae39b43bdc1d7cf1b9ece112ba3dc398f3fabc13
+      - git+https://github.com/dask/distributed@e887fde05a636864f94e7880fd301923406a3db7
