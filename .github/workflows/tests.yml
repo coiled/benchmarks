@@ -24,7 +24,7 @@ defaults:
 
 jobs:
   tests:
-    name: Tests - ${{ matrix.os }} py${{ matrix.python-version }}
+    name: ${{ matrix.pytest_args }} ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -35,12 +35,13 @@ jobs:
         pytest_args: [tests]
         include:
           # Run stability tests on the lowest and highest versions of Python only
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            os: ubuntu-latest
+          # These are temporarily redundant with the current global python-version
+          # - pytest_args: tests/stability
+          #   python-version: "3.9"
+          #   os: ubuntu-latest
+          # - pytest_args: tests/stability
+          #   python-version: "3.9"
+          #   os: ubuntu-latest
           - pytest_args: tests/stability
             python-version: "3.10"
             os: ubuntu-latest
