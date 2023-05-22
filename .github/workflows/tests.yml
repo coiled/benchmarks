@@ -96,7 +96,7 @@ jobs:
           # Need to use `main` branch of optuna until https://github.com/optuna/optuna/pull/4589
           # is released in `optuna=3.2.0`. Currently only doing this when workflows are run
           # as that's the only place where the optuna + dask integration is being used.
-          python -m pip install git+https://github.com/optuna/optuna
+          python -m pip install git+https://github.com/optuna/optuna.git@378508ab6bddbad182bdfa0e8b3ad4bbb7040f00
 
       - name: Run Coiled Runtime Tests
         id: test

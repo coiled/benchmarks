@@ -2,10 +2,12 @@ channels:
   - conda-forge
 dependencies:
   - jinja2
+  - optuna
   - packaging
   - pytest
   - pytest-xdist
   - python
+  - pytorch
   - pyyaml
   - sqlalchemy ==2.0.12
   - alembic
