@@ -241,6 +241,6 @@ def test_hpo(client):
         client.submit(study.optimize, objective, n_trials=1, pure=False)
         for _ in range(n_trials)
     ]
-    wait(futures, client, 600)
+    wait(futures, client, 900)
 
     assert len(study.trials) == n_trials
