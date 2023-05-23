@@ -56,6 +56,7 @@ requirements:
     - pynvml ==11.5.0
     - bokeh ==3.1.0
     - gilknocker ==0.4.1
+    - dask-image ==2023.3.0
 
 test:
   imports:
