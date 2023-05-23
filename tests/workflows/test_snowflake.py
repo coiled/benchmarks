@@ -4,7 +4,6 @@ import uuid
 import dask.dataframe as dd
 import pandas as pd
 import pytest
-from dask.distributed import wait
 
 pytest.importorskip("dask_snowflake", reason="Requires dask-snowflake")
 
@@ -55,7 +54,7 @@ def table(connection_kwargs):
 
 
 @pytest.mark.client("snowflake")
-def test_write(client, connection_kwargs, table):
+def test_etl_into_snowflake(client, connection_kwargs, table):
     csv_paths = [
         f"s3://tripdata/{ts.year}{ts.month:02}-*-*.csv.zip"
         for ts in pd.date_range(start="2022-01-01", end="2023-03-01", freq="MS")
@@ -91,8 +90,6 @@ def test_write(client, connection_kwargs, table):
     # repartition to ensure even chunks
     ddf = ddf.repartition(partition_size="100Mb")
 
-    wait(ddf)
-
     # save data to Snowflake
     to_snowflake(ddf, name=table, connection_kwargs=connection_kwargs)
 
@@ -105,6 +102,6 @@ def test_read(client, connection_kwargs):
     df = read_snowflake(
         f"SELECT * FROM {table}",
         connection_kwargs=connection_kwargs,
-        npartitions=200,
+        partition_size="100MiB",
     )
     df["IS_MEMBER"].mean().compute()
