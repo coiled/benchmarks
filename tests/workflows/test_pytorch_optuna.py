@@ -3,25 +3,30 @@ import pathlib
 import tempfile
 import zipfile
 
-import optuna
 import pytest
-import torch
-import torch.nn as nn
-import torch.nn.parallel
-import torch.optim as optim
-import torch.utils.data
-from dask.distributed import PipInstall, wait
+from dask.distributed import PipInstall
+
+from ..utils_test import wait
+
+optuna = pytest.importorskip("optuna")
 
 
 @pytest.mark.client(
     "pytorch_optuna",
     worker_plugin=PipInstall(
         [
+            # FIXME https://github.com/coiled/platform/issues/1249
+            #       package_sync doesn't seem to deduce GPU specific installs of
+            #       libraries like torch
             "torch==2.0.0",
-            "torchvision",
-            # FIXME: https://github.com/boto/botocore/issues/2926
-            # urllib3 v2 removed openssl / ciphers which causes an error in botocore httpsession
+            # FIXME Windows package_sync doesn't like torchvision
+            "torchvision==0.15.1",
+            # FIXME https://github.com/boto/botocore/issues/2926
+            #       urllib3 v2 removed openssl / ciphers which causes an error in
+            #       botocore httpsession
             "urllib3<2.0.0",
+            # FIXME https://github.com/optuna/optuna/pull/4589
+            #       Need optuna >3.1.1
             "git+https://github.com/optuna/optuna.git@378508ab6bddbad182bdfa0e8b3ad4bbb7040f00",
         ],
         pip_options=["--force-reinstall"],
@@ -34,6 +39,8 @@ def test_hpo(client):
     NZ = 100  # Size of z latent vector (i.e. size of generator input)
 
     def weights_init(m):
+        import torch.nn as nn
+
         if isinstance(m, (nn.ConvTranspose2d, nn.Conv2d)):
             nn.init.normal_(m.weight.data, 0.0, 0.02)
         elif isinstance(m, nn.BatchNorm2d):
@@ -61,6 +68,8 @@ def test_hpo(client):
         return dataset_dir
 
     def get_generator(trial):
+        import torch.nn as nn
+
         # Create and randomly initialize generator model
         activations = ["Sigmoid", "Softmax"]
         activation = trial.suggest_categorical("generator_activation", activations)
@@ -92,6 +101,8 @@ def test_hpo(client):
         return model
 
     def get_discriminator(trial):
+        import torch.nn as nn
+
         # Create and randomly initialize discriminator model
         activations = ["Sigmoid", "Softmax"]
         activation = trial.suggest_categorical("discriminator_activation", activations)
@@ -126,8 +137,10 @@ def test_hpo(client):
         return model
 
     def objective(trial):
-        # FIXME: Windows package-sync doesn't like torchvision, installed w/ PipInstall
-        # ref: https://github.com/coiled/benchmarks/pull/787#issuecomment-1532882045
+        import torch
+        import torch.nn as nn
+        import torch.optim
+        import torch.utils.data
         import torchvision.datasets as dset
         import torchvision.transforms as transforms
 
@@ -163,10 +176,10 @@ def test_hpo(client):
 
         # Setup loss criterion / optimizers and train
         loss = nn.BCELoss()
-        optimizer_discriminator = optim.Adam(
+        optimizer_discriminator = torch.optim.Adam(
             discriminator.parameters(), lr=0.00001, betas=(0.5, 0.999)
         )
-        optimizer_generator = optim.Adam(
+        optimizer_generator = torch.optim.Adam(
             generator.parameters(), lr=0.00001, betas=(0.5, 0.999)
         )
         num_epochs = 5
@@ -228,6 +241,6 @@ def test_hpo(client):
         client.submit(study.optimize, objective, n_trials=1, pure=False)
         for _ in range(n_trials)
     ]
-    wait(futures)
+    wait(futures, client, 900)
 
     assert len(study.trials) == n_trials
