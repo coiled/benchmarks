@@ -5,18 +5,12 @@ import shlex
 import subprocess
 
 import coiled
-import pytest
 from packaging.version import Version
 
-# Note: all of these tests are local, and do not create clusters,
-# so don't bother benchmarking them.
 
-
-@pytest.mark.xfail(reason="Inconsistencies between PyPI and conda-forge")
 def test_latest_coiled():
-    # Ensure `coiled-runtime` installs the latest version of `coiled` by default
-    # This is installed from either conda-forge or pip, depending on which github action
-    # is running this test
+    # Ensure that the conda environment installs the latest version of `coiled`
+    # FIXME this test can glitch if you install coiled from pip
     v_installed = Version(coiled.__version__)
 
     # Get latest `coiled` release version from conda-forge

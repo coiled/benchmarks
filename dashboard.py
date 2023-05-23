@@ -722,9 +722,7 @@ def main() -> None:
             df.coiled_runtime_version.str[:3] == "AB_",
             df.coiled_runtime_version.str[3:],
             # PRs and overnight tests (.github/workflows/tests.yaml)
-            df.python_version.apply(
-                lambda v: "Python " + ".".join(v.split(".")[:2])
-            )
+            df.python_version.apply(lambda v: "Python " + ".".join(v.split(".")[:2])),
         ),
         category=df.path.str.split("/", n=1).str[0],
         sourcename=df.path.str.cat(df.originalname, "::"),
