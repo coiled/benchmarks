@@ -711,16 +711,20 @@ def main() -> None:
     engine = sqlalchemy.create_engine(f"sqlite:///{args.db_file}")
     df = pandas.read_sql(
         "select * from test_run where platform = 'linux' "
-        "and call_outcome in ('passed', 'failed')"
-        "and coiled_runtime_version = 'upstream'",
+        "and call_outcome in ('passed', 'failed')",
         engine,
     )
     df = df.assign(
         start=pandas.to_datetime(df.start),
         end=pandas.to_datetime(df.end),
-        # TODO: Rename this something other than `runtime`
-        runtime=df.python_version.apply(
-            lambda v: "Python " + ".".join(v.split(".")[:2])
+        runtime=numpy.where(
+            # A/B tests (.github/workflows/ab_tests.yaml)
+            df.coiled_runtime_version.str[:3] == "AB_",
+            df.coiled_runtime_version.str[3:],
+            # PRs and overnight tests (.github/workflows/tests.yaml)
+            df.python_version.apply(
+                lambda v: "Python " + ".".join(v.split(".")[:2])
+            )
         ),
         category=df.path.str.split("/", n=1).str[0],
         sourcename=df.path.str.cat(df.originalname, "::"),
