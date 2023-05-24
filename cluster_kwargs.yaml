@@ -16,7 +16,6 @@ default:
   wait_for_workers: true
   scheduler_vm_types: [m6i.large]
   backend_options:
-    send_prometheus_metrics: true
     spot: true
     spot_on_demand_fallback: true
     multizone: true
@@ -54,6 +53,16 @@ uber_lyft:
   n_workers: 20
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
+# For tests/workflows/test_pytorch_optuna.py
+pytorch_optuna:
+  n_workers: 10
+  worker_gpu: 1
+  worker_options:
+    # Making workers single-threaded to avoid GPU contention. See discussion in
+    # https://github.com/coiled/benchmarks/pull/787#discussion_r1177004248 for
+    # more details.
+    nthreads: 1
+
 # Specific tests
 test_work_stealing_on_scaling_up:
   n_workers: 1
@@ -66,3 +75,10 @@ test_work_stealing_on_straggling_worker:
 test_repeated_merge_spill:
   n_workers: 20
   worker_vm_types: [m6i.large]
+
+# For tests/workflows/test_from_csv_to_parquet.py
+from_csv_to_parquet:
+  n_workers: 10
+  worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB (preferred default instance)
+  backend_options:
+    region: "us-east-1"  # Same region as dataset
