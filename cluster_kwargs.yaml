@@ -16,7 +16,6 @@ default:
   wait_for_workers: true
   scheduler_vm_types: [m6i.large]
   backend_options:
-    send_prometheus_metrics: true
     spot: true
     spot_on_demand_fallback: true
     multizone: true
@@ -82,3 +81,10 @@ test_work_stealing_on_straggling_worker:
 test_repeated_merge_spill:
   n_workers: 20
   worker_vm_types: [m6i.large]
+
+# For tests/workflows/test_from_csv_to_parquet.py
+from_csv_to_parquet:
+  n_workers: 10
+  worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB (preferred default instance)
+  backend_options:
+    region: "us-east-1"  # Same region as dataset

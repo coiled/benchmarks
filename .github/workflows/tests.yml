@@ -301,8 +301,9 @@ jobs:
           path: static
 
       - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@4.1.7
+        uses: JamesIves/github-pages-deploy-action@4.4.1
         if: github.ref == 'refs/heads/main' && github.repository == 'coiled/benchmarks'
         with:
           branch: gh-pages
           folder: static
+          single-commit: true
