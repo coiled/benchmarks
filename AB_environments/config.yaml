@@ -11,7 +11,7 @@ test_null_hypothesis: true
 
 # Test directories, test files, or individual tests to run.
 targets:
-  - tests/benchmarks
+  - tests/benchmarks/test_array.py
   # - tests/runtime
   # - tests/stability
   # - tests/benchmarks/test_futures.py
