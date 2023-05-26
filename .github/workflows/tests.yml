@@ -44,10 +44,10 @@ jobs:
           #   python-version: "3.9"
           #   os: ubuntu-latest
           - pytest_args: tests/stability
-            python-version: "3.10"
+            python-version: "3.11"
             os: ubuntu-latest
           - pytest_args: tests/stability
-            python-version: "3.10"
+            python-version: "3.11"
             os: ubuntu-latest
           # Run stability tests on Python Windows and MacOS (latest py39 only)
           - pytest_args: tests/stability
