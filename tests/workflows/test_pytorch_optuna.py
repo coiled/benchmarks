@@ -25,9 +25,6 @@ optuna = pytest.importorskip("optuna")
             #       urllib3 v2 removed openssl / ciphers which causes an error in
             #       botocore httpsession
             "urllib3<2.0.0",
-            # FIXME https://github.com/optuna/optuna/pull/4589
-            #       Need optuna >3.1.1
-            "git+https://github.com/optuna/optuna.git@378508ab6bddbad182bdfa0e8b3ad4bbb7040f00",
         ],
         pip_options=["--force-reinstall"],
         restart=True,

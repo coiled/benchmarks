@@ -1,7 +1,5 @@
-import distributed
 import pytest
 from dask.distributed import wait
-from packaging.version import Version
 
 optuna = pytest.importorskip("optuna")
 xgb = pytest.importorskip("xgboost")
@@ -14,15 +12,6 @@ from sklearn.model_selection import KFold, cross_val_score  # noqa: E402
 from sklearn.preprocessing import LabelEncoder  # noqa: E402
 
 
-@pytest.mark.skipif(
-    Version(distributed.__version__) >= Version("2023.3.2")
-    # Use `.base_version` to account for `optuna` `main` branch
-    and Version(Version(optuna.__version__).base_version) < Version("3.2.0"),
-    reason=(
-        "There was a change in distributed that broke the dask + optuna integration. "
-        "A fix will be included in optuna=3.2.0."
-    ),
-)
 @pytest.mark.client("xgboost_optuna")
 def test_hpo(client):
     # We use a random sampler with a seed to get deterministic results.
