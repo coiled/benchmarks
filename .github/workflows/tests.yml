@@ -68,6 +68,8 @@ jobs:
             runtime-version: latest
             os: ubuntu-latest
             extra: snowflake
+        exclude:
+          - extra: ${{ (github.event_name == 'schedule'|| (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'workflows'))) && 'nothing' || 'snowflake' }}
 
     steps:
       - name: Checkout
