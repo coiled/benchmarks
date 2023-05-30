@@ -35,6 +35,7 @@ jobs:
         pytest_args: [tests]
         runtime-version: [upstream, latest]
         extra: [null]
+        run_workflows: ${{ (github.event_name == 'schedule') || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'workflows')) }}
         include:
           # Run stability tests on the lowest and highest versions of Python only
           - pytest_args: tests/stability
@@ -68,8 +69,7 @@ jobs:
             runtime-version: latest
             os: ubuntu-latest
             extra: snowflake
-        exclude:
-          - extra: ${{ (github.event_name == 'schedule'|| (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'workflows'))) && 'nothing' || 'snowflake' }}
+            run_workflows: True
 
     steps:
       - name: Checkout
