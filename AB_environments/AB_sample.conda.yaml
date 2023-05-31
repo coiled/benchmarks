@@ -50,8 +50,8 @@ dependencies:
     - bokeh ==3.1.0
     - gilknocker ==0.4.1
     - openssl >1.1.0g
-    - pyopenssl ==23.2.0
-    - cryptography ==41.0.0
+    - pyopenssl ==22.1.0  # Pinned by snowflake-connector-python
+    - cryptography ==38.0.4  # Pinned by snowflake-connector-python
     # End copy-paste from AB_baseline.conda.yaml
 
     - pip:
