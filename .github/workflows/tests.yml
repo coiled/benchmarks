@@ -2,7 +2,8 @@ name: Tests
 on:
   push:
     branches:
-      - main
+      # - main
+      - "*"
     tags:
       - "*"
   pull_request:
@@ -237,35 +238,35 @@ jobs:
         run: |
           echo "$(<regressions_summary.md)" >> $GITHUB_STEP_SUMMARY
 
-  report:
-    name: report
-    needs: [tests, regressions]
-    if: |
-      always()
-      && github.event_name != 'pull_request'
-      && github.repository == 'coiled/benchmarks'
-      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
+  # report:
+  #   name: report
+  #   needs: [tests, regressions]
+  #   if: |
+  #     always()
+  #     && github.event_name != 'pull_request'
+  #     && github.repository == 'coiled/benchmarks'
+  #     && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
 
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: bash
-    steps:
-      - uses: actions/checkout@v3
-      - name: Report failures
-        uses: actions/github-script@v3
-        with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          script: |
-            const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-            const issue_body = `[Workflow Run URL](${workflow_url})`
-            github.issues.create({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                body: issue_body,
-                title: "⚠️ CI failed ⚠️",
-                labels: ["ci-failure"],
-            })
+  #   runs-on: ubuntu-latest
+  #   defaults:
+  #     run:
+  #       shell: bash
+  #   steps:
+  #     - uses: actions/checkout@v3
+  #     - name: Report failures
+  #       uses: actions/github-script@v3
+  #       with:
+  #         github-token: ${{ secrets.GITHUB_TOKEN }}
+  #         script: |
+  #           const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+  #           const issue_body = `[Workflow Run URL](${workflow_url})`
+  #           github.issues.create({
+  #               owner: context.repo.owner,
+  #               repo: context.repo.repo,
+  #               body: issue_body,
+  #               title: "⚠️ CI failed ⚠️",
+  #               labels: ["ci-failure"],
+  #           })
 
   static-site:
     needs: process-results
