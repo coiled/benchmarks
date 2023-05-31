@@ -1,11 +1,9 @@
 import contextlib
 import datetime
-import json
 import logging
 import os
 import pathlib
 import pickle
-import shlex
 import subprocess
 import sys
 import threading
@@ -54,39 +52,18 @@ def pytest_addoption(parser):
         os._exit(1)
 
     parser.addoption(
-        "--run-latest", action="store_true", help="Run latest coiled-runtime tests"
-    )
-    parser.addoption(
         "--benchmark", action="store_true", help="Collect benchmarking data for tests"
     )
     parser.addoption("--run-workflows", action="store_true", help="Run workflow tests")
 
 
 def pytest_collection_modifyitems(config, items):
-    skip_latest = pytest.mark.skip(reason="need --run-latest option to run")
     skip_workflows = pytest.mark.skip(reason="need --run-workflows option to run")
     for item in items:
-        if not config.getoption("--run-latest") and "latest_runtime" in item.keywords:
-            item.add_marker(skip_latest)
         if not config.getoption("--run-workflows") and (
             (TEST_DIR / "workflows") in item.path.parents
         ):
             item.add_marker(skip_workflows)
-
-
-def get_coiled_runtime_version():
-    try:
-        return os.environ["COILED_RUNTIME_VERSION"]
-    except KeyError:
-        # Determine software environment from local `coiled-runtime` version (if installed)
-        out = subprocess.check_output(
-            shlex.split("conda list --json coiled-runtime"), text=True
-        ).rstrip()
-        runtime_info = json.loads(out)
-        if runtime_info:
-            return runtime_info[0]["version"]
-        else:
-            return "unknown"
 
 
 dask.config.set(
@@ -96,7 +73,6 @@ dask.config.set(
     }
 )
 
-COILED_RUNTIME_VERSION = get_coiled_runtime_version()
 COILED_SOFTWARE_NAME = "package_sync"
 
 
@@ -200,7 +176,7 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
             path=str(request.node.path.relative_to(TEST_DIR)),
             dask_version=dask.__version__,
             distributed_version=distributed.__version__,
-            coiled_runtime_version=COILED_RUNTIME_VERSION,
+            coiled_runtime_version=os.environ.get("AB_VERSION", "upstream"),
             coiled_software_name=COILED_SOFTWARE_NAME,
             python_version=".".join(map(str, sys.version_info)),
             platform=sys.platform,

@@ -24,7 +24,7 @@ defaults:
 
 jobs:
   tests:
-    name: Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}${{ matrix.extra }}
+    name: ${{ matrix.pytest_args }} ${{ matrix.os }} py${{ matrix.python-version }}${{ matrix.extra }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -33,34 +33,28 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.9"]
         pytest_args: [tests]
-        runtime-version: [upstream, latest]
         extra: [null]
         include:
           # Run stability tests on the lowest and highest versions of Python only
+          # These are temporarily redundant with the current global python-version
+          # - pytest_args: tests/stability
+          #   python-version: "3.9"
+          #   os: ubuntu-latest
+          # - pytest_args: tests/stability
+          #   python-version: "3.9"
+          #   os: ubuntu-latest
           - pytest_args: tests/stability
-            python-version: "3.9"
-            runtime-version: upstream
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            runtime-version: latest
+            python-version: "3.10"
             os: ubuntu-latest
           - pytest_args: tests/stability
             python-version: "3.10"
-            runtime-version: upstream
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.10"
-            runtime-version: latest
             os: ubuntu-latest
           # Run stability tests on Python Windows and MacOS (latest py39 only)
           - pytest_args: tests/stability
             python-version: "3.9"
-            runtime-version: latest
             os: windows-latest
           - pytest_args: tests/stability
             python-version: "3.9"
-            runtime-version: latest
             os: macos-latest
           # Run snowflake tests on Ubuntu (latest py39 only)
           - pytest_args: tests/workflows/test_snowflake.py
@@ -82,12 +76,17 @@ jobs:
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
-      - name: Install coiled-runtime
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+      - name: Upgrade dask to git tip
+        run: mamba env update --file ci/environment-git-tip.yml
+
+      - name: Add test dependencies
+        run: mamba env update --file ci/environment-test.yml
+
+      - name: Dump environment
         run: |
-          python ci/create_runtime_meta.py
-          source ci/scripts/install_coiled_runtime.sh coiled_software_environment.yaml
+          # For debugging
+          echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
+          mamba env export | grep -E -v '^prefix:.*$'
 
       - name: Determine if workflows should be run
         id: workflows
@@ -127,7 +126,7 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          DB_NAME: ${{ matrix.os }}-py${{ matrix.python-version }}${{ matrix.extra }}.db
           BENCHMARK: true
           CLUSTER_DUMP: always
         run: bash ci/scripts/run_tests.sh -n 4 --dist loadscope ${{ env.EXTRA_OPTIONS }} ${{ matrix.pytest_args }}
@@ -139,9 +138,9 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
+          name: ${{ matrix.os }}-py${{ matrix.python-version }}
           path: |
-            ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+            ${{ matrix.os }}-py${{ matrix.python-version }}.db
             cluster_kwargs.*.*
             mamba_env_export.yml
 
@@ -291,8 +290,7 @@ jobs:
           environment-file: ci/environment-dashboard.yml
 
       - name: Generate dashboards
-        # Show differences of upstream vs. latest
-        run: python dashboard.py -d benchmark.db -o static -b coiled-latest-py3.9
+        run: python dashboard.py -d benchmark.db -o static
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3

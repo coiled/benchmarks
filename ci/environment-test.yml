@@ -1,0 +1,14 @@
+# This is an addition to either ci/environment.yml or AB_environments/AB_*.conda.yaml,
+# adding dependencies specific to this test suite.
+channels:
+  - conda-forge
+dependencies:
+  # Testing dependencies
+  - jinja2
+  - packaging
+  - pytest
+  - pytest-xdist
+  - pyyaml
+  - alembic
+  - filelock
+  - conda
