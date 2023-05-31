@@ -42,6 +42,7 @@ dependencies:
     - pynvml ==11.5.0
     - bokeh ==3.1.0
     - gilknocker ==0.4.1
+    - cryptography==40.0.2
     # End copy-paste
 
     # - pip:
