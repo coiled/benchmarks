@@ -24,7 +24,7 @@ defaults:
 
 jobs:
   tests:
-    name: ${{ matrix.pytest_args }} ${{ matrix.os }} py${{ matrix.python-version }}${{ matrix.extra }}
+    name: ${{ matrix.pytest_args }} ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -33,7 +33,6 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.9"]
         pytest_args: [tests]
-        extra: [null]
         include:
           # Run stability tests on the lowest and highest versions of Python only
           # These are temporarily redundant with the current global python-version
@@ -56,12 +55,6 @@ jobs:
           - pytest_args: tests/stability
             python-version: "3.9"
             os: macos-latest
-          # Run snowflake tests on Ubuntu (latest py39 only)
-          - pytest_args: tests/workflows/test_snowflake.py
-            python-version: "3.9"
-            runtime-version: latest
-            os: ubuntu-latest
-            extra: snowflake
 
     steps:
       - name: Checkout
@@ -100,20 +93,6 @@ jobs:
           echo $EXTRA_OPTIONS
           echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
 
-      - name: Install Optuna
-        # Snowflake runs in a separate CI job, and in that job, no need for Optuna
-        if: steps.workflows.outcome == 'success' && matrix.extra != 'snowflake'
-        run: |
-          # Need to use `main` branch of optuna until https://github.com/optuna/optuna/pull/4589
-          # is released in `optuna=3.2.0`. Currently only doing this when workflows are run
-          # as that's the only place where the optuna + dask integration is being used.
-          python -m pip install git+https://github.com/optuna/optuna.git@378508ab6bddbad182bdfa0e8b3ad4bbb7040f00
-
-      - name: Install dask-snowflake
-        # Snowflake runs in a separate CI job, and we need it in that job only
-        if: steps.workflows.outcome == 'success' && matrix.extra == 'snowflake'
-        run: python -m pip install dask-snowflake
-
       - name: Run Coiled Runtime Tests
         id: test
         env:
@@ -126,7 +105,7 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: ${{ matrix.os }}-py${{ matrix.python-version }}${{ matrix.extra }}.db
+          DB_NAME: ${{ matrix.os }}-py${{ matrix.python-version }}.db
           BENCHMARK: true
           CLUSTER_DUMP: always
         run: bash ci/scripts/run_tests.sh -n 4 --dist loadscope ${{ env.EXTRA_OPTIONS }} ${{ matrix.pytest_args }}

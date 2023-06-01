@@ -18,12 +18,14 @@ dependencies:
     - pandas ==2.0.1
     - dask ==2023.5.1
     - distributed ==2023.5.1
+    - dask-labextension ==6.1.0
+    - dask-ml ==2023.3.24
+    - dask-snowflake ==0.2.0
     - fsspec ==2023.5.0
     - s3fs ==2023.5.0
     - gcsfs ==2023.5.0
     - pyarrow ==11.0.0
     - jupyterlab ==3.6.2
-    - dask-labextension ==6.1.0
     - lz4 ==4.3.2
     - ipywidgets ==8.0.4  # FIXME https://github.com/dask/distributed/issues/7688
     - numba ==0.57.0
@@ -39,16 +41,17 @@ dependencies:
     - toolz ==0.12.0
     - zict ==3.0.0
     - xgboost ==1.7.4
-    - dask-ml ==2023.3.24
-    - optuna ==3.1.0
+    - optuna ==3.1.1  # FIXME Actually need >3.1.1; see git override below
     - scipy ==1.10.1
-    - sqlalchemy ==2.0.12
+    - snowflake-connector-python ==3.0.4
+    - snowflake-sqlalchemy ==1.4.7
+    - sqlalchemy ==1.4.39  # Pinned by snowflake-sqlalchemy
     - pynvml ==11.5.0
     - bokeh ==3.1.0
     - gilknocker ==0.4.1
     - openssl >1.1.0g
-    - pyopenssl ==23.2.0
-    - cryptography ==41.0.0
+    - pyopenssl ==22.1.0  # Pinned by snowflake-connector-python
+    - cryptography ==38.0.4  # Pinned by snowflake-connector-python
     # End copy-paste from AB_baseline.conda.yaml
 
     - pip:
@@ -58,3 +61,7 @@ dependencies:
       # Read README.md for troubleshooting.
       - git+https://github.com/dask/dask@ae39b43bdc1d7cf1b9ece112ba3dc398f3fabc13
       - git+https://github.com/dask/distributed@e887fde05a636864f94e7880fd301923406a3db7
+
+      # FIXME https://github.com/optuna/optuna/pull/4589
+      #       Need optuna >3.1.1 (not yet released)
+      - git+https://github.com/optuna/optuna.git@378508ab6bddbad182bdfa0e8b3ad4bbb7040f00
