@@ -31,7 +31,7 @@ dependencies:
   - toolz ==0.12.0
   - zict ==3.0.0
   - xgboost ==1.7.4
-  - optuna ==3.1.1  # FIXME Actually need >3.1.1; see git override below
+  - optuna ==3.2.0
   - scipy ==1.10.1
   - snowflake-connector-python ==3.0.4
   - snowflake-sqlalchemy ==1.4.7
@@ -42,7 +42,3 @@ dependencies:
   - openssl >1.1.0g
   - pyopenssl ==22.1.0  # Pinned by snowflake-connector-python
   - cryptography ==38.0.4  # Pinned by snowflake-connector-python
-  - pip:
-    # FIXME https://github.com/optuna/optuna/pull/4589
-    #       Need optuna >3.1.1 (not yet released)
-    - git+https://github.com/optuna/optuna.git@378508ab6bddbad182bdfa0e8b3ad4bbb7040f00
