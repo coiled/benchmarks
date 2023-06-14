@@ -5,15 +5,12 @@ Workflow based on https://github.com/coiled/imbalanced-join/blob/main/test_big_j
 import dask.dataframe as dd
 import pytest
 
-LARGE_DF = "s3://test-imbalanced-join/df1/"
-SMALL_DF = "s3://test-imbalanced-join/df2/"
-
 
 @pytest.mark.client("imbalanced_join")
 def test_merge(client):
     """Merge large df and small df"""
-    large_df = dd.read_parquet(LARGE_DF)
-    small_df = dd.read_parquet(SMALL_DF)
+    large_df = dd.read_parquet("s3://test-imbalanced-join/df1/")
+    small_df = dd.read_parquet("s3://test-imbalanced-join/df2/")
 
     group_cols = ["df2_group", "bucket", "group1", "group2", "group3", "group4"]
 
