@@ -73,6 +73,7 @@ snowflake:
 imbalanced_join:
   n_workers: 50
   worker_memory: "64 GiB"
+  scheduler_vm_types: null
   scheduler_memory: "32 GiB"
 
 # Specific tests
