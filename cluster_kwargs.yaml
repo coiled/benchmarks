@@ -69,6 +69,12 @@ snowflake:
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
 
+# For tests/workflows/test_imbalanced_join.py
+imbalanced_join:
+  n_workers: 50
+  worker_memory: "64 GiB"
+  scheduler_memory: "32 GiB"
+
 # Specific tests
 test_work_stealing_on_scaling_up:
   n_workers: 1
