@@ -6,18 +6,19 @@ from functools import partial
 
 import dask.dataframe as dd
 import pytest
-from distributed import wait
+
+from ..utils_test import wait
 
 
 @pytest.mark.client("imbalanced_join")
 @pytest.fixture
 def dataframes(client):
     large_df = dd.read_parquet("s3://test-imbalanced-join/df1/")
-    small_df = dd.read_parquet("s3://test-imbalanced-join/df2/").persist()
+    small_df = dd.read_parquet("s3://test-imbalanced-join/df2/")
     # large dataframe has known divisions, use those
     # to ensure the data is partitioned as expected
     divisions = list(range(1, 40002, 10))
-    large_df = large_df.set_index("bucket", drop=False, divisions=divisions).persist()
+    large_df = large_df.set_index("bucket", drop=False, divisions=divisions)
     wait(large_df, client, 10 * 60)
     wait(small_df, client, 10 * 60)
     yield large_df, small_df
