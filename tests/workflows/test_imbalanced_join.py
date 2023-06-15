@@ -7,27 +7,16 @@ from functools import partial
 import dask.dataframe as dd
 import pytest
 
-from ..utils_test import wait
-
 
 @pytest.mark.client("imbalanced_join")
-@pytest.fixture
-def dataframes(client):
+def test_merge(client, shuffle_method):
+    """Merge large df and small df"""
     large_df = dd.read_parquet("s3://test-imbalanced-join/df1/")
     small_df = dd.read_parquet("s3://test-imbalanced-join/df2/")
     # large dataframe has known divisions, use those
     # to ensure the data is partitioned as expected
     divisions = list(range(1, 40002, 10))
     large_df = large_df.set_index("bucket", drop=False, divisions=divisions)
-    wait(large_df, client, 10 * 60)
-    wait(small_df, client, 10 * 60)
-    yield large_df, small_df
-
-
-@pytest.mark.client("imbalanced_join")
-def test_merge(dataframes, shuffle_method):
-    """Merge large df and small df"""
-    large_df, small_df = dataframes
 
     group_cols = ["df2_group", "bucket", "group1", "group2", "group3", "group4"]
     res = large_df.merge(
