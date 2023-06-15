@@ -56,12 +56,18 @@ uber_lyft:
 # For tests/workflows/test_pytorch_optuna.py
 pytorch_optuna:
   n_workers: 10
-  worker_gpu: 1
+  worker_vm_types: [g4dn.xlarge] # 1 GPU, 4 CPU, 16 GiB
   worker_options:
     # Making workers single-threaded to avoid GPU contention. See discussion in
     # https://github.com/coiled/benchmarks/pull/787#discussion_r1177004248 for
     # more details.
     nthreads: 1
+
+# For tests/workflows/test_snowflake.py
+snowflake:
+  n_workers: 20
+  worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+
 
 # Specific tests
 test_work_stealing_on_scaling_up:

@@ -24,7 +24,7 @@ defaults:
 
 jobs:
   tests:
-    name: Tests - ${{ matrix.runtime-version }} ${{ matrix.os }} py${{ matrix.python-version }}
+    name: ${{ matrix.pytest_args }} ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -33,33 +33,27 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.9"]
         pytest_args: [tests]
-        runtime-version: [upstream, latest]
         include:
           # Run stability tests on the lowest and highest versions of Python only
+          # These are temporarily redundant with the current global python-version
+          # - pytest_args: tests/stability
+          #   python-version: "3.9"
+          #   os: ubuntu-latest
+          # - pytest_args: tests/stability
+          #   python-version: "3.9"
+          #   os: ubuntu-latest
           - pytest_args: tests/stability
-            python-version: "3.9"
-            runtime-version: upstream
+            python-version: "3.11"
             os: ubuntu-latest
           - pytest_args: tests/stability
-            python-version: "3.9"
-            runtime-version: latest
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.10"
-            runtime-version: upstream
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.10"
-            runtime-version: latest
+            python-version: "3.11"
             os: ubuntu-latest
           # Run stability tests on Python Windows and MacOS (latest py39 only)
           - pytest_args: tests/stability
             python-version: "3.9"
-            runtime-version: latest
             os: windows-latest
           - pytest_args: tests/stability
             python-version: "3.9"
-            runtime-version: latest
             os: macos-latest
 
     steps:
@@ -75,14 +69,20 @@ jobs:
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
-      - name: Install coiled-runtime
-        env:
-          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+      - name: Upgrade dask to git tip
+        run: mamba env update --file ci/environment-git-tip.yml
+
+      - name: Add test dependencies
+        run: mamba env update --file ci/environment-test.yml
+
+      - name: Dump environment
         run: |
-          python ci/create_runtime_meta.py
-          source ci/scripts/install_coiled_runtime.sh coiled_software_environment.yaml
+          # For debugging
+          echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
+          mamba env export | grep -E -v '^prefix:.*$'
 
       - name: Determine if workflows should be run
+        id: workflows
         # Run workflows on PRs with `workflows` label and nightly cron job
         if: |
           github.event_name == 'schedule'
@@ -93,13 +93,8 @@ jobs:
           echo $EXTRA_OPTIONS
           echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
 
-          # Need to use `main` branch of optuna until https://github.com/optuna/optuna/pull/4589
-          # is released in `optuna=3.2.0`. Currently only doing this when workflows are run
-          # as that's the only place where the optuna + dask integration is being used.
-          python -m pip install git+https://github.com/optuna/optuna.git@378508ab6bddbad182bdfa0e8b3ad4bbb7040f00
-
       - name: Install dask-expr
-        run: python -m pip install git+https://github.com/mrocklin/dask-expr
+        run: python -m pip install git+https://github.com/dask-contrib/dask-expr
 
       - name: Run Coiled Runtime Tests
         id: test
@@ -107,8 +102,13 @@ jobs:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+          DB_NAME: ${{ matrix.os }}-py${{ matrix.python-version }}.db
           BENCHMARK: true
           CLUSTER_DUMP: always
         run: bash ci/scripts/run_tests.sh -n 4 --dist loadscope ${{ env.EXTRA_OPTIONS }} ${{ matrix.pytest_args }}
@@ -120,9 +120,9 @@ jobs:
         uses: actions/upload-artifact@v3
         if: always()
         with:
-          name: ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}
+          name: ${{ matrix.os }}-py${{ matrix.python-version }}
           path: |
-            ${{ matrix.os }}-${{ matrix.runtime-version }}-py${{ matrix.python-version }}.db
+            ${{ matrix.os }}-py${{ matrix.python-version }}.db
             cluster_kwargs.*.*
             mamba_env_export.yml
 
@@ -143,7 +143,7 @@ jobs:
       - name: Install Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
       - name: Install dependencies
         run: pip install alembic
@@ -272,8 +272,7 @@ jobs:
           environment-file: ci/environment-dashboard.yml
 
       - name: Generate dashboards
-        # Show differences of upstream vs. latest
-        run: python dashboard.py -d benchmark.db -o static -b coiled-latest-py3.9
+        run: python dashboard.py -d benchmark.db -o static
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
@@ -282,8 +281,9 @@ jobs:
           path: static
 
       - name: Deploy 🚀
-        uses: JamesIves/github-pages-deploy-action@4.1.7
-        if:  github.ref == 'refs/heads/main' && github.repository == 'coiled/benchmarks'
+        uses: JamesIves/github-pages-deploy-action@v4.4.1
+        if: github.ref == 'refs/heads/main' && github.repository == 'coiled/benchmarks'
         with:
           branch: gh-pages
           folder: static
+          single-commit: true

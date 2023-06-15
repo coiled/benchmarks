@@ -33,8 +33,8 @@ channels:
   - conda-forge
 dependencies:
     - python =3.9
-    - <copy-paste from recipe/meta.yaml, minus bits you want to change>
-    # Changes from the recipe start here
+    - <copy-paste from ci/environment.yaml, minus bits you want to change>
+    # Changes from the default environment start here
     - dask ==2023.4.1
     - distributed ==2023.4.1
 ```
@@ -47,7 +47,7 @@ forks, e.g.
       - git+https://github.com/yourname/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
 ```
 
-You may also ignore the recipe file and go for a barebones environment. The bare
+You may also ignore the default environment and go for a barebones environment. The bare
 minimum you need to install is ``dask``, ``distributed``, ``coiled`` and ``s3fs``.
 This will however skip some tests, e.g. zarr and ML-related ones, and it will also
 expose you to less controlled behaviour e.g. dependent on which versions of numpy and

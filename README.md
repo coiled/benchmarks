@@ -10,16 +10,17 @@ Set of Dask benchmarks run daily at scale in Coiled Clusters.
 
 The `coiled benchmarks` test suite can be run locally with the following steps:
 
-1. Ensure your local machine is authenticated to use the `dask-engineering` Coiled account and
-   the Coiled Dask Engineering AWS S3 account.
-2. Create a Python environment and install development dependencies as
-   specified in `ci/environment.yml`.
-3. Install a coiled runtime environment. This might be from one of the environments
-   listed in ``environments/``, or it could be a development environment if you are
-   testing feature branches of dask or distributed. This test suite is configured
-   to run Coiled's ``package_sync`` feature, so your local environment should be copied
-   to the cluster.
-4. Run tests with `python -m pytest tests`
+1. Ensure your local machine is authenticated to use the `dask-engineering` Coiled
+   account and the Coiled Dask Engineering AWS S3 account.
+2. Create a new Python environment with
+   `mamba env create -n test-env -f ci/environment.yml`. You could alternatively use
+   different packages, e.g. if you are testing feature branches of dask or distributed.
+   This test suite is configured to run Coiled's `package_sync` feature, so your local
+   environment will be copied to the cluster.
+3. Activate the environment with `conda activate test-env`
+4. Upgrade dask to the git tip with `mamba env update -f ci/environment-git-tip.yml`
+5. Add test-specific packages with `mamba env update -f ci/environment-test.yml`
+6. Run tests with `python -m pytest tests`
 
 Additionally, tests are automatically run on pull requests to this repository.
 See the section below on creating pull requests.
@@ -129,9 +130,9 @@ and one with a `dask` repository with which to drive bisecting.
 You should create a software environment which can run this test suite, but with an editable install of `dask`.
 You can do this in any of a number of ways, but one approach coule be
 ```bash
-conda env create -n test-env --file ci/environment.yml  # Create a test environment
+mamba env create -n test-env --file ci/environment.yml  # Create a test environment
 conda activate test-env  # Activate your test environment
-pip install .  # Install the `coiled-runtime` metapackage dependencies.
+mamba env update --file ci/environment-test.yml
 (cd <your-dask-dir> && pip install -e .)  # Do an editable install for dask
 ```
 
