@@ -9,7 +9,7 @@ import pytest
 @pytest.mark.client("imbalanced_join")
 def test_merge(client):
     """Merge large df and small df"""
-    large_df = dd.read_parquet("s3://test-imbalanced-join/df1/key_000*.parquet")
+    large_df = dd.read_parquet("s3://test-imbalanced-join/df1/")
     small_df = dd.read_parquet("s3://test-imbalanced-join/df2/")
 
     group_cols = ["df2_group", "bucket", "group1", "group2", "group3", "group4"]
