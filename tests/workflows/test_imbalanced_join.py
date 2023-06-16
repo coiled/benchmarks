@@ -2,14 +2,12 @@
 This data represents a skewed but realistic dataset that dask has been struggling with in the past.
 Workflow based on https://github.com/coiled/imbalanced-join/blob/main/test_big_join_synthetic.ipynb
 """
-from functools import partial
-
 import dask.dataframe as dd
 import pytest
 
 
 @pytest.mark.client("imbalanced_join")
-def test_merge(client, shuffle_method):
+def test_merge(client):
     """Merge large df and small df"""
     large_df = dd.read_parquet("s3://test-imbalanced-join/df1/")
     small_df = dd.read_parquet("s3://test-imbalanced-join/df2/")
@@ -33,10 +31,7 @@ def test_merge(client, shuffle_method):
     #     .compute()
     # )
 
-    def aggregate_partition(part, *, shuffle=None):
-        return part.groupby(group_cols, sort=False).agg(
-            {"value": "sum"}, shuffle=shuffle, split_out=100
-        )
+    def aggregate_partition(part):
+        return part.groupby(group_cols, sort=False).agg({"value": "sum"})
 
-    shuffle_aggregate = partial(aggregate_partition, shuffle=shuffle_method)
-    res.map_partitions(shuffle_aggregate).value.sum().compute()
+    res.map_partitions(aggregate_partition).value.sum().compute()
