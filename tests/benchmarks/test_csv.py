@@ -1,4 +1,7 @@
-import dask_expr as dd
+try:
+    import dask_expr as dd
+except Exception:
+    import dask.dataframe as dd
 import pandas as pd
 
 from ..utils_test import run_up_to_nthreads

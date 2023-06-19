@@ -5,7 +5,11 @@ import io
 import uuid
 
 import boto3
-import dask_expr as dd
+
+try:
+    import dask_expr as dd
+except Exception:
+    import dask.dataframe as dd
 import distributed
 import fsspec
 import pandas

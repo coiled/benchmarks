@@ -10,13 +10,14 @@ dependencies:
     - pip
     - coiled >=0.2.54
     - numpy ==1.23.5
-    - pandas ==2.0.2
+    - pandas ==2.0.1
     - dask ==2023.5.1
     - distributed ==2023.5.1
     - s3fs ==2023.5.0
     - pyarrow ==11.0.0
 
     - pip:
+      - git+https://github.com/phofl/dask-expr.git@benchmarks
       # Make sure you install dask and distributed either both from pip or both from
       # conda. You may alternatively point to your own git fork (but make sure you
       # sync'ed tags!)

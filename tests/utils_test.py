@@ -4,15 +4,20 @@ import math
 
 import dask
 import dask.array as da
-import dask_expr as dd
+try:
+    import dask_expr as dd
+except Exception:
+    import dask.dataframe as dd
 import distributed
 import numpy as np
 import pandas as pd
 import pytest
 from dask.sizeof import sizeof
 from dask.utils import format_bytes, parse_bytes
-from dask_expr.datasets import timeseries
-
+try:
+    from dask_expr.datasets import timeseries
+except Exception:
+    from dask.datasets import timeseries
 
 def scaled_array_shape(
     target_nbytes: float | str,
