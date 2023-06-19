@@ -94,7 +94,7 @@ jobs:
           echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
 
       - name: Install dask-expr
-        run: python -m pip install git+https://github.com/dask-contrib/dask-expr
+        run: python -m pip install git+https://github.com/phofl/dask-expr.git@benchmarks
 
       - name: Run Coiled Runtime Tests
         id: test
