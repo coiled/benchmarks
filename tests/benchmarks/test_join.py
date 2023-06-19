@@ -1,7 +1,3 @@
-try:
-    import dask_expr as dd
-except Exception:
-    import dask.dataframe as dd
 import pytest
 
 from ..utils_test import cluster_memory, run_up_to_nthreads, timeseries_of_size, wait
