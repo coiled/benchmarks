@@ -696,9 +696,7 @@ def rechunk_method(request):
 
 @pytest.fixture
 def configure_rechunking(rechunk_method):
-    config = {"optimization.fuse.active": False} if rechunk_method == "p2p" else {}
-    config["array.rechunk.method"] = rechunk_method
-    with dask.config.set(config):
+    with dask.config.set({"array.rechunk.method": shuffle_method}):
         yield
 
 
