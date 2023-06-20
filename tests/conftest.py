@@ -696,7 +696,7 @@ def rechunk_method(request):
 
 @pytest.fixture
 def configure_rechunking(rechunk_method):
-    with dask.config.set({"array.rechunk.method": shuffle_method}):
+    with dask.config.set({"array.rechunk.method": rechunk_method}):
         yield
 
 
