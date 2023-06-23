@@ -60,4 +60,4 @@ dependencies:
       # sync'ed tags!)
       # Read README.md for troubleshooting.
       # - git+https://github.com/dask/dask@ae39b43bdc1d7cf1b9ece112ba3dc398f3fabc13
-      - git+https://github.com/fjetter/distributed@9f9a0b6ad7feea6094295f4095fa6d8fa233e2f3
+      - git+https://github.com/fjetter/distributed@ensure_trivial_dependencies_ignored
