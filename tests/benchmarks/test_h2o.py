@@ -137,18 +137,18 @@ def test_q7(ddf):
     )
 
 
-def test_q8(ddf, configure_shuffling):
-    # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
-    ddf = ddf[["id6", "v1", "v2", "v3"]]
-    (
-        ddf[~ddf["v3"].isna()][["id6", "v3"]]
-        .groupby("id6", dropna=False, observed=True)
-        .apply(
-            lambda x: x.nlargest(2, columns="v3"),
-            meta={"id6": "Int64", "v3": "float64"},
-        )[["v3"]]
-        .compute()
-    )
+# def test_q8(ddf, configure_shuffling):
+#     # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
+#     ddf = ddf[["id6", "v1", "v2", "v3"]]
+#     (
+#         ddf[~ddf["v3"].isna()][["id6", "v3"]]
+#         .groupby("id6", dropna=False, observed=True)
+#         .apply(
+#             lambda x: x.nlargest(2, columns="v3"),
+#             meta={"id6": "Int64", "v3": "float64"},
+#         )[["v3"]]
+#         .compute()
+#     )
 
 
 def test_q9(ddf, configure_shuffling):

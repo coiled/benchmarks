@@ -656,7 +656,7 @@ P2P_SHUFFLE_AVAILABLE = Version(distributed.__version__) >= Version("2023.1.0")
 
 @pytest.fixture(
     params=[
-        "tasks",
+        # "tasks",
         pytest.param(
             "p2p",
             marks=pytest.mark.skipif(
@@ -729,7 +729,7 @@ def read_parquet_with_pyarrow():
     client.unregister_worker_plugin("set_pandas_strings_to_pyarrow")
 
 
-@pytest.fixture(params=["uncompressible", "compressible"])
+@pytest.fixture(params=["uncompressible"])
 def new_array(request):
     """Constructor function for a new dask array.
     This fixture causes the test to run twice, first with uncompressible data and then

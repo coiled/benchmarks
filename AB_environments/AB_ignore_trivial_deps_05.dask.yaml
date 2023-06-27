@@ -10,5 +10,4 @@
 
 distributed:
   scheduler:
-    latency-penalty: 0.25
-
+    latency-penalty: 0.5

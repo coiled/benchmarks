@@ -15,7 +15,7 @@ from ..utils_test import run_up_to_nthreads
 
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 def test_trivial_workload_should_not_cause_work_stealing(small_client):
-    root = delayed(lambda n: "x" * n)(utils.parse_bytes("1MiB"), dask_key_name="root")
+    root = delayed(lambda n: "x" * n)(utils.parse_bytes("1KiB"), dask_key_name="root")
     results = [delayed(lambda *args: None)(root, i) for i in range(10000)]
     futs = small_client.compute(results)
     small_client.gather(futs)

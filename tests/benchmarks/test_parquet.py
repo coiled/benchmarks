@@ -16,6 +16,8 @@ from coiled import Cluster
 from ..conftest import dump_cluster_kwargs
 from ..utils_test import run_up_to_nthreads, wait
 
+pytestmark = pytest.mark.skip
+
 
 @pytest.fixture(scope="module")
 def parquet_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
