@@ -16,8 +16,8 @@ dependencies:
     - coiled >=0.2.54
     - numpy ==1.23.5
     - pandas ==2.0.1
-    - dask ==2023.6.0
-    - distributed ==2023.6.0
+    - dask ==2023.6.1
+    - distributed ==2023.6.1
     - dask-labextension ==6.1.0
     - dask-ml ==2023.3.24
     - dask-snowflake ==0.2.0
@@ -59,4 +59,4 @@ dependencies:
       # conda. You may alternatively point to your own git fork (but make sure you
       # sync'ed tags!)
       # Read README.md for troubleshooting.
-      - git+https://github.com/fjetter/distributed@ensure_trivial_dependencies_ignored
+      - git+https://github.com/fjetter/distributed@fefa99177bdb3dc7ac9453d1c1ff593ff64c5e37
