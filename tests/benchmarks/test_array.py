@@ -141,6 +141,31 @@ def test_climatic_mean(small_client, new_array):
     wait(arr_clim, small_client, 15 * 60)
 
 
+@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
+def test_quadratic_mean(small_client):
+    # https://github.com/pangeo-data/distributed-array-examples/issues/2
+    xr = pytest.importorskip("xarray")
+
+    ds = xr.Dataset(
+        dict(
+            anom_u=(
+                ["time", "face", "j", "i"],
+                da.random.random((5000, 1, 987, 1920), chunks=(10, 1, -1, -1)),
+            ),
+            anom_v=(
+                ["time", "face", "j", "i"],
+                da.random.random((5000, 1, 987, 1920), chunks=(10, 1, -1, -1)),
+            ),
+        )
+    )
+
+    quad = ds**2
+    quad["uv"] = ds.anom_u * ds.anom_v
+    mean = quad.mean("time")
+    # Mean is really small at this point so we can just fetch it
+    wait(mean, small_client, 15 * 60)
+
+
 def test_vorticity(small_client, new_array):
     # From https://github.com/dask/distributed/issues/6571
 
