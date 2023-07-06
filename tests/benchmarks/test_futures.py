@@ -17,9 +17,19 @@ def test_single_future(small_client):
 
 
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
-def test_large_map(small_client):
+@pytest.mark.parametrize("rootish", ["rootish", "non-rootish"])
+def test_large_map(small_client, rootish):
     """What's the overhead of map these days?"""
-    futures = small_client.map(inc, range(100_000))
+    if rootish == "rootish":
+        futures = small_client.map(inc, range(100_000))
+    else:
+
+        def inc_with_deps(i, deps):
+            return i + 1
+
+        deps = small_client.map(inc, range(5))
+        futures = small_client.map(inc_with_deps, range(100_000), deps=deps)
+
     wait(futures)
 
 
