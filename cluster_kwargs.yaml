@@ -40,6 +40,8 @@ spill_cluster:
 embarrassingly_parallel:
   n_workers: 100
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+  worker_options:
+    nthreads: 8  # more threads than cores, much of thread time is download
   backend_options:
     region: "us-east-1"  # Same region as dataset
 
