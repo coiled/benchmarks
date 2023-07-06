@@ -19,6 +19,7 @@ default:
     spot: true
     spot_on_demand_fallback: true
     multizone: true
+    use_placement_group: true
 
 # For all tests using the small_client fixture
 small_cluster:
