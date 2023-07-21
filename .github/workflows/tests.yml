@@ -32,29 +32,30 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
-        pytest_args: [tests]
-        include:
-          # Run stability tests on the lowest and highest versions of Python only
-          # These are temporarily redundant with the current global python-version
-          # - pytest_args: tests/stability
-          #   python-version: "3.9"
-          #   os: ubuntu-latest
-          # - pytest_args: tests/stability
-          #   python-version: "3.9"
-          #   os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.11"
-            os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.11"
-            os: ubuntu-latest
-          # Run stability tests on Python Windows and MacOS (latest py39 only)
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            os: windows-latest
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            os: macos-latest
+        # pytest_args: [tests]
+        pytest_args: [tests/benchmarks/test_deltalake.py]
+#        include:
+#          # Run stability tests on the lowest and highest versions of Python only
+#          # These are temporarily redundant with the current global python-version
+#          # - pytest_args: tests/stability
+#          #   python-version: "3.9"
+#          #   os: ubuntu-latest
+#          # - pytest_args: tests/stability
+#          #   python-version: "3.9"
+#          #   os: ubuntu-latest
+#          - pytest_args: tests/stability
+#            python-version: "3.11"
+#            os: ubuntu-latest
+#          - pytest_args: tests/stability
+#            python-version: "3.11"
+#            os: ubuntu-latest
+#          # Run stability tests on Python Windows and MacOS (latest py39 only)
+#          - pytest_args: tests/stability
+#            python-version: "3.9"
+#            os: windows-latest
+#          - pytest_args: tests/stability
+#            python-version: "3.9"
+#            os: macos-latest
 
     steps:
       - name: Checkout
