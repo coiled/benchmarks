@@ -7,7 +7,7 @@ import pytest
 def ddf(request, small_client):
     uri = "s3://coiled-datasets/delta/ds20f_100M/"
     if request.param == "read_deltalake":
-        yield ddt.read_deltalake(uri)
+        yield ddt.read_deltalake(uri, delta_storage_options={"AWS_REGION": "us-east-2"})
     else:
         yield dd.read_parquet(f"{uri}*.parquet", engine="pyarrow")
 
