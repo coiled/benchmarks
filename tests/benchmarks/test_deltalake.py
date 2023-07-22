@@ -33,7 +33,11 @@ def uri(request):
 @pytest.fixture(params=["read_deltalake", "read_parquet"])
 def ddf(request, small_client, uri):
     if request.param == "read_deltalake":
-        delta_storage_options = {"AWS_REGION": "us-east-2", "AWS_PROFILE": "default"}
+        delta_storage_options = {
+            "AWS_REGION": "us-east-2",
+            "AWS_ACCESS_KEY_ID": os.environ["AWS_ACCESS_KEY_ID"],
+            "AWS_SECRET_ACCESS_KEY": os.environ["AWS_SECRET_ACCESS_KEY"],
+        }
         yield ddt.read_deltalake(uri, delta_storage_options=delta_storage_options)
     else:
         yield dd.read_parquet(
@@ -42,8 +46,8 @@ def ddf(request, small_client, uri):
 
 
 def test_q1(ddf):
-    ddf = ddf[["id1", "v1"]]
-    ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"}).compute()
+    ddf = ddf[["id1", "v2"]]
+    ddf.groupby("id1", dropna=False, observed=True).agg({"v2": "sum"}).compute()
 
 
 # def test_q2(ddf):
