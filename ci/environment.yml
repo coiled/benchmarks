@@ -42,5 +42,5 @@ dependencies:
   - openssl >1.1.0g
   - pyopenssl ==22.1.0  # Pinned by snowflake-connector-python
   - cryptography ==38.0.4  # Pinned by snowflake-connector-python
-  - pip
+  - pip:
     - git+https://github.com/j-bennet/dask@j-bennet/make-timeseries-regression
