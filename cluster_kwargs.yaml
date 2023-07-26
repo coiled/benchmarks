@@ -32,7 +32,7 @@ parquet_cluster:
 
 # For tests/benchmarks/test_spill.py
 spill_cluster:
-  n_workers: 5
+  n_workers: 6
   worker_disk_size: 64
   worker_vm_types: [m6i.large]  # 2CPU, 8GiB
 
