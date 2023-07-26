@@ -75,6 +75,11 @@ jobs:
       - name: Add test dependencies
         run: mamba env update --file ci/environment-test.yml
 
+      - name: Install Dask from branch, no dependencies
+        run: |
+          pip uninstall -y dask
+          pip install --no-deps git+https://github.com/j-bennet/dask@j-bennet/make-timeseries-regression
+
       - name: Dump environment
         run: |
           # For debugging
