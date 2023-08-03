@@ -1,6 +1,9 @@
 import uuid
 
-import dask_expr as dx
+try:
+    import dask_expr as dx
+except Exception:
+    import dask.datasets as dx
 import distributed
 import pytest
 from coiled import Cluster

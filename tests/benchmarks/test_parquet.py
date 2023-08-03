@@ -8,8 +8,10 @@ import boto3
 
 try:
     import dask_expr as dd
+    import dask_expr.datasets as ds
 except Exception:
     import dask.dataframe as dd
+    import dask.datasets as ds
 import distributed
 import fsspec
 import pandas
@@ -82,7 +84,7 @@ def test_read_hive_partitioned_data(parquet_client):
 @run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
 def test_write_wide_data(parquet_client, s3_url):
     # Write a ~700 partition, ~200 GB dataset with a lot of columns
-    ddf = dd.datasets.timeseries(
+    ddf = ds.timeseries(
         dtypes={
             **{f"name-{i}": str for i in range(25)},
             **{f"price-{i}": float for i in range(25)},
