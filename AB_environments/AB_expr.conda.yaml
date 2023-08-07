@@ -10,14 +10,14 @@ dependencies:
     - pip
     - coiled >=0.2.54
     - numpy ==1.23.5
-    - pandas ==2.0.1
-    - dask ==2023.5.1
-    - distributed ==2023.5.1
+    - pandas ==2.0.3
+    - dask ==2023.7.1
+    - distributed ==2023.7.1
     - s3fs ==2023.5.0
     - pyarrow ==11.0.0
 
     - pip:
-      - git+https://github.com/dask-contrib/dask-expr.git
+      - git+https://github.com/phofl/dask-expr.git@timeseries_combine
       # Make sure you install dask and distributed either both from pip or both from
       # conda. You may alternatively point to your own git fork (but make sure you
       # sync'ed tags!)
