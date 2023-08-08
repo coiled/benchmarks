@@ -17,7 +17,7 @@ dependencies:
     - pyarrow ==11.0.0
 
     - pip:
-      - git+https://github.com/phofl/dask-expr.git@timeseries_combine
+      - git+https://github.com/phofl/dask-expr.git@test_branch
       # Make sure you install dask and distributed either both from pip or both from
       # conda. You may alternatively point to your own git fork (but make sure you
       # sync'ed tags!)
