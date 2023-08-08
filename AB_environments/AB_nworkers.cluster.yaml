@@ -1,0 +1,58 @@
+default:
+  _n_worker_specs_per_host: 2
+
+# For all tests using the small_client fixture
+small_cluster:
+  n_workers: 5
+  worker_vm_types: [m6i.xlarge]  # 2CPU, 8GiB
+
+# For tests/benchmarks/test_parquet.py
+parquet_cluster:
+  n_workers: 8
+  worker_vm_types: [m5.2xlarge]  # 4 CPU, 16 GiB
+
+# For tests/benchmarks/test_spill.py
+spill_cluster:
+  n_workers: 3
+  worker_disk_size: 64
+  worker_vm_types: [m6i.xlarge]  # 2CPU, 8GiB
+
+# For tests/workflows/test_embarrassingly_parallel.py
+embarrassingly_parallel:
+  n_workers: 50
+  worker_vm_types: [m6i.2xlarge] # 4 CPU, 16 GiB (preferred default instance)
+  backend_options:
+    region: "us-east-1"  # Same region as dataset
+
+# For tests/workflows/test_xgboost_optuna.py
+xgboost_optuna:
+  n_workers: 25
+  worker_vm_types: [m6i.2xlarge]  # 4 CPU, 16 GiB (preferred default instance)
+
+# For tests/workflows/test_uber_lyft.py
+uber_lyft:
+  n_workers: 10
+  worker_vm_types: [m6i.2xlarge] # 4 CPU, 16 GiB (preferred default instance)
+
+# For tests/workflows/test_snowflake.py
+snowflake:
+  n_workers: 10
+  worker_vm_types: [m6i.2xlarge] # 4 CPU, 16 GiB (preferred default instance)
+
+
+# Specific tests
+
+test_work_stealing_on_straggling_worker:
+  n_workers: 5
+  worker_vm_types: [t3.large]
+
+test_repeated_merge_spill:
+  n_workers: 5
+  worker_vm_types: [m6i.xlarge]
+
+# For tests/workflows/test_from_csv_to_parquet.py
+from_csv_to_parquet:
+  n_workers: 5
+  worker_vm_types: [m6i.2xlarge]  # 4 CPU, 16 GiB (preferred default instance)
+  backend_options:
+    region: "us-east-1"  # Same region as dataset
