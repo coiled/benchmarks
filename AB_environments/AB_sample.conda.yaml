@@ -15,7 +15,7 @@ dependencies:
     - pip
     - coiled >=0.2.54
     - numpy ==1.23.5
-    - pandas ==2.0.2
+    - pandas ==2.0.3
     - dask ==2023.5.1
     - distributed ==2023.5.1
     - dask-labextension ==6.1.0
