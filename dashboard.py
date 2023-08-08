@@ -292,7 +292,10 @@ def details_report_fname(runtime: str, fullname: str) -> str:
 
 
 def make_timeseries(
-    df: pandas.DataFrame, spec: ChartSpec, title: str
+    df: pandas.DataFrame,
+    spec: ChartSpec,
+    title: str,
+    xdomain: tuple[float, float] | None,
 ) -> altair.Chart | None:
     """Make a single Altair timeseries chart for a given test"""
     df = df.dropna(subset=[spec.field_name, "start"]).reset_index().copy()
@@ -314,6 +317,7 @@ def make_timeseries(
             "start",
             "details_url",
             "name",
+            "name_short",
             "call_outcome",
             "coiled_runtime_version",
             "dask_version",
@@ -322,19 +326,28 @@ def make_timeseries(
         ]
     ]
     if len(df.name.unique()) > 1:
-        kwargs["color"] = altair.Color("name:N")
+        kwargs["color"] = altair.Color("name_short:N")
     if len(df.call_outcome.unique()) > 1:
         kwargs["shape"] = altair.Shape(
             "call_outcome:N",
             scale=altair.Scale(domain=["passed", "failed"], range=["circle", "cross"]),
             title="Outcome",
         )
+    recent = df[df.start > df.start.max() - pandas.Timedelta(days=30)][spec.field_name]
+    y_max = max(recent.mean() + 3 * recent.std(), recent.max() * 1.05)
+    y_min = min(recent.mean() - 3 * recent.std(), recent.min() * 0.95)
+    y_domain = [y_min, y_max]
+
     return (
         altair.Chart(df, width=800, height=256)
         .mark_line(point=altair.OverlayMarkDef(size=64))
         .encode(
-            x=altair.X("start:T"),
-            y=altair.Y(f"{spec.field_name}:Q", title=f"{spec.field_desc} {spec.unit}"),
+            x=altair.X("start:T", scale=altair.Scale(domain=xdomain)),
+            y=altair.Y(
+                f"{spec.field_name}:Q",
+                title=f"{spec.field_desc} {spec.unit}",
+                scale=altair.Scale(domain=y_domain),
+            ),
             href=altair.Href("details_url:N"),
             tooltip=[
                 altair.Tooltip("id:N", title="Test id"),
@@ -353,7 +366,7 @@ def make_timeseries(
         )
         .properties(title=title)
         .configure(autosize="fit")
-        .interactive()
+        .interactive(bind_y=False)
     )
 
 
@@ -363,13 +376,14 @@ def make_test_report(
     title: str,
     sourcename: str | None = None,
     baseline: str | None = None,
+    xdomain: tuple[float, float] | None = None,
 ) -> panel.Tabs:
     """Make a tab panel for a single test"""
     tabs = []
     for spec in SPECS:
         if kind == "timeseries":
             assert not baseline
-            chart = make_timeseries(df, spec, title)
+            chart = make_timeseries(df, spec, title, xdomain=xdomain)
             height = 384
         elif kind == "barchart":
             assert not baseline
@@ -388,7 +402,7 @@ def make_test_report(
             f"```python\n{source[sourcename]}\n```",
             width=800,
             height=height,
-            style={"overflow": "auto"},
+            styles={"overflow": "auto"},
         )
         tabs.append(("Source", code))
     elif sourcename is not None:
@@ -398,7 +412,10 @@ def make_test_report(
 
 
 def make_timeseries_html_report(
-    df: pandas.DataFrame, output_dir: pathlib.Path, runtime: str
+    df: pandas.DataFrame,
+    output_dir: pathlib.Path,
+    runtime: str,
+    ndays: int,
 ) -> None:
     """Generate HTML report for one runtime (e.g. coiled-upstream-py3.9), showing
     evolution of measures (wall clock, average memory, peak memory) over historical CI
@@ -411,6 +428,15 @@ def make_timeseries_html_report(
     out_fname = str(output_dir.joinpath(runtime + ".html"))
     print(f"Generating {out_fname}")
     categories = sorted(df[df.runtime == runtime].category.unique())
+    # Remove the test name from the paramterized string for the legends
+    df["name_short"] = df.name.str.extract(r"\w+\[(.+)\]")[0]
+    df["name_short"].fillna(df["name"])
+    max_timerange = df["start"].max()
+    min_timerange = df["start"].min()
+    xdomain = [
+        max(min_timerange, max_timerange - pandas.Timedelta(days=30)),
+        max_timerange,
+    ]
     tabs = []
     for category in categories:
         df_by_test = df[(df.runtime == runtime) & (df.category == category)].groupby(
@@ -422,6 +448,7 @@ def make_timeseries_html_report(
                 kind="timeseries",
                 title=sourcename,
                 sourcename=sourcename,
+                xdomain=xdomain,
             )
             for sourcename in df_by_test.groups
         ]
@@ -680,6 +707,11 @@ def parse_args() -> argparse.Namespace:
         help="Path to SQLite database file containing the metrics",
     )
     parser.add_argument(
+        "--ndays",
+        default=30,
+        help="The number of days to show by default when plotting timeseries charts.",
+    )
+    parser.add_argument(
         "--output-dir",
         "-o",
         help="Output directory",
@@ -741,7 +773,7 @@ def main() -> None:
     # Generate HTML pages
     runtimes = sorted(df.runtime.unique(), key=natural_sort_key)
     for runtime in runtimes:
-        make_timeseries_html_report(df, output_dir, runtime)
+        make_timeseries_html_report(df, output_dir, runtime, args.ndays)
 
     for (runtime, fullname), df2 in df.groupby(["runtime", "fullname"]):
         make_details_html_report(df2, output_dir, runtime, fullname)
