@@ -12,3 +12,82 @@
 # small_cluster:
 #   n_workers: 5
 #   worker_vm_types: [m6i.xlarge]  # 4CPU, 16GiB
+
+# Settings for all clusters, unless overriden below
+default:
+  package_sync: true
+  wait_for_workers: true
+  scheduler_vm_types: [m6a.large]
+  backend_options:
+    spot: true
+    spot_on_demand_fallback: true
+    multizone: true
+
+# For all tests using the small_client fixture
+small_cluster:
+  n_workers: 10
+  worker_vm_types: [m6a.large]  # 2CPU, 8GiB
+
+# For tests/benchmarks/test_parquet.py
+parquet_cluster:
+  n_workers: 15
+  worker_vm_types: [m5.xlarge]  # 4 CPU, 16 GiB
+
+# For tests/benchmarks/test_spill.py
+spill_cluster:
+  n_workers: 5
+  worker_disk_size: 64
+  worker_vm_types: [m6a.large]  # 2CPU, 8GiB
+
+# For tests/workflows/test_embarrassingly_parallel.py
+embarrassingly_parallel:
+  n_workers: 100
+  worker_vm_types: [m6a.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+  backend_options:
+    region: "us-east-1"  # Same region as dataset
+
+# For tests/workflows/test_xgboost_optuna.py
+xgboost_optuna:
+  n_workers: 50
+  worker_vm_types: [m6a.xlarge]  # 4 CPU, 16 GiB (preferred default instance)
+
+# For tests/workflows/test_uber_lyft.py
+uber_lyft:
+  n_workers: 20
+  worker_vm_types: [m6a.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+
+# For tests/workflows/test_pytorch_optuna.py
+pytorch_optuna:
+  n_workers: 10
+  worker_vm_types: [g4dn.xlarge] # 1 GPU, 4 CPU, 16 GiB
+  worker_options:
+    # Making workers single-threaded to avoid GPU contention. See discussion in
+    # https://github.com/coiled/benchmarks/pull/787#discussion_r1177004248 for
+    # more details.
+    nthreads: 1
+
+# For tests/workflows/test_snowflake.py
+snowflake:
+  n_workers: 20
+  worker_vm_types: [m6a.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+
+
+# Specific tests
+test_work_stealing_on_scaling_up:
+  n_workers: 1
+  worker_vm_types: [t3.medium]
+
+test_work_stealing_on_straggling_worker:
+  n_workers: 10
+  worker_vm_types: [t3.medium]
+
+test_repeated_merge_spill:
+  n_workers: 20
+  worker_vm_types: [m6a.large]
+
+# For tests/workflows/test_from_csv_to_parquet.py
+from_csv_to_parquet:
+  n_workers: 10
+  worker_vm_types: [m6a.xlarge]  # 4 CPU, 16 GiB (preferred default instance)
+  backend_options:
+    region: "us-east-1"  # Same region as dataset
