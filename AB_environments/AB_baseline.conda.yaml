@@ -1,12 +1,17 @@
-# Special environment file for A/B testing, used to define the conda environment for the
-# baseline environment.
-# Change contents, but do not rename.
+# Sample conda environment file for A/B testing.
+# Change contents/delete/rename as needed.
 
+# Every A/B environment *must* present these three files:
+# - AB_<name>.conda.yaml
+# - AB_<name>.dask.yaml
+# - AB_<name>.cluster.yaml
+
+# You should always start from a copy-paste from AB_baseline.conda.yaml
 channels:
   - conda-forge
 dependencies:
     - python =3.9  # Single '=' means latest patch version available
-    # Copy-paste from ci/environment.yml
+    # Copy-paste from AB_baseline.conda.yaml
     - pip
     - coiled >=0.2.54
     - numpy ==1.23.5
@@ -47,12 +52,11 @@ dependencies:
     - openssl >1.1.0g
     - pyopenssl ==22.1.0  # Pinned by snowflake-connector-python
     - cryptography ==38.0.4  # Pinned by snowflake-connector-python
-    # End copy-paste
+    # End copy-paste from AB_baseline.conda.yaml
 
     - pip:
       # Make sure you install dask and distributed either both from pip or both from
       # conda. You may alternatively point to your own git fork (but make sure you
       # sync'ed tags!)
       # Read README.md for troubleshooting.
-      # - git+https://github.com/dask/dask@ae39b43bdc1d7cf1b9ece112ba3dc398f3fabc13
-      # - git+https://github.com/dask/distributed@e887fde05a636864f94e7880fd301923406a3db7
+      - git+https://github.com/dask/distributed@b3dde5cc0e11c5c55349f2cd1ba1f48027791845
