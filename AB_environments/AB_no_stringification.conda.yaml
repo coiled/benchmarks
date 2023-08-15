@@ -59,4 +59,4 @@ dependencies:
       # conda. You may alternatively point to your own git fork (but make sure you
       # sync'ed tags!)
       # Read README.md for troubleshooting.
-      - git+https://github.com/fjetter/distributed@7e163d42d492866f69a6e42d8cdcf156f517fa44
+      - git+https://github.com/fjetter/distributed@95bccf358a3cd6147aeeb0af1db793684947946a
