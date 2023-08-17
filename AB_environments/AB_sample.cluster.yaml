@@ -31,7 +31,7 @@ small_cluster:
 # For tests/benchmarks/test_parquet.py
 parquet_cluster:
   n_workers: 15
-  worker_vm_types: [m5.xlarge]  # 4 CPU, 16 GiB
+  worker_vm_types: [m5a.xlarge]  # 4 CPU, 16 GiB
 
 # For tests/benchmarks/test_spill.py
 spill_cluster:
