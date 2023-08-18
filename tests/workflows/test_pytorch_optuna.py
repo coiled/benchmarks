@@ -4,7 +4,7 @@ import tempfile
 import zipfile
 
 import pytest
-from dask.distributed import PipInstall, Lock, get_worker
+from dask.distributed import Lock, PipInstall, get_worker
 
 from ..utils_test import wait
 
@@ -59,7 +59,9 @@ def test_hpo(client):
 
             print("Downloading dataset...")
             fs = s3fs.S3FileSystem(anon=True)
-            fs.download("s3://coiled-datasets/CelebA-Faces/img_align_celeba.zip", str(zip))
+            fs.download(
+                "s3://coiled-datasets/CelebA-Faces/img_align_celeba.zip", str(zip)
+            )
 
             print(f"Unzipping into {dataset_dir}")
             with zipfile.ZipFile(str(zip), "r") as zipped:
