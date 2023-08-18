@@ -4,7 +4,7 @@ import tempfile
 import zipfile
 
 import pytest
-from dask.distributed import PipInstall
+from dask.distributed import PipInstall, Lock, get_worker
 
 from ..utils_test import wait
 
@@ -47,22 +47,24 @@ def test_hpo(client):
     def download_data():
         import s3fs  # FIXME: see above install w/ urllib3 - import here after reinstall
 
-        tmpdir = tempfile.gettempdir()
-        zip = pathlib.Path(tmpdir).joinpath("img_align_celeba.zip")
-        dataset_dir = zip.parent.joinpath("img_align_celeba")
+        worker = get_worker()
+        with Lock(worker.address):
+            tmpdir = tempfile.gettempdir()
+            zip = pathlib.Path(tmpdir).joinpath("img_align_celeba.zip")
+            dataset_dir = zip.parent.joinpath("img_align_celeba")
 
-        if zip.exists():
-            print("Dataset already downloaded, returning dataset dir")
+            if zip.exists():
+                print("Dataset already downloaded, returning dataset dir")
+                return dataset_dir
+
+            print("Downloading dataset...")
+            fs = s3fs.S3FileSystem(anon=True)
+            fs.download("s3://coiled-datasets/CelebA-Faces/img_align_celeba.zip", str(zip))
+
+            print(f"Unzipping into {dataset_dir}")
+            with zipfile.ZipFile(str(zip), "r") as zipped:
+                zipped.extractall(dataset_dir)
             return dataset_dir
-
-        print("Downloading dataset...")
-        fs = s3fs.S3FileSystem(anon=True)
-        fs.download("s3://coiled-datasets/CelebA-Faces/img_align_celeba.zip", str(zip))
-
-        print(f"Unzipping into {dataset_dir}")
-        with zipfile.ZipFile(str(zip), "r") as zipped:
-            zipped.extractall(dataset_dir)
-        return dataset_dir
 
     def get_generator(trial):
         import torch.nn as nn
