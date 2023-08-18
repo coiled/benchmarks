@@ -4,11 +4,6 @@ import pytest
 from ..utils_test import cluster_memory, run_up_to_nthreads, timeseries_of_size, wait
 
 
-@pytest.fixture(params=[0.1, 1])
-def memory_multiplier(request):
-    return request.param
-
-
 @run_up_to_nthreads("small_cluster", 40, reason="Does not finish")
 def test_join_big(small_client, memory_multiplier, configure_shuffling):
     memory = cluster_memory(small_client)  # 76.66 GiB

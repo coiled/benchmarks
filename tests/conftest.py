@@ -760,3 +760,8 @@ def new_array(request):
         return a.map_blocks(compressible, dtype=a.dtype)
 
     return _
+
+
+@pytest.fixture(params=[0.1, 1])
+def memory_multiplier(request):
+    return request.param
