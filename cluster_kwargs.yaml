@@ -15,6 +15,7 @@ default:
   package_sync: true
   wait_for_workers: true
   scheduler_vm_types: [m6i.large]
+  _n_worker_specs_per_host: 2
   backend_options:
     spot: true
     spot_on_demand_fallback: true
