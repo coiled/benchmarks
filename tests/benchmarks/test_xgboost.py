@@ -88,8 +88,7 @@ def test_preprocess(small_client, taxi_zone_lookup, read_parquet_with_pyarrow):
     ###################
     # Join with domains
     ###################
-    ddf = dd.merge(
-        ddf,
+    ddf = ddf.merge(
         taxi_zone_lookup,
         how="inner",
         left_on="PULocationID",
@@ -98,8 +97,7 @@ def test_preprocess(small_client, taxi_zone_lookup, read_parquet_with_pyarrow):
     ddf = ddf.rename(columns={"Borough": "PUBorough", "Superborough": "PUSuperborough"})
     ddf = ddf.drop(columns="LocationID")
 
-    ddf = dd.merge(
-        ddf,
+    ddf = ddf.merge(
         taxi_zone_lookup,
         how="inner",
         left_on="DOLocationID",
