@@ -235,6 +235,8 @@ def timeseries_of_size(
     Additionally, ``target_nbytes`` certainly does not correspond to the size
     the dataset would take up on disk (as parquet, csv, etc.).
     """
+    if seed is None:
+        seed = int(np.random.randint(int(2e9), size=5)[0])
     if isinstance(target_nbytes, str):
         target_nbytes = parse_bytes(target_nbytes)
 
