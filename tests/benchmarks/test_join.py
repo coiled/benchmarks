@@ -22,7 +22,8 @@ def test_join_big(small_client, memory_multiplier, configure_shuffling):
     df2_big = df2_big.astype({"predicate": "int"})
 
     join = df1_big.merge(df2_big, on="predicate", how="inner").map_partitions(
-        lambda x: x
+        lambda x: x,
+        enforce_metadata=False,
     )
     result = join.size
     wait(result, small_client, 20 * 60)
