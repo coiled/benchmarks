@@ -69,5 +69,5 @@ def test_set_index(small_client, persist, memory_multiplier, configure_shuffling
     df_big = df_big.astype({"predicate": "int"})
     if persist:
         df_big = df_big.persist()
-    df_indexed = df_big.set_index("0")
+    df_indexed = df_big.set_index("predicate")
     wait(df_indexed.size, small_client, 20 * 60)
