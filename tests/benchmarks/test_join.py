@@ -75,6 +75,8 @@ def test_set_index(small_client, persist, memory_multiplier, configure_shuffling
 
 @pytest.mark.client("uber_lyft_large")
 def test_set_index_on_uber_lyft(client, configure_shuffling):
+    import dask.dataframe as dd
+
     df = dd.read_parquet(
         "s3://coiled-datasets/uber-lyft-tlc/", storage_options={"anon": True}
     )
