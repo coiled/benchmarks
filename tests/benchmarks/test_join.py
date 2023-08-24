@@ -1,3 +1,4 @@
+import dask.dataframe as dd
 import pytest
 
 from ..utils_test import cluster_memory, run_up_to_nthreads, timeseries_of_size, wait
@@ -65,3 +66,12 @@ def test_set_index(small_client, persist, memory_multiplier, configure_shuffling
         df_big = df_big.persist()
     df_indexed = df_big.set_index("0")
     wait(df_indexed.size, small_client, 20 * 60)
+
+
+@pytest.mark.client("uber_lyft_large")
+def test_set_index_on_uber_lyft(client, configure_shuffling):
+    df = dd.read_parquet(
+        "s3://coiled-datasets/uber-lyft-tlc/", storage_options={"anon": True}
+    )
+    result = df.set_index("PULocationID")
+    wait(result, client, 20 * 60)
