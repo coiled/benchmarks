@@ -42,11 +42,11 @@ def test_dataframe_align(small_client):
     wait(final, small_client, 10 * 60)
 
 
-def test_shuffle(small_client, configure_shuffling):
+def test_shuffle(small_client, configure_shuffling, memory_multiplier):
     memory = cluster_memory(small_client)  # 76.66 GiB
 
     df = timeseries_of_size(
-        memory // 4,
+        memory * memory_multiplier,
         start="2020-01-01",
         freq="1200ms",
         partition_freq="24h",
