@@ -18,7 +18,7 @@ else:
 
 def read_data(filename):
     path = DATASETS[enabled_dataset] + filename + "/"
-    return dd.read_parquet(path, engine="pyarrow", storage_options={"anon": True})
+    return dd.read_parquet(path, engine="pyarrow")
 
 
 @pytest.mark.client("tpch")
