@@ -467,6 +467,21 @@ def small_cluster(request, dask_env_variables, cluster_kwargs, github_cluster_ta
         yield cluster
 
 
+@pytest.fixture(scope="module")
+def tpch_cluster(request, dask_env_variables, cluster_kwargs, github_cluster_tags):
+    module = os.path.basename(request.fspath).split(".")[0]
+    module = module.replace("test_", "")
+    kwargs = dict(
+        name=f"{module}-{uuid.uuid4().hex[:8]}",
+        environ=dask_env_variables,
+        tags=github_cluster_tags,
+        **cluster_kwargs["tpch"],
+    )
+    dump_cluster_kwargs(kwargs, f"tpch.{module}")
+    with Cluster(**kwargs) as cluster:
+        yield cluster
+
+
 def log_on_scheduler(
     client: Client, msg: str, *args, level: int = logging.INFO
 ) -> None:
@@ -488,6 +503,45 @@ def small_client(
         log_on_scheduler(client, "Starting client setup of %s", test_label)
         client.restart()
         small_cluster.scale(n_workers)
+        client.wait_for_workers(n_workers)
+
+        with upload_cluster_dump(client):
+            log_on_scheduler(client, "Finished client setup of %s", test_label)
+
+            with benchmark_all(client):
+                yield client
+
+            # Note: normally, this RPC call is almost instantaneous. However, in the
+            # case where the scheduler is still very busy when the fixtured test returns
+            # (e.g. test_futures.py::test_large_map_first_work), it can be delayed into
+            # several seconds. We don't want to capture this extra delay with
+            # benchmark_time, as it's beyond the scope of the test.
+            log_on_scheduler(client, "Starting client teardown of %s", test_label)
+
+        client.restart()
+        # Run connects to all workers once and to ensure they're up before we do
+        # something else. With another call of restart when entering this
+        # fixture again, this can trigger a race condition that kills workers
+        # See https://github.com/dask/distributed/issues/7312 Can be removed
+        # after this issue is fixed.
+        client.run(lambda: None)
+
+
+@pytest.fixture
+def tpch_client(
+    request,
+    testrun_uid,
+    tpch_cluster,
+    cluster_kwargs,
+    upload_cluster_dump,
+    benchmark_all,
+):
+    n_workers = cluster_kwargs["tpch"]["n_workers"]
+    test_label = f"{request.node.name}, session_id={testrun_uid}"
+    with Client(tpch_cluster) as client:
+        log_on_scheduler(client, "Starting client setup of %s", test_label)
+        client.restart()
+        tpch_cluster.scale(n_workers)
         client.wait_for_workers(n_workers)
 
         with upload_cluster_dump(client):
