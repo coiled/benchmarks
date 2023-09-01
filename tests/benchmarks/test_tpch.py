@@ -134,7 +134,7 @@ def test_query_3(client):
     total = jn2.groupby(["l_orderkey", "o_orderdate", "o_shippriority"])[
         "revenue"
     ].sum()
-    total.reset_index().head(10).loc[
+    total.reset_index().head(10)[
         ["l_orderkey", "revenue", "o_orderdate", "o_shippriority"]
     ]
 

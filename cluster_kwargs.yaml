@@ -59,7 +59,7 @@ uber_lyft_large:
 
 tpch:
   n_workers: 20
-  worker_vm_types: [m6i.large]  # 2CPU, 8GiB
+  worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
 # For tests/workflows/test_pytorch_optuna.py
 pytorch_optuna:
