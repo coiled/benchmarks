@@ -1,7 +1,10 @@
 import os
 from datetime import datetime
 
-import dask.dataframe as dd
+try:
+    import dask_expr as dd
+except Exception:
+    import dask.dataframe as dd
 import pytest
 
 DATASETS = {
