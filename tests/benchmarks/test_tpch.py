@@ -142,7 +142,6 @@ def read_data(filename):
 #     ]
 
 
-@pytest.mark.client("tpch")
 def test_query_4(tpch_client):
     date1 = datetime.strptime("1993-10-01", "%Y-%m-%d")
     date2 = datetime.strptime("1993-07-01", "%Y-%m-%d")
