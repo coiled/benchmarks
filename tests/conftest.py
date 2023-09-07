@@ -290,27 +290,27 @@ def benchmark_coiled_prometheus(test_run_benchmark):
             end = math.ceil(time.time())
             cluster = client.cluster
             test_run_benchmark.scheduler_memory_max = cluster.get_aggregated_metric(
-                query="(host_memory_total-host_memory_available)&scheduler",
+                query="scheduler:(host_memory_total-host_memory_available)&scheduler",
                 over_time="max",
                 start_ts=start,
                 end_ts=end,
             )
             test_run_benchmark.scheduler_cpu_avg = cluster.get_aggregated_metric(
-                query="cpu_rate&scheduler",
+                query="scheduler:cpu_rate&scheduler",
                 over_time="avg",
                 start_ts=start,
                 end_ts=end,
             )
             # TODO: Do we want to have plain max or 80th percentile?
             test_run_benchmark.worker_max_tick = cluster.get_aggregated_metric(
-                query="worker_max_tick|pct80",
-                over_time="max",
+                query="worker_max_tick|max",
+                over_time="quantile(0.95)",
                 start_ts=start,
                 end_ts=end,
             )
             test_run_benchmark.scheduler_max_tick = cluster.get_aggregated_metric(
-                query="scheduler_max_tick|pct80",
-                over_time="max",
+                query="scheduler_max_tick|max",
+                over_time="quantile(0.95)",
                 start_ts=start,
                 end_ts=end,
             )
