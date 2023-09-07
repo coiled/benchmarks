@@ -34,13 +34,13 @@ class ChartSpec(NamedTuple):
 
 
 SPECS = [
-    ChartSpec("duration", "Wall Clock", "(s)", 1),
-    ChartSpec("average_memory", "Average Memory", "(GiB)", 2**30),
-    ChartSpec("peak_memory", "Peak Memory", "(GiB)", 2**30),
-    ChartSpec("scheduler_memory_max", "Peak Memory (S)", "(GiB)", 2**30),
+    ChartSpec("duration", "Wall Clock", "[s]", 1),
+    ChartSpec("average_memory", "Average Memory", "[GiB]", 2**30),
+    ChartSpec("peak_memory", "Peak Memory", "[GiB]", 2**30),
+    ChartSpec("scheduler_memory_max", "Peak Memory (S)", "[GiB]", 2**30),
     ChartSpec("scheduler_cpu_avg", "Avg CPU (S)", "", 1),
-    ChartSpec("worker_max_tick", "Max Tick (W)", "", 1),
-    ChartSpec("scheduler_max_tick", "Max Tick (S)", "", 1),
+    ChartSpec("worker_max_tick", "Max Tick (W)", "[ms]", 1),
+    ChartSpec("scheduler_max_tick", "Max Tick (S)", "[ms]", 1),
 ]
 OLD_PROMETHEUS_DATASOURCE = "AWS Prometheus - Sandbox (us east 2)"
 
