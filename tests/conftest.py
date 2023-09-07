@@ -462,11 +462,9 @@ def benchmark_all(
     def _benchmark_all(client):
         with benchmark_memory(client), benchmark_task_durations(
             client
-        ), get_cluster_info(
-            client.cluster
-        ), benchmark_time, benchmark_coiled_prometheus(
+        ), get_cluster_info(client.cluster), benchmark_coiled_prometheus(
             client
-        ):
+        ), benchmark_time:
             yield
 
     yield _benchmark_all
