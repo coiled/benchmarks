@@ -37,10 +37,10 @@ SPECS = [
     ChartSpec("duration", "Wall Clock", "(s)", 1),
     ChartSpec("average_memory", "Average Memory", "(GiB)", 2**30),
     ChartSpec("peak_memory", "Peak Memory", "(GiB)", 2**30),
-    ChartSpec("scheduler_memory_max", "Scheduler peak Memory", "(GiB)", 2**30),
-    ChartSpec("scheduler_cpu_avg", "Scheduler Avg CPU rate", "", 1),
-    ChartSpec("worker_max_tick", "Worker max EventLoop tick", "", 1),
-    ChartSpec("scheduler_max_tick", "Scheduler max EventLoop tick", "", 1),
+    ChartSpec("scheduler_memory_max", "Peak Memory (S)", "(GiB)", 2**30),
+    ChartSpec("scheduler_cpu_avg", "Avg CPU (S)", "", 1),
+    ChartSpec("worker_max_tick", "Max Tick (W)", "", 1),
+    ChartSpec("scheduler_max_tick", "Max Tick (S)", "", 1),
 ]
 OLD_PROMETHEUS_DATASOURCE = "AWS Prometheus - Sandbox (us east 2)"
 
