@@ -427,6 +427,7 @@ def get_cluster_info(test_run_benchmark):
 def benchmark_all(
     benchmark_memory,
     benchmark_task_durations,
+    benchmark_coiled_prometheus,
     get_cluster_info,
     benchmark_time,
     benchmark_coiled_prometheus,
