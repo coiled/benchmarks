@@ -309,7 +309,7 @@ def benchmark_coiled_prometheus(test_run_benchmark):
                 end_ts=end,
             )
             test_run_benchmark.scheduler_max_tick = cluster.get_aggregated_metric(
-                query="worker_max_tick|pct80",
+                query="scheduler_max_tick|pct80",
                 over_time="max",
                 start_ts=start,
                 end_ts=end,
