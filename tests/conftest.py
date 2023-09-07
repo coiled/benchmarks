@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import logging
+import math
 import os
 import pathlib
 import pickle
@@ -284,9 +285,9 @@ def benchmark_coiled_prometheus(test_run_benchmark):
         if not test_run_benchmark:
             yield
         else:
-            start = time.time()
+            start = math.floor(time.time())
             yield
-            end = time.time()
+            end = math.ceil(time.time())
             cluster = client.cluster
             test_run_benchmark.scheduler_memory_max = cluster.get_aggregated_metric(
                 query="(host_memory_total-host_memory_available)&scheduler",
