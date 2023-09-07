@@ -262,6 +262,62 @@ def benchmark_time(test_run_benchmark):
 
 
 @pytest.fixture(scope="function")
+def benchmark_coiled_prometheus(test_run_benchmark):
+    """Benchmark the coiled prometheus metrics of executing some code.
+
+    Yields
+    ------
+    Context manager that records the coiled prometheus metrics of executing
+    the ``with`` statement if run as part of a benchmark, or does nothing otherwise.
+
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(benchmark_coiled_prometheus):
+            with benchmark_coiled_prometheus:
+                do_something()
+    """
+
+    @contextlib.contextmanager
+    def _benchmark_coiled_prometheus(client):
+        if not test_run_benchmark:
+            yield
+        else:
+            start = time.time()
+            yield
+            end = time.time()
+            cluster = client.cluster
+            test_run_benchmark.scheduler_memory_max = cluster.get_aggregated_metric(
+                query="(host_memory_total-host_memory_available)&scheduler",
+                over_time="max",
+                start_ts=start,
+                end_ts=end,
+            )
+            test_run_benchmark.scheduler_cpu_avg = cluster.get_aggregated_metric(
+                query="cpu&scheduler",
+                over_time="avg",
+                start_ts=start,
+                end_ts=end,
+            )
+            # TODO: Do we want to have plain max or 80th percentile?
+            test_run_benchmark.worker_max_tick = cluster.get_aggregated_metric(
+                query="worker_max_tick|pct80",
+                over_time="max",
+                start_ts=start,
+                end_ts=end,
+            )
+            test_run_benchmark.scheduler_max_tick = cluster.get_aggregated_metric(
+                query="worker_max_tick|pct80",
+                over_time="max",
+                start_ts=start,
+                end_ts=end,
+            )
+
+    return _benchmark_coiled_prometheus
+
+
+@pytest.fixture(scope="function")
 def benchmark_memory(test_run_benchmark):
     """Benchmark the memory usage of executing some code.
 
@@ -373,6 +429,7 @@ def benchmark_all(
     benchmark_task_durations,
     get_cluster_info,
     benchmark_time,
+    benchmark_coiled_prometheus,
 ):
     """Benchmark all available metrics and extracts cluster information
 
@@ -401,11 +458,12 @@ def benchmark_all(
 
     @contextlib.contextmanager
     def _benchmark_all(client):
-        with (
-            benchmark_memory(client),
-            benchmark_task_durations(client),
-            get_cluster_info(client.cluster),
-            benchmark_time,
+        with benchmark_memory(client), benchmark_task_durations(
+            client
+        ), get_cluster_info(
+            client.cluster
+        ), benchmark_time, benchmark_coiled_prometheus(
+            client
         ):
             yield
 

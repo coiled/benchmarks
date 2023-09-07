@@ -45,6 +45,14 @@ class TestRun(Base):
     serializing_time = Column(Float, nullable=True)
     transfer_time = Column(Float, nullable=True)
 
+    # Scheduler
+    scheduler_cpu_avg = Column(Float, nullable=True)
+    scheduler_memory_max = Column(Float, nullable=True)
+
+    # Event Loop
+    worker_max_tick = Column(Float, nullable=True)
+    scheduler_max_tick = Column(Float, nullable=True)
+
     # Cluster name/id/details_url
     cluster_name = Column(String, nullable=True)
     cluster_id = Column(Integer, nullable=True)
