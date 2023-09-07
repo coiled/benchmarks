@@ -295,7 +295,7 @@ def benchmark_coiled_prometheus(test_run_benchmark):
                 end_ts=end,
             )
             test_run_benchmark.scheduler_cpu_avg = cluster.get_aggregated_metric(
-                query="cpu&scheduler",
+                query="cpu_rate&scheduler",
                 over_time="avg",
                 start_ts=start,
                 end_ts=end,
