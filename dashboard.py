@@ -442,6 +442,7 @@ def make_timeseries_html_report(
         df_by_test = df[(df.runtime == runtime) & (df.category == category)].groupby(
             "sourcename"
         )
+        df_by_test = df_by_test.fillna("")
         panes = [
             make_test_report(
                 df_by_test.get_group(sourcename),
