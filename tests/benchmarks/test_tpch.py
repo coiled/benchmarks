@@ -110,7 +110,22 @@ def test_query_2(client):
             "s_phone",
             "s_comment",
         ]
-    ].persist().sort_values("s_acctbal", ascending=False).head(100)
+    ].persist().sort_values(
+        by=[
+            "s_acctbal",
+            "n_name",
+            "s_name",
+            "p_partkey",
+        ],
+        ascending=[
+            False,
+            True,
+            True,
+            True,
+        ],
+    ).head(
+        100
+    )
 
 
 @pytest.mark.client("tpch")
