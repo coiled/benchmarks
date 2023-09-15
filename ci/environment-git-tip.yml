@@ -4,5 +4,5 @@ channels:
 dependencies:
   - pip:
     - git+https://github.com/dask/dask
-    - git+https://github.com/dask/distributed
+    - git+https://github.com/fjetter/distributed@all_comm_for_register_worker_plugin
     - git+https://github.com/dask/zict
