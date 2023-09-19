@@ -533,13 +533,13 @@ def tpch_client(
         with Client(cluster) as client:
             client.wait_for_workers(cluster_kwargs["tpch"]["n_workers"])
 
-        with upload_cluster_dump(client):
-            log_on_scheduler(client, "Finished client setup of %s", test_label)
+            with upload_cluster_dump(client):
+                log_on_scheduler(client, "Finished client setup of %s", test_label)
 
-            with benchmark_all(client):
-                yield client
+                with benchmark_all(client):
+                    yield client
 
-            log_on_scheduler(client, "Starting client teardown of %s", test_label)
+                log_on_scheduler(client, "Starting client teardown of %s", test_label)
 
         client.restart()
         client.run(lambda: None)
