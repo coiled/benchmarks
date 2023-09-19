@@ -8,7 +8,7 @@ except Exception:
 
 DATASETS = {
     "scale 100": "s3://coiled-runtime-ci/tpch_scale_100/",
-    "scale 1000": "s3://coiled-runtime-ci/tpch_scale_1000/",
+    "scale 1000": "s3://coiled-runtime-ci/tpch-scale-1000/",
 }
 
 enabled_dataset = os.getenv("TPCH_SCALE")
@@ -16,7 +16,7 @@ if enabled_dataset is not None:
     if enabled_dataset not in DATASETS:
         raise ValueError("Unknown tpch dataset: ", enabled_dataset)
 else:
-    enabled_dataset = "scale 1000"
+    enabled_dataset = "scale 100"
 
 
 def read_data(filename):
