@@ -46,4 +46,4 @@ dependencies:
       # sync'ed tags!)
       # Read README.md for troubleshooting.
       - git+https://github.com/dask/dask
-      - git+https://github.com/phofl/distributed@annotations
+      - git+https://github.com/dask/distributed
