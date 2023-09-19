@@ -515,6 +515,7 @@ def small_client(
 @pytest.fixture
 def tpch_client(
     request,
+    dask_env_variables,
     testrun_uid,
     cluster_kwargs,
     upload_cluster_dump,
