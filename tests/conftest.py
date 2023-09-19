@@ -541,8 +541,8 @@ def tpch_client(
 
                 log_on_scheduler(client, "Starting client teardown of %s", test_label)
 
-        client.restart()
-        client.run(lambda: None)
+            client.restart()
+            client.run(lambda: None)
 
 
 @pytest.fixture
