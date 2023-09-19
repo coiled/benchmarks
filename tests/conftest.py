@@ -512,9 +512,25 @@ def small_client(
         client.run(lambda: None)
 
 
+@pytest.fixture(scope="module")
+def tpch_cluster(request, dask_env_variables, cluster_kwargs, github_cluster_tags):
+    module = os.path.basename(request.fspath).split(".")[0]
+    module = module.replace("test_", "")
+    kwargs = dict(
+        name=f"{module}-{uuid.uuid4().hex[:8]}",
+        environ=dask_env_variables,
+        tags=github_cluster_tags,
+        **cluster_kwargs["tpch"],
+    )
+    dump_cluster_kwargs(kwargs, f"tpch.{module}")
+    with Cluster(**kwargs) as cluster:
+        yield cluster
+
+
 @pytest.fixture
 def tpch_client(
     request,
+    tpch_cluster,
     dask_env_variables,
     testrun_uid,
     cluster_kwargs,
@@ -524,25 +540,19 @@ def tpch_client(
 ):
     test_label = f"{request.node.name}, session_id={testrun_uid}"
 
-    with Cluster(
-        f"tpch-{uuid.uuid4().hex[:8]}",
-        environ=dask_env_variables,
-        tags=github_cluster_tags,
-        **cluster_kwargs["tpch"],
-    ) as cluster:
-        with Client(cluster) as client:
-            client.wait_for_workers(cluster_kwargs["tpch"]["n_workers"])
+    with Client(tpch_cluster) as client:
+        client.wait_for_workers(cluster_kwargs["tpch"]["n_workers"])
 
-            with upload_cluster_dump(client):
-                log_on_scheduler(client, "Finished client setup of %s", test_label)
+        with upload_cluster_dump(client):
+            log_on_scheduler(client, "Finished client setup of %s", test_label)
 
-                with benchmark_all(client):
-                    yield client
+            with benchmark_all(client):
+                yield client
 
-                log_on_scheduler(client, "Starting client teardown of %s", test_label)
+            log_on_scheduler(client, "Starting client teardown of %s", test_label)
 
-            client.restart()
-            client.run(lambda: None)
+        client.restart()
+        client.run(lambda: None)
 
 
 @pytest.fixture
