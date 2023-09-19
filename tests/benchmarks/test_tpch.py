@@ -2,10 +2,10 @@ import os
 from datetime import datetime
 
 import dask.dataframe as dd
-import pytest
 
 DATASETS = {
     "scale 100": "s3://coiled-runtime-ci/tpch_scale_100/",
+    "scale 1000": "s3://coiled-runtime-ci/tpch_scale_1000/",
 }
 
 enabled_dataset = os.getenv("TPCH_SCALE")
@@ -21,8 +21,7 @@ def read_data(filename):
     return dd.read_parquet(path, engine="pyarrow")
 
 
-@pytest.mark.client("tpch")
-def test_query_1(client):
+def test_query_1(tpch_client):
     VAR1 = datetime(1998, 9, 2)
     lineitem_ds = read_data("lineitem")
 
@@ -59,8 +58,7 @@ def test_query_1(client):
     total.reset_index().compute().sort_values(["l_returnflag", "l_linestatus"])
 
 
-@pytest.mark.client("tpch")
-def test_query_2(client):
+def test_query_2(tpch_client):
     var1 = 15
     var2 = "BRASS"
     var3 = "EUROPE"
@@ -128,8 +126,7 @@ def test_query_2(client):
     )
 
 
-@pytest.mark.client("tpch")
-def test_query_3(client):
+def test_query_3(tpch_client):
     var1 = datetime.strptime("1995-03-15", "%Y-%m-%d")
     var2 = "BUILDING"
 
@@ -154,8 +151,7 @@ def test_query_3(client):
     ]
 
 
-@pytest.mark.client("tpch")
-def test_query_4(client):
+def test_query_4(tpch_client):
     date1 = datetime.strptime("1993-10-01", "%Y-%m-%d")
     date2 = datetime.strptime("1993-07-01", "%Y-%m-%d")
 
@@ -179,8 +175,7 @@ def test_query_4(client):
     result_df.rename({"o_orderkey": "order_count"}, axis=1)
 
 
-@pytest.mark.client("tpch")
-def test_query_5(client):
+def test_query_5(tpch_client):
     date1 = datetime.strptime("1994-01-01", "%Y-%m-%d")
     date2 = datetime.strptime("1995-01-01", "%Y-%m-%d")
 
@@ -209,8 +204,7 @@ def test_query_5(client):
     gb.compute().reset_index().sort_values("revenue", ascending=False)
 
 
-@pytest.mark.client("tpch")
-def test_query_6(client):
+def test_query_6(tpch_client):
     date1 = datetime.strptime("1994-01-01", "%Y-%m-%d")
     date2 = datetime.strptime("1995-01-01", "%Y-%m-%d")
     var3 = 24
@@ -229,8 +223,7 @@ def test_query_6(client):
     (flineitem.l_extendedprice * flineitem.l_discount).sum().compute()
 
 
-@pytest.mark.client("tpch")
-def test_query_7(client):
+def test_query_7(tpch_client):
     var1 = datetime.strptime("1995-01-01", "%Y-%m-%d")
     var2 = datetime.strptime("1997-01-01", "%Y-%m-%d")
 
