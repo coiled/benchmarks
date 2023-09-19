@@ -520,6 +520,7 @@ def tpch_client(
     cluster_kwargs,
     upload_cluster_dump,
     benchmark_all,
+    github_cluster_tags,
 ):
     test_label = f"{request.node.name}, session_id={testrun_uid}"
 
