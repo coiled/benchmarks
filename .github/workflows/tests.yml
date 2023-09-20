@@ -26,7 +26,7 @@ jobs:
   tests:
     name: ${{ matrix.pytest_args }} ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 240
+    timeout-minutes: 120
     strategy:
       fail-fast: false
       matrix:
