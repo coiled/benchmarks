@@ -57,7 +57,8 @@ def test_read_spark_generated_data(parquet_client):
         engine="pyarrow",
         index="sample_id",
     )
-    ddf.groupby(ddf.index).first().compute()
+    coll = ddf.groupby(ddf.index).first()
+    wait(coll, parquet_client, 500)
 
 
 @run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
@@ -72,8 +73,8 @@ def test_read_hive_partitioned_data(parquet_client):
         "s3://coiled-runtime-ci/ookla-open-data/type=fixed/**.parquet",
         engine="pyarrow",
     )
-
-    ddf.groupby(["year", "quarter"]).first().compute()
+    coll = ddf.groupby(["year", "quarter"]).first()
+    wait(coll, parquet_client, 100)
 
 
 @run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
