@@ -232,7 +232,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Report failures
-        uses: actions/github-script@v6
+        uses: actions/github-script@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
