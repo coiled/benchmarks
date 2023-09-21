@@ -12,9 +12,17 @@ import fsspec
 import pandas
 import pytest
 from coiled import Cluster
+from packaging.version import Version
 
 from ..conftest import dump_cluster_kwargs
 from ..utils_test import run_up_to_nthreads, wait
+
+try:
+    import pyarrow
+
+    HAS_PYARROW12 = Version(pyarrow.__version__) >= Version("12.0.0")
+except ImportError:
+    HAS_PYARROW12 = False
 
 
 @pytest.fixture(scope="module")
@@ -42,6 +50,10 @@ def parquet_client(parquet_cluster, cluster_kwargs, upload_cluster_dump, benchma
             yield client
 
 
+@pytest.mark.xfail(
+    HAS_PYARROW12,
+    reason="50x slower than PyArrow 11; https://github.com/coiled/benchmarks/issues/998",
+)
 @run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
 def test_read_spark_generated_data(parquet_client):
     """
