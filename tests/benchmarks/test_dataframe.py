@@ -88,7 +88,7 @@ def test_dataframe_cow_chain(small_client):
     result = (
         df.rename(columns={1: 1000})
         .replace("x", "xxx")
-        .fillna(100)
+        .fillna({i: 100 for i in range(10, 70)})
         .astype({50: "float"})
         .loc[:, slice(2, 100)]
     )
