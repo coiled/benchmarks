@@ -61,6 +61,7 @@ tpch:
   n_workers: 50
   worker_vm_types: [m6i.2xlarge] # 4 CPU, 16 GiB (preferred default instance)
   scheduler_vm_types: [r6i.xlarge] # 4 CPU, 32 GiB (graphs can get large)
+  spot_policy: "on-demand"
   backend_options:
     on_demand: true
 
