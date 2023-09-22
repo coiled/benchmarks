@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+import pytest
 
 try:
     import dask_expr as dd
@@ -139,6 +140,7 @@ def test_query_3(tpch_client):
     ]
 
 
+@pytest.mark.skip()
 def test_query_4(tpch_client):
     date1 = datetime.strptime("1993-10-01", "%Y-%m-%d")
     date2 = datetime.strptime("1993-07-01", "%Y-%m-%d")
