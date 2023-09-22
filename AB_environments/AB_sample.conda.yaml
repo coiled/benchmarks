@@ -14,44 +14,44 @@ dependencies:
   # Copy-paste from AB_baseline.conda.yaml
   - pip
   - coiled >=0.2.54
-  - numpy ==1.23.5
-  - pandas ==2.0.3
+  - numpy ==1.24.4
+  - pandas ==2.0.3  # Pinned by snowflake-connector-python
   - dask ==2023.9.2
   - distributed ==2023.9.2
-  - dask-labextension ==6.1.0
+  - dask-labextension ==7.0.0
   - dask-ml ==2023.3.24
   - dask-snowflake ==0.2.0
-  - fsspec ==2023.5.0
-  - s3fs ==2023.5.0
-  - gcsfs ==2023.5.0
-  - pyarrow ==12.0.0
-  - jupyterlab ==3.6.2
+  - fsspec ==2023.9.1
+  - s3fs ==2023.9.1
+  - gcsfs ==2023.9.1
+  - pyarrow ==13.0.0
+  - jupyterlab ==4.0.6
   - lz4 ==4.3.2
   - ipywidgets ==8.0.4  # FIXME https://github.com/dask/distributed/issues/7688
-  - numba ==0.57.0
-  - scikit-learn ==1.2.2
+  - numba ==0.57.1
+  - scikit-learn ==1.3.1
   - ipycytoscape ==1.3.3
-  - click ==8.1.3
-  - xarray ==2023.4.2
-  - zarr ==2.14.2
+  - click ==8.1.7
+  - xarray ==2023.8.0
+  - zarr ==2.16.1
   - cftime ==1.6.2
   - msgpack-python ==1.0.5
   - cloudpickle ==2.2.1
-  - tornado ==6.2
+  - tornado ==6.3.3
   - toolz ==0.12.0
   - zict ==3.0.0
-  - xgboost ==1.7.4
+  - xgboost ==1.7.6
   - optuna ==3.3.0
-  - scipy ==1.10.1
-  - snowflake-connector-python ==3.0.4
-  - snowflake-sqlalchemy ==1.4.7
-  - sqlalchemy ==1.4.39  # Pinned by snowflake-sqlalchemy
+  - scipy ==1.11.2
+  - snowflake-connector-python ==3.2.0
+  - snowflake-sqlalchemy ==1.5.0
+  - sqlalchemy ==1.4.49  # Pinned by snowflake-sqlalchemy
   - pynvml ==11.5.0
-  - bokeh ==3.1.0
+  - bokeh ==3.2.2
   - gilknocker ==0.4.1
   - openssl >1.1.0g
-  - pyopenssl ==22.1.0  # Pinned by snowflake-connector-python
-  - cryptography ==38.0.4  # Pinned by snowflake-connector-python
+  - pyopenssl ==23.2.0
+  - cryptography ==41.0.4
   # End copy-paste
 
   - pip:
