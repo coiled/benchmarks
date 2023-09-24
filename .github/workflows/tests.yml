@@ -33,6 +33,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.9"]
         pytest_args: [tests]
+        extra-env: [""]
         include:
           # Run stability tests on the lowest and highest versions of Python only
           # These are temporarily redundant with the current global python-version
@@ -55,6 +56,10 @@ jobs:
           - pytest_args: tests/stability
             python-version: "3.9"
             os: macos-latest
+          - pytest_args: tests/workflows/test_snowflake.py
+            python-version: "3.9"
+            os: ubuntu-latest
+            extra-env: ci/environment-snowflake.yml
 
     steps:
       - name: Checkout
@@ -69,6 +74,10 @@ jobs:
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
 
+      - name: Add extra packages to environment
+        if: ${{ matrix.extra-env != '' }}
+        run: mamba env update --file ${{ matrix.extra-env }}
+
       - name: Upgrade dask to git tip
         run: mamba env update --file ci/environment-git-tip.yml
 
@@ -82,7 +91,6 @@ jobs:
           mamba env export | grep -E -v '^prefix:.*$'
 
       - name: Determine if workflows should be run
-        id: workflows
         # Run workflows on PRs with `workflows` label and nightly cron job
         if: |
           github.event_name == 'schedule'
@@ -94,7 +102,6 @@ jobs:
           echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
 
       - name: Run Coiled Runtime Tests
-        id: test
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
