@@ -118,7 +118,7 @@ jobs:
         run: bash ci/scripts/run_tests.sh -n 4 --dist loadscope ${{ env.EXTRA_OPTIONS }} ${{ matrix.pytest_args }}
 
       - name: Dump coiled.Cluster kwargs
-        run: cat cluster_kwargs.merged.yaml
+        run: cat cluster_kwargs.merged.yaml || true
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
