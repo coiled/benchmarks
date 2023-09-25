@@ -33,6 +33,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.9"]
         pytest_args: [tests]
+        extra-env: [""]
         include:
           # Run stability tests on the lowest and highest versions of Python only
           # These are temporarily redundant with the current global python-version
@@ -55,10 +56,14 @@ jobs:
           - pytest_args: tests/stability
             python-version: "3.9"
             os: macos-latest
+          - pytest_args: tests/workflows/test_snowflake.py
+            python-version: "3.9"
+            os: ubuntu-latest
+            extra-env: ci/environment-snowflake.yml
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
@@ -68,6 +73,10 @@ jobs:
           condarc-file: ci/condarc
           python-version: ${{ matrix.python-version }}
           environment-file: ci/environment.yml
+
+      - name: Add extra packages to environment
+        if: ${{ matrix.extra-env != '' }}
+        run: mamba env update --file ${{ matrix.extra-env }}
 
       - name: Upgrade dask to git tip
         run: mamba env update --file ci/environment-git-tip.yml
@@ -82,7 +91,6 @@ jobs:
           mamba env export | grep -E -v '^prefix:.*$'
 
       - name: Determine if workflows should be run
-        id: workflows
         # Run workflows on PRs with `workflows` label and nightly cron job
         if: |
           github.event_name == 'schedule'
@@ -94,7 +102,6 @@ jobs:
           echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
 
       - name: Run Coiled Runtime Tests
-        id: test
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
@@ -111,7 +118,7 @@ jobs:
         run: bash ci/scripts/run_tests.sh -n 4 --dist loadscope ${{ env.EXTRA_OPTIONS }} ${{ matrix.pytest_args }}
 
       - name: Dump coiled.Cluster kwargs
-        run: cat cluster_kwargs.merged.yaml
+        run: cat cluster_kwargs.merged.yaml || true
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v3
@@ -135,7 +142,7 @@ jobs:
       cancel-in-progress: false
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Install Python
         uses: actions/setup-python@v4
@@ -189,7 +196,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - uses: actions/download-artifact@v3
         with:
@@ -230,7 +237,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Report failures
         uses: actions/github-script@v3
         with:
@@ -254,7 +261,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download tests database
         uses: actions/download-artifact@v3
