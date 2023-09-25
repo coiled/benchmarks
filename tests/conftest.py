@@ -70,6 +70,7 @@ dask.config.set(
     {
         "coiled.account": "dask-benchmarks",
         "distributed.admin.system-monitor.gil.enabled": True,
+        "coiled.use_aws_creds_endpoint": True,
     }
 )
 
