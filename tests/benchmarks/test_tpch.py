@@ -108,7 +108,7 @@ def test_query_2(tpch_client):
             "s_phone",
             "s_comment",
         ]
-    ].persist().sort_values(
+    ].compute().sort_values(
         by=[
             "s_acctbal",
             "n_name",
