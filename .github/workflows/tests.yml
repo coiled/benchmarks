@@ -84,6 +84,12 @@ jobs:
       - name: Add test dependencies
         run: mamba env update --file ci/environment-test.yml
 
+      - name: Reconfigure pytest-timeout
+        shell: bash -l {0}
+        # No SIGALRM available on Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: sed -i.bak 's/timeout_method = signal/timeout_method = thread/' setup.cfg
+
       - name: Dump environment
         run: |
           # For debugging

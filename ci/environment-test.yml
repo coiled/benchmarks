@@ -7,6 +7,7 @@ dependencies:
   - jinja2
   - packaging
   - pytest
+  - pytest-timeout
   - pytest-xdist
   - pyyaml
   - alembic
