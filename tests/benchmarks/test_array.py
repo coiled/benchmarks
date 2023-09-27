@@ -282,3 +282,31 @@ def test_rechunk_out_of_memory(small_client, configure_rechunking):
     rng = da.random.default_rng()
     x = rng.random((100000, 100000))
     x.rechunk((50000, 20)).rechunk((20, 50000)).sum().compute()
+
+
+@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
+@pytest.mark.parametrize("backend", ["dataframe", "array"])
+def test_xarray_reduction(small_client, backend):
+    # See https://github.com/dask/dask/issues/10384
+    xr = pytest.importorskip("xarray")
+    size = 4000
+    ds = xr.Dataset(
+        dict(
+            anom_u=(
+                ["time", "face", "j", "i"],
+                da.random.random((size, 1, 987, 1920), chunks=(10, 1, -1, -1)),
+            ),
+            anom_v=(
+                ["time", "face", "j", "i"],
+                da.random.random((size, 1, 987, 1920), chunks=(10, 1, -1, -1)),
+            ),
+        )
+    )
+
+    quad = ds**2
+    quad["uv"] = ds.anom_u * ds.anom_v
+    mean = quad.mean("time")
+    if backend == "dataframe":
+        mean = mean.to_dask_dataframe()
+
+    wait(mean, small_client, 10 * 60)
