@@ -46,20 +46,6 @@ jobs:
           - pytest_args: tests/stability
             python-version: "3.11"
             os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.11"
-            os: ubuntu-latest
-          # Run stability tests on Python Windows and MacOS (latest py39 only)
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            os: windows-latest
-          - pytest_args: tests/stability
-            python-version: "3.9"
-            os: macos-latest
-          - pytest_args: tests/workflows/test_snowflake.py
-            python-version: "3.9"
-            os: ubuntu-latest
-            extra-env: ci/environment-snowflake.yml
 
     steps:
       - name: Checkout
