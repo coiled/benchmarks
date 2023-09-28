@@ -57,6 +57,10 @@ uber_lyft_large:
   n_workers: 50
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
+tpch_pyspark:
+    n_workers: 8
+    worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+
 # For tests/workflows/test_pytorch_optuna.py
 pytorch_optuna:
   n_workers: 10

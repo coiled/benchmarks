@@ -1,7 +1,10 @@
 channels:
   - conda-forge
 dependencies:
+  - conda
   - python >=3.9
+  - pyspark ==3.4.1
+  - openjdk ==20.0.2
   - pip
   - coiled >=0.2.54
   - numpy ==1.24.4

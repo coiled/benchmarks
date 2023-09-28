@@ -512,6 +512,48 @@ def small_client(
         client.run(lambda: None)
 
 
+@pytest.fixture(scope="module")
+def tpch_pyspark_cluster(
+    request, dask_env_variables, cluster_kwargs, github_cluster_tags
+):
+    module = os.path.basename(request.fspath).split(".")[0]
+    module = module.replace("test_", "")
+    kwargs = dict(
+        name=f"{module}-{uuid.uuid4().hex[:8]}",
+        environ=dask_env_variables,
+        tags=github_cluster_tags,
+        **cluster_kwargs["tpch_pyspark"],
+    )
+    dump_cluster_kwargs(kwargs, f"tpch_pyspark.{module}")
+    with Cluster(**kwargs) as cluster:
+        yield cluster
+
+
+@pytest.fixture
+def tpch_pyspark_client(
+    request,
+    testrun_uid,
+    tpch_pyspark_cluster,
+    cluster_kwargs,
+    upload_cluster_dump,
+    benchmark_all,
+):
+    from .benchmarks.test_tpch_pyspark import SparkMaster, SparkWorker
+
+    test_label = f"{request.node.name}, session_id={testrun_uid}"
+
+    with Client(tpch_pyspark_cluster) as client:
+        client.wait_for_workers(cluster_kwargs["tpch_pyspark"]["n_workers"])
+        client.register_plugin(SparkMaster(), name="spark-master")
+        client.register_plugin(SparkWorker())
+
+        with upload_cluster_dump(client):
+            log_on_scheduler(client, f"Finished client setup of {test_label}")
+            with benchmark_all(client):
+                yield client
+            log_on_scheduler(client, f"Starting client teardown of {test_label}")
+
+
 @pytest.fixture
 def client(
     request,
