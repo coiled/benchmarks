@@ -120,7 +120,7 @@ jobs:
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: ${{ matrix.os }}-py${{ matrix.python-version }}.db
           BENCHMARK: true
-          CLUSTER_DUMP: always
+          CLUSTER_DUMP: false  # FIXME https://github.com/coiled/benchmarks/issues/1000
         run: bash ci/scripts/run_tests.sh -n 4 --dist loadscope ${{ env.EXTRA_OPTIONS }} ${{ matrix.pytest_args }}
 
       - name: Dump coiled.Cluster kwargs
