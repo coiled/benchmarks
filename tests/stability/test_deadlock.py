@@ -19,6 +19,11 @@ def test_repeated_merge_spill(
     dask_env_variables,
     github_cluster_tags,
 ):
+    from boto3.session import Session
+
+    print(f"boto default region_name is {Session().region_name}")
+    logging.error(f"boto default region_name is {Session().region_name}")
+
     with Cluster(
         name=f"test_repeated_merge_spill-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
@@ -26,6 +31,13 @@ def test_repeated_merge_spill(
         **cluster_kwargs["test_repeated_merge_spill"],
     ) as cluster:
         with Client(cluster) as client:
+
+            import os
+            print("cluster environ is:")
+            print(client.run(lambda: os.environ))
+            logging.error("cluster environ is:")
+            logging.error(str(client.run(lambda: os.environ)))
+
             with upload_cluster_dump(client), benchmark_all(client):
                 ddf = dask.datasets.timeseries(
                     "2020",
