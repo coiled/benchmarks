@@ -6,6 +6,7 @@ import pytest
 from coiled import Cluster
 from distributed import Client, wait
 from packaging.version import Version
+import logging
 
 
 @pytest.mark.skipif(
@@ -25,16 +26,17 @@ def test_repeated_merge_spill(
     logging.error(f"boto default region_name is {Session().region_name}")
 
     with Cluster(
-        name=f"test_repeated_merge_spill-{uuid.uuid4().hex[:8]}",
+        name=f"david-david-david-test_repeated_merge_spill-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
         tags=github_cluster_tags,
         **cluster_kwargs["test_repeated_merge_spill"],
     ) as cluster:
         with Client(cluster) as client:
-
+            import time
             import os
             print("cluster environ is:")
             print(client.run(lambda: os.environ))
+            assert False
             logging.error("cluster environ is:")
             logging.error(str(client.run(lambda: os.environ)))
 
