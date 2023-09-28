@@ -97,7 +97,7 @@ jobs:
           AB_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: ${{ matrix.runtime-version }}-${{ matrix.repeat }}.db
           BENCHMARK: true
-          CLUSTER_DUMP: false  # https://github.com/coiled/benchmarks/issues/1000
+          CLUSTER_DUMP: always
           CLUSTER_KWARGS: AB_environments/${{ matrix.runtime-version }}.cluster.yaml
           H2O_DATASETS: ${{ matrix.h2o_datasets }}
         run: bash ci/scripts/run_tests.sh ${{ matrix.pytest_args }}
