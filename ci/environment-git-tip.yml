@@ -4,5 +4,5 @@ channels:
 dependencies:
   - pip:
     - git+https://github.com/dask/dask
-    - git+https://github.com/dask/distributed
+    - git+https://github.com/crusaderky/distributed@ff696966d664c9258134894d472bdc703f1fc4ba
     - git+https://github.com/dask/zict
