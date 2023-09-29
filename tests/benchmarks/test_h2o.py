@@ -37,11 +37,13 @@ else:
     }
 
 
-@pytest.fixture(params=list(DATASETS))
-def ddf(request, small_client):
-    if request.param not in enabled_datasets:
-        raise pytest.skip("Disabled by default config or H2O_DATASETS env variable")
+@pytest.mark.fixture(autouse=True)
+def client(small_client):
+    yield small_client
 
+
+@pytest.fixture(params=list(enabled_datasets), scope="module")
+def ddf(request):
     n_gib = float(request.param.split(" GB ")[0])
     # 0.5 GB datasets are broken in 5~10 files
     # 5 GB -> 100 files
