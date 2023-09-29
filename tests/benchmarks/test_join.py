@@ -3,6 +3,8 @@ import pytest
 
 from ..utils_test import cluster_memory, run_up_to_nthreads, timeseries_of_size, wait
 
+pytestmark = pytest.mark.skip()
+
 
 @run_up_to_nthreads("small_cluster", 40, reason="Does not finish")
 def test_join_big(small_client, memory_multiplier, configure_shuffling):

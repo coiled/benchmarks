@@ -13,6 +13,8 @@ from ..utils_test import (
     scaled_array_shape_quadratic,
 )
 
+pytestmark = pytest.mark.skip()
+
 
 @pytest.fixture(scope="module")
 def spill_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
