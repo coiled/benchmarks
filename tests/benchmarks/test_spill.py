@@ -27,7 +27,7 @@ def spill_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
             },
         ),
         tags=github_cluster_tags,
-        **cluster_kwargs["spill_cluster"],
+        **cluster_kwargs["spill"],
     )
     dump_cluster_kwargs(kwargs, "spill")
     with Cluster(**kwargs) as cluster:
@@ -36,7 +36,7 @@ def spill_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
 
 @pytest.fixture
 def spill_client(spill_cluster, cluster_kwargs, upload_cluster_dump, benchmark_all):
-    n_workers = cluster_kwargs["spill_cluster"]["n_workers"]
+    n_workers = cluster_kwargs["spill"]["n_workers"]
     with Client(spill_cluster) as client:
         spill_cluster.scale(n_workers)
         client.wait_for_workers(n_workers)

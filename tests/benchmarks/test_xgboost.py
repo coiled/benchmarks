@@ -27,8 +27,9 @@ def taxi_zone_lookup():
     return df
 
 
-@run_up_to_nthreads("small_cluster", 200, reason="fixed size dataset")
-def test_preprocess(small_client, taxi_zone_lookup, read_parquet_with_pyarrow):
+@run_up_to_nthreads("small", 200, reason="fixed size dataset")
+@pytest.mark.client("small")
+def test_preprocess(client, taxi_zone_lookup, read_parquet_with_pyarrow):
     """A typical workflow that preprocesses crude data into a ML-friendly dataframe"""
     ############
     # Read input
@@ -139,11 +140,12 @@ def test_preprocess(small_client, taxi_zone_lookup, read_parquet_with_pyarrow):
     ########
     ddf = ddf.persist().repartition(partition_size="100MB")
     # At this point we would normally finish with to_parquet()
-    wait(ddf, small_client, timeout=600)
+    wait(ddf, client, timeout=600)
 
 
-@run_up_to_nthreads("small_cluster", 200, reason="fixed size dataset")
-def test_optuna_hpo(small_client):
+@run_up_to_nthreads("small", 200, reason="fixed size dataset")
+@pytest.mark.client("small")
+def test_optuna_hpo(client):
     xgb = pytest.importorskip("xgboost.dask")
     optuna = pytest.importorskip("optuna")
     mean_squared_error = pytest.importorskip("dask_ml.metrics").mean_squared_error
@@ -183,7 +185,7 @@ def test_optuna_hpo(small_client):
     y_test = test["trip_time"]
 
     # We will need to access these multiple times. Let's persist them.
-    x_test, y_test = small_client.persist([x_test, y_test])
+    x_test, y_test = client.persist([x_test, y_test])
 
     # Release no longer necessary objects on the cluster
     del ddf, train, test

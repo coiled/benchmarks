@@ -20,18 +20,18 @@ default:
     spot_on_demand_fallback: true
     multizone: true
 
-# For all tests using the small_client fixture
-small_cluster:
+# For all tests using the @pytest.mark.client("small") fixture
+small:
   n_workers: 10
   worker_vm_types: [m6i.large]  # 2CPU, 8GiB
 
 # For tests/benchmarks/test_parquet.py
-parquet_cluster:
+parquet:
   n_workers: 15
   worker_vm_types: [m5.xlarge]  # 4 CPU, 16 GiB
 
 # For tests/benchmarks/test_spill.py
-spill_cluster:
+spill:
   n_workers: 5
   worker_disk_size: 64
   worker_vm_types: [m6i.large]  # 2CPU, 8GiB
@@ -72,6 +72,12 @@ snowflake:
   n_workers: 20
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
+# For tests/workflows/test_from_csv_to_parquet.py
+from_csv_to_parquet:
+  n_workers: 10
+  worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB (preferred default instance)
+  backend_options:
+    region: "us-east-1"  # Same region as dataset
 
 # Specific tests
 test_work_stealing_on_scaling_up:
@@ -85,10 +91,3 @@ test_work_stealing_on_straggling_worker:
 test_repeated_merge_spill:
   n_workers: 20
   worker_vm_types: [m6i.large]
-
-# For tests/workflows/test_from_csv_to_parquet.py
-from_csv_to_parquet:
-  n_workers: 10
-  worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB (preferred default instance)
-  backend_options:
-    region: "us-east-1"  # Same region as dataset

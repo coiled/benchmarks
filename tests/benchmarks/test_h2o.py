@@ -38,7 +38,7 @@ else:
 
 
 @pytest.fixture(params=list(DATASETS))
-def ddf(request, small_client):
+def ddf(request, client):
     if request.param not in enabled_datasets:
         raise pytest.skip("Disabled by default config or H2O_DATASETS env variable")
 
@@ -49,7 +49,7 @@ def ddf(request, small_client):
     # 500 GB -> 10,000 files
     max_threads = max(20, int(n_gib * 20))
     run_up_to_nthreads(
-        "small_cluster", max_threads, reason="fixed data size", as_decorator=False
+        "small", max_threads, reason="fixed data size", as_decorator=False
     )
 
     uri = DATASETS[request.param]
@@ -74,11 +74,13 @@ def ddf(request, small_client):
         yield dd.read_parquet(uri, engine="pyarrow", storage_options={"anon": True})
 
 
+@pytest.mark.client("small")
 def test_q1(ddf):
     ddf = ddf[["id1", "v1"]]
     ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"}).compute()
 
 
+@pytest.mark.client("small")
 def test_q2(ddf):
     ddf = ddf[["id1", "id2", "v1"]]
     (
@@ -88,6 +90,7 @@ def test_q2(ddf):
     )
 
 
+@pytest.mark.client("small")
 def test_q3(ddf):
     ddf = ddf[["id3", "v1", "v3"]]
     (
@@ -97,6 +100,7 @@ def test_q3(ddf):
     )
 
 
+@pytest.mark.client("small")
 def test_q4(ddf):
     ddf = ddf[["id4", "v1", "v2", "v3"]]
     (
@@ -106,6 +110,7 @@ def test_q4(ddf):
     )
 
 
+@pytest.mark.client("small")
 def test_q5(ddf):
     ddf = ddf[["id6", "v1", "v2", "v3"]]
     (
@@ -117,6 +122,7 @@ def test_q5(ddf):
     )
 
 
+@pytest.mark.client("small")
 def test_q6(ddf, shuffle_method):
     # Median aggregation uses an explicitly-set shuffle
     ddf = ddf[["id4", "id5", "v3"]]
@@ -127,6 +133,7 @@ def test_q6(ddf, shuffle_method):
     )
 
 
+@pytest.mark.client("small")
 def test_q7(ddf):
     ddf = ddf[["id3", "v1", "v2"]]
     (
@@ -137,6 +144,7 @@ def test_q7(ddf):
     )
 
 
+@pytest.mark.client("small")
 def test_q8(ddf, configure_shuffling):
     # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
     ddf = ddf[["id6", "v1", "v2", "v3"]]
@@ -151,6 +159,7 @@ def test_q8(ddf, configure_shuffling):
     )
 
 
+@pytest.mark.client("small")
 def test_q9(ddf, configure_shuffling):
     # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
     ddf = ddf[["id2", "id4", "v1", "v2"]]

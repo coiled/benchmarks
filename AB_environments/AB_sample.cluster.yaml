@@ -9,6 +9,6 @@
 # Overrides ../cluster_kwargs.yaml.
 # Leave empty if you don't want to override anything.
 
-# small_cluster:
+# small:
 #   n_workers: 5
 #   worker_vm_types: [m6i.xlarge]  # 4CPU, 16GiB

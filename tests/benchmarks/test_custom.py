@@ -1,17 +1,17 @@
 import random
 import time
 
+import pytest
 from dask import delayed
 from dask.utils import parse_bytes
 
 from ..utils_test import wait
 
 
-def test_jobqueue(small_client):
+@pytest.mark.client("small")
+def test_jobqueue(client):
     # Just using dask to run lots of embarrassingly-parallel CPU-bound tasks as fast as possible
-    nthreads = sum(
-        w["nthreads"] for w in small_client.scheduler_info()["workers"].values()
-    )
+    nthreads = sum(w["nthreads"] for w in client.scheduler_info()["workers"].values())
     max_runtime = 120
     max_sleep = 3
     n_tasks = round(max_runtime / max_sleep * nthreads)
@@ -26,8 +26,4 @@ def test_jobqueue(small_client):
     tasks = [task(i) for i in range(n_tasks)]
     result = delayed(sum)(tasks)  # just so we have a single object
 
-    wait(
-        result,
-        small_client,
-        max_runtime * 1.15,
-    )
+    wait(result, client, max_runtime * 1.15)

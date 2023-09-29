@@ -152,6 +152,17 @@ def benchmark_db_session(benchmark_db_engine):
             yield session
 
 
+def clean_test_name(name: str) -> str:
+    """Clean up redundant parameters created by 'client' fixture"""
+    return (
+        name.replace("cluster0,client0", "")
+        .replace("[]", "")
+        .replace(",]", "]")
+        .replace("[,", "[")
+        .replace(",,", ",")
+    )
+
+
 @pytest.fixture(scope="function")
 def test_run_benchmark(benchmark_db_session, request, testrun_uid):
     """SQLAlchemy ORM object representing a given test run.
@@ -171,7 +182,7 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
     else:
         run = TestRun(
             session_id=testrun_uid,
-            name=request.node.name,
+            name=clean_test_name(request.node.name),
             originalname=request.node.originalname,
             path=str(request.node.path.relative_to(TEST_DIR)),
             dask_version=dask.__version__,
@@ -456,17 +467,25 @@ def cluster_kwargs():
 
 
 @pytest.fixture(scope="module")
-def small_cluster(request, dask_env_variables, cluster_kwargs, github_cluster_tags):
+def cluster(request, dask_env_variables, cluster_kwargs, github_cluster_tags):
+    name, upload_file, worker_plugin = request.param  # See _mark_cluster
     module = os.path.basename(request.fspath).split(".")[0]
     module = module.replace("test_", "")
     kwargs = dict(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
         tags=github_cluster_tags,
-        **cluster_kwargs["small_cluster"],
+        **cluster_kwargs[name],
     )
-    dump_cluster_kwargs(kwargs, f"small_cluster.{module}")
+    dump_cluster_kwargs(kwargs, f"{name}.{module}")
     with Cluster(**kwargs) as cluster:
+        if upload_file or worker_plugin:
+            with Client(cluster) as client:
+                if upload_file:
+                    client.upload_file(upload_file)
+                if worker_plugin:
+                    client.register_worker_plugin(worker_plugin)
+
         yield cluster
 
 
@@ -477,20 +496,27 @@ def log_on_scheduler(
 
 
 @pytest.fixture
-def small_client(
+def client(
     request,
     testrun_uid,
-    small_cluster,
+    cluster,
     cluster_kwargs,
     upload_cluster_dump,
     benchmark_all,
 ):
-    n_workers = cluster_kwargs["small_cluster"]["n_workers"]
-    test_label = f"{request.node.name}, session_id={testrun_uid}"
-    with Client(small_cluster) as client:
+    n_workers = cluster_kwargs[request.param]["n_workers"]
+    test_label = f"{clean_test_name(request.node.name)}, session_id={testrun_uid}"
+    with Client(cluster) as client:
         log_on_scheduler(client, "Starting client setup of %s", test_label)
         client.restart()
-        small_cluster.scale(n_workers)
+
+        # Run connects to all workers once and to ensure they're up before we do
+        # something else. restart() can trigger a race condition that kills workers
+        # See https://github.com/dask/distributed/issues/7312
+        # Can be removed after this issue is fixed.
+        client.run(lambda: None)
+
+        cluster.scale(n_workers)
         client.wait_for_workers(n_workers)
 
         with upload_cluster_dump(client):
@@ -506,52 +532,23 @@ def small_client(
             # benchmark_time, as it's beyond the scope of the test.
             log_on_scheduler(client, "Starting client teardown of %s", test_label)
 
-        client.restart()
-        # Run connects to all workers once and to ensure they're up before we do
-        # something else. With another call of restart when entering this
-        # fixture again, this can trigger a race condition that kills workers
-        # See https://github.com/dask/distributed/issues/7312 Can be removed
-        # after this issue is fixed.
-        client.run(lambda: None)
 
-
-@pytest.fixture
-def client(
-    request,
-    dask_env_variables,
-    cluster_kwargs,
-    github_cluster_tags,
-    upload_cluster_dump,
-    benchmark_all,
-):
-    name = request.param["name"]
-    with Cluster(
-        f"{name}-{uuid.uuid4().hex[:8]}",
-        environ=dask_env_variables,
-        tags=github_cluster_tags,
-        **cluster_kwargs[name],
-    ) as cluster:
-        with Client(cluster) as client:
-            if request.param["upload_file"] is not None:
-                client.upload_file(request.param["upload_file"])
-            if request.param["worker_plugin"] is not None:
-                client.register_worker_plugin(request.param["worker_plugin"])
-            with upload_cluster_dump(client), benchmark_all(client):
-                yield client
+def _mark_cluster(name, *, upload_file=None, worker_plugin=None):
+    # Note: if the parameter is not hashable, the fixture will be automatically
+    # downgraded in scope from module to function
+    args = (name, upload_file, worker_plugin)
+    return pytest.mark.parametrize("cluster", [args], indirect=True)
 
 
 def _mark_client(name, *, upload_file=None, worker_plugin=None):
-    return pytest.mark.parametrize(
-        "client",
-        [{"name": name, "upload_file": upload_file, "worker_plugin": worker_plugin}],
-        indirect=True,
-    )
+    args = (name, upload_file, worker_plugin)  # See note in _mark_cluster
+    return pytest.mark.parametrize("cluster,client", [args, name], indirect=True)
 
 
+pytest.mark.cluster = _mark_cluster
 pytest.mark.client = _mark_client
 
 
-S3_REGION = "us-east-2"
 S3_BUCKET = "s3://coiled-runtime-ci"
 
 
@@ -642,7 +639,8 @@ def upload_cluster_dump(
             if cluster_dump == "always" or (cluster_dump == "fail" and failed):
                 dump_path = (
                     f"{s3_cluster_dump_url}/{client.cluster.name}/"
-                    f"{test_run_benchmark.path.replace('/', '.')}.{request.node.name}"
+                    f"{test_run_benchmark.path.replace('/', '.')}."
+                    f"{clean_test_name(request.node.name)}"
                 )
                 test_run_benchmark.cluster_dump_url = dump_path + ".msgpack.gz"
                 logger.info(

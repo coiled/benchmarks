@@ -18,11 +18,12 @@ from ..utils_test import (
 )
 
 
-def test_anom_mean(small_client, new_array):
+@pytest.mark.client("small")
+def test_anom_mean(client, new_array):
     """From https://github.com/dask/distributed/issues/2602#issuecomment-498718651"""
     xarray = pytest.importorskip("xarray")
 
-    memory = cluster_memory(small_client)  # 76.66 GiB
+    memory = cluster_memory(client)  # 76.66 GiB
     target_nbytes = memory // 2
     data = new_array(
         scaled_array_shape(target_nbytes, ("x", "10MiB")),
@@ -42,9 +43,10 @@ def test_anom_mean(small_client, new_array):
     anom = arr.groupby("day") - clim
     anom_mean = anom.mean(dim="time")
 
-    wait(anom_mean, small_client, 10 * 60)
+    wait(anom_mean, client, 10 * 60)
 
 
+@pytest.mark.client("small")
 @pytest.mark.parametrize(
     "speed,chunk_shape",
     [
@@ -53,7 +55,7 @@ def test_anom_mean(small_client, new_array):
         ("slow", "square"),
     ],
 )
-def test_basic_sum(small_client, speed, chunk_shape):
+def test_basic_sum(client, speed, chunk_shape):
     """From https://github.com/dask/distributed/pull/4864
 
     n-step map-reduce:
@@ -90,7 +92,7 @@ def test_basic_sum(small_client, speed, chunk_shape):
     else:
         chunks = (3350, 3925)  # 100.32 MiB square-ish chunks
 
-    memory = cluster_memory(small_client)  # 76.66 GiB
+    memory = cluster_memory(client)  # 76.66 GiB
     target_nbytes = memory * 5
     data = da.zeros(
         scaled_array_shape(target_nbytes, ("100MiB", "x")),
@@ -111,17 +113,18 @@ def test_basic_sum(small_client, speed, chunk_shape):
 
     result = da.sum(data, axis=1)
 
-    wait(result, small_client, 10 * 60)
+    wait(result, client, 10 * 60)
 
 
 @pytest.mark.skip(
     "fails in actual CI; see https://github.com/coiled/benchmarks/issues/253"
 )
-def test_climatic_mean(small_client, new_array):
+@pytest.mark.client("small")
+def test_climatic_mean(client, new_array):
     """From https://github.com/dask/distributed/issues/2602#issuecomment-535009454"""
     xarray = pytest.importorskip("xarray")
 
-    memory = cluster_memory(small_client)  # 76.66 GiB
+    memory = cluster_memory(client)  # 76.66 GiB
     target_nbytes = memory * 2
     chunks = (1, 1, 96, 21, 90, 144)
     shape = (28, "x", 96, 21, 90, 144)
@@ -138,11 +141,12 @@ def test_climatic_mean(small_client, new_array):
     # arr_clim = array.groupby("init_date.month").mean(dim="init_date")
     arr_clim = array.groupby("init_date").mean(dim="init_date")
 
-    wait(arr_clim, small_client, 15 * 60)
+    wait(arr_clim, client, 15 * 60)
 
 
-@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
-def test_quadratic_mean(small_client):
+@pytest.mark.client("small")
+@run_up_to_nthreads("small", 50, reason="fixed dataset")
+def test_quadratic_mean(client):
     # https://github.com/pangeo-data/distributed-array-examples/issues/2
     xr = pytest.importorskip("xarray")
 
@@ -163,13 +167,14 @@ def test_quadratic_mean(small_client):
     quad["uv"] = ds.anom_u * ds.anom_v
     mean = quad.mean("time")
     # Mean is really small at this point so we can just fetch it
-    wait(mean, small_client, 15 * 60)
+    wait(mean, client, 15 * 60)
 
 
-def test_vorticity(small_client, new_array):
+@pytest.mark.client("small")
+def test_vorticity(client, new_array):
     # From https://github.com/dask/distributed/issues/6571
 
-    memory = cluster_memory(small_client)  # 76.66 GiB
+    memory = cluster_memory(client)  # 76.66 GiB
     target_nbytes = int(memory * 0.85)
     shape = scaled_array_shape(target_nbytes, (5000, 5000, "x"))
 
@@ -209,12 +214,13 @@ def test_vorticity(small_client, new_array):
     vp = pad_rechunk(v)
     result = dx[..., None] * up - dy[..., None] * vp
 
-    wait(arr_to_devnull(result), small_client, 10 * 60)
+    wait(arr_to_devnull(result), client, 10 * 60)
 
 
-def test_double_diff(small_client, new_array):
+@pytest.mark.client("small")
+def test_double_diff(client, new_array):
     # Variant of https://github.com/dask/distributed/issues/6597
-    memory = cluster_memory(small_client)  # 76.66 GiB
+    memory = cluster_memory(client)  # 76.66 GiB
     # FIXME https://github.com/coiled/benchmarks/issues/564
     #       this algorithm is supposed to scale linearly!
     shape = scaled_array_shape_quadratic(memory, "76.66 GiB", ("x", "x"))
@@ -224,24 +230,26 @@ def test_double_diff(small_client, new_array):
     print_size_info(memory, memory, a, b)
 
     diff = a[1:, 1:] - b[:-1, :-1]
-    wait(arr_to_devnull(diff), small_client, 10 * 60)
+    wait(arr_to_devnull(diff), client, 10 * 60)
 
 
-def test_dot_product(small_client, new_array):
+@pytest.mark.client("small")
+def test_dot_product(client, new_array):
     """See also test_spill.py::test_dot_product_spill
     for variant that hits the spill threshold
     """
-    memory = cluster_memory(small_client)  # 76.66 GiB
+    memory = cluster_memory(client)  # 76.66 GiB
     shape = scaled_array_shape_quadratic(memory // 17, "4.5 GiB", ("x", "x"))
     a = new_array(shape, chunks="128 MiB")
     print_size_info(memory, memory // 17, a)
     # Input 1: 4.51 GiB - 49 128.00 MiB chunks
 
     b = (a @ a.T).sum()
-    wait(b, small_client, 10 * 60)
+    wait(b, client, 10 * 60)
 
 
-def test_map_overlap_sample(small_client, new_array):
+@pytest.mark.client("small")
+def test_map_overlap_sample(client, new_array):
     """
     This is from Napari like workloads where they have large images and
     commonly use map_overlap.  They care about rapid (sub-second) access to
@@ -255,30 +263,34 @@ def test_map_overlap_sample(small_client, new_array):
     y[5000:5010, 5000:5010].compute()
 
 
-@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
-def test_rechunk_in_memory(small_client, configure_rechunking):
+@run_up_to_nthreads("small", 50, reason="fixed dataset")
+@pytest.mark.client("small")
+def test_rechunk_in_memory(client, configure_rechunking):
     rng = da.random.default_rng()
     x = rng.random((50000, 50000))
     x.rechunk((50000, 20)).rechunk((20, 50000)).sum().compute()
 
 
-@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
-def test_rechunk_striping(small_client, configure_rechunking):
+@run_up_to_nthreads("small", 50, reason="fixed dataset")
+@pytest.mark.client("small")
+def test_rechunk_striping(client, configure_rechunking):
     rng = da.random.default_rng()
     x = rng.random((100_000, 100_000))
     x.rechunk((100_000, 100)).rechunk((100, 100_000)).sum().compute()  # ~76 MiB chunks
 
 
-@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
-def test_rechunk_swap_axes(small_client, configure_rechunking):
+@run_up_to_nthreads("small", 50, reason="fixed dataset")
+@pytest.mark.client("small")
+def test_rechunk_swap_axes(client, configure_rechunking):
     rng = da.random.default_rng()
     x = rng.random((100_000, 100_000), chunks=(100_000, 100))
     x.rechunk((100, 100_000)).sum().compute()  # ~76 MiB chunks
 
 
-@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
+@run_up_to_nthreads("small", 50, reason="fixed dataset")
 @pytest.mark.skip(reason="this runs forever")
-def test_rechunk_out_of_memory(small_client, configure_rechunking):
+@pytest.mark.client("small")
+def test_rechunk_out_of_memory(client, configure_rechunking):
     rng = da.random.default_rng()
     x = rng.random((100000, 100000))
     x.rechunk((50000, 20)).rechunk((20, 50000)).sum().compute()

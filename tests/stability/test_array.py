@@ -21,9 +21,10 @@ except ImportError:
     sys.platform.startswith("win"), reason="scaled_array_shape fails on windows"
 )
 @pytest.mark.skipif(not has_scipy, reason="requires scipy")
-def test_ols(small_client):
+@pytest.mark.client("small")
+def test_ols(client):
     chunksize = int(1e6)
-    memory = cluster_memory(small_client)
+    memory = cluster_memory(client)
     target_nbytes = memory * 0.50
     target_shape = scaled_array_shape(target_nbytes, ("x", 100))
     num_samples, num_coeffs = target_shape[0], target_shape[-1]
@@ -33,4 +34,4 @@ def test_ols(small_client):
     y = X @ beta + rng.normal(size=(num_samples,), chunks=(chunksize,))
     beta_hat = da.linalg.solve(X.T @ X, X.T @ y)  # normal eq'n
     y_hat = X @ beta_hat
-    wait(y_hat, small_client, 20 * 60)
+    wait(y_hat, client, 20 * 60)

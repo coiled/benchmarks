@@ -7,9 +7,8 @@ def test_default_cluster_spinup_time(
     benchmark_time, github_cluster_tags, get_cluster_info
 ):
     """Note: this test must be kept in a separate module from the tests that use the
-    small_cluster fixture (which has the scope=module) or its child small_client.
-    This prevents having the small_cluster sitting idle for 5+ minutes while this test
-    is running.
+    "small" client fixture. This prevents having the small cluster sitting idle for 5+
+    minutes while this test is running.
     """
     with benchmark_time:
         with Cluster(

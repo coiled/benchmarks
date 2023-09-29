@@ -1,3 +1,4 @@
+import pytest
 from dask.sizeof import sizeof
 from dask.utils import format_bytes
 
@@ -15,8 +16,9 @@ def print_dataframe_info(df):
     )
 
 
-def test_dataframe_align(small_client):
-    memory = cluster_memory(small_client)  # 76.66 GiB
+@pytest.mark.client("small")
+def test_dataframe_align(client):
+    memory = cluster_memory(client)  # 76.66 GiB
 
     df = timeseries_of_size(
         memory // 2,
@@ -39,11 +41,12 @@ def test_dataframe_align(small_client):
     # ~25,488,000 rows x 100 columns, 19.18 GiB total, 354 55.48 MiB partitions
 
     final = (df2 - df).mean()  # will be all NaN, just forcing alignment
-    wait(final, small_client, 10 * 60)
+    wait(final, client, 10 * 60)
 
 
-def test_shuffle(small_client, configure_shuffling, memory_multiplier):
-    memory = cluster_memory(small_client)  # 76.66 GiB
+@pytest.mark.client("small")
+def test_shuffle(client, configure_shuffling, memory_multiplier):
+    memory = cluster_memory(client)  # 76.66 GiB
 
     df = timeseries_of_size(
         memory * memory_multiplier,
@@ -57,20 +60,22 @@ def test_shuffle(small_client, configure_shuffling, memory_multiplier):
 
     shuf = df.shuffle("0").map_partitions(lambda x: x)
     result = shuf.size
-    wait(result, small_client, 20 * 60)
+    wait(result, client, 20 * 60)
 
 
-def test_filter(small_client):
+@pytest.mark.client("small")
+def test_filter(client):
     """How fast can we filter a DataFrame?"""
-    memory = cluster_memory(small_client)
+    memory = cluster_memory(client)
     df = timeseries_of_size(memory)
     name = df.head(1).name.iloc[0]  # Get first name that appears
     result = df[df.name == name]
-    wait(result, small_client, 10 * 60)
+    wait(result, client, 10 * 60)
 
 
-def test_dataframe_cow_chain(small_client):
-    memory = cluster_memory(small_client)  # 76.66 GiB
+@pytest.mark.client("small")
+def test_dataframe_cow_chain(client):
+    memory = cluster_memory(client)  # 76.66 GiB
 
     df = timeseries_of_size(
         memory // 2,
@@ -92,4 +97,4 @@ def test_dataframe_cow_chain(small_client):
         .astype({50: "float"})
         .loc[:, slice(2, 100)]
     )
-    wait(result, small_client, 10 * 60)
+    wait(result, client, 10 * 60)

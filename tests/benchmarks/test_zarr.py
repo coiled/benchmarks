@@ -28,31 +28,34 @@ def cmip6():
     return xarray.open_dataset(store, engine="zarr", chunks={})
 
 
-@run_up_to_nthreads("small_cluster", 100, reason="fixed dataset")
+@run_up_to_nthreads("small", 100, reason="fixed dataset")
 @pytest.mark.parametrize("threshold", [50, 100, 200, 255])
-def test_filter_then_average(small_client, zarr_dataset, threshold):
+def test_filter_then_average(client, zarr_dataset, threshold):
     """Compute the mean for increasingly sparse boolean filters of an array"""
     a = zarr_dataset[zarr_dataset > threshold].mean()
-    wait(a, small_client, 300)
+    wait(a, client, 300)
 
 
-@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
+@run_up_to_nthreads("small", 50, reason="fixed dataset")
+@pytest.mark.client("small")
 @pytest.mark.parametrize("N", [700, 75, 1])
-def test_access_slices(small_client, zarr_dataset, N):
+def test_access_slices(client, zarr_dataset, N):
     """Accessing just a few chunks of a zarr array should be quick"""
     a = zarr_dataset[:N, :N, :N]
-    wait(a, small_client, 300)
+    wait(a, client, 300)
 
 
-@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
-def test_sum_residuals(small_client, zarr_dataset):
+@run_up_to_nthreads("small", 50, reason="fixed dataset")
+@pytest.mark.client("small")
+def test_sum_residuals(client, zarr_dataset):
     """Compute reduce, then map, then reduce again"""
     a = (zarr_dataset - zarr_dataset.mean(axis=0)).sum()
-    wait(a, small_client, 300)
+    wait(a, client, 300)
 
 
-@run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
-def test_select_scalar(small_client, cmip6):
+@run_up_to_nthreads("small", 50, reason="fixed dataset")
+@pytest.mark.client("small")
+def test_select_scalar(client, cmip6):
     ds = cmip6.isel({"lat": 20, "lon": 40, "plev": 5, "time": 1234}).compute()
     assert ds.zg.shape == ()
     assert ds.zg.size == 1

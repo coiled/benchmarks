@@ -5,7 +5,8 @@ import pytest
 xgb = pytest.importorskip("xgboost")
 
 
-def test_xgboost_distributed_training(small_client):
+@pytest.mark.client("small")
+def test_xgboost_distributed_training(client):
     # `coiled-runtime=0.0.4` don't contain `dask_ml`
     dask_ml = pytest.importorskip("dask_ml")
 
@@ -23,8 +24,8 @@ def test_xgboost_distributed_training(small_client):
     )
 
     # Create the XGBoost DMatrix for our training and testing splits
-    dtrain = xgb.dask.DaskDMatrix(small_client, X_train, y_train)
-    dtest = xgb.dask.DaskDMatrix(small_client, X_test, y_test)
+    dtrain = xgb.dask.DaskDMatrix(client, X_train, y_train)
+    dtest = xgb.dask.DaskDMatrix(client, X_test, y_test)
 
     # Set model parameters (XGBoost defaults)
     params = {
@@ -36,9 +37,9 @@ def test_xgboost_distributed_training(small_client):
         "grow_policy": "depthwise",
     }
     output = xgb.dask.train(
-        small_client, params, dtrain, num_boost_round=5, evals=[(dtrain, "train")]
+        client, params, dtrain, num_boost_round=5, evals=[(dtrain, "train")]
     )
 
     # make predictions
-    y_pred = xgb.dask.predict(small_client, output, dtest)
+    y_pred = xgb.dask.predict(client, output, dtest)
     assert y_pred.shape[0] == y_test.shape[0].compute()

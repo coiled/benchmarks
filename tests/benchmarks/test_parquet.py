@@ -2,19 +2,15 @@
 Parquet-related benchmarks.
 """
 import io
-import uuid
 
 import boto3
 import dask.dataframe as dd
 import dask.datasets
-import distributed
 import fsspec
 import pandas
 import pytest
-from coiled import Cluster
 from packaging.version import Version
 
-from ..conftest import dump_cluster_kwargs
 from ..utils_test import run_up_to_nthreads, wait
 
 try:
@@ -25,37 +21,13 @@ except ImportError:
     HAS_PYARROW12 = False
 
 
-@pytest.fixture(scope="module")
-def parquet_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
-    kwargs = dict(
-        name=f"parquet-{uuid.uuid4().hex[:8]}",
-        environ=dask_env_variables,
-        tags=github_cluster_tags,
-        **cluster_kwargs["parquet_cluster"],
-    )
-    dump_cluster_kwargs(kwargs, "parquet")
-
-    with Cluster(**kwargs) as cluster:
-        yield cluster
-
-
-@pytest.fixture
-def parquet_client(parquet_cluster, cluster_kwargs, upload_cluster_dump, benchmark_all):
-    n_workers = cluster_kwargs["parquet_cluster"]["n_workers"]
-    with distributed.Client(parquet_cluster) as client:
-        parquet_cluster.scale(n_workers)
-        client.wait_for_workers(n_workers)
-        client.restart()
-        with upload_cluster_dump(client), benchmark_all(client):
-            yield client
-
-
 @pytest.mark.xfail(
     HAS_PYARROW12,
     reason="50x slower than PyArrow 11; https://github.com/coiled/benchmarks/issues/998",
 )
-@run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
-def test_read_spark_generated_data(parquet_client):
+@run_up_to_nthreads("parquet", 100, reason="fixed dataset")
+@pytest.mark.client("parquet")
+def test_read_spark_generated_data(client):
     """
     Read a ~15 GB subset of a ~800 GB spark-generated
     open dataset on AWS.
@@ -70,11 +42,12 @@ def test_read_spark_generated_data(parquet_client):
         index="sample_id",
     )
     coll = ddf.groupby(ddf.index).first()
-    wait(coll, parquet_client, 500)
+    wait(coll, client, 500)
 
 
-@run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
-def test_read_hive_partitioned_data(parquet_client):
+@run_up_to_nthreads("parquet", 100, reason="fixed dataset")
+@pytest.mark.client("parquet")
+def test_read_hive_partitioned_data(client):
     """
     Read a dataset partitioned by year and quarter.
 
@@ -86,11 +59,12 @@ def test_read_hive_partitioned_data(parquet_client):
         engine="pyarrow",
     )
     coll = ddf.groupby(["year", "quarter"]).first()
-    wait(coll, parquet_client, 100)
+    wait(coll, client, 100)
 
 
-@run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
-def test_write_wide_data(parquet_client, s3_url):
+@run_up_to_nthreads("parquet", 100, reason="fixed dataset")
+@pytest.mark.client("parquet")
+def test_write_wide_data(client, s3_url):
     # Write a ~700 partition, ~200 GB dataset with a lot of columns
     ddf = dask.datasets.timeseries(
         dtypes={
@@ -107,9 +81,10 @@ def test_write_wide_data(parquet_client, s3_url):
     ddf.to_parquet(s3_url + "/wide-data/")
 
 
-@run_up_to_nthreads("parquet_cluster", 60, reason="fixed dataset")
+@run_up_to_nthreads("parquet", 60, reason="fixed dataset")
 @pytest.mark.parametrize("kind", ["boto3", "s3fs", "pandas", "pandas+boto3", "dask"])
-def test_download_throughput(parquet_client, kind):
+@pytest.mark.client("parquet")
+def test_download_throughput(client, kind):
     """Test throughput for downloading and parsing a single 563 MB parquet file.
 
     Note
@@ -131,7 +106,7 @@ def test_download_throughput(parquet_client, kind):
         return response["Body"].read()
 
     if kind == "boto3":
-        fut = parquet_client.submit(boto3_load, path)
+        fut = client.submit(boto3_load, path)
 
     elif kind == "s3fs":
 
@@ -139,10 +114,10 @@ def test_download_throughput(parquet_client, kind):
             with fsspec.open(path) as f:
                 return f.read()
 
-        fut = parquet_client.submit(load, path)
+        fut = client.submit(load, path)
 
     elif kind == "pandas":
-        fut = parquet_client.submit(pandas.read_parquet, path, engine="pyarrow")
+        fut = client.submit(pandas.read_parquet, path, engine="pyarrow")
 
     elif kind == "pandas+boto3":
 
@@ -151,9 +126,9 @@ def test_download_throughput(parquet_client, kind):
             buf = io.BytesIO(raw)
             return pandas.read_parquet(buf, engine="pyarrow")
 
-        fut = parquet_client.submit(load, path)
+        fut = client.submit(load, path)
 
     elif kind == "dask":
         fut = dd.read_parquet(path, engine="pyarrow")
 
-    wait(fut, parquet_client, timeout=60)
+    wait(fut, client, timeout=60)
