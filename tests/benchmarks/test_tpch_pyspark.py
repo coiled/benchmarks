@@ -126,10 +126,10 @@ class SparkMaster(SchedulerPlugin):
 
         print("Launched Spark Master")
 
-    def close(self, worker):
+    def close(self):
         self.proc_master.terminate()
         self.proc_master.wait()
-        return super().close(worker)
+        return super().close()
 
 
 class SparkConnect(SchedulerPlugin):
@@ -160,10 +160,10 @@ class SparkConnect(SchedulerPlugin):
         print(f"Executing\n{cmd}")
         self.proc_connect = subprocess.Popen(shlex.split(cmd))
 
-    def close(self, worker):
+    def close(self):
         self.proc_connect.terminate()
         self.proc_connect.wait()
-        return super().close(worker)
+        return super().close()
 
 
 class SparkWorker(WorkerPlugin):
@@ -186,7 +186,7 @@ class SparkWorker(WorkerPlugin):
         self.proc = subprocess.Popen(shlex.split(cmd))
         print("Launched Spark Worker")
 
-    def close(self, worker):
+    def teardown(self, worker):
         self.proc.terminate()
         self.proc.wait()
-        return super().close(worker)
+        return super().teardown(worker)
