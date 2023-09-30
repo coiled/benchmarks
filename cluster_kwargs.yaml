@@ -60,6 +60,8 @@ uber_lyft_large:
 tpch_pyspark:
     n_workers: 12
     worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+    scheduler_options:
+      idle_timeout: null  # Scheduler won't get any Dask tasks.
 
 # For tests/workflows/test_pytorch_optuna.py
 pytorch_optuna:
