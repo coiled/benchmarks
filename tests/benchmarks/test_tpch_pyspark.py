@@ -50,7 +50,6 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
         # If we just submit this stuff to the scheduler and generate a SparkSession there
         # that connects to the running master we can at least get some code running
         def _():
-            # TODO: Separate setup queries and actual benchmark query timings?
             module.setup()  # read spark tables query will select from
 
             if hasattr(module, "ddl"):
@@ -58,8 +57,22 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
 
             q_final = get_or_create_spark().sql(module.query)  # benchmark query
 
-            # Won't materialize w/o asking for some count/shape/action.
-            print(f"Count: {q_final.count()}, N columns: {len(q_final.columns)}")
+            # Sporadic Forbidden 403 error from S3 here.
+            n_tries = 5
+            for i in range(n_tries):
+                try:
+                    print(q_final.show(10))  # trigger materialization of df
+
+                # Unfortunately, just the `Exception` class used from pyspark for the S3 403 err
+                except Exception:
+                    if i < n_tries - 1:
+                        import time
+
+                        time.sleep(5)
+                        continue
+                    raise
+                else:
+                    break
 
         return await asyncio.to_thread(_)
 
