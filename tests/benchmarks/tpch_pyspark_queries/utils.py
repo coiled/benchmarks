@@ -1,3 +1,6 @@
+import functools
+
+
 def get_or_create_spark():
     from distributed.utils import get_ip
     from pyspark.sql import SparkSession
@@ -24,6 +27,7 @@ def drop_temp_views():
     ]
 
 
+@functools.lru_cache
 def read_parquet_spark(filename: str, table_name: str):
     from ..test_tpch_pyspark import DATASETS, ENABLED_DATASET
 

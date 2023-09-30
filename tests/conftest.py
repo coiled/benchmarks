@@ -516,6 +516,8 @@ def small_client(
 def tpch_pyspark_cluster(
     request, dask_env_variables, cluster_kwargs, github_cluster_tags
 ):
+    from .benchmarks.test_tpch_pyspark import SparkMaster, SparkWorker
+
     module = os.path.basename(request.fspath).split(".")[0]
     module = module.replace("test_", "")
     kwargs = dict(
@@ -526,6 +528,11 @@ def tpch_pyspark_cluster(
     )
     dump_cluster_kwargs(kwargs, f"tpch_pyspark.{module}")
     with Cluster(**kwargs) as cluster:
+        client = cluster.get_client()
+        client.wait_for_workers(cluster_kwargs["tpch_pyspark"]["n_workers"])
+        client.register_plugin(SparkMaster(), name="spark-master")
+        client.register_plugin(SparkWorker())
+
         yield cluster
 
 
@@ -538,15 +545,9 @@ def tpch_pyspark_client(
     upload_cluster_dump,
     benchmark_all,
 ):
-    from .benchmarks.test_tpch_pyspark import SparkMaster, SparkWorker
-
     test_label = f"{request.node.name}, session_id={testrun_uid}"
 
     with Client(tpch_pyspark_cluster) as client:
-        client.wait_for_workers(cluster_kwargs["tpch_pyspark"]["n_workers"])
-        client.register_plugin(SparkMaster(), name="spark-master")
-        client.register_plugin(SparkWorker())
-
         with upload_cluster_dump(client):
             log_on_scheduler(client, f"Finished client setup of {test_label}")
             with benchmark_all(client):

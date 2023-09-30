@@ -57,7 +57,9 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
                 get_or_create_spark().sql(module.ddl)  # might create temp view
 
             q_final = get_or_create_spark().sql(module.query)  # benchmark query
-            print(q_final)
+
+            # Won't materialize w/o asking for some count/shape/action.
+            print(f"Count: {q_final.count()}, N columns: {len(q_final.columns)}")
 
         return await asyncio.to_thread(_)
 
@@ -65,22 +67,33 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
 
 
 def download_jars():
-    subprocess.check_output(
-        [
-            "curl",
-            "--output",
-            f"/tmp/hadoop-aws-{HADOOP_AWS_VERSION}.jar",
-            f"https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/{HADOOP_AWS_VERSION}/hadoop-aws-{HADOOP_AWS_VERSION}.jar",  # noqa: E501
-        ]
+    hadoop_aws = pathlib.Path(f"/tmp/hadoop-aws-{HADOOP_AWS_VERSION}.jar")
+    if not hadoop_aws.exists():
+        print("Hadoop AWS JAR not found, downloading...")
+        subprocess.check_output(
+            [
+                "curl",
+                "--output",
+                str(hadoop_aws),
+                f"https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/{HADOOP_AWS_VERSION}/hadoop-aws-{HADOOP_AWS_VERSION}.jar",  # noqa: E501
+            ]
+        )
+        print("done.")
+
+    aws_sdk = pathlib.Path(
+        f"/tmp/aws-java-sdk-bundle-{AWS_JAVA_SDK_BUNDLE_VERSION}.jar"
     )
-    subprocess.check_output(
-        [
-            "curl",
-            "--output",
-            f"/tmp/aws-java-sdk-bundle-{AWS_JAVA_SDK_BUNDLE_VERSION}.jar",
-            f"https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/{AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-{AWS_JAVA_SDK_BUNDLE_VERSION}.jar",  # noqa: E501
-        ]
-    )
+    if not aws_sdk.exists():
+        print("AWS JAVA SDK not found, downloading...")
+        subprocess.check_output(
+            [
+                "curl",
+                "--output",
+                str(aws_sdk),
+                f"https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/{AWS_JAVA_SDK_BUNDLE_VERSION}/aws-java-sdk-bundle-{AWS_JAVA_SDK_BUNDLE_VERSION}.jar",  # noqa: E501
+            ]
+        )
+        print("done.")
 
 
 class SparkMaster(SchedulerPlugin):
@@ -88,9 +101,7 @@ class SparkMaster(SchedulerPlugin):
         self.scheduler = scheduler
         self.scheduler.add_plugin(self)
 
-        print("Downloading jars..")
         download_jars()
-        print("Done downloading jars.")
 
         print("Installing procps...", end="")
         try:
@@ -159,9 +170,7 @@ class SparkWorker(WorkerPlugin):
     def setup(self, worker):
         self.worker = worker
 
-        print("Downloading jars..")
         download_jars()
-        print("Done downloading jars.")
 
         path = pathlib.Path(pyspark.__file__)
         module_loc = path.parent
