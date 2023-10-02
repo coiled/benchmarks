@@ -1,6 +1,6 @@
 import uuid
 
-from coiled import Cluster
+from tests.utils_test import get_cluster
 
 
 def test_default_cluster_spinup_time(
@@ -12,7 +12,7 @@ def test_default_cluster_spinup_time(
     is running.
     """
     with benchmark_time:
-        with Cluster(
+        with get_cluster(
             name=f"test_default_cluster_spinup_time-{uuid.uuid4().hex[:8]}",
             n_workers=1,
             package_sync=True,

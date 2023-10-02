@@ -4,13 +4,12 @@ import dask.array as da
 import distributed
 import numpy as np
 import pytest
-from coiled import Cluster
 from dask import delayed, utils
 from distributed import Client
 from packaging.version import Version
 from tornado.ioloop import PeriodicCallback
 
-from ..utils_test import run_up_to_nthreads
+from ..utils_test import get_cluster, run_up_to_nthreads
 
 
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
@@ -34,7 +33,7 @@ def test_work_stealing_on_scaling_up(
     dask_env_variables,
     github_cluster_tags,
 ):
-    with Cluster(
+    with get_cluster(
         name=test_name_uuid,
         environ=dask_env_variables,
         tags=github_cluster_tags,
@@ -96,7 +95,7 @@ def test_work_stealing_on_straggling_worker(
     github_cluster_tags,
 ):
     kwargs = cluster_kwargs["test_work_stealing_on_straggling_worker"]
-    with Cluster(
+    with get_cluster(
         name=test_name_uuid,
         environ=dask_env_variables,
         tags=github_cluster_tags,

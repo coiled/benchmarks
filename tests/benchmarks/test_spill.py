@@ -1,13 +1,13 @@
 import uuid
 
 import pytest
-from coiled import Cluster
 from dask.distributed import Client, wait
 from toolz import merge
 
 from ..conftest import dump_cluster_kwargs
 from ..utils_test import (
     cluster_memory,
+    get_cluster,
     print_size_info,
     scaled_array_shape,
     scaled_array_shape_quadratic,
@@ -32,7 +32,7 @@ def spill_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
         **cluster_kwargs["spill_cluster"],
     )
     dump_cluster_kwargs(kwargs, "spill")
-    with Cluster(**kwargs) as cluster:
+    with get_cluster(**kwargs) as cluster:
         yield cluster
 
 

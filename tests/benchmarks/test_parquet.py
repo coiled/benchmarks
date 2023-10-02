@@ -11,11 +11,10 @@ import distributed
 import fsspec
 import pandas
 import pytest
-from coiled import Cluster
 from packaging.version import Version
 
 from ..conftest import dump_cluster_kwargs
-from ..utils_test import run_up_to_nthreads, wait
+from ..utils_test import get_cluster, run_up_to_nthreads, wait
 
 try:
     import pyarrow
@@ -35,7 +34,7 @@ def parquet_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
     )
     dump_cluster_kwargs(kwargs, "parquet")
 
-    with Cluster(**kwargs) as cluster:
+    with get_cluster(**kwargs) as cluster:
         yield cluster
 
 

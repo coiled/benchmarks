@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 
+import coiled
 import dask
 import dask.array as da
 import dask.dataframe as dd
@@ -312,3 +313,20 @@ def run_up_to_nthreads(
         return pytest.mark.skipif(nthreads > nthreads_max, reason=reason)
     elif nthreads > nthreads_max:
         raise pytest.skip(reason)
+
+
+def get_cluster(*args, **kwargs):
+    max_attempts = 5
+    for attempt in range(max_attempts):
+        try:
+            return coiled.Cluster(*args, **kwargs)
+        except coiled.errors.ClusterCreationError as err:
+            if "Cluster was waiting for" in str(err):
+                print(
+                    f"Cluster creation failed at attempt {attempt} / {max_attempts}. Retrying..."
+                )
+                continue
+
+    raise RuntimeError(
+        f"Cluster failed to come up with all workers after {max_attempts} attempts."
+    )

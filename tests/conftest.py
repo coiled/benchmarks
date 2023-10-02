@@ -20,7 +20,6 @@ import pytest
 import s3fs
 import sqlalchemy
 import yaml
-from coiled import Cluster
 from distributed import Client, WorkerPlugin
 from distributed.diagnostics.memory_sampler import MemorySampler
 from distributed.scheduler import logger as scheduler_logger
@@ -29,6 +28,7 @@ from sqlalchemy.orm import Session
 
 from benchmark_schema import TestRun
 from plugins import Durations
+from tests.utils_test import get_cluster
 
 logger = logging.getLogger("coiled-runtime")
 logger.setLevel(logging.INFO)
@@ -466,7 +466,7 @@ def small_cluster(request, dask_env_variables, cluster_kwargs, github_cluster_ta
         **cluster_kwargs["small_cluster"],
     )
     dump_cluster_kwargs(kwargs, f"small_cluster.{module}")
-    with Cluster(**kwargs) as cluster:
+    with get_cluster(**kwargs) as cluster:
         yield cluster
 
 
@@ -525,7 +525,7 @@ def client(
     benchmark_all,
 ):
     name = request.param["name"]
-    with Cluster(
+    with get_cluster(
         f"{name}-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
         tags=github_cluster_tags,

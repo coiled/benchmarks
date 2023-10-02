@@ -3,9 +3,10 @@ import uuid
 import dask
 import distributed
 import pytest
-from coiled import Cluster
 from distributed import Client, wait
 from packaging.version import Version
+
+from tests.utils_test import get_cluster
 
 
 @pytest.mark.skipif(
@@ -19,7 +20,7 @@ def test_repeated_merge_spill(
     dask_env_variables,
     github_cluster_tags,
 ):
-    with Cluster(
+    with get_cluster(
         name=f"test_repeated_merge_spill-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
         tags=github_cluster_tags,
