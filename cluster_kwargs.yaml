@@ -63,6 +63,10 @@ tpch_pyspark:
     scheduler_options:
       idle_timeout: null  # Scheduler won't get any Dask tasks.
 
+tpch:
+  n_workers: 20
+  worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+
 # For tests/workflows/test_pytorch_optuna.py
 pytorch_optuna:
   n_workers: 10
