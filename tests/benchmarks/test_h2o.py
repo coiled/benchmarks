@@ -42,7 +42,7 @@ def client(small_client):
     yield small_client
 
 
-@pytest.fixture(params=sorted(enabled_datasets), scope="module")
+@pytest.mark.fixture(params=sorted(enabled_datasets), scope="module")
 def ddf(request):
     n_gib = float(request.param.split(" GB ")[0])
     # 0.5 GB datasets are broken in 5~10 files
