@@ -542,7 +542,7 @@ def _mark_cluster(name, *, upload_file=None, worker_plugin=None):
 
 def _mark_client(name, *, upload_file=None, worker_plugin=None):
     args = (name, upload_file, worker_plugin)  # See note in _mark_cluster
-    return pytest.mark.parametrize("cluster,client", [args, name], indirect=True)
+    return pytest.mark.parametrize("cluster,client", [(args, name)], indirect=True)
 
 
 pytest.mark.cluster = _mark_cluster
