@@ -37,7 +37,7 @@ else:
     }
 
 
-@pytest.mark.fixture(autouse=True)
+@pytest.fixture(autouse=True)
 def client(small_client):
     yield small_client
 
