@@ -45,7 +45,7 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
 
     module = getattr(queries, name)
 
-    async def run_tpch(dask_scheduler):
+    async def _run_tpch(dask_scheduler):
         # Connecting to the Spark Connect server doens't appear to work very well
         # If we just submit this stuff to the scheduler and generate a SparkSession there
         # that connects to the running master we can at least get some code running
@@ -76,7 +76,32 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
 
         return await asyncio.to_thread(_)
 
-    tpch_pyspark_client.run_on_scheduler(run_tpch)
+    tpch_pyspark_client.run_on_scheduler(_run_tpch)
+
+
+def generate_dask_vs_pyspark_cases():
+    from . import test_tpch
+
+    for i in range(1, 22):
+        test_tpch_dask = getattr(test_tpch, f"test_query_{i}", None)
+        if test_tpch_dask is not None:
+
+            def make_test(dask, pyspark):
+                @pytest.mark.parametrize("engine", ("dask", "pyspark"))
+                def func(tpch_pyspark_client, engine):
+                    if engine == "dask":
+                        dask(tpch_pyspark_client)
+                    else:
+                        pyspark(tpch_pyspark_client, f"q{i}")
+
+                func.__name__ = f"test_tpch_dask_vs_pyspark_query_{i}"
+                return func
+
+            test = make_test(test_tpch_dask, test_tpch_pyspark)
+            globals()[test.__name__] = test
+
+
+generate_dask_vs_pyspark_cases()
 
 
 def download_jars():
