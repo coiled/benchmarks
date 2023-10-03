@@ -14,6 +14,15 @@ def get_or_create_spark():
             "spark.jars",
             f"/tmp/hadoop-aws-{HADOOP_AWS_VERSION}.jar,/tmp/aws-java-sdk-bundle-{AWS_JAVA_SDK_BUNDLE_VERSION}.jar",
         )
+        # ref: https://issues.apache.org/jira/browse/SPARK-44988  (unresolved, v3.4.0 and v3.4.1 affected)
+        # Illegal Parquet type: INT64 (TIMESTAMP(NANOS,true))
+        .config("spark.sql.legacy.parquet.nanosAsLong", "true")
+        .config(
+            "fs.s3a.aws.credentials.provider",
+            "com.amazonaws.auth.EnvironmentVariableCredentialsProvider",
+        )
+        .config("spark.sql.shuffle.partitions", "400")
+        .config("spark.memory.fraction", "0.7")
         .getOrCreate()
     )
 
