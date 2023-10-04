@@ -68,7 +68,7 @@ def pytest_collection_modifyitems(config, items):
 
 dask.config.set(
     {
-        "coiled.account": "dask-engineering",
+        "coiled.account": "dask-benchmarks",
         "distributed.admin.system-monitor.gil.enabled": True,
     }
 )

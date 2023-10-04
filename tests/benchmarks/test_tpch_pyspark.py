@@ -21,7 +21,7 @@ AWS_JAVA_SDK_BUNDLE_VERSION = "1.12.262"
 
 DATASETS = {
     "scale 100": "s3a://coiled-runtime-ci/tpch_scale_100/",
-    "scale 1000": "s3a://coiled-runtime-ci/tpch_scale_1000/",
+    "scale 1000": "s3a://coiled-runtime-ci/tpch-scale-1000/",
 }
 
 

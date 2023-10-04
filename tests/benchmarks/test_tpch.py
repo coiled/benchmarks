@@ -5,7 +5,7 @@ import dask.dataframe as dd
 
 DATASETS = {
     "scale 100": "s3://coiled-runtime-ci/tpch_scale_100/",
-    "scale 1000": "s3://coiled-runtime-ci/tpch_scale_1000/",
+    "scale 1000": "s3://coiled-runtime-ci/tpch-scale-1000/",
 }
 
 enabled_dataset = os.getenv("TPCH_SCALE")
