@@ -22,11 +22,10 @@ def get_or_create_spark():
             "com.amazonaws.auth.EnvironmentVariableCredentialsProvider",
         )
         .config("spark.memory.fraction", "0.7")
-
         # TODO: Can these not be set automagically?!
         # ref: https://spark.apache.org/docs/latest/configuration.html#memory-management
-        .config("spark.driver.cores", "4")       # defaults to 1
-        .config("spark.driver.memory", "12g")    # defaults to 1GB
+        .config("spark.driver.cores", "4")  # defaults to 1
+        .config("spark.driver.memory", "12g")  # defaults to 1GB
         .config("spark.executor.memory", "12g")  # defaults to 1GB
         .getOrCreate()
     )
