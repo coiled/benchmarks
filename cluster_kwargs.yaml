@@ -58,7 +58,7 @@ uber_lyft_large:
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
 tpch_pyspark:
-  n_workers: 100  # 20 for scale 100 and 100 for scale 1000 are good numbers
+  n_workers: 75
 
   # NOTE: Changing VM type needs changing benchmarks/test_pyspark_queries/utils.py
   # pyspark config for driver/executor memory (~70% of total VM memory)

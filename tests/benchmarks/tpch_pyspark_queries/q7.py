@@ -41,8 +41,8 @@ select
 """
 
 
-def setup():
+def setup(spark):
     from .utils import read_parquet_spark
 
     for name in ("supplier", "lineitem", "orders", "customer", "nation"):
-        read_parquet_spark(name, name)
+        read_parquet_spark(spark, name, name)

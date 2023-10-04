@@ -11,7 +11,7 @@ select
 """
 
 
-def setup():
+def setup(spark):
     from .utils import read_parquet_spark
 
-    read_parquet_spark("lineitem", "lineitem")
+    read_parquet_spark(spark, "lineitem", "lineitem")

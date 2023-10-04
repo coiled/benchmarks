@@ -26,7 +26,7 @@ query = """
 """
 
 
-def setup():
+def setup(spark):
     from .utils import read_parquet_spark
 
     for name in (
@@ -37,4 +37,4 @@ def setup():
         "nation",
         "region",
     ):
-        read_parquet_spark(name, name)
+        read_parquet_spark(spark, name, name)

@@ -50,34 +50,26 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
         # If we just submit this stuff to the scheduler and generate a SparkSession there
         # that connects to the running master we can at least get some code running
         def _():
-            module.setup()  # read spark tables query will select from
+            spark = get_or_create_spark(f"query{name}")
+            module.setup(spark)  # read spark tables query will select from
 
             if hasattr(module, "ddl"):
-                get_or_create_spark().sql(module.ddl)  # might create temp view
+                spark.sql(module.ddl)  # might create temp view
 
-            q_final = get_or_create_spark().sql(module.query)  # benchmark query
-
-            # Sporadic Forbidden 403 error from S3 here.
-            n_tries = 5
-            for i in range(n_tries):
-                try:
-                    print(q_final.show(10))  # trigger materialization of df
-
-                # Unfortunately, just the `Exception` class used from pyspark for the S3 403 err
-                except Exception:
-                    if i < n_tries - 1:
-                        import time
-
-                        time.sleep(5)
-                        continue
-                    raise
-                else:
-                    break
-
+            q_final = spark.sql(module.query)  # benchmark query
+            try:
+                print(q_final.show(10))  # trigger materialization of df
+            finally:
+                spark.catalog.clearCache()
+                spark.sparkContext.stop()
+                spark.stop()
         return await asyncio.to_thread(_)
 
     tpch_pyspark_client.run_on_scheduler(_run_tpch)
 
+
+class TestTpchDaskVsPySpark:
+    pass
 
 def generate_dask_vs_pyspark_cases():
     from . import test_tpch
@@ -88,7 +80,7 @@ def generate_dask_vs_pyspark_cases():
 
             def make_test(dask, pyspark):
                 @pytest.mark.parametrize("engine", ("dask", "pyspark"))
-                def func(tpch_pyspark_client, engine):
+                def func(_self, tpch_pyspark_client, engine):
                     if engine == "dask":
                         dask(tpch_pyspark_client)
                     else:
@@ -98,7 +90,7 @@ def generate_dask_vs_pyspark_cases():
                 return func
 
             test = make_test(test_tpch_dask, test_tpch_pyspark)
-            globals()[test.__name__] = test
+            setattr(TestTpchDaskVsPySpark, test.__name__, test)
 
 
 generate_dask_vs_pyspark_cases()
