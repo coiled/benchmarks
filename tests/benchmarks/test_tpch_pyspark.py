@@ -63,6 +63,7 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
                 spark.catalog.clearCache()
                 spark.sparkContext.stop()
                 spark.stop()
+
         return await asyncio.to_thread(_)
 
     tpch_pyspark_client.run_on_scheduler(_run_tpch)
@@ -70,6 +71,7 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
 
 class TestTpchDaskVsPySpark:
     pass
+
 
 def generate_dask_vs_pyspark_cases():
     from . import test_tpch
