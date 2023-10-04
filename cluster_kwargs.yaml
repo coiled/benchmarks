@@ -58,10 +58,18 @@ uber_lyft_large:
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
 tpch_pyspark:
-    n_workers: 250
-    worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
-    scheduler_options:
-      idle_timeout: null  # Scheduler won't get any Dask tasks.
+  n_workers: 50  # 20 for scale 100 and 50 for scale 1000 are good numbers
+
+  # Changing VM type needs changing benchmarks/test_pyspark_queries/utils.py
+  # pyspark config for driver/executor memory (~70% of total VM memory)
+  worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+  scheduler_vm_types: [m6i.xlarge]  # Help with larger task graphs
+  scheduler_options:
+    idle_timeout: null  # Scheduler won't get any Dask tasks.
+  backend_options:
+    ingress:
+      - ports: [8786, 8787, 7077, 8080, 4040, 9797]
+        cidr: "0.0.0.0/0"
 
 tpch:
   n_workers: 20

@@ -21,8 +21,13 @@ def get_or_create_spark():
             "fs.s3a.aws.credentials.provider",
             "com.amazonaws.auth.EnvironmentVariableCredentialsProvider",
         )
-        .config("spark.sql.shuffle.partitions", "400")
         .config("spark.memory.fraction", "0.7")
+
+        # TODO: Can these not be set automagically?!
+        # ref: https://spark.apache.org/docs/latest/configuration.html#memory-management
+        .config("spark.driver.cores", "4")       # defaults to 1
+        .config("spark.driver.memory", "12g")    # defaults to 1GB
+        .config("spark.executor.memory", "12g")  # defaults to 1GB
         .getOrCreate()
     )
 
