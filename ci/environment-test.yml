@@ -13,5 +13,4 @@ dependencies:
   - alembic
   - filelock
   - conda
-  - pip:
-      "git+https://github.com/dask-contrib/dask-expr.git"
+  - dask-expr
