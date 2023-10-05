@@ -18,6 +18,7 @@ dependencies:
   - pandas ==2.1.1
   - dask ==2023.9.2
   - distributed ==2023.9.2
+  - dask-expr
   - dask-labextension ==7.0.0
   - dask-ml ==2023.3.24
   - fsspec ==2023.9.1
@@ -56,3 +57,4 @@ dependencies:
     # Read README.md for troubleshooting.
     - git+https://github.com/dask/dask@da256320ef0167992f7183c3a275d092f5727f62
     - git+https://github.com/dask/distributed@285893037fe9eac83f363611b4799168aabb3992
+    - git+https://github.com/dask-contrib/dask-expr
