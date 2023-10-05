@@ -58,7 +58,7 @@ uber_lyft_large:
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
 tpch_pyspark:
-  n_workers: 75
+  n_workers: 50
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
   # Keep the same, as spark.driver/executor.memory calculated from scheduler size
   # pyspark doesn't automatically calculate available memory for executors, 
