@@ -109,7 +109,7 @@ class TestTpchDaskVsPySpark:
                 else:
                     pyspark(tpch_pyspark_client, f"q{query_num}")
 
-            func.__name__ = f"test_tpch_dask_vs_pyspark_query_{query_num}"
+            func.__name__ = f"test_query_{query_num}"
             return func
 
         for query_num in range(1, 22):
