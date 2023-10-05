@@ -38,5 +38,3 @@ dependencies:
   - bokeh ==3.2.2
   - gilknocker ==0.4.1
   - openssl >1.1.0g
-  - pip:
-    - git+https://github.com/dask-contrib/dask-expr
