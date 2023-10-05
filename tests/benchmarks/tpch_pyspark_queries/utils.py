@@ -29,11 +29,11 @@ def get_or_create_spark(name: str = "SparkTest"):
         .config("spark.executor.memory", f"{memory}g")  # defaults to 1GB
         .getOrCreate()
     )
-    sc = spark.sparkContext
-    sc._jsc.hadoopConfiguration().set(
-        "fs.s3a.aws.credentials.provider",
-        "com.amazonaws.auth.EnvironmentVariableCredentialsProvider",
-    )
+    # sc = spark.sparkContext
+    # sc._jsc.hadoopConfiguration().set(
+    #     "fs.s3a.aws.credentials.provider",
+    #     "com.amazonaws.auth.EnvironmentVariableCredentialsProvider",
+    # )
     return spark
 
 
