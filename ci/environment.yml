@@ -11,6 +11,7 @@ dependencies:
   - pandas ==2.1.1
   - dask ==2023.9.2
   - distributed ==2023.9.2
+  - dask-expr
   - dask-labextension ==7.0.0
   - dask-ml ==2023.3.24
   - fsspec ==2023.9.1

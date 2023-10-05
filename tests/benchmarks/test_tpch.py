@@ -1,10 +1,7 @@
 import os
 from datetime import datetime
 
-try:
-    import dask_expr as dd
-except ImportError:
-    import dask.dataframe as dd
+import dask_expr as dd
 
 DATASETS = {
     "scale 100": "s3://coiled-runtime-ci/tpch_scale_100/",
