@@ -9,7 +9,7 @@ select
             select
                 n1.n_name as supp_nation,
                 n2.n_name as cust_nation,
-                year(l_shipdate) as l_year,
+                year(cast(from_unixtime(l_shipdate) as date)) as l_year,
                 l_extendedprice * (1 - l_discount) as volume
             from
                 supplier,
@@ -28,7 +28,7 @@ select
                     (n1.n_name = 'FRANCE' and n2.n_name = 'GERMANY')
                     or (n1.n_name = 'GERMANY' and n2.n_name = 'FRANCE')
                 )
-                and date(l_shipdate) between date '1995-01-01' and date '1996-12-31'
+                and cast(from_unixtime(l_shipdate) as date) between date '1995-01-01' and date '1996-12-31'
         ) as shipping
     group by
         supp_nation,

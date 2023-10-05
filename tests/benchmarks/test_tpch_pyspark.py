@@ -1,9 +1,11 @@
 import asyncio
+import logging
 import os
 import pathlib
 import shlex
 import subprocess
 import sys
+import time
 
 import pyspark
 import pytest
@@ -33,6 +35,9 @@ else:
     ENABLED_DATASET = "scale 1000"
 
 
+logger = logging.getLogger("coiled")
+
+
 @pytest.mark.parametrize(
     "name",
     sorted(
@@ -44,6 +49,20 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
     from .tpch_pyspark_queries.utils import get_or_create_spark
 
     module = getattr(queries, name)
+
+    def _retry_s3_forbidden(func):
+        # Sporadic S3 403 forbidden error
+        for i in range(3):
+            try:
+                return func()
+            except Exception as e:
+                if "403" in str(e):
+                    logger.warning("Encountered S3 403 Forbidden, retrying.")
+                    time.sleep(5)
+                    continue
+                else:
+                    raise
+        return func()
 
     async def _run_tpch(dask_scheduler):
         # Connecting to the Spark Connect server doens't appear to work very well
@@ -58,7 +77,8 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
 
             q_final = spark.sql(module.query)  # benchmark query
             try:
-                print(q_final.show(10))  # trigger materialization of df
+                # trigger materialization of df
+                _retry_s3_forbidden(lambda: print(q_final.show(10)))
             finally:
                 spark.catalog.clearCache()
                 spark.sparkContext.stop()
@@ -70,32 +90,36 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
 
 
 class TestTpchDaskVsPySpark:
-    pass
+    """
+    TPCH query benchmarks for Dask vs PySpark
+
+    Tests parametrized queries by dask, pyspark; taken from implementations
+    in test_tpch (dask) and test_tpch_pyspark (pyspark).
+    """
+
+    @classmethod
+    def generate_dask_vs_pyspark_cases(cls):
+        from . import test_tpch
+
+        def make_test(dask, pyspark, query_num):
+            @pytest.mark.parametrize("engine", ("dask", "pyspark"))
+            def func(_self, tpch_pyspark_client, engine):
+                if engine == "dask":
+                    dask(tpch_pyspark_client)
+                else:
+                    pyspark(tpch_pyspark_client, f"q{query_num}")
+
+            func.__name__ = f"test_tpch_dask_vs_pyspark_query_{query_num}"
+            return func
+
+        for query_num in range(1, 22):
+            test_tpch_dask = getattr(test_tpch, f"test_query_{query_num}", None)
+            if test_tpch_dask is not None:
+                test = make_test(test_tpch_dask, test_tpch_pyspark, query_num)
+                setattr(cls, test.__name__, test)
 
 
-def generate_dask_vs_pyspark_cases():
-    from . import test_tpch
-
-    for i in range(1, 22):
-        test_tpch_dask = getattr(test_tpch, f"test_query_{i}", None)
-        if test_tpch_dask is not None:
-
-            def make_test(dask, pyspark):
-                @pytest.mark.parametrize("engine", ("dask", "pyspark"))
-                def func(_self, tpch_pyspark_client, engine):
-                    if engine == "dask":
-                        dask(tpch_pyspark_client)
-                    else:
-                        pyspark(tpch_pyspark_client, f"q{i}")
-
-                func.__name__ = f"test_tpch_dask_vs_pyspark_query_{i}"
-                return func
-
-            test = make_test(test_tpch_dask, test_tpch_pyspark)
-            setattr(TestTpchDaskVsPySpark, test.__name__, test)
-
-
-generate_dask_vs_pyspark_cases()
+TestTpchDaskVsPySpark.generate_dask_vs_pyspark_cases()
 
 
 def download_jars():

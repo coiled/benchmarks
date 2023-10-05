@@ -59,11 +59,11 @@ uber_lyft_large:
 
 tpch_pyspark:
   n_workers: 75
-
-  # NOTE: Changing VM type needs changing benchmarks/test_pyspark_queries/utils.py
-  # pyspark config for driver/executor memory (~70% of total VM memory)
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
-  scheduler_vm_types: [m6i.xlarge]  # Help with larger task graphs
+  # Keep the same, as spark.driver/executor.memory calculated from scheduler size
+  # pyspark doesn't automatically calculate available memory for executors, 
+  # so we do it in pyspark_queries.utils, but this takes place on the scheduler
+  scheduler_vm_types: [m6i.xlarge]
   scheduler_options:
     idle_timeout: null  # Scheduler won't get any Dask tasks.
   backend_options:

@@ -6,8 +6,8 @@ create temp view revenue (supplier_no, total_revenue) as
         from
             lineitem
         where
-            l_shipdate >= date '1996-01-01'
-            and l_shipdate < date '1996-01-01' + interval '3' month
+            cast(from_unixtime(l_shipdate) as date) >= date '1996-01-01'
+            and cast(from_unixtime(l_shipdate) as date) < date '1996-01-01' + interval '3' month
         group by
             l_suppkey
     """
