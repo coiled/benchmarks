@@ -12,6 +12,10 @@ def get_or_create_spark(name: str = "SparkTest"):
     spark = (
         SparkSession.builder.master(f"spark://{get_ip()}:7077")
         .appName(name)
+        .config(
+            "spark.hadoop.fs.s3a.aws.credentials.provider",
+            "com.amazonaws.auth.EnvironmentVariableCredentialsProvider",
+        )
         # ref: https://issues.apache.org/jira/browse/SPARK-44988  (unresolved, v3.4.0 and v3.4.1 affected)
         # Illegal Parquet type: INT64 (TIMESTAMP(NANOS,true))
         .config("spark.sql.legacy.parquet.nanosAsLong", "true")

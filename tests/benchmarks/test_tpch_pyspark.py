@@ -5,7 +5,6 @@ import pathlib
 import shlex
 import subprocess
 import sys
-import time
 
 import pyspark
 import pytest
@@ -77,25 +76,6 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
         os.environ["PYSPARK_PYTHON"] = sys.executable
         os.environ["PYSPARK_SUBMIT_ARGS"] = make_pyspark_submit_args(spark_master)
 
-        def retry_on_forbidden(f):
-            # TODO: Have tried setting spark conf to explicitly pass credentials, and using defaults
-            # and continue to get sporadic S3 403 Forbidden errors.
-            def wrapper():
-                for _ in range(5):
-                    try:
-                        return f()
-                    except Exception as exc:
-                        if "403" in str(exc):
-                            logger.warning("Failed with 403 Forbidden, trying again.")
-                            time.sleep(10)
-                            continue
-                        else:
-                            raise
-                return f()
-
-            return wrapper
-
-        @retry_on_forbidden
         def _():
             spark = get_or_create_spark(f"query{name}")
             module.setup(spark)  # read spark tables query will select from
