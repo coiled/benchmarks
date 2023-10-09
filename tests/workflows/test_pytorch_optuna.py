@@ -19,15 +19,16 @@ optuna = pytest.importorskip("optuna")
             # FIXME https://github.com/coiled/platform/issues/1249
             #       package_sync doesn't seem to deduce GPU specific installs of
             #       libraries like torch
-            "torch==2.0.0",
+            "torch",
             # FIXME Windows package_sync doesn't like torchvision
-            "torchvision==0.15.1",
+            "torchvision",
             # FIXME https://github.com/boto/botocore/issues/2926
             #       urllib3 v2 removed openssl / ciphers which causes an error in
             #       botocore httpsession
             "urllib3<2.0.0",
         ],
         pip_options=["--force-reinstall"],
+        restart_workers=True,
     ),
 )
 def test_hpo(client):
