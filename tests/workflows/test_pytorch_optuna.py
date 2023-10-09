@@ -11,7 +11,6 @@ from ..utils_test import wait
 optuna = pytest.importorskip("optuna")
 
 
-@pytest.mark.xfail(reason="https://github.com/coiled/benchmarks/issues/969")
 @pytest.mark.client(
     "pytorch_optuna",
     worker_plugin=PipInstall(
