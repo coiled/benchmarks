@@ -12,7 +12,7 @@ query = """select
     from
         lineitem
     where
-        cast(from_unixtime(l_shipdate) as date) <= date('1998-09-02')
+        l_shipdate <= date('1998-09-02')
     group by
         l_returnflag,
         l_linestatus

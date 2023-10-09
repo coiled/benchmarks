@@ -3,7 +3,7 @@ select
         c_name,
         c_custkey,
         o_orderkey,
-        to_date(o_orderdate) as o_orderdat,
+        o_orderdate,
         o_totalprice,
         DOUBLE(sum(l_quantity)) as col6
     from

@@ -20,7 +20,7 @@ select
         o_orderkey = l_orderkey
         and l_shipmode in ('MAIL', 'SHIP')
         and l_commitdate < l_receiptdate
-        and cast(from_unixtime(l_shipdate) as date) < l_commitdate
+        and l_shipdate < l_commitdate
         and l_receiptdate >= date '1994-01-01'
         and l_receiptdate < date '1994-01-01' + interval '1' year
     group by

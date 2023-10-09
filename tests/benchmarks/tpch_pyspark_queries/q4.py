@@ -5,8 +5,8 @@ query = """
     from
         orders
     where
-        cast(from_unixtime(o_orderdate) as date) >= date '1993-07-01'
-        and cast(from_unixtime(o_orderdate) as date) < date '1993-07-01' + interval '3' month
+        o_orderdate >= date '1993-07-01'
+        and o_orderdate < date '1993-07-01' + interval '3' month
         and exists (
             select
                 *

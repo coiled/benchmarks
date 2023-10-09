@@ -10,8 +10,8 @@ select
         part
     where
         l_partkey = p_partkey
-        and cast(from_unixtime(l_shipdate) as date) >= date '1995-09-01'
-        and cast(from_unixtime(l_shipdate) as date) < date '1995-09-01' + interval '1' month
+        and l_shipdate >= date '1995-09-01'
+        and l_shipdate < date '1995-09-01' + interval '1' month
 """
 
 

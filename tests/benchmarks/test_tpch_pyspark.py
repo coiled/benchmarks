@@ -2,6 +2,7 @@ import asyncio
 import logging
 import os
 import pathlib
+import re
 import shlex
 import subprocess
 import sys
@@ -53,6 +54,18 @@ def make_pyspark_submit_args(spark_master):
     """
 
 
+def fix_timestamp_ns_columns(query):
+    """
+    scale100 stores l_shipdate/o_orderdate as timestamp[us]
+    scale1000 stores l_shipdate/o_orderdate as timestamp[ns] which gives:
+        Illegal Parquet type: INT64 (TIMESTAMP(NANOS,true))
+    so we set spark.sql.legacy.parquet.nanosAsLong and then convert to timestamp.
+    """
+    for name in ("l_shipdate", "o_orderdate"):
+        query = re.sub(rf"\b{name}\b", f"to_timestamp(cast({name} as string))", query)
+    return query
+
+
 @pytest.mark.parametrize(
     "name",
     sorted(
@@ -82,6 +95,11 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
 
             if hasattr(module, "ddl"):
                 spark.sql(module.ddl)  # might create temp view
+
+            # scale1000 stored as timestamp[ns] which spark parquet
+            # can't use natively.
+            if ENABLED_DATASET == "scale 1000":
+                module.query = fix_timestamp_ns_columns(module.query)
 
             q_final = spark.sql(module.query)  # benchmark query
             try:
