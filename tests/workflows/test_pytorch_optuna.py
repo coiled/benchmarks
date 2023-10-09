@@ -28,7 +28,6 @@ optuna = pytest.importorskip("optuna")
             "urllib3<2.0.0",
         ],
         pip_options=["--force-reinstall"],
-        restart=True,
     ),
 )
 def test_hpo(client):
