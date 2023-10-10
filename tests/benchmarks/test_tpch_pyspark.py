@@ -7,6 +7,8 @@ import shlex
 import subprocess
 import sys
 
+import botocore
+import duckdb
 import pyspark
 import pytest
 from conda.cli.python_api import Commands, run_command
@@ -22,17 +24,17 @@ HADOOP_AWS_VERSION = "3.3.4"  # sc._jvm.org.apache.hadoop.util.VersionInfo.getVe
 AWS_JAVA_SDK_BUNDLE_VERSION = "1.12.262"
 
 DATASETS = {
-    "scale 100": "s3a://coiled-runtime-ci/tpch_scale_100/",
-    "scale 1000": "s3a://coiled-runtime-ci/tpch-scale-1000/",
+    "local": "./tpch-data/scale10/",
+    "scale 100": "s3://coiled-runtime-ci/tpch_scale_100/",
+    "scale 1000": "s3://coiled-runtime-ci/tpch-scale-1000/",
 }
-
 
 ENABLED_DATASET = os.getenv("TPCH_SCALE")
 if ENABLED_DATASET is not None:
     if ENABLED_DATASET not in DATASETS:
         raise ValueError("Unknown tpch dataset: ", ENABLED_DATASET)
 else:
-    ENABLED_DATASET = "scale 1000"
+    ENABLED_DATASET = "scale 100"
 
 
 logger = logging.getLogger("coiled")
@@ -116,7 +118,7 @@ def test_tpch_pyspark(tpch_pyspark_client, name):
     print(f"Received {len(rows)} rows")
 
 
-class TestTpchDaskVsPySpark:
+class TestTpchCluster:
     """
     TPCH query benchmarks for Dask vs PySpark
 
@@ -125,7 +127,7 @@ class TestTpchDaskVsPySpark:
     """
 
     @classmethod
-    def generate_dask_vs_pyspark_cases(cls):
+    def generate_test_cases(cls):
         from . import test_tpch
 
         def make_test(dask, pyspark, query_num):
@@ -139,14 +141,105 @@ class TestTpchDaskVsPySpark:
             func.__name__ = f"test_query_{query_num}"
             return func
 
-        for query_num in range(1, 22):
+        for query_num in range(1, 23):
             test_tpch_dask = getattr(test_tpch, f"test_query_{query_num}", None)
             if test_tpch_dask is not None:
                 test = make_test(test_tpch_dask, test_tpch_pyspark, query_num)
                 setattr(cls, test.__name__, test)
 
 
-TestTpchDaskVsPySpark.generate_dask_vs_pyspark_cases()
+TestTpchCluster.generate_test_cases()
+
+
+class TestTpchSingleVM:
+    @classmethod
+    def generate_test_cases(cls):
+        import coiled
+
+        from . import test_tpch
+        from . import tpch_duckdb_queries as duckdb_queries
+
+        def make_test(dask, pyspark, query_num):
+            @pytest.mark.parametrize("engine", ("duckdb", "dask", "pyspark"))
+            def func(_self, engine):
+                @coiled.function(vm_type="m6i.12xlarge", region="us-east-2")
+                def _():
+                    if engine == "duckdb":
+                        module = getattr(duckdb_queries, f"q{query_num}")
+
+                        con = duckdb.connect()
+
+                        if ENABLED_DATASET != "local":  # Setup s3 credentials
+                            creds = botocore.session.get_session().get_credentials()
+                            con.install_extension("httpfs")
+                            con.load_extension("httpfs")
+                            con.sql(
+                                f"""
+                                SET s3_region='us-east-2';
+                                SET s3_access_key_id='{creds.access_key}';
+                                SET s3_secret_access_key='{creds.secret_key}';
+                                """
+                            )
+                        if hasattr(module, "ddl"):
+                            con.sql(module.ddl)
+                        _ = con.execute(module.query).fetch_arrow_table()
+
+                    elif engine == "dask":
+                        dask(None)  # No client needed/used by dask queries
+
+                    elif engine == "pyspark":
+                        import pyspark as pyspark_
+
+                        from .tpch_pyspark_queries.utils import get_or_create_spark
+
+                        queries.utils.MASTER = "local[*]"
+
+                        # TODO: context env vars
+                        os.environ["SPARK_HOME"] = str(
+                            pathlib.Path(pyspark_.__file__).absolute().parent
+                        )
+                        os.environ["PYSPARK_PYTHON"] = sys.executable
+                        os.environ["PYSPARK_SUBMIT_ARGS"] = make_pyspark_submit_args(
+                            queries.utils.MASTER
+                        )
+
+                        spark = get_or_create_spark(f"query{query_num}")
+
+                        module = getattr(queries, f"q{query_num}")
+                        module.setup(spark)  # read spark tables query will select from
+
+                        if hasattr(module, "ddl"):
+                            spark.sql(module.ddl)  # might create temp view
+
+                        # scale1000 stored as timestamp[ns] which spark parquet
+                        # can't use natively.
+                        if ENABLED_DATASET == "scale 1000":
+                            module.query = fix_timestamp_ns_columns(module.query)
+
+                        q_final = spark.sql(module.query)  # benchmark query
+                        try:
+                            # trigger materialization of df
+                            _ = q_final.collect()
+                        finally:
+                            spark.catalog.clearCache()
+                            spark.sparkContext.stop()
+                            spark.stop()
+
+                _.cluster.adapt(minimum=1, maximum=1)
+                _()
+
+            func.__name__ = f"test_query_{query_num}"
+            return func
+
+        for query_num in range(1, 23):
+            # Limit to queries implemented in dask
+            test_tpch_dask = getattr(test_tpch, f"test_query_{query_num}", None)
+            if test_tpch_dask is not None:
+                test = make_test(test_tpch_dask, test_tpch_pyspark, query_num)
+                setattr(cls, test.__name__, test)
+
+
+TestTpchSingleVM.generate_test_cases()
 
 
 class SparkMaster(SchedulerPlugin):

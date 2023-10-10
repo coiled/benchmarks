@@ -1,5 +1,8 @@
 import psutil
 
+# Allow overriding in single VM testing
+MASTER = None
+
 
 def get_or_create_spark(name: str = "SparkTest"):
     from distributed.utils import get_ip
@@ -9,8 +12,10 @@ def get_or_create_spark(name: str = "SparkTest"):
     memory = int((psutil.virtual_memory().total * 0.8) * 9.313226e-10)
     n_cores = psutil.cpu_count()
 
+    master = f"spark://{get_ip()}:7077"
+
     spark = (
-        SparkSession.builder.master(f"spark://{get_ip()}:7077")
+        SparkSession.builder.master(MASTER or master)
         .appName(name)
         .config(
             "spark.hadoop.fs.s3a.aws.credentials.provider",
@@ -31,10 +36,11 @@ def get_or_create_spark(name: str = "SparkTest"):
 
 
 def read_parquet_spark(spark, filename: str, table_name: str):
-    from ..test_tpch_pyspark import DATASETS, ENABLED_DATASET
+    from tests.benchmarks.test_tpch_pyspark import DATASETS, ENABLED_DATASET
 
     path = DATASETS[ENABLED_DATASET] + filename + "/"
     print(f"Read from {path=}")
+    path = path.replace("s3://", "s3a://")
     df = spark.read.parquet(path)
     df.createOrReplaceTempView(table_name)
     return df
