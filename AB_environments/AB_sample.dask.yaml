@@ -1,0 +1,5 @@
+distributed:
+  version: 2
+
+  scheduler:
+    worker-saturation: inf
