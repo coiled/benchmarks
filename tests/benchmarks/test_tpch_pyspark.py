@@ -6,15 +6,14 @@ import re
 import shlex
 import subprocess
 import sys
-
 import timeit
-import json
-import botocore
-import duckdb
+
 import pyspark
-import pytest
 from conda.cli.python_api import Commands, run_command
 from distributed.diagnostics.plugin import SchedulerPlugin, WorkerPlugin
+from distributed.utils import get_ip
+
+from tests.benchmarks.conftest import DATASETS, ENABLED_DATASET  # noqa: F401
 
 from . import tpch_pyspark_queries as queries
 
@@ -25,19 +24,6 @@ assert pyspark.__version__ == "3.4.1"
 HADOOP_AWS_VERSION = "3.3.4"  # sc._jvm.org.apache.hadoop.util.VersionInfo.getVersion()
 AWS_JAVA_SDK_BUNDLE_VERSION = "1.12.262"
 
-DATASETS = {
-    "local": "./tpch-data/scale10/",
-    "scale 100": "s3://coiled-runtime-ci/tpch_scale_100/",
-    "scale 1000": "s3://coiled-runtime-ci/tpch-scale-1000/",
-}
-
-ENABLED_DATASET = os.getenv("TPCH_SCALE")
-if ENABLED_DATASET is not None:
-    if ENABLED_DATASET not in DATASETS:
-        raise ValueError("Unknown tpch dataset: ", ENABLED_DATASET)
-else:
-    ENABLED_DATASET = "scale 100"
-
 
 logger = logging.getLogger("coiled")
 
@@ -47,6 +33,34 @@ PACKAGES = (
     f"org.apache.hadoop:hadoop-aws:{HADOOP_AWS_VERSION}",
     f"com.amazonaws:aws-java-sdk-bundle:{AWS_JAVA_SDK_BUNDLE_VERSION}",
 )
+
+
+def test_query_1(tpch_pyspark_client):
+    return run_tpch_pyspark(tpch_pyspark_client, queries.q1)
+
+
+def test_query_2(tpch_pyspark_client):
+    return run_tpch_pyspark(tpch_pyspark_client, queries.q2)
+
+
+def test_query_3(tpch_pyspark_client):
+    return run_tpch_pyspark(tpch_pyspark_client, queries.q3)
+
+
+def test_query_4(tpch_pyspark_client):
+    return run_tpch_pyspark(tpch_pyspark_client, queries.q4)
+
+
+def test_query_5(tpch_pyspark_client):
+    return run_tpch_pyspark(tpch_pyspark_client, queries.q5)
+
+
+def test_query_6(tpch_pyspark_client):
+    return run_tpch_pyspark(tpch_pyspark_client, queries.q6)
+
+
+def test_query_7(tpch_pyspark_client):
+    return run_tpch_pyspark(tpch_pyspark_client, queries.q7)
 
 
 def make_pyspark_submit_args(spark_master):
@@ -70,198 +84,59 @@ def fix_timestamp_ns_columns(query):
     return query
 
 
-@pytest.mark.parametrize(
-    "name",
-    sorted(
-        [name for name in dir(queries) if name.startswith("q")],
-        key=lambda v: int(v.replace("q", "")),
-    ),
-)
-def test_tpch_pyspark(tpch_pyspark_client, name):
+def run_tpch_pyspark(tpch_pyspark_client, module):
     from .tpch_pyspark_queries.utils import get_or_create_spark
-
-    module = getattr(queries, name)
 
     async def _run_tpch(dask_scheduler):
         # Connecting to the Spark Connect server doens't appear to work very well
         # If we just submit this stuff to the scheduler and generate a SparkSession there
         # that connects to the running master we can at least get some code running
-        from distributed.utils import get_ip
 
-        spark_master = f"{get_ip()}:7077"
+        if tpch_pyspark_client is not None:
+            queries.utils.MASTER = f"{get_ip()}:7077"
+        else:
+            queries.utils.MASTER = "local[*]"
+
         os.environ["SPARK_HOME"] = str(pathlib.Path(pyspark.__file__).absolute().parent)
         os.environ["PYSPARK_PYTHON"] = sys.executable
-        os.environ["PYSPARK_SUBMIT_ARGS"] = make_pyspark_submit_args(spark_master)
+        os.environ["PYSPARK_SUBMIT_ARGS"] = make_pyspark_submit_args(
+            queries.utils.MASTER
+        )
 
         def _():
-            spark = get_or_create_spark(f"query{name}")
-            module.setup(spark)  # read spark tables query will select from
-
-            if hasattr(module, "ddl"):
-                spark.sql(module.ddl)  # might create temp view
+            start_total = timeit.default_timer()
+            spark = get_or_create_spark(f"query{module.__name__}")
 
             # scale1000 stored as timestamp[ns] which spark parquet
             # can't use natively.
             if ENABLED_DATASET == "scale 1000":
                 module.query = fix_timestamp_ns_columns(module.query)
 
+            start_query = timeit.default_timer()
+            module.setup(spark)  # read spark tables query will select from
+            if hasattr(module, "ddl"):
+                spark.sql(module.ddl)  # might create temp view
             q_final = spark.sql(module.query)  # benchmark query
             try:
                 # trigger materialization of df
-                return q_final.toJSON().collect()
+                result = q_final.toJSON().collect()
             finally:
+                time_query = timeit.default_timer() - start_query
                 spark.catalog.clearCache()
                 spark.sparkContext.stop()
                 spark.stop()
+                time_total = timeit.default_timer() - start_total
+            return dict(time_total=time_total, time_query=time_query), result
 
         return await asyncio.to_thread(_)
 
-    rows = tpch_pyspark_client.run_on_scheduler(_run_tpch)
+    if tpch_pyspark_client is not None:
+        timing, rows = tpch_pyspark_client.run_on_scheduler(_run_tpch)
+    else:
+        timing, rows = asyncio.run(_run_tpch(None))  # running locally
+
     print(f"Received {len(rows)} rows")
-
-
-class TestTpchCluster:
-    """
-    TPCH query benchmarks for Dask vs PySpark
-
-    Tests parametrized queries by dask, pyspark; taken from implementations
-    in test_tpch (dask) and test_tpch_pyspark (pyspark).
-    """
-
-    @classmethod
-    def generate_test_cases(cls):
-        from . import test_tpch
-
-        def make_test(dask, pyspark, query_num):
-            @pytest.mark.parametrize("engine", ("dask", "pyspark"))
-            def func(_self, tpch_pyspark_client, engine):
-                if engine == "dask":
-                    dask(tpch_pyspark_client)
-                else:
-                    pyspark(tpch_pyspark_client, f"q{query_num}")
-
-            func.__name__ = f"test_query_{query_num}"
-            return func
-
-        for query_num in range(1, 23):
-            test_tpch_dask = getattr(test_tpch, f"test_query_{query_num}", None)
-            if test_tpch_dask is not None:
-                test = make_test(test_tpch_dask, test_tpch_pyspark, query_num)
-                setattr(cls, test.__name__, test)
-
-
-TestTpchCluster.generate_test_cases()
-
-
-class TestTpchSingleVM:
-    @classmethod
-    def generate_test_cases(cls):
-        import coiled
-
-        from . import test_tpch
-        from . import tpch_duckdb_queries as duckdb_queries
-
-        def make_test(dask, pyspark, query_num):
-            @pytest.mark.parametrize("engine", ("dask", "duckdb", "pyspark"))
-            def func(_self, engine):
-                @coiled.function(vm_type="m6i.24xlarge", region="us-east-2")
-                def _():
-                    start = timeit.default_timer()
-                    if engine == "duckdb":
-                        module = getattr(duckdb_queries, f"q{query_num}")
-
-                        con = duckdb.connect()
-                        import psutil
-                        memory = int((psutil.virtual_memory().total * 0.8) * 9.313226e-10)
-                        n_cpu = psutil.cpu_count()
-
-                        con.sql(f"SET memory_limit='{memory}GB';")
-                        con.sql(f"SET threads TO {n_cpu}")
-
-                        if ENABLED_DATASET != "local":  # Setup s3 credentials
-                            creds = botocore.session.get_session().get_credentials()
-                            con.install_extension("httpfs")
-                            con.load_extension("httpfs")
-                            con.sql(
-                                f"""
-                                SET s3_region='us-east-2';
-                                SET s3_access_key_id='{creds.access_key}';
-                                SET s3_secret_access_key='{creds.secret_key}';
-                                """
-                            )
-                        start_query = timeit.default_timer()
-                        if hasattr(module, "ddl"):
-                            con.sql(module.ddl)
-                        _ = con.execute(module.query)
-                        time_total = timeit.default_timer() - start
-                        time_query = timeit.default_timer() - start_query
-                        con.close()
-                        del con
-
-                    elif engine == "dask":
-                        dask(None)
-
-                    elif engine == "pyspark":
-                        import pyspark as pyspark_
-
-                        from .tpch_pyspark_queries.utils import get_or_create_spark
-
-                        queries.utils.MASTER = "local[*]"
-
-                        # TODO: context env vars
-                        os.environ["SPARK_HOME"] = str(
-                            pathlib.Path(pyspark_.__file__).absolute().parent
-                        )
-                        os.environ["PYSPARK_PYTHON"] = sys.executable
-                        os.environ["PYSPARK_SUBMIT_ARGS"] = make_pyspark_submit_args(
-                            queries.utils.MASTER
-                        )
-
-                        spark = get_or_create_spark(f"query{query_num}")
-
-                        module = getattr(queries, f"q{query_num}")
-                        module.setup(spark)  # read spark tables query will select from
-
-                        # scale1000 stored as timestamp[ns] which spark parquet
-                        # can't use natively.
-                        if ENABLED_DATASET == "scale 1000":
-                            module.query = fix_timestamp_ns_columns(module.query)
-
-                        start_query = timeit.default_timer()
-                        if hasattr(module, "ddl"):
-                            spark.sql(module.ddl)  # might create temp view
-
-                        q_final = spark.sql(module.query)  # benchmark query
-                        try:
-                            # trigger materialization of df
-                            _ = q_final.collect()
-                        finally:
-                            time_total = timeit.default_timer() - start
-                            time_query = timeit.default_timer() - start_query
-                            spark.catalog.clearCache()
-                            spark.sparkContext.stop()
-                            spark.stop()
-                    return dict(engine=engine, query_num=query_num, time_total=time_total, time_query=time_query)
-
-                _.cluster.adapt(minimum=1, maximum=1)
-                result = _()
-                path = pathlib.Path('./results.json')
-                with path.open('a') as f:
-                    f.write(f"{json.dumps(result)}\n")
-
-
-            func.__name__ = f"test_query_{query_num}"
-            return func
-
-        for query_num in range(1, 23):
-            # Limit to queries implemented in dask
-            test_tpch_dask = getattr(test_tpch, f"test_query_{query_num}", None)
-            if test_tpch_dask is not None:
-                test = make_test(test_tpch_dask, test_tpch_pyspark, query_num)
-                setattr(cls, test.__name__, test)
-
-
-TestTpchSingleVM.generate_test_cases()
+    return timing
 
 
 class SparkMaster(SchedulerPlugin):
