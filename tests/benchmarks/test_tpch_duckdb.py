@@ -1,7 +1,8 @@
-import botocore
 import timeit
+
+import botocore
 import duckdb
-import coiled
+
 from tests.benchmarks import tpch_duckdb_queries as queries
 from tests.benchmarks.conftest import ENABLED_DATASET
 
@@ -35,6 +36,7 @@ def test_query_7(coiled_function):
 
 
 def run_tpch_duckdb(module, coiled_function):
+    @coiled_function
     def _():
         start = timeit.default_timer()
 
@@ -62,4 +64,7 @@ def run_tpch_duckdb(module, coiled_function):
         time_total = timeit.default_timer() - start
         return dict(time_query=time_query, time_total=time_total)
 
-    return coiled_function(_)()
+    try:
+        return _()
+    finally:
+        _.cluster.get_client().restart()

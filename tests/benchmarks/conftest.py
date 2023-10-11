@@ -1,7 +1,8 @@
 import os
-import coiled
-import pytest
 
+import coiled
+import dask
+import pytest
 
 DATASETS = {
     "local": "./tpch-data/scale10/",
@@ -21,22 +22,24 @@ else:
 def tpch_dataset_name():
     return ENABLED_DATASET
 
+
 @pytest.fixture
 def tpch_dataset_path(tpch_dataset_name):
     return DATASETS[tpch_dataset_name]
 
+
 @pytest.fixture
 def vm_type():
-    return 'm6i.16xlarge'
+    return "m6i.16xlarge"
+
 
 @pytest.fixture
 def region():
     # Region of the TPCH data
-    return 'us-east-2'
+    return "us-east-2"
+
 
 @pytest.fixture
 def coiled_function(vm_type, region):
-    # Dask single VM will use LocalCluster(processes=True)
-    import dask
     with dask.config.set({"distributed.worker.daemon": False}):
         yield coiled.function(vm_type=vm_type, region=region)
