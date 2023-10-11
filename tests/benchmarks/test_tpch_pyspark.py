@@ -7,6 +7,8 @@ import shlex
 import subprocess
 import sys
 
+import timeit
+import json
 import botocore
 import duckdb
 import pyspark
@@ -160,14 +162,21 @@ class TestTpchSingleVM:
         from . import tpch_duckdb_queries as duckdb_queries
 
         def make_test(dask, pyspark, query_num):
-            @pytest.mark.parametrize("engine", ("duckdb", "dask", "pyspark"))
+            @pytest.mark.parametrize("engine", ("dask", "duckdb", "pyspark"))
             def func(_self, engine):
-                @coiled.function(vm_type="m6i.12xlarge", region="us-east-2")
+                @coiled.function(vm_type="m6i.24xlarge", region="us-east-2")
                 def _():
+                    start = timeit.default_timer()
                     if engine == "duckdb":
                         module = getattr(duckdb_queries, f"q{query_num}")
 
                         con = duckdb.connect()
+                        import psutil
+                        memory = int((psutil.virtual_memory().total * 0.8) * 9.313226e-10)
+                        n_cpu = psutil.cpu_count()
+
+                        con.sql(f"SET memory_limit='{memory}GB';")
+                        con.sql(f"SET threads TO {n_cpu}")
 
                         if ENABLED_DATASET != "local":  # Setup s3 credentials
                             creds = botocore.session.get_session().get_credentials()
@@ -180,12 +189,17 @@ class TestTpchSingleVM:
                                 SET s3_secret_access_key='{creds.secret_key}';
                                 """
                             )
+                        start_query = timeit.default_timer()
                         if hasattr(module, "ddl"):
                             con.sql(module.ddl)
-                        _ = con.execute(module.query).fetch_arrow_table()
+                        _ = con.execute(module.query)
+                        time_total = timeit.default_timer() - start
+                        time_query = timeit.default_timer() - start_query
+                        con.close()
+                        del con
 
                     elif engine == "dask":
-                        dask(None)  # No client needed/used by dask queries
+                        dask(None)
 
                     elif engine == "pyspark":
                         import pyspark as pyspark_
@@ -208,25 +222,33 @@ class TestTpchSingleVM:
                         module = getattr(queries, f"q{query_num}")
                         module.setup(spark)  # read spark tables query will select from
 
-                        if hasattr(module, "ddl"):
-                            spark.sql(module.ddl)  # might create temp view
-
                         # scale1000 stored as timestamp[ns] which spark parquet
                         # can't use natively.
                         if ENABLED_DATASET == "scale 1000":
                             module.query = fix_timestamp_ns_columns(module.query)
+
+                        start_query = timeit.default_timer()
+                        if hasattr(module, "ddl"):
+                            spark.sql(module.ddl)  # might create temp view
 
                         q_final = spark.sql(module.query)  # benchmark query
                         try:
                             # trigger materialization of df
                             _ = q_final.collect()
                         finally:
+                            time_total = timeit.default_timer() - start
+                            time_query = timeit.default_timer() - start_query
                             spark.catalog.clearCache()
                             spark.sparkContext.stop()
                             spark.stop()
+                    return dict(engine=engine, query_num=query_num, time_total=time_total, time_query=time_query)
 
                 _.cluster.adapt(minimum=1, maximum=1)
-                _()
+                result = _()
+                path = pathlib.Path('./results.json')
+                with path.open('a') as f:
+                    f.write(f"{json.dumps(result)}\n")
+
 
             func.__name__ = f"test_query_{query_num}"
             return func
