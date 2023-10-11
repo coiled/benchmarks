@@ -60,6 +60,10 @@ uber_lyft_large:
 tpch:
   n_workers: 50
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+  backend_options:
+    spot: false
+    spot_policy: "on-demand"
+    multizone: true
 
 # For tests/workflows/test_pytorch_optuna.py
 pytorch_optuna:
