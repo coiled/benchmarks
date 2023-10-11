@@ -526,8 +526,9 @@ def tpch_cluster(request, dask_env_variables, cluster_kwargs, github_cluster_tag
         **cluster_kwargs["tpch"],
     )
     dump_cluster_kwargs(kwargs, f"tpch.{module}")
-    with Cluster(**kwargs) as cluster:
-        yield cluster
+    with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
+        with Cluster(**kwargs) as cluster:
+            yield cluster
 
 
 @pytest.fixture
