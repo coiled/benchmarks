@@ -72,9 +72,10 @@ def pytest_collection_modifyitems(config, items):
 
     skip_benchmarks = pytest.mark.skip(reason="need --tpch-non-dask option to run")
     for item in items:
-        if not config.getoption("--tpch-non-dask") and (
-            # Dask specific tpch benchmark tests are 'test_tpch.py' all others are 'test_tpch_*'
-            str(item.path).startswith(str(TEST_DIR / "benchmarks" / "test_tpch_"))
+        if not config.getoption("--tpch-non-dask") and not (
+            str(item.path).startswith(
+                str(TEST_DIR / "benchmarks" / "tpch" / "test_dask")
+            )
         ):
             item.add_marker(skip_benchmarks)
 
@@ -532,12 +533,12 @@ def small_client(
 def tpch_pyspark_cluster(
     request, dask_env_variables, cluster_kwargs, github_cluster_tags
 ):
-    from .benchmarks.test_tpch_pyspark import SparkMaster, SparkWorker
+    from .benchmarks.tpch.test_pyspark import SparkMaster, SparkWorker
 
     module = os.path.basename(request.fspath).split(".")[0]
     module = module.replace("test_", "")
     kwargs = dict(
-        name=f"{module}-{uuid.uuid4().hex[:8]}",
+        name=f"tpch-{module}-{uuid.uuid4().hex[:8]}",
         environ=dask_env_variables,
         tags=github_cluster_tags,
         **cluster_kwargs["tpch_pyspark"],
