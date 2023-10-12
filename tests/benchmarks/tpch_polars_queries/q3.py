@@ -1,5 +1,7 @@
 from datetime import datetime
+
 import polars as pl
+
 from .utils import read_data
 
 

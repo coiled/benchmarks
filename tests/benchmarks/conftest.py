@@ -15,7 +15,7 @@ if ENABLED_DATASET is not None:
     if ENABLED_DATASET not in DATASETS:
         raise ValueError("Unknown tpch dataset: ", ENABLED_DATASET)
 else:
-    ENABLED_DATASET = "scale 100"
+    ENABLED_DATASET = "scale 1000"
 
 
 @pytest.fixture

@@ -1,4 +1,5 @@
 import timeit
+
 from tests.benchmarks import tpch_polars_queries as queries
 
 

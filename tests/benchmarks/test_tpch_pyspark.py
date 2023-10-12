@@ -87,13 +87,15 @@ def fix_timestamp_ns_columns(query):
 def run_tpch_pyspark(tpch_pyspark_client, module):
     from .tpch_pyspark_queries.utils import get_or_create_spark
 
+    is_local = tpch_pyspark_client is None
+
     async def _run_tpch(dask_scheduler):
         # Connecting to the Spark Connect server doens't appear to work very well
         # If we just submit this stuff to the scheduler and generate a SparkSession there
         # that connects to the running master we can at least get some code running
 
-        if tpch_pyspark_client is not None:
-            queries.utils.MASTER = f"{get_ip()}:7077"
+        if not is_local:
+            queries.utils.MASTER = f"spark://{get_ip()}:7077"
         else:
             queries.utils.MASTER = "local[*]"
 
@@ -130,7 +132,7 @@ def run_tpch_pyspark(tpch_pyspark_client, module):
 
         return await asyncio.to_thread(_)
 
-    if tpch_pyspark_client is not None:
+    if not is_local:
         timing, rows = tpch_pyspark_client.run_on_scheduler(_run_tpch)
     else:
         timing, rows = asyncio.run(_run_tpch(None))  # running locally

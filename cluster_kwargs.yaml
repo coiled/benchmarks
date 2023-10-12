@@ -70,10 +70,17 @@ tpch_pyspark:
     ingress:
       - ports: [8786, 8787, 7077, 8080, 4040, 9797]
         cidr: "0.0.0.0/0"
+    spot: false
+    spot_on_demand_fallback: true
+    multizone: true
 
 tpch:
   n_workers: 20
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+  backend_options:
+    spot: false
+    spot_on_demand_fallback: true
+    multizone: true
 
 # For tests/workflows/test_pytorch_optuna.py
 pytorch_optuna:

@@ -556,6 +556,8 @@ def tpch_pyspark_client(
             with benchmark_all(client):
                 yield client
             log_on_scheduler(client, f"Starting client teardown of {test_label}")
+        client.restart()
+        client.run(lambda: None)
 
 
 @pytest.fixture(scope="module")
