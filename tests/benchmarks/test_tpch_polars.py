@@ -1,5 +1,3 @@
-import timeit
-
 from tests.benchmarks import tpch_polars_queries as queries
 
 
@@ -34,10 +32,7 @@ def test_query_7(coiled_function):
 def run_tpch_query(module, coiled_function):
     @coiled_function
     def _():
-        start = timeit.default_timer()
         module.query().collect(streaming=True)
-        end = timeit.default_timer() - start
-        return dict(time_total=end, time_query=end)
 
     try:
         return _()

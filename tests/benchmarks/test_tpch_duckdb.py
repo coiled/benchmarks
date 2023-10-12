@@ -1,5 +1,3 @@
-import timeit
-
 import botocore
 import duckdb
 
@@ -38,8 +36,6 @@ def test_query_7(coiled_function):
 def run_tpch_duckdb(module, coiled_function):
     @coiled_function
     def _():
-        start = timeit.default_timer()
-
         con = duckdb.connect()
 
         if ENABLED_DATASET != "local":  # Setup s3 credentials
@@ -53,16 +49,10 @@ def run_tpch_duckdb(module, coiled_function):
                 SET s3_secret_access_key='{creds.secret_key}';
                 """
             )
-        start_query = timeit.default_timer()
         if hasattr(module, "ddl"):
             con.sql(module.ddl)
         _ = con.execute(module.query).fetch_arrow_table()
-        time_query = timeit.default_timer() - start_query
-
         con.close()
-
-        time_total = timeit.default_timer() - start
-        return dict(time_query=time_query, time_total=time_total)
 
     try:
         return _()

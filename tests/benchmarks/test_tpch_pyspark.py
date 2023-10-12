@@ -6,7 +6,6 @@ import re
 import shlex
 import subprocess
 import sys
-import timeit
 
 import pyspark
 from conda.cli.python_api import Commands, run_command
@@ -106,7 +105,6 @@ def run_tpch_pyspark(tpch_pyspark_client, module):
         )
 
         def _():
-            start_total = timeit.default_timer()
             spark = get_or_create_spark(f"query{module.__name__}")
 
             # scale1000 stored as timestamp[ns] which spark parquet
@@ -114,31 +112,25 @@ def run_tpch_pyspark(tpch_pyspark_client, module):
             if ENABLED_DATASET == "scale 1000":
                 module.query = fix_timestamp_ns_columns(module.query)
 
-            start_query = timeit.default_timer()
             module.setup(spark)  # read spark tables query will select from
             if hasattr(module, "ddl"):
                 spark.sql(module.ddl)  # might create temp view
             q_final = spark.sql(module.query)  # benchmark query
             try:
                 # trigger materialization of df
-                result = q_final.toJSON().collect()
+                return q_final.toJSON().collect()
             finally:
-                time_query = timeit.default_timer() - start_query
                 spark.catalog.clearCache()
                 spark.sparkContext.stop()
                 spark.stop()
-                time_total = timeit.default_timer() - start_total
-            return dict(time_total=time_total, time_query=time_query), result
 
         return await asyncio.to_thread(_)
 
     if not is_local:
-        timing, rows = tpch_pyspark_client.run_on_scheduler(_run_tpch)
+        rows = tpch_pyspark_client.run_on_scheduler(_run_tpch)
     else:
-        timing, rows = asyncio.run(_run_tpch(None))  # running locally
-
+        rows = asyncio.run(_run_tpch(None))  # running locally
     print(f"Received {len(rows)} rows")
-    return timing
 
 
 class SparkMaster(SchedulerPlugin):
