@@ -1,7 +1,3 @@
-import json
-import pathlib
-import timeit
-
 import pytest
 
 from tests.benchmarks import test_tpch as test_tpch_dask
@@ -82,14 +78,6 @@ def test_query_7(tpch_pyspark_client, engine):
 
 def _run_test(client, pyspark_test, dask_test, engine):
     if engine == "dask":
-        start = timeit.default_timer()
         dask_test(client)
-        results = dict(time_query=timeit.default_timer() - start)
     elif engine == "pyspark":
-        results = pyspark_test(client)
-
-    p = pathlib.Path("./results.json")
-    results["engine"] = engine
-    results["query_number"] = dask_test.__name__.split("_")[-1]
-    with p.open("a") as f:
-        f.write(f"{json.dumps(results)}\n")
+        pyspark_test(client)

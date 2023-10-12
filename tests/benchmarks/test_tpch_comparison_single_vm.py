@@ -1,6 +1,3 @@
-import json
-import pathlib
-
 import dask
 import pytest
 from distributed import LocalCluster
@@ -128,25 +125,19 @@ def _run_test(
         f = coiled_function(_)
         f.cluster.adapt(minimum=1, maximum=1)
         try:
-            results = f()
+            f()
         finally:
             f.cluster.get_client().restart()
 
     elif engine == "duckdb":
-        results = duckdb_test(coiled_function)
+        duckdb_test(coiled_function)
 
     elif engine == "pyspark":
         f = coiled_function(pyspark_test)
         try:
-            results = f(None)
+            f(None)
         finally:
             f.cluster.get_client().restart()
 
     elif engine == "polars":
-        results = polars_test(coiled_function)
-
-    p = pathlib.Path("./results.json")
-    results["engine"] = engine
-    results["query_number"] = dask_test.__name__.split("_")[-1]
-    with p.open("a") as f:
-        f.write(f"{json.dumps(results)}\n")
+        polars_test(coiled_function)
