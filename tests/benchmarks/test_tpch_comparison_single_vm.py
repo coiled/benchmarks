@@ -107,12 +107,13 @@ def _run_test(
     coiled_function, engine, dask_test, duckdb_test, pyspark_test, polars_test
 ):
     if engine == "dask":
-
         # Will get KeyError 'tests.benchmarks.test_tpch_comparison_single_vm' with coiled.function
         # and voodoo w/ run_on_scheduler to launch new local cluster to run a given function
         # also needs setting distributed.worker.daemon=False when launching single node cluster, then
         # on again when launching LocalCluster, otherwise AssertionError daemonic processes cannot have children
-        pytest.skip("Running dask on single node w/ coiled.Cluster / coiled.function not ready yet.")
+        pytest.skip(
+            "Running dask on single node w/ coiled.Cluster / coiled.function not ready yet."
+        )
 
         # Dask will automatically start making use of adaptive, since
         # Scheduler will start receiving tasks, DuckDB and PySpark won't

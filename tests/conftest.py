@@ -55,8 +55,11 @@ def pytest_addoption(parser):
         "--benchmark", action="store_true", help="Collect benchmarking data for tests"
     )
     parser.addoption("--run-workflows", action="store_true", help="Run workflow tests")
-    parser.addoption("--tpch-non-dask", action="store_true", help="Run all (DuckDB / Polars / PySpark) TPCH benchmarks")
-
+    parser.addoption(
+        "--tpch-non-dask",
+        action="store_true",
+        help="Run all (DuckDB / Polars / PySpark) TPCH benchmarks",
+    )
 
 
 def pytest_collection_modifyitems(config, items):

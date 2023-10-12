@@ -1,8 +1,8 @@
-import os
 from datetime import datetime
 
 import dask_expr as dd
-from .conftest import ENABLED_DATASET, DATASETS
+
+from .conftest import DATASETS, ENABLED_DATASET
 
 
 def read_data(filename):
