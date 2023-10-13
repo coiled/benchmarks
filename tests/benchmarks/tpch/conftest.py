@@ -1,7 +1,7 @@
+import functools
 import os
 
 import coiled
-import dask
 import pytest
 
 DATASETS = {
@@ -16,6 +16,38 @@ if ENABLED_DATASET is not None:
         raise ValueError("Unknown tpch dataset: ", ENABLED_DATASET)
 else:
     ENABLED_DATASET = "scale 100"
+
+machine = {
+    "memory": "256 GiB",
+}
+
+
+@pytest.fixture(scope="module")
+def warm_start():
+    @coiled.function(**machine)
+    def _():
+        pass
+
+    _()  # run once to give us a warm start
+
+
+@pytest.fixture(scope="function")
+def restart(warm_start):
+    @coiled.function(**machine)
+    def _():
+        pass
+
+    _.client.restart()
+    yield
+
+
+def coiled_function(**kwargs):
+    # Shouldn't be necessary
+    # See https://github.com/coiled/platform/issues/3519
+    def _(function):
+        return functools.wraps(function)(coiled.function(**kwargs, **machine)(function))
+
+    return _
 
 
 @pytest.fixture
@@ -37,9 +69,3 @@ def vm_type():
 def region():
     # Region of the TPCH data
     return "us-east-2"
-
-
-@pytest.fixture
-def coiled_function(vm_type, region):
-    with dask.config.set({"distributed.worker.daemon": False}):
-        yield coiled.function(vm_type=vm_type, region=region)
