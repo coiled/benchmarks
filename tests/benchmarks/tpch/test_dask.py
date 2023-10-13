@@ -1,23 +1,12 @@
-import os
 from datetime import datetime
 
 import dask_expr as dd
 
-DATASETS = {
-    "scale 100": "s3://coiled-runtime-ci/tpch_scale_100/",
-    "scale 1000": "s3://coiled-runtime-ci/tpch-scale-1000/",
-}
-
-enabled_dataset = os.getenv("TPCH_SCALE")
-if enabled_dataset is not None:
-    if enabled_dataset not in DATASETS:
-        raise ValueError("Unknown tpch dataset: ", enabled_dataset)
-else:
-    enabled_dataset = "scale 100"
+from .conftest import DATASETS, ENABLED_DATASET
 
 
 def read_data(filename):
-    path = DATASETS[enabled_dataset] + filename + "/"
+    path = DATASETS[ENABLED_DATASET] + filename + "/"
     return dd.read_parquet(path, engine="pyarrow")
 
 
