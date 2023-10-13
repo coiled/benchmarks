@@ -160,7 +160,7 @@ def test_query_4(tpch_client):
         .reset_index()
         .sort_values(["o_orderpriority"])
     )
-    result_df.rename({"o_orderkey": "order_count"}, axis=1).compute()
+    result_df.rename(columns={"o_orderkey": "order_count"}).compute()
 
 
 def test_query_5(tpch_client):
