@@ -1,44 +1,9 @@
-import functools
 from datetime import datetime
 
-import coiled
 import polars as pl
-import pytest
 from pyarrow.dataset import dataset
 
-from tests.benchmarks.tpch.conftest import DATASETS, ENABLED_DATASET
-
-machine = {
-    "memory": "256 GiB",
-}
-
-
-@pytest.fixture(scope="module")
-def warm_start():
-    @coiled.function(**machine)
-    def _():
-        pass
-
-    _()  # run once to give us a warm start
-
-
-@pytest.fixture(scope="function")
-def restart(warm_start):
-    @coiled.function(**machine)
-    def _():
-        pass
-
-    _.client.restart()
-    yield
-
-
-def coiled_function(**kwargs):
-    # Shouldn't be necessary
-    # See https://github.com/coiled/platform/issues/3519
-    def _(function):
-        return functools.wraps(function)(coiled.function(**kwargs, **machine)(function))
-
-    return _
+from tests.benchmarks.tpch.conftest import DATASETS, ENABLED_DATASET, coiled_function
 
 
 def read_data(name, source=None):
