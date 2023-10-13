@@ -16,9 +16,12 @@ else:
     enabled_dataset = "scale 1000"
 
 
+dtype_backend = None if dd.__version__ == "0.1.9+10.ga94493e" else "pyarrow"
+
+
 def read_data(filename):
     path = DATASETS[enabled_dataset] + filename + "/"
-    return dd.read_parquet(path, engine="pyarrow")
+    return dd.read_parquet(path, engine="pyarrow", dtype_backend=dtype_backend)
 
 
 def test_query_1(tpch_client):
