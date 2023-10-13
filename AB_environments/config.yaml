@@ -3,7 +3,7 @@
 # Setting it to 5 is a good value to get statistically significant results.
 # This must remain set to 0 in the main branch, thus completely disabling
 # A/B tests, in order to avoid unnecessary runs.
-repeat: 4
+repeat: 3
 
 # Set to true to automatically create a verbatim copy of AB_baseline and then compare
 # the two in the A/B tests. Set to false to save some money if you are already confident
