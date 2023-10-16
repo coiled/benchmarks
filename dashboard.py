@@ -35,8 +35,8 @@ class ChartSpec(NamedTuple):
 
 SPECS = [
     ChartSpec("duration", "Wall Clock", "[s]", 1),
-    ChartSpec("average_memory", "Average Memory", "[GiB]", 2**30),
-    ChartSpec("peak_memory", "Peak Memory", "[GiB]", 2**30),
+    ChartSpec("average_memory", "Average Memory (W)", "[GiB]", 2**30),
+    ChartSpec("peak_memory", "Peak Memory (W)", "[GiB]", 2**30),
     ChartSpec("scheduler_memory_max", "Peak Memory (S)", "[GiB]", 2**30),
     ChartSpec("scheduler_cpu_avg", "Avg CPU (S)", "", 1),
     ChartSpec("worker_max_tick", "Max Tick (W)", "[ms]", 1000),
