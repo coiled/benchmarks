@@ -97,7 +97,7 @@ def test_query_2(tpch_client):
             "s_phone",
             "s_comment",
         ]
-    ].sort_values(
+    ].compute().sort_values(
         by=[
             "s_acctbal",
             "n_name",
@@ -302,9 +302,5 @@ def test_query_7(tpch_client):
 
     result_df.sort_values(
         by=["supp_nation", "cust_nation", "l_year"],
-        ascending=[
-            True,
-            True,
-            True,
-        ],
+        ascending=True,
     ).compute()
