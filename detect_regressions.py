@@ -123,7 +123,7 @@ def regressions_report(reg_df):
     reg_df[cols_for_report].to_markdown("regressions_summary.md")
 
     if not reg_df.empty:
-        # Raise exception to cause CI job to fail
+        # Raise exception to cause CI job to fail if we detected regressions
         raise Exception(
             f"\x1b[31m {len(reg_df)} regressions detected: \n{''.join(reg_df.str_report.values)} \x1b[0m"
         )
