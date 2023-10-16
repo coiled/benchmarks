@@ -683,7 +683,7 @@ def make_index_html_report(
     for baseline in baselines:
         txt += f"- [A/B confidence intervals vs. {baseline}](./AB_vs_{baseline}.html)\n"
 
-    md = panel.pane.Markdown(txt, width=800, renderer="markdown")
+    md = panel.pane.Markdown(txt, width=800)
     out_fname = str(output_dir / "index.html")
     print(f"Generating {out_fname}")
     md.save(
