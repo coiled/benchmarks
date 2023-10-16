@@ -21,9 +21,9 @@ import s3fs
 import sqlalchemy
 import yaml
 from coiled import Cluster
-from distributed import Client, WorkerPlugin
-from distributed.diagnostics.memory_sampler import MemorySampler
-from distributed.scheduler import logger as scheduler_logger
+from dask.distributed import Client, WorkerPlugin
+from dask.distributed.diagnostics.memory_sampler import MemorySampler
+from dask.distributed.scheduler import logger as scheduler_logger
 from packaging.version import Version
 from sqlalchemy.orm import Session
 
@@ -430,7 +430,7 @@ def dask_env_variables():
 
 @lru_cache(None)
 def load_cluster_kwargs() -> dict:
-    base_dir = os.path.join(os.path.dirname(__file__), "..")
+    base_dir = os.path.dirname(__file__)
     base_fname = os.path.join(base_dir, "cluster_kwargs.yaml")
     with open(base_fname) as fh:
         config = yaml.safe_load(fh)
@@ -456,7 +456,7 @@ def dump_cluster_kwargs(kwargs: dict, name: str) -> None:
         kwargs["environ"] = kwargs["environ"].copy()
         kwargs["environ"]["DASK_COILED__TOKEN"] = "<redacted for dump>"
 
-    base_dir = os.path.join(os.path.dirname(__file__), "..")
+    base_dir = os.path.dirname(__file__)
     prefix = os.path.join(base_dir, "cluster_kwargs")
     with open(f"{prefix}.{name}.yaml", "w") as fh:
         yaml.dump(kwargs, fh)
@@ -526,95 +526,6 @@ def small_client(
         # fixture again, this can trigger a race condition that kills workers
         # See https://github.com/dask/distributed/issues/7312 Can be removed
         # after this issue is fixed.
-        client.run(lambda: None)
-
-
-@pytest.fixture(scope="module")
-def tpch_pyspark_cluster(
-    request, dask_env_variables, cluster_kwargs, github_cluster_tags
-):
-    from .benchmarks.tpch.test_pyspark import SparkMaster, SparkWorker
-
-    module = os.path.basename(request.fspath).split(".")[0]
-    module = module.replace("test_", "")
-    kwargs = dict(
-        name=f"tpch-{module}-{uuid.uuid4().hex[:8]}",
-        environ=dask_env_variables,
-        tags=github_cluster_tags,
-        **cluster_kwargs["tpch_pyspark"],
-    )
-    dump_cluster_kwargs(kwargs, f"tpch_pyspark.{module}")
-    with Cluster(**kwargs) as cluster:
-        client = cluster.get_client()
-        client.wait_for_workers(cluster_kwargs["tpch_pyspark"]["n_workers"])
-        client.register_plugin(SparkMaster(), name="spark-master")
-        client.register_plugin(SparkWorker())
-
-        yield cluster
-
-
-@pytest.fixture
-def tpch_pyspark_client(
-    request,
-    testrun_uid,
-    tpch_pyspark_cluster,
-    cluster_kwargs,
-    upload_cluster_dump,
-    benchmark_all,
-):
-    test_label = f"{request.node.name}, session_id={testrun_uid}"
-
-    with Client(tpch_pyspark_cluster) as client:
-        with upload_cluster_dump(client):
-            log_on_scheduler(client, f"Finished client setup of {test_label}")
-            with benchmark_all(client):
-                yield client
-            log_on_scheduler(client, f"Starting client teardown of {test_label}")
-        client.restart()
-        client.run(lambda: None)
-
-
-@pytest.fixture(scope="module")
-def tpch_cluster(request, dask_env_variables, cluster_kwargs, github_cluster_tags):
-    module = os.path.basename(request.fspath).split(".")[0]
-    module = module.replace("test_", "")
-    kwargs = dict(
-        name=f"{module}-{uuid.uuid4().hex[:8]}",
-        environ=dask_env_variables,
-        tags=github_cluster_tags,
-        **cluster_kwargs["tpch"],
-    )
-    dump_cluster_kwargs(kwargs, f"tpch.{module}")
-    with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
-        with Cluster(**kwargs) as cluster:
-            yield cluster
-
-
-@pytest.fixture
-def tpch_client(
-    request,
-    tpch_cluster,
-    dask_env_variables,
-    testrun_uid,
-    cluster_kwargs,
-    upload_cluster_dump,
-    benchmark_all,
-    github_cluster_tags,
-):
-    test_label = f"{request.node.name}, session_id={testrun_uid}"
-
-    with Client(tpch_cluster) as client:
-        client.wait_for_workers(cluster_kwargs["tpch"]["n_workers"])
-
-        with upload_cluster_dump(client):
-            log_on_scheduler(client, "Finished client setup of %s", test_label)
-
-            with benchmark_all(client):
-                yield client
-
-            log_on_scheduler(client, "Starting client teardown of %s", test_label)
-
-        client.restart()
         client.run(lambda: None)
 
 

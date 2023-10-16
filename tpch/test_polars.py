@@ -3,20 +3,18 @@ from datetime import datetime
 import polars as pl
 from pyarrow.dataset import dataset
 
-from tests.benchmarks.tpch.conftest import DATASETS, ENABLED_DATASET, coiled_function
+from .conftest import coiled_function
 
 
-def read_data(name, source=None):
-    pyarrow_dataset = dataset(
-        source=source or f"{DATASETS[ENABLED_DATASET]}{name}/", format="parquet"
-    )
+def read_data(filename):
+    pyarrow_dataset = dataset(filename, format="parquet")
     return pl.scan_pyarrow_dataset(pyarrow_dataset)
 
 
 @coiled_function()
-def test_query_1(restart):
+def test_query_1(restart, dataset_path):
     var_1 = datetime(1998, 9, 2)
-    q = read_data("lineitem")
+    q = read_data(dataset_path + "lineitem")
     (
         q.filter(pl.col("l_shipdate") <= var_1)
         .group_by(["l_returnflag", "l_linestatus"])

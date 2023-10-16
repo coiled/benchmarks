@@ -12,8 +12,6 @@ from conda.cli.python_api import Commands, run_command
 from distributed.diagnostics.plugin import SchedulerPlugin, WorkerPlugin
 from distributed.utils import get_ip
 
-from tests.benchmarks.tpch.conftest import DATASETS, ENABLED_DATASET  # noqa: F401
-
 from . import pyspark_queries as queries
 
 # pyspark/hadoop/aws-java-* are extra sensitive to version changes it seems.
@@ -34,32 +32,32 @@ PACKAGES = (
 )
 
 
-def test_query_1(tpch_pyspark_client):
-    return run_tpch_pyspark(tpch_pyspark_client, queries.q1)
+def test_query_1(pyspark_client):
+    return run_tpch_pyspark(pyspark_client, queries.q1)
 
 
-def test_query_2(tpch_pyspark_client):
-    return run_tpch_pyspark(tpch_pyspark_client, queries.q2)
+def test_query_2(pyspark_client):
+    return run_tpch_pyspark(pyspark_client, queries.q2)
 
 
-def test_query_3(tpch_pyspark_client):
-    return run_tpch_pyspark(tpch_pyspark_client, queries.q3)
+def test_query_3(pyspark_client):
+    return run_tpch_pyspark(pyspark_client, queries.q3)
 
 
-def test_query_4(tpch_pyspark_client):
-    return run_tpch_pyspark(tpch_pyspark_client, queries.q4)
+def test_query_4(pyspark_client):
+    return run_tpch_pyspark(pyspark_client, queries.q4)
 
 
-def test_query_5(tpch_pyspark_client):
-    return run_tpch_pyspark(tpch_pyspark_client, queries.q5)
+def test_query_5(pyspark_client):
+    return run_tpch_pyspark(pyspark_client, queries.q5)
 
 
-def test_query_6(tpch_pyspark_client):
-    return run_tpch_pyspark(tpch_pyspark_client, queries.q6)
+def test_query_6(pyspark_client):
+    return run_tpch_pyspark(pyspark_client, queries.q6)
 
 
-def test_query_7(tpch_pyspark_client):
-    return run_tpch_pyspark(tpch_pyspark_client, queries.q7)
+def test_query_7(pyspark_client):
+    return run_tpch_pyspark(pyspark_client, queries.q7)
 
 
 def make_pyspark_submit_args(spark_master):
@@ -83,10 +81,10 @@ def fix_timestamp_ns_columns(query):
     return query
 
 
-def run_tpch_pyspark(tpch_pyspark_client, module):
+def run_tpch_pyspark(pyspark_client, module, scale):
     from .pyspark_queries.utils import get_or_create_spark
 
-    is_local = tpch_pyspark_client is None
+    is_local = pyspark_client is None
 
     async def _run_tpch(dask_scheduler):
         # Connecting to the Spark Connect server doens't appear to work very well
@@ -109,7 +107,7 @@ def run_tpch_pyspark(tpch_pyspark_client, module):
 
             # scale1000 stored as timestamp[ns] which spark parquet
             # can't use natively.
-            if ENABLED_DATASET == "scale 1000":
+            if scale == 100:
                 module.query = fix_timestamp_ns_columns(module.query)
 
             module.setup(spark)  # read spark tables query will select from
@@ -127,7 +125,7 @@ def run_tpch_pyspark(tpch_pyspark_client, module):
         return await asyncio.to_thread(_)
 
     if not is_local:
-        rows = tpch_pyspark_client.run_on_scheduler(_run_tpch)
+        rows = pyspark_client.run_on_scheduler(_run_tpch)
     else:
         rows = asyncio.run(_run_tpch(None))  # running locally
     print(f"Received {len(rows)} rows")

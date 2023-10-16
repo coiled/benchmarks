@@ -40,8 +40,8 @@ def read_parquet_spark(spark, filename: str, table_name: str):
     from tests.benchmarks.tpch.test_pyspark import DATASETS, ENABLED_DATASET
 
     path = DATASETS[ENABLED_DATASET] + filename + "/"
+    # path = path.replace("s3://", "s3a://")
     print(f"Read from {path=}")
-    path = path.replace("s3://", "s3a://")
     df = spark.read.parquet(path)
     df.createOrReplaceTempView(table_name)
     return df

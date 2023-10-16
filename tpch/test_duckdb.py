@@ -2,15 +2,15 @@ import botocore
 import duckdb
 import pytest
 
-from tests.benchmarks.tpch.conftest import DATASETS, ENABLED_DATASET, coiled_function
+from .conftest import coiled_function
 
 
 @pytest.fixture
-def connection():
+def connection(local):
     def _():
         con = duckdb.connect()
 
-        if ENABLED_DATASET != "local":  # Setup s3 credentials
+        if not local:  # Setup s3 credentials
             creds = botocore.session.get_session().get_credentials()
             con.install_extension("httpfs")
             con.load_extension("httpfs")
@@ -28,11 +28,11 @@ def connection():
 
 
 @coiled_function()
-def test_query_1(connection):
+def test_query_1(connection, dataset_path):
     connection().execute(
         f"""
         with lineitem as (
-            select * from read_parquet('{DATASETS[ENABLED_DATASET]}lineitem/*.parquet')
+            select * from read_parquet('{dataset_path}lineitem/*.parquet')
         )
 
         select
@@ -61,14 +61,14 @@ def test_query_1(connection):
 
 
 @coiled_function()
-def test_query_2(connection):
+def test_query_2(connection, dataset_path):
     connection().execute(
         f"""
-        with part as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}part/*.parquet')),
-             supplier as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}supplier/*.parquet')),
-             partsupp as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}partsupp/*.parquet')),
-             nation as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}nation/*.parquet')),
-             region as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}region/*.parquet'))
+        with part as (select * from read_parquet('{dataset_path}part/*.parquet')),
+             supplier as (select * from read_parquet('{dataset_path}supplier/*.parquet')),
+             partsupp as (select * from read_parquet('{dataset_path}partsupp/*.parquet')),
+             nation as (select * from read_parquet('{dataset_path}nation/*.parquet')),
+             region as (select * from read_parquet('{dataset_path}region/*.parquet'))
 
         select
             s_acctbal,
@@ -119,12 +119,12 @@ def test_query_2(connection):
 
 
 @coiled_function()
-def test_query_3(connection):
+def test_query_3(connection, dataset_path):
     connection().execute(
         f"""
-        with customer as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}customer/*.parquet')),
-             orders as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}orders/*.parquet')),
-             lineitem as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}lineitem/*.parquet'))
+        with customer as (select * from read_parquet('{dataset_path}customer/*.parquet')),
+             orders as (select * from read_parquet('{dataset_path}orders/*.parquet')),
+             lineitem as (select * from read_parquet('{dataset_path}lineitem/*.parquet'))
 
         select
             l_orderkey,
@@ -154,11 +154,11 @@ def test_query_3(connection):
 
 
 @coiled_function()
-def test_query_4(connection):
+def test_query_4(connection, dataset_path):
     connection().execute(
         f"""
-        with orders as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}orders/*.parquet')),
-             lineitem as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}lineitem/*.parquet'))
+        with orders as (select * from read_parquet('{dataset_path}orders/*.parquet')),
+             lineitem as (select * from read_parquet('{dataset_path}lineitem/*.parquet'))
 
         select
             o_orderpriority,
@@ -186,15 +186,15 @@ def test_query_4(connection):
 
 
 @coiled_function()
-def test_query_5(connection):
+def test_query_5(connection, dataset_path):
     connection().execute(
         f"""
-        with customer as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}customer/*.parquet')),
-             orders as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}orders/*.parquet')),
-             lineitem as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}lineitem/*.parquet')),
-             supplier as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}supplier/*.parquet')),
-             nation as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}nation/*.parquet')),
-             region as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}region/*.parquet'))
+        with customer as (select * from read_parquet('{dataset_path}customer/*.parquet')),
+             orders as (select * from read_parquet('{dataset_path}orders/*.parquet')),
+             lineitem as (select * from read_parquet('{dataset_path}lineitem/*.parquet')),
+             supplier as (select * from read_parquet('{dataset_path}supplier/*.parquet')),
+             nation as (select * from read_parquet('{dataset_path}nation/*.parquet')),
+             region as (select * from read_parquet('{dataset_path}region/*.parquet'))
 
         select
             n_name,
@@ -225,11 +225,11 @@ def test_query_5(connection):
 
 
 @coiled_function()
-def test_query_6(connection):
+def test_query_6(connection, dataset_path):
     connection().execute(
         f"""
         with lineitem as (
-            select * from read_parquet('{DATASETS[ENABLED_DATASET]}lineitem/*.parquet')
+            select * from read_parquet('{dataset_path}lineitem/*.parquet')
         )
 
         select
@@ -246,14 +246,14 @@ def test_query_6(connection):
 
 
 @coiled_function()
-def test_query_7(connection):
+def test_query_7(connection, dataset_path):
     connection().execute(
         f"""
-        with supplier as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}supplier/*.parquet')),
-             lineitem as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}lineitem/*.parquet')),
-             orders as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}orders/*.parquet')),
-             customer as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}customer/*.parquet')),
-             nation as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}nation/*.parquet'))
+        with supplier as (select * from read_parquet('{dataset_path}supplier/*.parquet')),
+             lineitem as (select * from read_parquet('{dataset_path}lineitem/*.parquet')),
+             orders as (select * from read_parquet('{dataset_path}orders/*.parquet')),
+             customer as (select * from read_parquet('{dataset_path}customer/*.parquet')),
+             nation as (select * from read_parquet('{dataset_path}nation/*.parquet'))
 
         select
             supp_nation,
