@@ -1,19 +1,14 @@
 channels:
   - conda-forge
 dependencies:
-  - conda
-  - python =3.11
-  - pyspark ==3.4.1
-  - openjdk ==20.0.2
-  - python-duckdb ==0.9.1
-  - polars ==0.19.8
+  - python >=3.9
   - pip
   - coiled >=0.2.54
   - numpy ==1.24.4
   - pandas ==2.1.1
   - dask ==2023.9.2
   - distributed ==2023.9.2
-  - dask-expr
+  - dask-expr ==0.1.8
   - dask-labextension ==7.0.0
   - dask-ml ==2023.3.24
   - fsspec ==2023.9.1
@@ -43,3 +38,7 @@ dependencies:
   - bokeh ==3.2.2
   - gilknocker ==0.4.1
   - openssl >1.1.0g
+  - pyspark ==3.4.1
+  - openjdk ==20.0.2
+  - python-duckdb ==0.9.1
+  - polars >=0.19.3,<=0.19.8  # 0.19.3 on Windows, 0.19.8 on Linux and MacOS

@@ -44,7 +44,7 @@ def test_query_1(tpch_client):
         }
     )
 
-    total.reset_index().compute().sort_values(["l_returnflag", "l_linestatus"])
+    total.reset_index().sort_values(["l_returnflag", "l_linestatus"]).compute()
 
 
 def test_query_2(tpch_client):
@@ -135,7 +135,7 @@ def test_query_3(tpch_client):
     total = jn2.groupby(["l_orderkey", "o_orderdate", "o_shippriority"])[
         "revenue"
     ].sum()
-    total.reset_index().compute().sort_values(["revenue"], ascending=False).head(10)[
+    total.reset_index().sort_values(["revenue"], ascending=False).head(10)[
         ["l_orderkey", "revenue", "o_orderdate", "o_shippriority"]
     ]
 
@@ -158,10 +158,9 @@ def test_query_4(tpch_client):
         jn.groupby("o_orderpriority")["o_orderkey"]
         .count()
         .reset_index()
-        .compute()
         .sort_values(["o_orderpriority"])
     )
-    result_df.rename({"o_orderkey": "order_count"}, axis=1)
+    result_df.rename(columns={"o_orderkey": "order_count"}).compute()
 
 
 def test_query_5(tpch_client):
@@ -190,7 +189,7 @@ def test_query_5(tpch_client):
     )
     jn5["revenue"] = jn5.l_extendedprice * (1.0 - jn5.l_discount)
     gb = jn5.groupby("n_name")["revenue"].sum()
-    gb.compute().reset_index().sort_values("revenue", ascending=False)
+    gb.reset_index().sort_values("revenue", ascending=False).compute()
 
 
 def test_query_6(tpch_client):
@@ -299,14 +298,9 @@ def test_query_7(tpch_client):
         .revenue.agg("sum")
         .reset_index()
     )
-    result_df = result_df.compute()
     result_df.columns = ["supp_nation", "cust_nation", "l_year", "revenue"]
 
     result_df.sort_values(
         by=["supp_nation", "cust_nation", "l_year"],
-        ascending=[
-            True,
-            True,
-            True,
-        ],
-    )
+        ascending=True,
+    ).compute()

@@ -46,18 +46,15 @@ def test_query_1(restart):
 
 @coiled_function()
 def test_query_2(restart):
-    print("Hello")
     var_1 = 15
     var_2 = "BRASS"
     var_3 = "EUROPE"
 
-    print(1)
     region_ds = read_data("region")
     nation_ds = read_data("nation")
     supplier_ds = read_data("supplier")
     part_ds = read_data("part")
     part_supp_ds = read_data("partsupp")
-    print(2)
 
     result_q1 = (
         part_ds.join(part_supp_ds, left_on="p_partkey", right_on="ps_partkey")
@@ -68,7 +65,6 @@ def test_query_2(restart):
         .filter(pl.col("p_type").str.ends_with(var_2))
         .filter(pl.col("r_name") == var_3)
     ).cache()
-    print(3)
 
     final_cols = [
         "s_acctbal",
@@ -81,7 +77,6 @@ def test_query_2(restart):
         "s_comment",
     ]
 
-    print(4)
     (
         result_q1.group_by("p_partkey")
         .agg(pl.min("ps_supplycost").alias("ps_supplycost"))
@@ -98,7 +93,6 @@ def test_query_2(restart):
         .limit(100)
         .with_columns(pl.col(pl.datatypes.Utf8).str.strip().keep_name())
     ).collect(streaming=True)
-    print(5)
 
 
 @coiled_function()
