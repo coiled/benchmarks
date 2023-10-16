@@ -43,7 +43,7 @@ handler.setFormatter(
 )
 coiled_logger.addHandler(handler)
 
-TEST_DIR = pathlib.Path("./tests").absolute()
+TEST_DIR = pathlib.Path(".").absolute()
 
 
 def pytest_addoption(parser):
@@ -66,18 +66,9 @@ def pytest_collection_modifyitems(config, items):
     skip_workflows = pytest.mark.skip(reason="need --run-workflows option to run")
     for item in items:
         if not config.getoption("--run-workflows") and (
-            (TEST_DIR / "workflows") in item.path.parents
+            (TEST_DIR / "tests" / "workflows") in item.path.parents
         ):
             item.add_marker(skip_workflows)
-
-    skip_benchmarks = pytest.mark.skip(reason="need --tpch-non-dask option to run")
-    for item in items:
-        if not config.getoption("--tpch-non-dask") and not (
-            str(item.path).startswith(
-                str(TEST_DIR / "benchmarks" / "tpch" / "test_dask")
-            )
-        ):
-            item.add_marker(skip_benchmarks)
 
 
 dask.config.set(
@@ -345,8 +336,8 @@ def get_cluster_info(test_run_benchmark):
         else:
             yield
             test_run_benchmark.cluster_name = cluster.name
-            test_run_benchmark.cluster_id = cluster.cluster_id
-            test_run_benchmark.cluster_details_url = cluster.details_url
+            test_run_benchmark.cluster_id = getattr(cluster, "cluster_id", "")
+            test_run_benchmark.cluster_details_url = getattr(cluster, "details_url", "")
 
     yield _get_cluster_info
 

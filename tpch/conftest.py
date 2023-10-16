@@ -10,22 +10,29 @@ from dask.distributed import Client, LocalCluster
 
 @pytest.fixture(scope="module")
 def warm_start():
-    @coiled.function(**machine)
-    def _():
-        pass
+    if not local:
 
-    _()  # run once to give us a warm start
+        @coiled.function(**machine)
+        def _():
+            pass
+
+        _()  # run once to give us a warm start
 
 
 @pytest.fixture(scope="function")
-def restart(warm_start, benchmark_all):
-    @coiled.function(**machine)
-    def _():
-        pass
+def restart(warm_start, benchmark_all, benchmark_time, local):
+    if local:
+        with benchmark_time:
+            yield
+    else:
 
-    _.client.restart()
-    with benchmark_all(_.client):
-        yield
+        @coiled.function(**machine)
+        def _():
+            pass
+
+        _.client.restart()
+        with benchmark_all(_.client):
+            yield
 
 
 machine = {  # TODO: figure out where to place this
@@ -37,19 +44,27 @@ def coiled_function(**kwargs):
     # Shouldn't be necessary
     # See https://github.com/coiled/platform/issues/3519
     def _(function):
-        return functools.wraps(function)(coiled.function(**kwargs, **machine)(function))
+        if _local:
+            return function
+        else:
+            return functools.wraps(function)(
+                coiled.function(**kwargs, **machine)(function)
+            )
 
     return _
 
 
 @pytest.fixture(scope="session")
 def scale():
-    return 100
+    return 10
+
+
+_local = True
 
 
 @pytest.fixture(scope="session")
 def local():
-    return False
+    return _local  # TODO: this is ugly.  done for coiled_function
 
 
 @pytest.fixture(scope="session")
@@ -89,6 +104,7 @@ def cluster(
             environ=dask_env_variables,
             tags=github_cluster_tags,
             region="us-east-2",
+            wait_for_workers=True,
             **cluster_kwargs["tpch"],
         )
         with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
@@ -105,13 +121,11 @@ def client(
     benchmark_all,
 ):
     with Client(cluster) as client:
-        client.wait_for_workers(cluster_kwargs["tpch_pyspark"]["n_workers"])
+        client.restart()
+        client.run(lambda: None)
 
         with benchmark_all(client):
             yield client
-
-        client.restart()
-        client.run(lambda: None)
 
 
 @pytest.fixture(scope="module")
@@ -136,7 +150,8 @@ def pyspark_client(
     benchmark_all,
 ):
     with Client(pyspark_cluster) as client:
-        with benchmark_all(client):
-            yield client
         client.restart()
         client.run(lambda: None)
+
+        with benchmark_all(client):
+            yield client

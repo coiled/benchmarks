@@ -43,16 +43,16 @@ def test_query_1(restart, dataset_path):
 
 
 @coiled_function()
-def test_query_2(restart):
+def test_query_2(restart, dataset_path):
     var_1 = 15
     var_2 = "BRASS"
     var_3 = "EUROPE"
 
-    region_ds = read_data("region")
-    nation_ds = read_data("nation")
-    supplier_ds = read_data("supplier")
-    part_ds = read_data("part")
-    part_supp_ds = read_data("partsupp")
+    region_ds = read_data(dataset_path + "region")
+    nation_ds = read_data(dataset_path + "nation")
+    supplier_ds = read_data(dataset_path + "supplier")
+    part_ds = read_data(dataset_path + "part")
+    part_supp_ds = read_data(dataset_path + "partsupp")
 
     result_q1 = (
         part_ds.join(part_supp_ds, left_on="p_partkey", right_on="ps_partkey")
@@ -94,13 +94,13 @@ def test_query_2(restart):
 
 
 @coiled_function()
-def test_query_3(restart):
+def test_query_3(restart, dataset_path):
     var_1 = var_2 = datetime(1995, 3, 15)
     var_3 = "BUILDING"
 
-    customer_ds = read_data("customer")
-    line_item_ds = read_data("lineitem")
-    orders_ds = read_data("orders")
+    customer_ds = read_data(dataset_path + "customer")
+    line_item_ds = read_data(dataset_path + "lineitem")
+    orders_ds = read_data(dataset_path + "orders")
 
     (
         customer_ds.filter(pl.col("c_mktsegment") == var_3)
@@ -127,12 +127,12 @@ def test_query_3(restart):
 
 
 @coiled_function()
-def test_query_4(restart):
+def test_query_4(restart, dataset_path):
     var_1 = datetime(1993, 7, 1)
     var_2 = datetime(1993, 10, 1)
 
-    line_item_ds = read_data("lineitem")
-    orders_ds = read_data("orders")
+    line_item_ds = read_data(dataset_path + "lineitem")
+    orders_ds = read_data(dataset_path + "orders")
 
     (
         line_item_ds.join(orders_ds, left_on="l_orderkey", right_on="o_orderkey")
@@ -147,17 +147,17 @@ def test_query_4(restart):
 
 
 @coiled_function()
-def test_query_5(restart):
+def test_query_5(restart, dataset_path):
     var_1 = "ASIA"
     var_2 = datetime(1994, 1, 1)
     var_3 = datetime(1995, 1, 1)
 
-    region_ds = read_data("region")
-    nation_ds = read_data("nation")
-    customer_ds = read_data("customer")
-    line_item_ds = read_data("lineitem")
-    orders_ds = read_data("orders")
-    supplier_ds = read_data("supplier")
+    region_ds = read_data(dataset_path + "region")
+    nation_ds = read_data(dataset_path + "nation")
+    customer_ds = read_data(dataset_path + "customer")
+    line_item_ds = read_data(dataset_path + "lineitem")
+    orders_ds = read_data(dataset_path + "orders")
+    supplier_ds = read_data(dataset_path + "supplier")
 
     (
         region_ds.join(nation_ds, left_on="r_regionkey", right_on="n_regionkey")
@@ -181,12 +181,12 @@ def test_query_5(restart):
 
 
 @coiled_function()
-def test_query_6(restart):
+def test_query_6(restart, dataset_path):
     var_1 = datetime(1994, 1, 1)
     var_2 = datetime(1995, 1, 1)
     var_3 = 24
 
-    line_item_ds = read_data("lineitem")
+    line_item_ds = read_data(dataset_path + "lineitem")
 
     (
         line_item_ds.filter(
@@ -202,12 +202,12 @@ def test_query_6(restart):
 
 
 @coiled_function()
-def test_query_7(restart):
-    nation_ds = read_data("nation")
-    customer_ds = read_data("customer")
-    line_item_ds = read_data("lineitem")
-    orders_ds = read_data("orders")
-    supplier_ds = read_data("supplier")
+def test_query_7(restart, dataset_path):
+    nation_ds = read_data(dataset_path + "nation")
+    customer_ds = read_data(dataset_path + "customer")
+    line_item_ds = read_data(dataset_path + "lineitem")
+    orders_ds = read_data(dataset_path + "orders")
+    supplier_ds = read_data(dataset_path + "supplier")
 
     n1 = nation_ds.filter(pl.col("n_name") == "FRANCE")
     n2 = nation_ds.filter(pl.col("n_name") == "GERMANY")
