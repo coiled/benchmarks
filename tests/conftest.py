@@ -55,6 +55,11 @@ def pytest_addoption(parser):
         "--benchmark", action="store_true", help="Collect benchmarking data for tests"
     )
     parser.addoption("--run-workflows", action="store_true", help="Run workflow tests")
+    parser.addoption(
+        "--tpch-non-dask",
+        action="store_true",
+        help="Run all (DuckDB / Polars / PySpark) TPCH benchmarks",
+    )
 
 
 def pytest_collection_modifyitems(config, items):
@@ -64,6 +69,15 @@ def pytest_collection_modifyitems(config, items):
             (TEST_DIR / "workflows") in item.path.parents
         ):
             item.add_marker(skip_workflows)
+
+    skip_benchmarks = pytest.mark.skip(reason="need --tpch-non-dask option to run")
+    for item in items:
+        if not config.getoption("--tpch-non-dask") and not (
+            str(item.path).startswith(
+                str(TEST_DIR / "benchmarks" / "tpch" / "test_dask")
+            )
+        ):
+            item.add_marker(skip_benchmarks)
 
 
 dask.config.set(

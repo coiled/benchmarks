@@ -107,6 +107,16 @@ jobs:
           echo $EXTRA_OPTIONS
           echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
 
+      - name: Determine if all TPC-H benchmarks should be run
+        if: |
+          github.event_name == 'schedule'
+          || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch'))
+        run: |
+          # Put EXTRA_OPTIONS into $GITHUB_ENV so it can be used in subsequent workflow steps
+          export EXTRA_OPTIONS="${EXTRA_OPTIONS} --tpch-non-dask"
+          echo $EXTRA_OPTIONS
+          echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
+
       - name: Run Coiled Runtime Tests
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
