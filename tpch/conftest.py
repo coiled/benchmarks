@@ -56,10 +56,10 @@ def coiled_function(**kwargs):
 
 @pytest.fixture(scope="session")
 def scale():
-    return 10
+    return 100
 
 
-_local = True
+_local = False
 
 
 @pytest.fixture(scope="session")
@@ -104,7 +104,6 @@ def cluster(
             environ=dask_env_variables,
             tags=github_cluster_tags,
             region="us-east-2",
-            wait_for_workers=True,
             **cluster_kwargs["tpch"],
         )
         with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
