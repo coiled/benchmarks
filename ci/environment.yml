@@ -2,11 +2,11 @@ channels:
   - conda-forge
 dependencies:
   - conda
-  - python =3.11
+  - python >=3.9
   - pyspark ==3.4.1
   - openjdk ==20.0.2
   - python-duckdb ==0.9.1
-  - polars ==0.19.8
+  - polars >=0.19.3,<=0.19.8  # 0.19.3 on Windows, 0.19.8 on Linux and MacOS
   - pip
   - coiled >=0.2.54
   - numpy ==1.24.4
