@@ -19,7 +19,8 @@ def get_or_create_spark(name: str = "SparkTest"):
         .appName(name)
         .config(
             "spark.hadoop.fs.s3a.aws.credentials.provider",
-            "com.amazonaws.auth.EnvironmentVariableCredentialsProvider",
+            "com.amazonaws.auth.EnvironmentVariableCredentialsProvider"
+            ",org.apache.hadoop.fs.s3a.auth.IAMInstanceCredentialsProvider",
         )
         # ref: https://issues.apache.org/jira/browse/SPARK-44988  (unresolved, v3.4.0 and v3.4.1 affected)
         # Illegal Parquet type: INT64 (TIMESTAMP(NANOS,true))
