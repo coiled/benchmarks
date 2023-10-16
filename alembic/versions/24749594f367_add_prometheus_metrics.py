@@ -1,8 +1,8 @@
 """Add prometheus metrics
 
-Revision ID: d2ab40cff9cc
-Revises: 9813b7160e69
-Create Date: 2023-09-07 10:29:21.546012
+Revision ID: 24749594f367
+Revises: 778e617a2886
+Create Date: 2023-10-16 18:43:35.402355
 
 """
 from alembic import op
@@ -10,8 +10,8 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'd2ab40cff9cc'
-down_revision = '9813b7160e69'
+revision = '24749594f367'
+down_revision = '778e617a2886'
 branch_labels = None
 depends_on = None
 
