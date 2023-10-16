@@ -19,6 +19,7 @@ def connection():
                 SET s3_region='us-east-2';
                 SET s3_access_key_id='{creds.access_key}';
                 SET s3_secret_access_key='{creds.secret_key}';
+                SET s3_session_token='{creds.token}';
                 """
             )
         return con
