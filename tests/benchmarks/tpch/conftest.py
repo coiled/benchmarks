@@ -10,15 +10,13 @@ DATASETS = {
     "scale 1000": "s3://coiled-runtime-ci/tpch-scale-1000/",
 }
 
-ENABLED_DATASET = os.getenv("TPCH_SCALE")
-if ENABLED_DATASET is not None:
-    if ENABLED_DATASET not in DATASETS:
-        raise ValueError("Unknown tpch dataset: ", ENABLED_DATASET)
-else:
-    ENABLED_DATASET = "scale 100"
+ENABLED_DATASET = os.getenv("TPCH_SCALE") or "scale 100"
+
+if ENABLED_DATASET not in DATASETS:
+    raise ValueError("Unknown tpch dataset: ", ENABLED_DATASET)
 
 machine = {
-    "memory": "256 GiB",
+    "vm_type": "m6i.8xlarge",
 }
 
 
@@ -32,13 +30,14 @@ def warm_start():
 
 
 @pytest.fixture(scope="function")
-def restart(warm_start):
+def restart(warm_start, benchmark_all):
     @coiled.function(**machine)
     def _():
         pass
 
     _.client.restart()
-    yield
+    with benchmark_all(_.client):
+        yield
 
 
 def coiled_function(**kwargs):
