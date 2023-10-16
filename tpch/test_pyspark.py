@@ -32,32 +32,32 @@ PACKAGES = (
 )
 
 
-def test_query_1(pyspark_client):
-    return run_tpch_pyspark(pyspark_client, queries.q1)
+def test_query_1(pyspark_client, scale, dataset_path):
+    return run_tpch_pyspark(pyspark_client, queries.q1, scale, dataset_path)
 
 
-def test_query_2(pyspark_client):
-    return run_tpch_pyspark(pyspark_client, queries.q2)
+def test_query_2(pyspark_client, scale, dataset_path):
+    return run_tpch_pyspark(pyspark_client, queries.q2, scale, dataset_path)
 
 
-def test_query_3(pyspark_client):
-    return run_tpch_pyspark(pyspark_client, queries.q3)
+def test_query_3(pyspark_client, scale, dataset_path):
+    return run_tpch_pyspark(pyspark_client, queries.q3, scale, dataset_path)
 
 
-def test_query_4(pyspark_client):
-    return run_tpch_pyspark(pyspark_client, queries.q4)
+def test_query_4(pyspark_client, scale, dataset_path):
+    return run_tpch_pyspark(pyspark_client, queries.q4, scale, dataset_path)
 
 
-def test_query_5(pyspark_client):
-    return run_tpch_pyspark(pyspark_client, queries.q5)
+def test_query_5(pyspark_client, scale, dataset_path):
+    return run_tpch_pyspark(pyspark_client, queries.q5, scale, dataset_path)
 
 
-def test_query_6(pyspark_client):
-    return run_tpch_pyspark(pyspark_client, queries.q6)
+def test_query_6(pyspark_client, scale, dataset_path):
+    return run_tpch_pyspark(pyspark_client, queries.q6, scale, dataset_path)
 
 
-def test_query_7(pyspark_client):
-    return run_tpch_pyspark(pyspark_client, queries.q7)
+def test_query_7(pyspark_client, scale, dataset_path):
+    return run_tpch_pyspark(pyspark_client, queries.q7, scale, dataset_path)
 
 
 def make_pyspark_submit_args(spark_master):
@@ -81,7 +81,7 @@ def fix_timestamp_ns_columns(query):
     return query
 
 
-def run_tpch_pyspark(pyspark_client, module, scale):
+def run_tpch_pyspark(pyspark_client, module, scale, dataset_path):
     from .pyspark_queries.utils import get_or_create_spark
 
     is_local = pyspark_client is None
@@ -110,7 +110,9 @@ def run_tpch_pyspark(pyspark_client, module, scale):
             if scale == 100:
                 module.query = fix_timestamp_ns_columns(module.query)
 
-            module.setup(spark)  # read spark tables query will select from
+            module.setup(
+                spark, dataset_path
+            )  # read spark tables query will select from
             if hasattr(module, "ddl"):
                 spark.sql(module.ddl)  # might create temp view
             q_final = spark.sql(module.query)  # benchmark query

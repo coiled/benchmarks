@@ -11,7 +11,7 @@ select
 """
 
 
-def setup(spark):
+def setup(spark, dataset_path):
     from .utils import read_parquet_spark
 
-    read_parquet_spark(spark, "lineitem", "lineitem")
+    read_parquet_spark(spark, dataset_path + "lineitem", "lineitem")

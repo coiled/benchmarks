@@ -23,8 +23,8 @@ query = """
 """
 
 
-def setup(spark):
+def setup(spark, dataset_path):
     from .utils import read_parquet_spark
 
     for name in ("orders", "lineitem"):
-        read_parquet_spark(spark, name, name)
+        read_parquet_spark(spark, dataset_path + name, name)
