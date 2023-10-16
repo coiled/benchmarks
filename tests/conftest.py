@@ -304,13 +304,13 @@ def benchmark_coiled_prometheus(test_run_benchmark):
         # TODO: Do we want to have plain max or 80th percentile?
         test_run_benchmark.worker_max_tick = cluster.get_aggregated_metric(
             query="worker_max_tick|max",
-            over_time="quantile(0.95)",
+            over_time="quantile(0.80)",
             start_ts=start,
             end_ts=end,
         )
         test_run_benchmark.scheduler_max_tick = cluster.get_aggregated_metric(
             query="scheduler_max_tick|max",
-            over_time="quantile(0.95)",
+            over_time="quantile(0.80)",
             start_ts=start,
             end_ts=end,
         )
