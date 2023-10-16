@@ -40,8 +40,7 @@ spill_cluster:
 embarrassingly_parallel:
   n_workers: 100
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
-  backend_options:
-    region: "us-east-1"  # Same region as dataset
+  region: "us-east-1"  # Same region as dataset
 
 # For tests/workflows/test_xgboost_optuna.py
 xgboost_optuna:
@@ -61,7 +60,7 @@ tpch_pyspark:
   n_workers: 20
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
   # Keep the same, as spark.driver/executor.memory calculated from scheduler size
-  # pyspark doesn't automatically calculate available memory for executors, 
+  # pyspark doesn't automatically calculate available memory for executors,
   # so we do it in pyspark_queries.utils, but this takes place on the scheduler
   scheduler_vm_types: [m6i.xlarge]
   scheduler_options:
@@ -115,5 +114,4 @@ test_repeated_merge_spill:
 from_csv_to_parquet:
   n_workers: 10
   worker_vm_types: [m6i.xlarge]  # 4 CPU, 16 GiB (preferred default instance)
-  backend_options:
-    region: "us-east-1"  # Same region as dataset
+  region: "us-east-1"  # Same region as dataset
