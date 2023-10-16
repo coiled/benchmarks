@@ -55,6 +55,11 @@ def pytest_addoption(parser):
         "--benchmark", action="store_true", help="Collect benchmarking data for tests"
     )
     parser.addoption("--run-workflows", action="store_true", help="Run workflow tests")
+    parser.addoption(
+        "--tpch-non-dask",
+        action="store_true",
+        help="Run all (DuckDB / Polars / PySpark) TPCH benchmarks",
+    )
 
 
 def pytest_collection_modifyitems(config, items):
@@ -64,6 +69,15 @@ def pytest_collection_modifyitems(config, items):
             (TEST_DIR / "workflows") in item.path.parents
         ):
             item.add_marker(skip_workflows)
+
+    skip_benchmarks = pytest.mark.skip(reason="need --tpch-non-dask option to run")
+    for item in items:
+        if not config.getoption("--tpch-non-dask") and not (
+            str(item.path).startswith(
+                str(TEST_DIR / "benchmarks" / "tpch" / "test_dask")
+            )
+        ):
+            item.add_marker(skip_benchmarks)
 
 
 dask.config.set(
@@ -371,9 +385,12 @@ def benchmark_all(
 
     @contextlib.contextmanager
     def _benchmark_all(client):
-        with benchmark_memory(client), benchmark_task_durations(
-            client
-        ), get_cluster_info(client.cluster), benchmark_time:
+        with (
+            benchmark_memory(client),
+            benchmark_task_durations(client),
+            get_cluster_info(client.cluster),
+            benchmark_time,
+        ):
             yield
 
     yield _benchmark_all
@@ -509,6 +526,95 @@ def small_client(
         # fixture again, this can trigger a race condition that kills workers
         # See https://github.com/dask/distributed/issues/7312 Can be removed
         # after this issue is fixed.
+        client.run(lambda: None)
+
+
+@pytest.fixture(scope="module")
+def tpch_pyspark_cluster(
+    request, dask_env_variables, cluster_kwargs, github_cluster_tags
+):
+    from .benchmarks.tpch.test_pyspark import SparkMaster, SparkWorker
+
+    module = os.path.basename(request.fspath).split(".")[0]
+    module = module.replace("test_", "")
+    kwargs = dict(
+        name=f"tpch-{module}-{uuid.uuid4().hex[:8]}",
+        environ=dask_env_variables,
+        tags=github_cluster_tags,
+        **cluster_kwargs["tpch_pyspark"],
+    )
+    dump_cluster_kwargs(kwargs, f"tpch_pyspark.{module}")
+    with Cluster(**kwargs) as cluster:
+        client = cluster.get_client()
+        client.wait_for_workers(cluster_kwargs["tpch_pyspark"]["n_workers"])
+        client.register_plugin(SparkMaster(), name="spark-master")
+        client.register_plugin(SparkWorker())
+
+        yield cluster
+
+
+@pytest.fixture
+def tpch_pyspark_client(
+    request,
+    testrun_uid,
+    tpch_pyspark_cluster,
+    cluster_kwargs,
+    upload_cluster_dump,
+    benchmark_all,
+):
+    test_label = f"{request.node.name}, session_id={testrun_uid}"
+
+    with Client(tpch_pyspark_cluster) as client:
+        with upload_cluster_dump(client):
+            log_on_scheduler(client, f"Finished client setup of {test_label}")
+            with benchmark_all(client):
+                yield client
+            log_on_scheduler(client, f"Starting client teardown of {test_label}")
+        client.restart()
+        client.run(lambda: None)
+
+
+@pytest.fixture(scope="module")
+def tpch_cluster(request, dask_env_variables, cluster_kwargs, github_cluster_tags):
+    module = os.path.basename(request.fspath).split(".")[0]
+    module = module.replace("test_", "")
+    kwargs = dict(
+        name=f"{module}-{uuid.uuid4().hex[:8]}",
+        environ=dask_env_variables,
+        tags=github_cluster_tags,
+        **cluster_kwargs["tpch"],
+    )
+    dump_cluster_kwargs(kwargs, f"tpch.{module}")
+    with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
+        with Cluster(**kwargs) as cluster:
+            yield cluster
+
+
+@pytest.fixture
+def tpch_client(
+    request,
+    tpch_cluster,
+    dask_env_variables,
+    testrun_uid,
+    cluster_kwargs,
+    upload_cluster_dump,
+    benchmark_all,
+    github_cluster_tags,
+):
+    test_label = f"{request.node.name}, session_id={testrun_uid}"
+
+    with Client(tpch_cluster) as client:
+        client.wait_for_workers(cluster_kwargs["tpch"]["n_workers"])
+
+        with upload_cluster_dump(client):
+            log_on_scheduler(client, "Finished client setup of %s", test_label)
+
+            with benchmark_all(client):
+                yield client
+
+            log_on_scheduler(client, "Starting client teardown of %s", test_label)
+
+        client.restart()
         client.run(lambda: None)
 
 

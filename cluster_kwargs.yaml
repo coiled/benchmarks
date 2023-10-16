@@ -57,6 +57,31 @@ uber_lyft_large:
   n_workers: 50
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
+tpch_pyspark:
+  n_workers: 20
+  worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+  # Keep the same, as spark.driver/executor.memory calculated from scheduler size
+  # pyspark doesn't automatically calculate available memory for executors, 
+  # so we do it in pyspark_queries.utils, but this takes place on the scheduler
+  scheduler_vm_types: [m6i.xlarge]
+  scheduler_options:
+    idle_timeout: null  # Scheduler won't get any Dask tasks.
+  backend_options:
+    ingress:
+      - ports: [8786, 8787, 7077, 8080, 4040, 9797]
+        cidr: "0.0.0.0/0"
+    spot: false
+    spot_on_demand_fallback: true
+    multizone: true
+
+tpch:
+  n_workers: 20
+  worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+  backend_options:
+    spot: false
+    spot_on_demand_fallback: true
+    multizone: true
+
 # For tests/workflows/test_pytorch_optuna.py
 pytorch_optuna:
   n_workers: 10

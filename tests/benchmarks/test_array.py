@@ -142,19 +142,21 @@ def test_climatic_mean(small_client, new_array):
 
 
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
-def test_quadratic_mean(small_client):
+@pytest.mark.parametrize("backend", ["dataframe", "array"])
+def test_quadratic_mean(small_client, backend):
     # https://github.com/pangeo-data/distributed-array-examples/issues/2
+    # See https://github.com/dask/dask/issues/10384
     xr = pytest.importorskip("xarray")
-
+    size = 5000
     ds = xr.Dataset(
         dict(
             anom_u=(
                 ["time", "face", "j", "i"],
-                da.random.random((5000, 1, 987, 1920), chunks=(10, 1, -1, -1)),
+                da.random.random((size, 1, 987, 1920), chunks=(10, 1, -1, -1)),
             ),
             anom_v=(
                 ["time", "face", "j", "i"],
-                da.random.random((5000, 1, 987, 1920), chunks=(10, 1, -1, -1)),
+                da.random.random((size, 1, 987, 1920), chunks=(10, 1, -1, -1)),
             ),
         )
     )
@@ -162,8 +164,10 @@ def test_quadratic_mean(small_client):
     quad = ds**2
     quad["uv"] = ds.anom_u * ds.anom_v
     mean = quad.mean("time")
-    # Mean is really small at this point so we can just fetch it
-    wait(mean, small_client, 15 * 60)
+    if backend == "dataframe":
+        mean = mean.to_dask_dataframe()
+
+    wait(mean, small_client, 10 * 60)
 
 
 def test_vorticity(small_client, new_array):
