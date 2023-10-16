@@ -45,4 +45,4 @@ dependencies:
     # Read README.md for troubleshooting.
     - git+https://github.com/dask/dask
     - git+https://github.com/dask/distributed
-    - git+https://github.com/phofl/dask-expr@a94493ef1a0fa5abefbe0182453c27542e113509
+    - git+https://github.com/phofl/dask-expr@test1
