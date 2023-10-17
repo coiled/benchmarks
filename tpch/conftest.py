@@ -76,6 +76,7 @@ def dataset_path(local, scale):
     }
     local_paths = {
         10: "./tpch-data/scale10/",
+        100: "./tpch-data/scale100/",
     }
 
     if local:
@@ -119,12 +120,47 @@ def client(
     cluster_kwargs,
     benchmark_all,
 ):
-    with Client(cluster) as client:
+    with cluster.get_client() as client:
         client.restart()
         client.run(lambda: None)
 
         with benchmark_all(client):
             yield client
+
+
+@pytest.fixture(scope="module")
+def spark_setup(cluster):
+    pytest.importorskip("pyspark")
+    if local:
+        cluster.shutdown()  # no need to bootstrap with Dask
+        from pyspark.sql import SparkSession
+
+        spark = SparkSession.builder.master("local[*]").getOrCreate()
+    else:
+        from coiled.spark import get_spark
+
+        with cluster.get_client() as client:
+            spark = get_spark(client)
+
+    # warm start
+    from pyspark.sql import Row
+
+    df = spark.createDataFrame(
+        [
+            Row(a=1, b=2.0, c="string1"),
+        ]
+    )
+    df.show()
+
+    yield spark
+
+
+@pytest.fixture
+def spark(spark_setup, benchmark_time):
+    with benchmark_time:
+        yield spark_setup
+
+    spark_setup.catalog.clearCache()
 
 
 @pytest.fixture(scope="module")

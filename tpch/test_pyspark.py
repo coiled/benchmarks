@@ -1,72 +1,264 @@
-import asyncio
-import logging
-import os
-import pathlib
 import re
-import shlex
-import subprocess
-import sys
-
-import pyspark
-from conda.cli.python_api import Commands, run_command
-from distributed.diagnostics.plugin import SchedulerPlugin, WorkerPlugin
-from distributed.utils import get_ip
-
-from . import pyspark_queries as queries
-
-# pyspark/hadoop/aws-java-* are extra sensitive to version changes it seems.
-# ref: https://hadoop.apache.org/docs/r3.3.4/hadoop-aws/dependency-analysis.html
-# for verifying aws-java-sdk-bundle version w/ hadoop version.
-assert pyspark.__version__ == "3.4.1"
-HADOOP_AWS_VERSION = "3.3.4"  # sc._jvm.org.apache.hadoop.util.VersionInfo.getVersion()
-AWS_JAVA_SDK_BUNDLE_VERSION = "1.12.262"
 
 
-logger = logging.getLogger("coiled")
-
-PACKAGES = (
-    f"org.apache.hadoop:hadoop-client:{HADOOP_AWS_VERSION}",
-    f"org.apache.hadoop:hadoop-common:{HADOOP_AWS_VERSION}",
-    f"org.apache.hadoop:hadoop-aws:{HADOOP_AWS_VERSION}",
-    f"com.amazonaws:aws-java-sdk-bundle:{AWS_JAVA_SDK_BUNDLE_VERSION}",
-)
+def register_table(spark, path, name):
+    path = path.replace("s3://", "s3a://")
+    df = spark.read.parquet(path + name)
+    df.createOrReplaceTempView(name)
 
 
-def test_query_1(pyspark_client, scale, dataset_path):
-    return run_tpch_pyspark(pyspark_client, queries.q1, scale, dataset_path)
+def test_query_1(spark, dataset_path):
+    register_table(spark, dataset_path, "lineitem")
 
-
-def test_query_2(pyspark_client, scale, dataset_path):
-    return run_tpch_pyspark(pyspark_client, queries.q2, scale, dataset_path)
-
-
-def test_query_3(pyspark_client, scale, dataset_path):
-    return run_tpch_pyspark(pyspark_client, queries.q3, scale, dataset_path)
-
-
-def test_query_4(pyspark_client, scale, dataset_path):
-    return run_tpch_pyspark(pyspark_client, queries.q4, scale, dataset_path)
-
-
-def test_query_5(pyspark_client, scale, dataset_path):
-    return run_tpch_pyspark(pyspark_client, queries.q5, scale, dataset_path)
-
-
-def test_query_6(pyspark_client, scale, dataset_path):
-    return run_tpch_pyspark(pyspark_client, queries.q6, scale, dataset_path)
-
-
-def test_query_7(pyspark_client, scale, dataset_path):
-    return run_tpch_pyspark(pyspark_client, queries.q7, scale, dataset_path)
-
-
-def make_pyspark_submit_args(spark_master):
-    return f"""
-        --packages {','.join(PACKAGES)}
-        --exclude-packages com.google.guava:guava
-        --master=spark://{spark_master}
-        pyspark-shell
+    query = """select
+            l_returnflag,
+            l_linestatus,
+            sum(l_quantity) as sum_qty,
+            sum(l_extendedprice) as sum_base_price,
+            sum(l_extendedprice * (1 - l_discount)) as sum_disc_price,
+            sum(l_extendedprice * (1 - l_discount) * (1 + l_tax)) as sum_charge,
+            avg(l_quantity) as avg_qty,
+            avg(l_extendedprice) as avg_price,
+            avg(l_discount) as avg_disc,
+            count(*) as count_order
+        from
+            lineitem
+        where
+            l_shipdate <= date('1998-09-02')
+        group by
+            l_returnflag,
+            l_linestatus
+        order by
+            l_returnflag,
+            l_linestatus
     """
+    spark.sql(query).show()  # TODO: find better blocking method
+
+
+def test_query_2(spark, dataset_path):
+    for name in ("part", "supplier", "partsupp", "nation", "region"):
+        register_table(spark, dataset_path, name)
+
+    query = """
+    select
+        s_acctbal,
+        s_name,
+        n_name,
+        p_partkey,
+        p_mfgr,
+        s_address,
+        s_phone,
+        s_comment
+    from
+        part,
+        supplier,
+        partsupp,
+        nation,
+        region
+    where
+        p_partkey = ps_partkey
+        and s_suppkey = ps_suppkey
+        and p_size = 15
+        and p_type like '%BRASS'
+        and s_nationkey = n_nationkey
+        and n_regionkey = r_regionkey
+        and r_name = 'EUROPE'
+        and ps_supplycost = (
+            select
+                min(ps_supplycost)
+            from
+                partsupp,
+                supplier,
+                nation,
+                region
+            where
+                p_partkey = ps_partkey
+                and s_suppkey = ps_suppkey
+                and s_nationkey = n_nationkey
+                and n_regionkey = r_regionkey
+                and r_name = 'EUROPE'
+        )
+    order by
+        s_acctbal desc,
+        n_name,
+        s_name,
+        p_partkey
+    limit 100
+    """
+
+    spark.sql(query).show()
+
+
+def test_query_3(spark, dataset_path):
+    for name in ("customer", "orders", "lineitem"):
+        register_table(spark, dataset_path, name)
+
+    query = """
+        select
+            l_orderkey,
+            sum(l_extendedprice * (1 - l_discount)) as revenue,
+            o_orderdate,
+            o_shippriority
+        from
+            customer,
+            orders,
+            lineitem
+        where
+            c_mktsegment = 'BUILDING'
+            and c_custkey = o_custkey
+            and l_orderkey = o_orderkey
+            and o_orderdate < date '1995-03-15'
+            and l_shipdate > date '1995-03-15'
+        group by
+            l_orderkey,
+            o_orderdate,
+            o_shippriority
+        order by
+            revenue desc,
+            o_orderdate
+        limit 10
+    """
+
+    spark.sql(query).show()
+
+
+def test_query_4(spark, dataset_path):
+    for name in ("orders", "lineitem"):
+        register_table(spark, dataset_path, name)
+
+    query = """
+        select
+            o_orderpriority,
+            count(*) as order_count
+        from
+            orders
+        where
+            o_orderdate >= date '1993-07-01'
+            and o_orderdate < date '1993-07-01' + interval '3' month
+            and exists (
+                select
+                    *
+                from
+                    lineitem
+                where
+                    l_orderkey = o_orderkey
+                    and l_commitdate < l_receiptdate
+            )
+        group by
+            o_orderpriority
+        order by
+            o_orderpriority
+    """
+
+    spark.sql(query).show()
+
+
+def test_query_5(spark, dataset_path):
+    for name in (
+        "customer",
+        "orders",
+        "lineitem",
+        "supplier",
+        "nation",
+        "region",
+    ):
+        register_table(spark, dataset_path, name)
+
+    query = """
+        select
+            n_name,
+            sum(l_extendedprice * (1 - l_discount)) as revenue
+        from
+            customer,
+            orders,
+            lineitem,
+            supplier,
+            nation,
+            region
+        where
+            c_custkey = o_custkey
+            and l_orderkey = o_orderkey
+            and l_suppkey = s_suppkey
+            and c_nationkey = s_nationkey
+            and s_nationkey = n_nationkey
+            and n_regionkey = r_regionkey
+            and r_name = 'ASIA'
+            and o_orderdate >= date '1994-01-01'
+            and o_orderdate < date '1994-01-01' + interval '1' year
+        group by
+            n_name
+        order by
+            revenue desc
+    """
+    spark.sql(query).show()
+
+
+def test_query_6(spark, dataset_path):
+    for name in ("lineitem",):
+        register_table(spark, dataset_path, name)
+
+    query = """
+    select
+            sum(l_extendedprice * l_discount) as revenue
+        from
+            lineitem
+        where
+            l_shipdate >= date '1994-01-01'
+            and l_shipdate < date '1994-01-01' + interval '1' year
+            and l_discount between .06 - 0.01 and .06 + 0.01
+            and l_quantity < 24
+    """
+
+    spark.sql(query).show()
+
+
+def test_query_7(spark, dataset_path):
+    for name in ("supplier", "lineitem", "orders", "customer", "nation"):
+        register_table(spark, dataset_path, name)
+
+    query = """
+    select
+            supp_nation,
+            cust_nation,
+            l_year,
+            sum(volume) as revenue
+        from
+            (
+                select
+                    n1.n_name as supp_nation,
+                    n2.n_name as cust_nation,
+                    year(l_shipdate) as l_year,
+                    l_extendedprice * (1 - l_discount) as volume
+                from
+                    supplier,
+                    lineitem,
+                    orders,
+                    customer,
+                    nation n1,
+                    nation n2
+                where
+                    s_suppkey = l_suppkey
+                    and o_orderkey = l_orderkey
+                    and c_custkey = o_custkey
+                    and s_nationkey = n1.n_nationkey
+                    and c_nationkey = n2.n_nationkey
+                    and (
+                        (n1.n_name = 'FRANCE' and n2.n_name = 'GERMANY')
+                        or (n1.n_name = 'GERMANY' and n2.n_name = 'FRANCE')
+                    )
+                    and l_shipdate between date '1995-01-01' and date '1996-12-31'
+            ) as shipping
+        group by
+            supp_nation,
+            cust_nation,
+            l_year
+        order by
+            supp_nation,
+            cust_nation,
+            l_year
+    """
+
+    spark.sql(query).show()
 
 
 def fix_timestamp_ns_columns(query):
@@ -79,151 +271,3 @@ def fix_timestamp_ns_columns(query):
     for name in ("l_shipdate", "o_orderdate"):
         query = re.sub(rf"\b{name}\b", f"to_timestamp(cast({name} as string))", query)
     return query
-
-
-def run_tpch_pyspark(pyspark_client, module, scale, dataset_path):
-    from .pyspark_queries.utils import get_or_create_spark
-
-    is_local = pyspark_client is None
-
-    async def _run_tpch(dask_scheduler):
-        # Connecting to the Spark Connect server doens't appear to work very well
-        # If we just submit this stuff to the scheduler and generate a SparkSession there
-        # that connects to the running master we can at least get some code running
-
-        if not is_local:
-            queries.utils.MASTER = f"spark://{get_ip()}:7077"
-        else:
-            queries.utils.MASTER = "local[*]"
-
-        os.environ["SPARK_HOME"] = str(pathlib.Path(pyspark.__file__).absolute().parent)
-        os.environ["PYSPARK_PYTHON"] = sys.executable
-        os.environ["PYSPARK_SUBMIT_ARGS"] = make_pyspark_submit_args(
-            queries.utils.MASTER
-        )
-
-        def _():
-            spark = get_or_create_spark(f"query{module.__name__}")
-
-            # scale1000 stored as timestamp[ns] which spark parquet
-            # can't use natively.
-            if scale == 100:
-                module.query = fix_timestamp_ns_columns(module.query)
-
-            module.setup(
-                spark, dataset_path
-            )  # read spark tables query will select from
-            if hasattr(module, "ddl"):
-                spark.sql(module.ddl)  # might create temp view
-            q_final = spark.sql(module.query)  # benchmark query
-            try:
-                # trigger materialization of df
-                return q_final.toJSON().collect()
-            finally:
-                spark.catalog.clearCache()
-                spark.sparkContext.stop()
-                spark.stop()
-
-        return await asyncio.to_thread(_)
-
-    if not is_local:
-        rows = pyspark_client.run_on_scheduler(_run_tpch)
-    else:
-        rows = asyncio.run(_run_tpch(None))  # running locally
-    print(f"Received {len(rows)} rows")
-
-
-class SparkMaster(SchedulerPlugin):
-    def start(self, scheduler):
-        self.scheduler = scheduler
-        self.scheduler.add_plugin(self)
-
-        print("Installing procps...", end="")
-        try:
-            # All those nasty scripts require ``ps`` unix CLI util to be installed
-            _, stderr, returncode = run_command(
-                Commands.INSTALL, ["-c", "conda-forge", "procps-ng"]
-            )
-        except Exception as e:
-            msg = "conda install failed"
-            raise RuntimeError(msg) from e
-        print("done")
-        path = pathlib.Path(pyspark.__file__).absolute()
-        module_loc = path.parent
-        script = module_loc / "sbin" / "spark-daemon.sh"  # noqa: F841
-
-        host = scheduler.address.split("//")[1].split(":")[0]
-        spark_master = f"{host}:7077"
-
-        os.environ["SPARK_HOME"] = str(module_loc)
-        os.environ["PYSPARK_PYTHON"] = sys.executable
-        os.environ["PYSPARK_SUBMIT_ARGS"] = make_pyspark_submit_args(spark_master)
-
-        cmd = "spark-class org.apache.spark.deploy.master.Master"
-        print(f"Executing\n{cmd}")
-        self.proc_master = subprocess.Popen(shlex.split(cmd))
-
-        print("Launched Spark Master")
-
-    def close(self):
-        self.proc_master.terminate()
-        self.proc_master.wait()
-        return super().close()
-
-
-class SparkConnect(SchedulerPlugin):
-    def start(self, scheduler):
-        print("Starting SparkConnect")
-        self.scheduler = scheduler
-        self.scheduler.add_plugin(self)
-        path = pathlib.Path(pyspark.__file__).absolute()
-        module_loc = path.parent
-        script = module_loc / "sbin" / "spark-daemon.sh"
-
-        os.environ["SPARK_HOME"] = str(module_loc)
-        os.environ["PYSPARK_PYTHON"] = sys.executable
-
-        class_ = "org.apache.spark.sql.connect.service.SparkConnectServer"
-        host = scheduler.address.split("//")[1].split(":")[0]
-        spark_master = f"{host}:7077"
-        cmd = f"""{script} submit {class_} 1 \
-            --name "Spark Connect server" \
-            --packages org.apache.spark:spark-connect_2.12:{pyspark.__version__} \
-            --packages org.apache.hadoop:hadoop-aws:{HADOOP_AWS_VERSION} \
-            --packages com.amazonaws:aws-java-sdk-bundle:{AWS_JAVA_SDK_BUNDLE_VERSION} \
-            --master=spark://{spark_master} \
-            --conf spark.driver.host={host} \
-            --conf spark.driver.port=9797 \
-            --conf spark.jars=/tmp/hadoop-aws-{HADOOP_AWS_VERSION}.jar,/tmp/aws-java-sdk-bundle-{AWS_JAVA_SDK_BUNDLE_VERSION}.jar
-            """  # noqa: E501
-        print(f"Executing\n{cmd}")
-        self.proc_connect = subprocess.Popen(shlex.split(cmd))
-
-    def close(self):
-        self.proc_connect.terminate()
-        self.proc_connect.wait()
-        return super().close()
-
-
-class SparkWorker(WorkerPlugin):
-    def setup(self, worker):
-        self.worker = worker
-
-        path = pathlib.Path(pyspark.__file__).absolute()
-        module_loc = path.parent
-        host = worker.scheduler.address.split("//")[1].split(":")[0]
-        spark_master = f"{host}:7077"
-
-        os.environ["SPARK_HOME"] = str(module_loc)
-        os.environ["PYSPARK_PYTHON"] = sys.executable
-        os.environ["PYSPARK_SUBMIT_ARGS"] = make_pyspark_submit_args(spark_master)
-
-        print(f"Launching Spark Worker connecting to {spark_master}")
-        cmd = f"spark-class org.apache.spark.deploy.worker.Worker {spark_master}"
-        self.proc = subprocess.Popen(shlex.split(cmd))
-        print("Launched Spark Worker")
-
-    def teardown(self, worker):
-        self.proc.terminate()
-        self.proc.wait()
-        return super().teardown(worker)
