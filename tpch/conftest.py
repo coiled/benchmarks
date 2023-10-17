@@ -5,7 +5,7 @@ import uuid
 import coiled
 import dask
 import pytest
-from dask.distributed import Client, LocalCluster
+from dask.distributed import LocalCluster
 
 
 @pytest.fixture(scope="module")
@@ -101,7 +101,7 @@ def cluster(
             yield cluster
     else:
         kwargs = dict(
-            name=f"{module}-{uuid.uuid4().hex[:8]}",
+            name=f"tpch-{module}-{uuid.uuid4().hex[:8]}",
             environ=dask_env_variables,
             tags=github_cluster_tags,
             region="us-east-2",
@@ -161,26 +161,3 @@ def spark(spark_setup, benchmark_time):
         yield spark_setup
 
     spark_setup.catalog.clearCache()
-
-
-@pytest.fixture(scope="module")
-def pyspark_cluster(
-    request, cluster, dask_env_variables, cluster_kwargs, github_cluster_tags
-):
-    from .test_pyspark import SparkMaster, SparkWorker
-
-    with cluster.get_client() as client:
-        client.register_plugin(SparkMaster(), name="spark-master")
-        client.register_plugin(SparkWorker())
-
-    yield cluster
-
-
-@pytest.fixture
-def pyspark_client(pyspark_cluster, benchmark_all):
-    with Client(pyspark_cluster) as client:
-        client.restart()
-        client.run(lambda: None)
-
-        with benchmark_all(client):
-            yield client
