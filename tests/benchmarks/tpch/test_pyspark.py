@@ -7,7 +7,7 @@ import shlex
 import subprocess
 import sys
 
-import pyspark
+import pytest
 from conda.cli.python_api import Commands, run_command
 from distributed.diagnostics.plugin import SchedulerPlugin, WorkerPlugin
 from distributed.utils import get_ip
@@ -15,6 +15,9 @@ from distributed.utils import get_ip
 from tests.benchmarks.tpch.conftest import DATASETS, ENABLED_DATASET  # noqa: F401
 
 from . import pyspark_queries as queries
+
+pyspark = pytest.importorskip("pyspark")
+
 
 # pyspark/hadoop/aws-java-* are extra sensitive to version changes it seems.
 # ref: https://hadoop.apache.org/docs/r3.3.4/hadoop-aws/dependency-analysis.html

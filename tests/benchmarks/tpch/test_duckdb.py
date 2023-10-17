@@ -1,8 +1,9 @@
 import botocore.session
-import duckdb
 import pytest
 
 from tests.benchmarks.tpch.conftest import DATASETS, ENABLED_DATASET, coiled_function
+
+duckdb = pytest.importorskip("duckdb")
 
 
 @pytest.fixture
