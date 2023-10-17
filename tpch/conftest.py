@@ -129,10 +129,10 @@ def client(
 
 
 @pytest.fixture(scope="module")
-def spark_setup(cluster):
+def spark_setup(cluster, local):
     pytest.importorskip("pyspark")
     if local:
-        cluster.shutdown()  # no need to bootstrap with Dask
+        cluster.close()  # no need to bootstrap with Dask
         from pyspark.sql import SparkSession
 
         spark = SparkSession.builder.master("local[*]").getOrCreate()
