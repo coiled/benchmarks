@@ -70,6 +70,16 @@ def pytest_collection_modifyitems(config, items):
         ):
             item.add_marker(skip_workflows)
 
+    skip_benchmarks = pytest.mark.skip(reason="need --tpch-non-dask option to run")
+
+    for item in items:
+        if not config.getoption("--tpch-non-dask") and not (
+            str(item.path).startswith(
+                str(TEST_DIR / "benchmarks" / "tpch" / "test_dask")
+            )
+        ):
+            item.add_marker(skip_benchmarks)
+
 
 dask.config.set(
     {
