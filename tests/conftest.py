@@ -43,7 +43,7 @@ handler.setFormatter(
 )
 coiled_logger.addHandler(handler)
 
-TEST_DIR = pathlib.Path(".").absolute()
+TEST_DIR = pathlib.Path("./tests").absolute()
 
 
 def pytest_addoption(parser):
@@ -66,7 +66,7 @@ def pytest_collection_modifyitems(config, items):
     skip_workflows = pytest.mark.skip(reason="need --run-workflows option to run")
     for item in items:
         if not config.getoption("--run-workflows") and (
-            (TEST_DIR / ".." / "tests" / "workflows") in item.path.parents
+            (TEST_DIR / "workflows") in item.path.parents
         ):
             item.add_marker(skip_workflows)
 
