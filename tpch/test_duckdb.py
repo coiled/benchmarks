@@ -1,4 +1,4 @@
-import botocore
+import botocore.session
 import duckdb
 import pytest
 
@@ -11,7 +11,8 @@ def connection(local, restart):
         con = duckdb.connect()
 
         if not local:  # Setup s3 credentials
-            creds = botocore.session.get_session().get_credentials()
+            session = botocore.session.Session()
+            creds = session.get_credentials()
             con.install_extension("httpfs")
             con.load_extension("httpfs")
             con.sql(
