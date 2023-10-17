@@ -8,52 +8,6 @@ import pytest
 from dask.distributed import LocalCluster
 
 
-@pytest.fixture(scope="module")
-def warm_start():
-    if not local:
-
-        @coiled.function(**machine)
-        def _():
-            pass
-
-        _()  # run once to give us a warm start
-
-
-@pytest.fixture(scope="function")
-def restart(warm_start, benchmark_all, benchmark_time, local):
-    if local:
-        with benchmark_time:
-            yield
-    else:
-
-        @coiled.function(**machine)
-        def _():
-            pass
-
-        _.client.restart()
-        with benchmark_all(_.client):
-            yield
-
-
-machine = {  # TODO: figure out where to place this
-    "vm_type": "m6i.8xlarge",
-}
-
-
-def coiled_function(**kwargs):
-    # Shouldn't be necessary
-    # See https://github.com/coiled/platform/issues/3519
-    def _(function):
-        if _local:
-            return function
-        else:
-            return functools.wraps(function)(
-                coiled.function(**kwargs, **machine)(function)
-            )
-
-    return _
-
-
 @pytest.fixture(scope="session")
 def scale():
     return 100
@@ -90,6 +44,11 @@ def module(request):
     module = os.path.basename(request.fspath).split(".")[0]
     module = module.replace("test_", "")
     return module
+
+
+#############################################
+# Multi-machine fixtures for Spark and Dask #
+#############################################
 
 
 @pytest.fixture(scope="module")
@@ -161,3 +120,54 @@ def spark(spark_setup, benchmark_time):
         yield spark_setup
 
     spark_setup.catalog.clearCache()
+
+
+#################################################
+# Single machine fixtures for Polars and DuckDB #
+#################################################
+
+
+machine = {  # TODO: figure out where to place this
+    "vm_type": "m6i.8xlarge",
+}
+
+
+def coiled_function(**kwargs):
+    def _(function):
+        if _local:
+            return function
+        else:
+            # Replace with just coiled.function soon
+            # See https://github.com/coiled/platform/issues/3519
+            return functools.wraps(function)(
+                coiled.function(**kwargs, **machine)(function)
+            )
+
+    return _
+
+
+@pytest.fixture(scope="module")
+def warm_start():
+    if not local:
+
+        @coiled.function(**machine)
+        def _():
+            pass
+
+        _()  # run once to give us a warm start
+
+
+@pytest.fixture(scope="function")
+def restart(warm_start, benchmark_all, benchmark_time, local):
+    if local:
+        with benchmark_time:
+            yield
+    else:
+
+        @coiled.function(**machine)
+        def _():
+            pass
+
+        _.client.restart()
+        with benchmark_all(_.client):
+            yield
