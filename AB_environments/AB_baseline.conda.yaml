@@ -42,6 +42,7 @@ dependencies:
   - python-duckdb ==0.9.1
   - polars >=0.19.3,<=0.19.8  # 0.19.3 on Windows, 0.19.8 on Linux and MacOS
 
+
   - pip:
     # Make sure you install dask and distributed either both from pip or both from
     # conda. You may alternatively point to your own git fork (but make sure you
