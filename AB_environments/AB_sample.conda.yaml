@@ -41,8 +41,6 @@ dependencies:
   - bokeh ==3.2.2
   - gilknocker ==0.4.1
   - openssl >1.1.0g
-  - python-duckdb ==0.9.1
-  - polars >=0.19.3,<=0.19.8  # 0.19.3 on Windows, 0.19.8 on Linux and MacOS
   # End copy-paste
 
   - pip:
