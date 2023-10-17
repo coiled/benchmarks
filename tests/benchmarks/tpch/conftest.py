@@ -2,15 +2,22 @@ import functools
 import os
 
 import coiled
+import dask_expr as dx
 import pytest
 
 DATASETS = {
     "local": "./tpch-data/scale10/",
     "scale 100": "s3://coiled-runtime-ci/tpch_scale_100/",
     "scale 1000": "s3://coiled-runtime-ci/tpch-scale-1000/",
+    "scale 1000-date": "s3://coiled-runtime-ci/tpch-scale-1000-date/",
 }
 
-ENABLED_DATASET = os.getenv("TPCH_SCALE") or "scale 1000"
+
+if dx.__version__ == "0.1.10+1.ga61b4de":
+    ENABLED_DATASET = os.getenv("TPCH_SCALE") or "scale 1000"
+else:
+    ENABLED_DATASET = "scale 1000-date"
+
 
 if ENABLED_DATASET not in DATASETS:
     raise ValueError("Unknown tpch dataset: ", ENABLED_DATASET)
