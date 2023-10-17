@@ -141,13 +141,7 @@ def pyspark_cluster(
 
 
 @pytest.fixture
-def pyspark_client(
-    request,
-    testrun_uid,
-    pyspark_cluster,
-    cluster_kwargs,
-    benchmark_all,
-):
+def pyspark_client(pyspark_cluster, benchmark_all):
     with Client(pyspark_cluster) as client:
         client.restart()
         client.run(lambda: None)

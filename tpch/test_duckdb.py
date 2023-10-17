@@ -6,7 +6,7 @@ from .conftest import coiled_function
 
 
 @pytest.fixture
-def connection(local):
+def connection(local, restart):
     def _():
         con = duckdb.connect()
 
@@ -28,7 +28,7 @@ def connection(local):
 
 
 @coiled_function()
-def test_query_1(connection, dataset_path, restart):
+def test_query_1(connection, dataset_path):
     connection().execute(
         f"""
         with lineitem as (
@@ -61,7 +61,7 @@ def test_query_1(connection, dataset_path, restart):
 
 
 @coiled_function()
-def test_query_2(connection, dataset_path, restart):
+def test_query_2(connection, dataset_path):
     connection().execute(
         f"""
         with part as (select * from read_parquet('{dataset_path}part/*.parquet')),
@@ -119,7 +119,7 @@ def test_query_2(connection, dataset_path, restart):
 
 
 @coiled_function()
-def test_query_3(connection, dataset_path, restart):
+def test_query_3(connection, dataset_path):
     connection().execute(
         f"""
         with customer as (select * from read_parquet('{dataset_path}customer/*.parquet')),
@@ -154,7 +154,7 @@ def test_query_3(connection, dataset_path, restart):
 
 
 @coiled_function()
-def test_query_4(connection, dataset_path, restart):
+def test_query_4(connection, dataset_path):
     connection().execute(
         f"""
         with orders as (select * from read_parquet('{dataset_path}orders/*.parquet')),
@@ -186,7 +186,7 @@ def test_query_4(connection, dataset_path, restart):
 
 
 @coiled_function()
-def test_query_5(connection, dataset_path, restart):
+def test_query_5(connection, dataset_path):
     connection().execute(
         f"""
         with customer as (select * from read_parquet('{dataset_path}customer/*.parquet')),
@@ -225,7 +225,7 @@ def test_query_5(connection, dataset_path, restart):
 
 
 @coiled_function()
-def test_query_6(connection, dataset_path, restart):
+def test_query_6(connection, dataset_path):
     connection().execute(
         f"""
         with lineitem as (
@@ -246,7 +246,7 @@ def test_query_6(connection, dataset_path, restart):
 
 
 @coiled_function()
-def test_query_7(connection, dataset_path, restart):
+def test_query_7(connection, dataset_path):
     connection().execute(
         f"""
         with supplier as (select * from read_parquet('{dataset_path}supplier/*.parquet')),
