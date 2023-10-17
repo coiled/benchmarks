@@ -89,7 +89,7 @@ def test_query_2(restart, dataset_path):
             descending=[True, False, False, False],
         )
         .limit(100)
-        .with_columns(pl.col(pl.datatypes.Utf8).str.strip().keep_name())
+        .with_columns(pl.col(pl.datatypes.Utf8).str.strip_chars().keep_name())
     ).collect(streaming=True)
 
 

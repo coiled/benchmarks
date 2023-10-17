@@ -66,7 +66,7 @@ def pytest_collection_modifyitems(config, items):
     skip_workflows = pytest.mark.skip(reason="need --run-workflows option to run")
     for item in items:
         if not config.getoption("--run-workflows") and (
-            (TEST_DIR / "tests" / "workflows") in item.path.parents
+            (TEST_DIR / ".." / "tests" / "workflows") in item.path.parents
         ):
             item.add_marker(skip_workflows)
 
@@ -304,7 +304,7 @@ def benchmark_task_durations(test_run_benchmark):
         else:
             # TODO: is there a nice way to only register this once? I don't think so,
             # other than idempotent=True
-            client.register_scheduler_plugin(Durations(), idempotent=True)
+            client.register_plugin(Durations(), idempotent=True)
 
             # Start tracking durations
             client.sync(client.scheduler.start_tracking_durations)
@@ -421,7 +421,7 @@ def dask_env_variables():
 
 @lru_cache(None)
 def load_cluster_kwargs() -> dict:
-    base_dir = os.path.dirname(__file__)
+    base_dir = os.path.join(os.path.dirname(__file__), "..")
     base_fname = os.path.join(base_dir, "cluster_kwargs.yaml")
     with open(base_fname) as fh:
         config = yaml.safe_load(fh)
@@ -447,7 +447,7 @@ def dump_cluster_kwargs(kwargs: dict, name: str) -> None:
         kwargs["environ"] = kwargs["environ"].copy()
         kwargs["environ"]["DASK_COILED__TOKEN"] = "<redacted for dump>"
 
-    base_dir = os.path.dirname(__file__)
+    base_dir = os.path.join(os.path.dirname(__file__), "..")
     prefix = os.path.join(base_dir, "cluster_kwargs")
     with open(f"{prefix}.{name}.yaml", "w") as fh:
         yaml.dump(kwargs, fh)
