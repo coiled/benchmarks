@@ -1,4 +1,4 @@
-import botocore
+import botocore.session
 import duckdb
 import pytest
 
@@ -11,7 +11,8 @@ def connection():
         con = duckdb.connect()
 
         if ENABLED_DATASET != "local":  # Setup s3 credentials
-            creds = botocore.session.get_session().get_credentials()
+            session = botocore.session.Session()
+            creds = session.get_credentials()
             con.install_extension("httpfs")
             con.load_extension("httpfs")
             con.sql(
@@ -19,6 +20,7 @@ def connection():
                 SET s3_region='us-east-2';
                 SET s3_access_key_id='{creds.access_key}';
                 SET s3_secret_access_key='{creds.secret_key}';
+                SET s3_session_token='{creds.token}';
                 """
             )
         return con
@@ -27,7 +29,7 @@ def connection():
 
 
 @coiled_function()
-def test_query_1(connection):
+def test_query_1(restart, connection):
     connection().execute(
         f"""
         with lineitem as (
@@ -60,7 +62,7 @@ def test_query_1(connection):
 
 
 @coiled_function()
-def test_query_2(connection):
+def test_query_2(restart, connection):
     connection().execute(
         f"""
         with part as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}part/*.parquet')),
@@ -118,7 +120,7 @@ def test_query_2(connection):
 
 
 @coiled_function()
-def test_query_3(connection):
+def test_query_3(restart, connection):
     connection().execute(
         f"""
         with customer as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}customer/*.parquet')),
@@ -153,7 +155,7 @@ def test_query_3(connection):
 
 
 @coiled_function()
-def test_query_4(connection):
+def test_query_4(restart, connection):
     connection().execute(
         f"""
         with orders as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}orders/*.parquet')),
@@ -185,7 +187,7 @@ def test_query_4(connection):
 
 
 @coiled_function()
-def test_query_5(connection):
+def test_query_5(restart, connection):
     connection().execute(
         f"""
         with customer as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}customer/*.parquet')),
@@ -224,7 +226,7 @@ def test_query_5(connection):
 
 
 @coiled_function()
-def test_query_6(connection):
+def test_query_6(restart, connection):
     connection().execute(
         f"""
         with lineitem as (
@@ -245,7 +247,7 @@ def test_query_6(connection):
 
 
 @coiled_function()
-def test_query_7(connection):
+def test_query_7(restart, connection):
     connection().execute(
         f"""
         with supplier as (select * from read_parquet('{DATASETS[ENABLED_DATASET]}supplier/*.parquet')),
