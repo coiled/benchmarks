@@ -3,16 +3,17 @@
 # Setting it to 5 is a good value to get statistically significant results.
 # This must remain set to 0 in the main branch, thus completely disabling
 # A/B tests, in order to avoid unnecessary runs.
-repeat: 0
+repeat: 3
+
 
 # Set to true to automatically create a verbatim copy of AB_baseline and then compare
 # the two in the A/B tests. Set to false to save some money if you are already confident
 # that the 'repeat' setting is high enough.
-test_null_hypothesis: true
+test_null_hypothesis: false
 
 # Test directories, test files, or individual tests to run.
 targets:
-  - tests/benchmarks
+  - tests/benchmarks/tpch/test_dask.py
   # - tests/runtime
   # - tests/stability
   # - tests/benchmarks/test_futures.py
@@ -37,7 +38,7 @@ h2o_datasets:
 # never actually reached with real paying users.
 max_parallel:
   # Number of parallel A/B test jobs per branch.
-  ci_jobs: 5
+  ci_jobs: 12
   # Number of parallel test_*.py modules per A/B test job.
   # Each module typically spawns one Coiled cluster at a time.
   # Set to 1 to disable pytest-xdist.

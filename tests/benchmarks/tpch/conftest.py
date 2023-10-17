@@ -10,7 +10,7 @@ DATASETS = {
     "scale 1000": "s3://coiled-runtime-ci/tpch-scale-1000/",
 }
 
-ENABLED_DATASET = os.getenv("TPCH_SCALE") or "scale 100"
+ENABLED_DATASET = os.getenv("TPCH_SCALE") or "scale 1000"
 
 if ENABLED_DATASET not in DATASETS:
     raise ValueError("Unknown tpch dataset: ", ENABLED_DATASET)
