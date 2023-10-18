@@ -117,6 +117,7 @@ def test_query_2(tpch_client):
 
 def test_query_3(tpch_client):
     var1 = datetime.strptime("1995-03-15", "%Y-%m-%d")
+
     var2 = "BUILDING"
 
     lineitem_ds = read_data("lineitem")
