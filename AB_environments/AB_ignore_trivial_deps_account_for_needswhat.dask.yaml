@@ -11,4 +11,4 @@
 distributed:
   scheduler:
     latency-penalty: 0.25
-
+    consider-has-what: true

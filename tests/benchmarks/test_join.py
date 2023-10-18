@@ -4,7 +4,7 @@ import pytest
 from ..utils_test import cluster_memory, timeseries_of_size, wait
 
 
-@pytest.fixture(params=[0.1])
+@pytest.fixture(params=[0.5])
 def memory_multiplier(request):
     return request.param
 
