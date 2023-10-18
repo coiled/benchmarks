@@ -1,8 +1,9 @@
 import botocore.session
-import duckdb
 import pytest
 
 from .conftest import coiled_function
+
+duckdb = pytest.importorskip("duckdb")
 
 
 @pytest.fixture

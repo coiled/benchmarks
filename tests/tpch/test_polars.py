@@ -1,9 +1,11 @@
 from datetime import datetime
 
-import polars as pl
+import pytest
 from pyarrow.dataset import dataset
 
 from .conftest import coiled_function
+
+pl = pytest.importorskip("polars")
 
 
 def read_data(filename):
