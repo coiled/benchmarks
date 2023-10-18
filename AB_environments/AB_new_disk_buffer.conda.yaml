@@ -60,5 +60,5 @@ dependencies:
     # sync'ed tags!)
     # Read README.md for troubleshooting.
     # - git+https://github.com/dask/dask@da256320ef0167992f7183c3a275d092f5727f62
-    - git+https://github.com/dask/distributed@83e2a5e4198390d252e021d1e041f714df1ad887
+    - git+https://github.com/dask/distributed@acceeffb99db93cdedc38f89fb1aca4b7de912ec
     # - git+https://github.com/dask-contrib/dask-expr@0485e1e280d3892529b2c88e8bf0caaa6dffc821
