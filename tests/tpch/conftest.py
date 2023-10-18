@@ -1,6 +1,4 @@
 import os
-import sys
-import threading
 import uuid
 
 import coiled
@@ -8,13 +6,13 @@ import dask
 import pytest
 from dask.distributed import LocalCluster
 
+_scale = 100
+_local = False
+
 
 @pytest.fixture(scope="session")
 def scale():
-    return 1000
-
-
-_local = False
+    return _scale
 
 
 @pytest.fixture(scope="session")
@@ -61,7 +59,7 @@ def cluster(
             yield cluster
     else:
         kwargs = dict(
-            name=f"tpch-{module}-{uuid.uuid4().hex[:8]}",
+            name=f"tpch-{module}-{scale}-{uuid.uuid4().hex[:8]}",
             environ=dask_env_variables,
             tags=github_cluster_tags,
             region="us-east-2",
@@ -132,46 +130,50 @@ machine = {  # TODO: figure out where to place this
     "vm_type": "m6i.8xlarge",
 }
 
+_uuid = uuid.uuid4().hex[:8]
 
-def coiled_function(**kwargs):
+
+def coiled_function():
     def _(function):
-        frame = sys._current_frames()[threading.get_ident()]
-        filename = frame.f_back.f_code.co_filename
-        module = filename.split("_")[-1].split(".")[0]  # dask, spark, ...
         if _local:
             return function
         else:
+            module = function.__module__.split("_")[-1]  # polars, duckdb, ...
             return coiled.function(
-                **kwargs,
                 **machine,
-                name=f"tpch-{module}-{uuid.uuid4().hex[:8]}",
+                name=f"tpch-{module}-{_scale}-{_uuid}",
             )(function)
 
     return _
 
 
 @pytest.fixture(scope="module")
-def warm_start():
+def coiled_function_client(module, local):
     if not local:
 
-        @coiled.function(**machine)
+        @coiled.function(
+            **machine,
+            name=f"tpch-{module}-{_scale}-{_uuid}",
+        )
         def _():
             pass
 
-        _()  # run once to give us a warm start
+        yield _.client
+
+    else:
+        yield None
+
+
+@pytest.fixture(scope="module")
+def warm_start(coiled_function_client):
+    if not local:
+        coiled_function_client.submit(lambda: 0).result()
 
 
 @pytest.fixture(scope="function")
-def restart(warm_start, benchmark_all, benchmark_time, local):
-    if local:
-        with benchmark_time:
-            yield
-    else:
+def restart(benchmark_time, warm_start, coiled_function_client):
+    if not local:
+        coiled_function_client.restart()
 
-        @coiled.function(**machine)
-        def _():
-            pass
-
-        _.client.restart()
-        with benchmark_all(_.client):
-            yield
+    with benchmark_time:
+        yield
