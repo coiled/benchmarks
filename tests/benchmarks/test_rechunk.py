@@ -22,19 +22,17 @@ def configure_chunksize(chunksize):
     with dask.config.set({"array.chunk-size": chunksize}):
         yield
 
-def test_tiles_to_rows(small_client, memory_multiplier, configure_chunksize, configure_rechunking):
+def test_tiles_to_rows(small_client, memory_multiplier, configure_chunksize, configure_rechunking, new_array):
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", "x"))
 
-    rng = da.random.default_rng()
-    arr = rng.random(shape, chunks="auto")
+    arr = new_array(shape, chunks="auto")
     arr.rechunk((-1, "auto")).sum().compute()
 
 
-def test_swap_axes(small_client, memory_multiplier, configure_chunksize, configure_rechunking):
+def test_swap_axes(small_client, memory_multiplier, configure_chunksize, configure_rechunking, new_array):
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", "x"))
 
-    rng = da.random.default_rng()
-    arr = rng.random(shape, chunks=(-1, "auto"))
+    arr = new_array(shape, chunks=(-1, "auto"))
     arr.rechunk(("auto", -1)).sum().compute()
