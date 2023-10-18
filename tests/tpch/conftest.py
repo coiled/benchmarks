@@ -1,5 +1,6 @@
-import functools
 import os
+import sys
+import threading
 import uuid
 
 import coiled
@@ -10,7 +11,7 @@ from dask.distributed import LocalCluster
 
 @pytest.fixture(scope="session")
 def scale():
-    return 100
+    return 1000
 
 
 _local = False
@@ -26,7 +27,7 @@ def dataset_path(local, scale):
     remote_paths = {
         10: "s3://coiled-runtime-ci/tpch_scale_10/",
         100: "s3://coiled-runtime-ci/tpch_scale_100/",
-        1000: "s3://coiled-runtime-ci/tpch-scale-1000/",
+        1000: "s3://coiled-runtime-ci/tpch-scale-1000-date/",
     }
     local_paths = {
         10: "./tpch-data/scale10/",
@@ -134,14 +135,17 @@ machine = {  # TODO: figure out where to place this
 
 def coiled_function(**kwargs):
     def _(function):
+        frame = sys._current_frames()[threading.get_ident()]
+        filename = frame.f_back.f_code.co_filename
+        module = filename.split("_")[-1].split(".")[0]  # dask, spark, ...
         if _local:
             return function
         else:
-            # Replace with just coiled.function soon
-            # See https://github.com/coiled/platform/issues/3519
-            return functools.wraps(function)(
-                coiled.function(**kwargs, **machine)(function)
-            )
+            return coiled.function(
+                **kwargs,
+                **machine,
+                name=f"tpch-{module}-{uuid.uuid4().hex[:8]}",
+            )(function)
 
     return _
 
