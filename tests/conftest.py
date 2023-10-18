@@ -72,12 +72,12 @@ def pytest_collection_modifyitems(config, items):
 
     skip_benchmarks = pytest.mark.skip(reason="need --tpch-non-dask option to run")
     for item in items:
-        if not config.getoption("--tpch-non-dask") and not (
-            str(item.path).startswith(
-                str(TEST_DIR / "benchmarks" / "tpch" / "test_dask")
-            )
-        ):
-            item.add_marker(skip_benchmarks)
+        if "tpch" in str(item.path):
+            # Skip polars and DuckDB TPCH unless this toggle is on
+            if "test_dask" not in str(item.path) and not config.getoption(
+                "--tpch-non-dask"
+            ):
+                item.add_marker(skip_benchmarks)
 
 
 dask.config.set(
