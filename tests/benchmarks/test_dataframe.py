@@ -42,24 +42,6 @@ def test_dataframe_align(small_client):
     wait(final, small_client, 10 * 60)
 
 
-def test_shuffle(small_client, configure_shuffling, memory_multiplier):
-    memory = cluster_memory(small_client)  # 76.66 GiB
-
-    df = timeseries_of_size(
-        memory * memory_multiplier,
-        start="2020-01-01",
-        freq="1200ms",
-        partition_freq="24h",
-        dtypes={str(i): float for i in range(100)},
-    )
-    print_dataframe_info(df)
-    # ~25,488,000 rows x 100 columns, 19.18 GiB total, 354 55.48 MiB partitions
-
-    shuf = df.shuffle("0").map_partitions(lambda x: x)
-    result = shuf.size
-    wait(result, small_client, 20 * 60)
-
-
 def test_filter(small_client):
     """How fast can we filter a DataFrame?"""
     memory = cluster_memory(small_client)

@@ -15,7 +15,6 @@ def test_default_cluster_spinup_time(
         with Cluster(
             name=f"test_default_cluster_spinup_time-{uuid.uuid4().hex[:8]}",
             n_workers=1,
-            package_sync=True,
             tags=github_cluster_tags,
         ) as cluster:
             with get_cluster_info(cluster):
