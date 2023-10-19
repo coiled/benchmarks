@@ -1,16 +1,12 @@
 from __future__ import annotations
 
-import time
-
 import dask.array as da
-import numpy as np
 import pytest
 
 from typing import Any
 
 import dask
-from ..utils_test import run_up_to_nthreads, cluster_memory, scaled_array_shape
-from dask.utils import format_bytes, parse_bytes
+from ..utils_test import cluster_memory, scaled_array_shape
 
 @pytest.fixture(params=["8 MiB", "128 MiB"])
 def chunksize(request):
