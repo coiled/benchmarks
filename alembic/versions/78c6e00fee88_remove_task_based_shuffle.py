@@ -21,7 +21,7 @@ def upgrade() -> None:
         """
         delete from test_run
         where (
-               originalname in ('test_shuffle')
+               originalname in ('test_shuffle', 'test_cluster_reconnect')
                or name in ('test_join_big[1-tasks]', 'test_join_big[0.1-tasks]')
             )
         """
