@@ -34,6 +34,7 @@ def generate(outfile="chart.json"):
         )
     )
     chart.save(outfile)
+    print("Saving chart to", outfile)
 
 
 @click.command()
@@ -47,4 +48,4 @@ def main(outfile):
 
 
 if __name__ == "__main__":
-    generate()
+    main()
