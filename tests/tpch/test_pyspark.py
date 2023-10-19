@@ -1,5 +1,9 @@
 import re
 
+import pytest
+
+pytest.importorskip("coiled.spark")
+
 
 def register_table(spark, path, name):
     path = path.replace("s3://", "s3a://")
