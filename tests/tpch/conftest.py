@@ -23,9 +23,10 @@ def local():
 @pytest.fixture(scope="session")
 def dataset_path(local, scale):
     remote_paths = {
-        10: "s3://coiled-runtime-ci/tpch_scale_10/",
-        100: "s3://coiled-runtime-ci/tpch_scale_100/",
-        1000: "s3://coiled-runtime-ci/tpch-scale-1000-date/",
+        10: "s3://coiled-runtime-ci/tpch/scale-10/",
+        100: "s3://coiled-runtime-ci/tpch/scale-100/",
+        1000: "s3://coiled-runtime-ci/tpch/scale-1000/",
+        10000: "s3://coiled-runtime-ci/tpch/scale-10000/",
     }
     local_paths = {
         10: "./tpch-data/scale10/",
@@ -148,7 +149,7 @@ def coiled_function():
 
 
 @pytest.fixture(scope="module")
-def coiled_function_client(module, local):
+def _coiled_function(module, local):
     if not local:
 
         @coiled.function(
@@ -158,22 +159,27 @@ def coiled_function_client(module, local):
         def _():
             pass
 
-        yield _.client
+        yield _
 
     else:
         yield None
 
 
 @pytest.fixture(scope="module")
-def warm_start(coiled_function_client):
+def warm_start(_coiled_function, local):
     if not local:
-        coiled_function_client.submit(lambda: 0).result()
+        _coiled_function.client.submit(lambda: 0).result()
+
+    yield
+
+    if not local:
+        _coiled_function.cluster.shutdown()
 
 
 @pytest.fixture(scope="function")
-def restart(benchmark_time, warm_start, coiled_function_client):
+def restart(benchmark_time, warm_start, _coiled_function, local):
     if not local:
-        coiled_function_client.restart()
+        _coiled_function.client.restart()
 
     with benchmark_time:
         yield
