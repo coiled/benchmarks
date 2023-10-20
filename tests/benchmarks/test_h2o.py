@@ -31,8 +31,6 @@ if enabled_datasets is not None:
         raise ValueError("Unknown h2o dataset(s): ", unknown_datasets)
 else:
     enabled_datasets = {
-        "0.5 GB (csv)",
-        "0.5 GB (parquet)",
         "5 GB (parquet)",
     }
 
