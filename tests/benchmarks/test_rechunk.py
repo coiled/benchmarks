@@ -8,7 +8,15 @@ from typing import Any
 import dask
 from ..utils_test import cluster_memory, scaled_array_shape
 
-@pytest.fixture(params=["8 MiB", "128 MiB"])
+@pytest.fixture(
+    params=[
+        pytest.param("8 MiB", marks=pytest.mark.skip(
+            "FIXME: Skip for scheduled benchmarks due to runtime, uncomment on demand "
+            "or once we have a more flexible system for running tests on different schedules."
+        )),
+        "128 MiB"
+    ]
+)
 def chunksize(request):
     return request.param
 
