@@ -62,7 +62,7 @@ tpch:
   spot_policy: 'on-demand'
   backend_options:
    ingress:
-     - ports: [8786, 8787, 7077, 8080, 4040, 15002]
+     - ports: [443, 8786, 8787, 7077, 8080, 4040, 15002]
        cidr: "0.0.0.0/0"
 
 # For tests/workflows/test_pytorch_optuna.py
