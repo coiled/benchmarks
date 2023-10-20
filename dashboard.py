@@ -744,7 +744,7 @@ def main() -> None:
     df = pandas.read_sql(
         "select * from test_run where platform = 'linux' "
         "and call_outcome in ('passed', 'failed')"
-        "and start >= (select datetime('now', -30 day'))",
+        "and start >= datetime('now', -30 day')",
         engine,
     )
     df = df.assign(
