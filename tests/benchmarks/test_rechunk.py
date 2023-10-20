@@ -30,8 +30,7 @@ def test_tiles_to_rows(small_client, memory_multiplier, configure_chunksize, con
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", "x"))
 
-    rng = da.random.default_rng()
-    arr = rng.random(shape, chunks="auto")
+    arr = da.random.random(shape, chunks="auto")
     arr.rechunk((-1, "auto")).sum().compute()
 
 
@@ -39,6 +38,5 @@ def test_swap_axes(small_client, memory_multiplier, configure_chunksize, configu
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", "x"))
 
-    rng = da.random.default_rng()
-    arr = rng.random(shape, chunks=(-1, "auto"))
+    arr = da.random.random(shape, chunks=(-1, "auto"))
     arr.rechunk(("auto", -1)).sum().compute()
