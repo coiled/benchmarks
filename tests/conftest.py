@@ -10,6 +10,8 @@ import threading
 import time
 import uuid
 from functools import lru_cache
+from pathlib import Path
+from typing import Union
 
 import dask
 import dask.array as da
@@ -63,22 +65,34 @@ def pytest_addoption(parser):
 
 
 def pytest_collection_modifyitems(config, items):
+    # Skip workflows unless --run-workflows is set OR user explicitly included
+    # some path which includes the workflows ie pytest tests/workflows/
     skip_workflows = pytest.mark.skip(reason="need --run-workflows option to run")
-    for item in items:
-        if not config.getoption("--run-workflows") and (
-            (TEST_DIR / "workflows") in item.path.parents
-        ):
-            item.add_marker(skip_workflows)
+    workflows = TEST_DIR / "workflows"
+    if not config.getoption("--run-workflows"):
+        for item in filter(lambda item: workflows in item.path.parents, items):
+            if not any(
+                _is_child_dir(path, workflows) for path in config.option.file_or_dir
+            ):
+                item.add_marker(skip_workflows)
 
+    # Skip non Dask TPC-H tests unless --tpch-non-dask is set OR user explicitly included
+    # some path which inclues the `tpch` path. ie pytest tests/tpch/
     skip_benchmarks = pytest.mark.skip(reason="need --tpch-non-dask option to run")
-
-    for item in items:
-        if "tpch" in str(item.path):
-            # Skip polars and DuckDB TPCH unless this toggle is on
-            if "test_dask" not in str(item.path) and not config.getoption(
-                "--tpch-non-dask"
+    tpch = TEST_DIR / "tpch"
+    tpch_dask = tpch / "test_dask.py"
+    if not config.getoption("--tpch-non-dask"):
+        for item in filter(lambda item: tpch in item.path.parents, items):
+            if tpch_dask != item.path and not any(
+                _is_child_dir(path, tpch) for path in config.option.file_or_dir
             ):
                 item.add_marker(skip_benchmarks)
+
+
+def _is_child_dir(path: Union[str, Path], parent: Union[str, Path]):
+    _parent = Path(parent).absolute()
+    _path = Path(path).absolute()
+    return _parent in _path.parents or _parent == _path
 
 
 dask.config.set(
