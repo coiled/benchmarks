@@ -1,7 +1,7 @@
 """Update test_tpch -> tpch/test_dask from #1044
 
 Revision ID: b0e8d5f3295d
-Revises: 778e617a2886
+Revises: 78c6e00fee88
 Create Date: 2023-10-18 20:14:47.476804
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = 'b0e8d5f3295d'
-down_revision = '778e617a2886'
+down_revision = '78c6e00fee88'
 branch_labels = None
 depends_on = None
 
