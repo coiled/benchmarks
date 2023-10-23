@@ -6,18 +6,37 @@ import dask
 import pytest
 from dask.distributed import LocalCluster
 
-_scale = 100
-_local = False
+##################
+# Global Options #
+##################
+
+
+def pytest_addoption(parser):
+    parser.addoption("--local", action="store_true", default=False, help="")
+    parser.addoption("--restart", action="store_true", default=True, help="")
+    parser.addoption("--no-restart", action="store_false", dest="restart", help="")
+
+    parser.addoption(
+        "--scale",
+        action="store",
+        default=10,
+        help="Scale to run, 10, 100, 1000, or 10000",
+    )
 
 
 @pytest.fixture(scope="session")
-def scale():
-    return _scale
+def scale(request):
+    return int(request.config.getoption("scale"))
 
 
 @pytest.fixture(scope="session")
-def local():
-    return _local  # TODO: this is ugly.  done for coiled_function
+def local(request):
+    return request.config.getoption("local")
+
+
+@pytest.fixture(scope="session")
+def restart(request):
+    return request.config.getoption("restart")
 
 
 @pytest.fixture(scope="session")
@@ -72,15 +91,10 @@ def cluster(
 
 
 @pytest.fixture
-def client(
-    request,
-    cluster,
-    testrun_uid,
-    cluster_kwargs,
-    benchmark_all,
-):
+def client(request, cluster, testrun_uid, cluster_kwargs, benchmark_all, restart):
     with cluster.get_client() as client:
-        client.restart()
+        if restart:
+            client.restart()
         client.run(lambda: None)
 
         with benchmark_all(client):
@@ -134,52 +148,38 @@ machine = {  # TODO: figure out where to place this
 _uuid = uuid.uuid4().hex[:8]
 
 
-def coiled_function():
-    def _(function):
-        if _local:
-            return function
-        else:
-            module = function.__module__.split("_")[-1]  # polars, duckdb, ...
-            return coiled.function(
-                **machine,
-                name=f"tpch-{module}-{_scale}-{_uuid}",
-            )(function)
-
-    return _
-
-
 @pytest.fixture(scope="module")
-def _coiled_function(module, local):
-    if not local:
+def module_run(local, module, scale):
+    if local:
 
-        @coiled.function(
-            **machine,
-            name=f"tpch-{module}-{_scale}-{_uuid}",
-        )
-        def _():
-            pass
+        def _run(function):
+            return function()
 
-        yield _
+        yield _run
 
     else:
-        yield None
+
+        @coiled.function(**machine, name=f"tpch-{module}-{scale}-{_uuid}")
+        def _run(function):
+            return function()
+
+        yield _run
 
 
 @pytest.fixture(scope="module")
-def warm_start(_coiled_function, local):
-    if not local:
-        _coiled_function.client.submit(lambda: 0).result()
+def warm_start(module_run, local):
+    module_run(lambda: None)
 
     yield
 
     if not local:
-        _coiled_function.cluster.shutdown()
+        module_run.cluster.shutdown()
 
 
 @pytest.fixture(scope="function")
-def restart(benchmark_time, warm_start, _coiled_function, local):
-    if not local:
-        _coiled_function.client.restart()
+def run(module_run, restart, benchmark_time, warm_start):
+    if restart and not local:
+        module_run.client.restart()
 
     with benchmark_time:
-        yield
+        yield module_run
