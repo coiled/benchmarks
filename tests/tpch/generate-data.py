@@ -9,6 +9,7 @@ import coiled
 import dask
 import duckdb
 import psutil
+import pyarrow.compute as pc
 from dask.distributed import wait
 
 
@@ -16,6 +17,7 @@ def generate(
     scale: int = 10,
     partition_size: str = "50 MiB",
     path: str = "./tpch-data",
+    relaxed_schema: bool = False,
 ):
     if str(path).startswith("s3"):
         path += "/" if not path.endswith("/") else ""
@@ -42,12 +44,13 @@ def generate(
                     scale=scale,
                     step=step,
                     path=path,
+                    relaxed_schema=relaxed_schema,
                     partition_size=partition_size,
                 )
                 jobs.append(job)
             wait(jobs)
     else:
-        return _dbgen_to_path(scale, path, partition_size)
+        return _dbgen_to_path(scale, path, partition_size, relaxed_schema)
 
 
 def retry(f):
@@ -65,7 +68,7 @@ def retry(f):
 
 
 @retry
-def _dbgen_to_path(scale, path, partition_size, step=None):
+def _dbgen_to_path(scale, path, partition_size, relaxed_schema, step=None):
     con = duckdb.connect()
     con.install_extension("tpch")
     con.load_extension("tpch")
@@ -91,8 +94,12 @@ def _dbgen_to_path(scale, path, partition_size, step=None):
     else:
         query = f"call dbgen(sf={scale}, children={scale}, step={step})"
     con.sql(query)
-
     print("Finished generating data, exporting...")
+
+    if relaxed_schema:
+        print("Converting types date -> timestamp_s and decimal -> double")
+        _alter_tables(con)
+        print("Done altering tables")
 
     tables = (
         con.sql("select * from information_schema.tables").arrow().column("table_name")
@@ -144,6 +151,38 @@ def rows_approx_mb(con, table_name, partition_size: str):
     ) or len(table)
 
 
+def _alter_tables(con):
+    """
+    Temporary, used for debugging performance in data types.
+
+    ref discussion here: https://github.com/coiled/benchmarks/pull/1131
+    """
+    tables = [
+        "nation",
+        "region",
+        "customer",
+        "supplier",
+        "lineitem",
+        "orders",
+        "partsupp",
+        "part",
+    ]
+    for table in tables:
+        schema = con.sql(f"describe {table}").arrow()
+
+        # alter decimals to floats
+        for column in schema.filter(
+            pc.match_like(pc.field("column_type"), "DECIMAL%")
+        ).column("column_name"):
+            con.sql(f"alter table {table} alter {column} type double")
+
+        # alter date to timestamp_s
+        for column in schema.filter(pc.field("column_type") == "DATE").column(
+            "column_name"
+        ):
+            con.sql(f"alter table {table} alter {column} type timestamp_s")
+
+
 @click.command()
 @click.option(
     "--scale", default=10, help="Scale factor to use, roughly equal to number of GB"
@@ -156,8 +195,14 @@ def rows_approx_mb(con, table_name, partition_size: str):
     default="./tpch-data",
     help="Local or S3 base path, will affix 'scale-<scale>' subdirectory to this path",
 )
-def main(scale: int, partition_size: str, path: str):
-    generate(scale, partition_size, path)
+@click.option(
+    "--relaxed-schema",
+    default=False,
+    flag_value=True,
+    help="Set flag to convert official TPC-H types decimal -> float and date -> timestamp_s",
+)
+def main(scale: int, partition_size: str, path: str, relaxed_schema: bool):
+    generate(scale, partition_size, path, relaxed_schema)
 
 
 if __name__ == "__main__":
