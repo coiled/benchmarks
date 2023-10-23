@@ -1,4 +1,3 @@
-import functools
 import os
 import uuid
 
@@ -7,13 +6,13 @@ import dask
 import pytest
 from dask.distributed import LocalCluster
 
+_scale = 100
+_local = False
+
 
 @pytest.fixture(scope="session")
 def scale():
-    return 100
-
-
-_local = False
+    return _scale
 
 
 @pytest.fixture(scope="session")
@@ -24,9 +23,10 @@ def local():
 @pytest.fixture(scope="session")
 def dataset_path(local, scale):
     remote_paths = {
-        10: "s3://coiled-runtime-ci/tpch_scale_10/",
-        100: "s3://coiled-runtime-ci/tpch_scale_100/",
-        1000: "s3://coiled-runtime-ci/tpch-scale-1000/",
+        10: "s3://coiled-runtime-ci/tpch/scale-10/",
+        100: "s3://coiled-runtime-ci/tpch/scale-100/",
+        1000: "s3://coiled-runtime-ci/tpch/scale-1000/",
+        10000: "s3://coiled-runtime-ci/tpch/scale-10000/",
     }
     local_paths = {
         10: "./tpch-data/scale10/",
@@ -60,7 +60,7 @@ def cluster(
             yield cluster
     else:
         kwargs = dict(
-            name=f"tpch-{module}-{uuid.uuid4().hex[:8]}",
+            name=f"tpch-{module}-{scale}-{uuid.uuid4().hex[:8]}",
             environ=dask_env_variables,
             tags=github_cluster_tags,
             region="us-east-2",
@@ -131,43 +131,55 @@ machine = {  # TODO: figure out where to place this
     "vm_type": "m6i.8xlarge",
 }
 
+_uuid = uuid.uuid4().hex[:8]
 
-def coiled_function(**kwargs):
+
+def coiled_function():
     def _(function):
         if _local:
             return function
         else:
-            # Replace with just coiled.function soon
-            # See https://github.com/coiled/platform/issues/3519
-            return functools.wraps(function)(
-                coiled.function(**kwargs, **machine)(function)
-            )
+            module = function.__module__.split("_")[-1]  # polars, duckdb, ...
+            return coiled.function(
+                **machine,
+                name=f"tpch-{module}-{_scale}-{_uuid}",
+            )(function)
 
     return _
 
 
 @pytest.fixture(scope="module")
-def warm_start():
+def _coiled_function(module, local):
     if not local:
 
-        @coiled.function(**machine)
+        @coiled.function(
+            **machine,
+            name=f"tpch-{module}-{_scale}-{_uuid}",
+        )
         def _():
             pass
 
-        _()  # run once to give us a warm start
+        yield _
+
+    else:
+        yield None
+
+
+@pytest.fixture(scope="module")
+def warm_start(_coiled_function, local):
+    if not local:
+        _coiled_function.client.submit(lambda: 0).result()
+
+    yield
+
+    if not local:
+        _coiled_function.cluster.shutdown()
 
 
 @pytest.fixture(scope="function")
-def restart(warm_start, benchmark_all, benchmark_time, local):
-    if local:
-        with benchmark_time:
-            yield
-    else:
+def restart(benchmark_time, warm_start, _coiled_function, local):
+    if not local:
+        _coiled_function.client.restart()
 
-        @coiled.function(**machine)
-        def _():
-            pass
-
-        _.client.restart()
-        with benchmark_all(_.client):
-            yield
+    with benchmark_time:
+        yield

@@ -5,7 +5,7 @@ from ..utils_test import cluster_memory, run_up_to_nthreads, timeseries_of_size,
 
 
 @run_up_to_nthreads("small_cluster", 40, reason="Does not finish")
-def test_join_big(small_client, memory_multiplier, configure_shuffling):
+def test_join_big(small_client, memory_multiplier):
     memory = cluster_memory(small_client)  # 76.66 GiB
 
     df1_big = timeseries_of_size(
@@ -54,7 +54,7 @@ def test_join_big_small(small_client, memory_multiplier, configure_shuffling):
 
 
 @pytest.mark.parametrize("persist", [True, False])
-def test_set_index(small_client, persist, memory_multiplier, configure_shuffling):
+def test_set_index(small_client, persist, memory_multiplier):
     memory = cluster_memory(small_client)  # 76.66 GiB
 
     df_big = timeseries_of_size(

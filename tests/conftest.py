@@ -752,8 +752,7 @@ def new_array(request):
     when compressible data.
     """
     if request.param == "uncompressible":
-        rng = da.random.default_rng()
-        return rng.random
+        return da.random.random
     assert request.param == "compressible"
 
     def compressible(x):
@@ -773,8 +772,7 @@ def new_array(request):
         return y.reshape(x.shape)
 
     def _(*args, **kwargs):
-        rng = da.random.default_rng()
-        a = rng.random(*args, **kwargs)
+        a = da.random.random(*args, **kwargs)
         return a.map_blocks(compressible, dtype=a.dtype)
 
     return _

@@ -2,7 +2,7 @@ import re
 
 import pytest
 
-pytest.importorskip("pyspark")
+pytest.importorskip("coiled.spark")
 
 
 def register_table(spark, path, name):
