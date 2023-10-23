@@ -578,9 +578,13 @@ def tpch_pyspark_client(
 def tpch_cluster(request, dask_env_variables, cluster_kwargs, github_cluster_tags):
     module = os.path.basename(request.fspath).split(".")[0]
     module = module.replace("test_", "")
+    vars = dask_env_variables.copy()
+    vars.update(
+        {"OMP_NUM_THREADS": "", "MKL_NUM_THREADS": "", "OPENBLAS_NUM_THREADS": ""}
+    )
     kwargs = dict(
         name=f"{module}-{uuid.uuid4().hex[:8]}",
-        environ=dask_env_variables,
+        environ=vars,
         tags=github_cluster_tags,
         **cluster_kwargs["tpch"],
     )
