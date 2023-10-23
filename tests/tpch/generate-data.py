@@ -1,25 +1,71 @@
+import functools
 import pathlib
 import tempfile
+import warnings
 
 import botocore.session
 import click
+import coiled
 import dask
 import duckdb
 import psutil
+from dask.distributed import wait
 
 
 def generate(
-    scale: int = 10, partition_size: str = "50 MiB", path: str = "./tpch-data"
+    scale: int = 10,
+    partition_size: str = "50 MiB",
+    path: str = "./tpch-data",
 ):
     if str(path).startswith("s3"):
         path += "/" if not path.endswith("/") else ""
         path += f"scale-{scale}/"
+        use_coiled = True
     else:
         path = pathlib.Path(path) / f"scale-{scale}/"
         path.mkdir(parents=True, exist_ok=True)
+        use_coiled = False
 
     print(f"Scale: {scale}, Path: {path}, Partition Size: {partition_size}")
 
+    if use_coiled:
+        with coiled.Cluster(
+            n_workers=10, worker_memory="4 GiB", worker_options={"nthreads": 1}
+        ) as cluster:
+            cluster.adapt(minimum=1, maximum=250)
+            client = cluster.get_client()
+
+            jobs = []
+            for step in range(0, scale):
+                job = client.submit(
+                    _dbgen_to_path,
+                    scale=scale,
+                    step=step,
+                    path=path,
+                    partition_size=partition_size,
+                )
+                jobs.append(job)
+            wait(jobs)
+    else:
+        return _dbgen_to_path(scale, path, partition_size)
+
+
+def retry(f):
+    @functools.wraps(f)
+    def _(*args, **kwargs):
+        for _ in range(5):
+            try:
+                return f(*args, **kwargs)
+            except Exception as exc:
+                warnings.warn(f"Failed w/ {exc}, retrying...")
+                continue
+        return f(*args, **kwargs)
+
+    return _
+
+
+@retry
+def _dbgen_to_path(scale, path, partition_size, step=None):
     con = duckdb.connect()
     con.install_extension("tpch")
     con.load_extension("tpch")
@@ -35,11 +81,17 @@ def generate(
         SET s3_access_key_id='{creds.access_key}';
         SET s3_secret_access_key='{creds.secret_key}';
         SET s3_session_token='{creds.token}';
+        SET preserve_insertion_order=false;
         """
     )
 
     print("Generating TPC-H data")
-    con.sql(f"call dbgen(sf={scale})")
+    if step is None:
+        query = f"call dbgen(sf={scale})"
+    else:
+        query = f"call dbgen(sf={scale}, children={scale}, step={step})"
+    con.sql(query)
+
     print("Finished generating data, exporting...")
 
     tables = (
@@ -56,6 +108,8 @@ def generate(
         #       so we estimate the page size required for each table to get files of about a target size
         n_rows_total = con.sql(f"select count(*) from {table}").fetchone()[0]
         n_rows_per_page = rows_approx_mb(con, table, partition_size=partition_size)
+        if n_rows_total == 0:
+            continue  # In case of step based production, some tables may already be fully generated
 
         for offset in range(0, n_rows_total, n_rows_per_page):
             print(
@@ -71,6 +125,7 @@ def generate(
             )
         print(f"Finished exporting table {table}!")
     print("Finished exporting all data!")
+    con.close()
 
 
 def rows_approx_mb(con, table_name, partition_size: str):
