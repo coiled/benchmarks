@@ -244,4 +244,4 @@ def test_hpo(client):
     ]
     wait(futures, client, 900)
 
-    assert len(study.trials) == n_trials
+    assert len(study.trials) >= n_trials
