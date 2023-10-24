@@ -71,7 +71,6 @@ def pytest_collection_modifyitems(config, items):
             item.add_marker(skip_workflows)
 
     skip_benchmarks = pytest.mark.skip(reason="need --tpch-non-dask option to run")
-
     for item in items:
         if "tpch" in str(item.path):
             # Skip polars and DuckDB TPCH unless this toggle is on

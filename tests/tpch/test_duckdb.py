@@ -1,6 +1,7 @@
 import botocore.session
-import duckdb
 import pytest
+
+duckdb = pytest.importorskip("duckdb")
 
 
 @pytest.fixture

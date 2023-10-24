@@ -1,7 +1,9 @@
 from datetime import datetime
 
-import polars as pl
+import pytest
 from pyarrow.dataset import dataset
+
+pl = pytest.importorskip("polars")
 
 
 def read_data(filename):
