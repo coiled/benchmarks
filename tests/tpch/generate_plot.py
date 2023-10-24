@@ -1,19 +1,28 @@
 import altair as alt
 import click
-import ibis
+import pandas as pd
 
 
-def generate(outfile="chart.json"):
-    con = ibis.sqlite.connect("benchmark.db")
-    t = con.table("test_run")
+def generate(outfile="chart.json", name=None):
+    df = pd.read_sql_table(table_name="test_run", con="sqlite:///benchmark.db")
 
-    tt = t[(t.call_outcome == "passed") & (t.path.startswith("tpch/"))]
-    df = tt[["path", "name", "duration", "start"]].to_pandas()
+    df = df[
+        (df.call_outcome == "passed")
+        & (df.path.str.startswith("tpch/"))
+        & df.cluster_name
+    ]
+    df = df[["path", "name", "duration", "start", "cluster_name"]]
 
     df["library"] = df.path.map(lambda path: path.split("_")[-1].split(".")[0])
     df["query"] = df.name.map(lambda name: int(name.split("_")[-1]))
+    df["name"] = df.cluster_name.map(lambda name: name.split("-", 3)[-1])
+    df["scale"] = df.cluster_name.map(lambda name: int(name.split("-")[2]))
     del df["path"]
-    del df["name"]
+    del df["cluster_name"]
+
+    if name:
+        df = df[df.name == name]
+
     df = df.sort_values(["query", "library"])
 
     def recent(df):
@@ -22,6 +31,8 @@ def generate(outfile="chart.json"):
     df = df.groupby(["library", "query"]).apply(recent).reset_index(drop=True)
     del df["start"]
 
+    assert df.scale.nunique() == 1
+
     chart = (
         alt.Chart(df)
         .mark_bar()
@@ -29,8 +40,15 @@ def generate(outfile="chart.json"):
             x="query:N",
             y="duration:Q",
             xOffset="library:N",
-            color="library:N",
+            color=alt.Color("library").scale(
+                domain=["dask", "duckdb", "polars", "pyspark"],
+                range=["#5677a4", "#e68b39", "#d4605b", "green"],
+            ),
             tooltip=["library", "duration"],
+        )
+        .properties(title=f"TPC-H -- scale:{df.scale.iloc[0]} name:{df.name.iloc[0]}")
+        .configure_title(
+            fontSize=20,
         )
     )
     chart.save(outfile)
