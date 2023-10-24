@@ -53,18 +53,6 @@ uber_lyft_large:
   n_workers: 50
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
-tpch:
-  n_workers: 8
-  scheduler_vm_types: [m6i.xlarge]
-  worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
-  scheduler_options:
-    idle_timeout: '1h' # Spark idleness not implemented yet
-  spot_policy: 'on-demand'
-  backend_options:
-   ingress:
-     - ports: [443, 8786, 8787, 7077, 8080, 4040, 15002]
-       cidr: "0.0.0.0/0"
-
 # For tests/workflows/test_pytorch_optuna.py
 pytorch_optuna:
   n_workers: 10

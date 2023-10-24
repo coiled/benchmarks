@@ -10,6 +10,22 @@ def read_data(filename):
     pyarrow_dataset = dataset(filename, format="parquet")
     return pl.scan_pyarrow_dataset(pyarrow_dataset)
 
+    if filename.startswith("s3://"):
+        import boto3
+
+        session = boto3.session.Session()
+        credentials = session.get_credentials()
+        return pl.scan_parquet(
+            filename,
+            storage_options={
+                "aws_access_key_id": credentials.access_key,
+                "aws_secret_access_key": credentials.secret_key,
+                "region": "us-east-2",
+            },
+        )
+    else:
+        return pl.scan_parquet(filename + "/*")
+
 
 def test_query_1(run, restart, dataset_path):
     def _():
