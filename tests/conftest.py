@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import contextlib
 import datetime
 import logging
@@ -11,7 +13,6 @@ import time
 import uuid
 from functools import lru_cache
 from pathlib import Path
-from typing import Union
 
 import dask
 import dask.array as da
@@ -65,31 +66,31 @@ def pytest_addoption(parser):
 
 
 def pytest_collection_modifyitems(config, items):
-    # Skip workflows unless --run-workflows is set OR user explicitly included
-    # some path which includes the workflows ie pytest tests/workflows/
+    # Skip workflows unless --run-workflows is set OR user explicitly included some path
+    # which includes the workflows ie pytest tests/workflows/
     skip_workflows = pytest.mark.skip(reason="need --run-workflows option to run")
     workflows = TEST_DIR / "workflows"
-    if not config.getoption("--run-workflows"):
-        for item in filter(lambda item: workflows in item.path.parents, items):
-            if not any(
-                _is_child_dir(path, workflows) for path in config.option.file_or_dir
-            ):
+    if not config.getoption("--run-workflows") and not any(
+        _is_child_dir(path, workflows) for path in config.option.file_or_dir
+    ):
+        for item in items:
+            if workflows in item.path.parents:
                 item.add_marker(skip_workflows)
 
-    # Skip non Dask TPC-H tests unless --tpch-non-dask is set OR user explicitly included
-    # some path which inclues the `tpch` path. ie pytest tests/tpch/
+    # Skip non Dask TPC-H tests unless --tpch-non-dask is set OR user explicitly
+    # included some path which inclues the `tpch` path. ie pytest tests/tpch/
     skip_benchmarks = pytest.mark.skip(reason="need --tpch-non-dask option to run")
     tpch = TEST_DIR / "tpch"
     tpch_dask = tpch / "test_dask.py"
-    if not config.getoption("--tpch-non-dask"):
-        for item in filter(lambda item: tpch in item.path.parents, items):
-            if tpch_dask != item.path and not any(
-                _is_child_dir(path, tpch) for path in config.option.file_or_dir
-            ):
+    if not config.getoption("--tpch-non-dask") and not any(
+        _is_child_dir(path, tpch) for path in config.option.file_or_dir
+    ):
+        for item in items:
+            if tpch in item.path.parents and tpch_dask != item.path:
                 item.add_marker(skip_benchmarks)
 
 
-def _is_child_dir(path: Union[str, Path], parent: Union[str, Path]):
+def _is_child_dir(path: str | Path, parent: str | Path) -> bool:
     _parent = Path(parent).absolute()
     _path = Path(path).absolute()
     return _parent in _path.parents or _parent == _path
