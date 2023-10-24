@@ -21,10 +21,13 @@ def generate(
 ):
     if str(path).startswith("s3"):
         path += "/" if not path.endswith("/") else ""
-        path += f"scale-{scale}/"
+        path += f"scale-{scale}{'-strict' if not relaxed_schema else ''}/"
         use_coiled = True
     else:
-        path = pathlib.Path(path) / f"scale-{scale}/"
+        path = (
+            pathlib.Path(path)
+            / f"scale-{scale}{'-strict' if not relaxed_schema else ''}/"
+        )
         path.mkdir(parents=True, exist_ok=True)
         use_coiled = False
 
@@ -32,7 +35,10 @@ def generate(
 
     if use_coiled:
         with coiled.Cluster(
-            n_workers=10, worker_memory="4 GiB", worker_options={"nthreads": 1}
+            n_workers=10,
+            worker_memory="4 GiB",
+            worker_options={"nthreads": 1},
+            region="us-east-2",
         ) as cluster:
             cluster.adapt(minimum=1, maximum=250)
             client = cluster.get_client()
