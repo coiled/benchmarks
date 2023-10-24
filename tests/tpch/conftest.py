@@ -56,12 +56,10 @@ def restart(request):
 @pytest.fixture(scope="session")
 def dataset_path(local, scale):
     remote_paths = {
-        10: "s3://coiled-runtime-ci/tpch/scale-10/",
-        100: "s3://coiled-runtime-ci/tpch/scale-100/",
-        # 1000: "s3://coiled-runtime-ci/tpc-h/scale-1000/",
-        1000: "s3://coiled-runtime-ci/tpch/scale-1000/",
+        10: "s3://coiled-runtime-ci/tpc-h/scale-10/",
+        100: "s3://coiled-runtime-ci/tpc-h/scale-100/",
+        1000: "s3://coiled-runtime-ci/tpc-h/scale-1000/",
         10000: "s3://coiled-runtime-ci/tpc-h/scale-10000/",
-        # 10000: "s3://coiled-runtime-ci/tpch/scale-10000/",
     }
     local_paths = {
         1: "./tpch-data/scale-1/",
@@ -319,7 +317,7 @@ def machine_spec(scale):
         return {
             "vm_type": "m6i.8xlarge",
         }
-    elif scale <= 100:
+    elif scale == 100:
         return {
             "vm_type": "m6i.8xlarge",
         }
@@ -395,4 +393,5 @@ def make_chart(name, tmp_path_factory, local, scale):
             generate(
                 outfile=os.path.join("charts", f"{local}-{scale}-query-{name}.json"),
                 name=name,
+                scale=scale,
             )

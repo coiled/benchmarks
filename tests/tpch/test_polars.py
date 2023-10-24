@@ -1,9 +1,13 @@
 from datetime import datetime
 
 import polars as pl
+from pyarrow.dataset import dataset
 
 
 def read_data(filename):
+    pyarrow_dataset = dataset(filename, format="parquet")
+    return pl.scan_pyarrow_dataset(pyarrow_dataset)
+
     if filename.startswith("s3://"):
         import boto3
 
@@ -12,8 +16,8 @@ def read_data(filename):
         return pl.scan_parquet(
             filename,
             storage_options={
-                "aws_access_key_id": credentials.secret_key,
-                "aws_secret_access_key": credentials.access_key,
+                "aws_access_key_id": credentials.access_key,
+                "aws_secret_access_key": credentials.secret_key,
                 "region": "us-east-2",
             },
         )

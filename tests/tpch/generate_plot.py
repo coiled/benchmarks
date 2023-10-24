@@ -3,7 +3,7 @@ import click
 import pandas as pd
 
 
-def generate(outfile="chart.json", name=None):
+def generate(outfile="chart.json", name=None, scale=None):
     df = pd.read_sql_table(table_name="test_run", con="sqlite:///benchmark.db")
 
     df = df[
@@ -23,6 +23,9 @@ def generate(outfile="chart.json", name=None):
     if name:
         df = df[df.name == name]
 
+    if scale:
+        df = df[df.scale == scale]
+
     df = df.sort_values(["query", "library"])
 
     def recent(df):
@@ -30,8 +33,6 @@ def generate(outfile="chart.json", name=None):
 
     df = df.groupby(["library", "query"]).apply(recent).reset_index(drop=True)
     del df["start"]
-
-    assert df.scale.nunique() == 1
 
     chart = (
         alt.Chart(df)
@@ -42,7 +43,7 @@ def generate(outfile="chart.json", name=None):
             xOffset="library:N",
             color=alt.Color("library").scale(
                 domain=["dask", "duckdb", "polars", "pyspark"],
-                range=["#5677a4", "#e68b39", "#d4605b", "green"],
+                range=["#5677a4ff", "#e68b39ff", "#d4605bff", "#82b5b2ff"],
             ),
             tooltip=["library", "duration"],
         )
