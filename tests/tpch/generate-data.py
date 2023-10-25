@@ -10,12 +10,12 @@ import dask
 import duckdb
 import psutil
 import pyarrow.compute as pc
-from dask.distributed import wait
+from dask.distributed import LocalCluster, wait
 
 
 def generate(
     scale: int = 10,
-    partition_size: str = "50 MiB",
+    partition_size: str = "128 MiB",
     path: str = "./tpch-data",
     relaxed_schema: bool = False,
 ):
@@ -32,6 +32,12 @@ def generate(
         use_coiled = False
 
     print(f"Scale: {scale}, Path: {path}, Partition Size: {partition_size}")
+    kwargs = dict(
+        scale=scale,
+        path=path,
+        relaxed_schema=relaxed_schema,
+        partition_size=partition_size,
+    )
 
     if use_coiled:
         with coiled.Cluster(
@@ -41,22 +47,26 @@ def generate(
             region="us-east-2",
         ) as cluster:
             cluster.adapt(minimum=1, maximum=250)
-            client = cluster.get_client()
-
-            jobs = []
-            for step in range(0, scale):
-                job = client.submit(
-                    _dbgen_to_path,
-                    scale=scale,
-                    step=step,
-                    path=path,
-                    relaxed_schema=relaxed_schema,
-                    partition_size=partition_size,
-                )
-                jobs.append(job)
-            wait(jobs)
+            _generate_via_cluster(cluster, **kwargs)
     else:
-        return _dbgen_to_path(scale, path, partition_size, relaxed_schema)
+        with LocalCluster(threads_per_worker=1) as cluster:
+            _generate_via_cluster(cluster, **kwargs)
+
+
+def _generate_via_cluster(cluster, scale, path, relaxed_schema, partition_size):
+    with cluster.get_client() as client:
+        jobs = []
+        for step in range(0, scale):
+            job = client.submit(
+                _dbgen_to_path,
+                scale=scale,
+                step=step,
+                path=path,
+                relaxed_schema=relaxed_schema,
+                partition_size=partition_size,
+            )
+            jobs.append(job)
+        wait(jobs)
 
 
 def retry(f):
@@ -74,32 +84,55 @@ def retry(f):
 
 
 @retry
-def _dbgen_to_path(scale, path, partition_size, relaxed_schema, step=None):
+def _dbgen_to_path(
+    scale: int, path: str, partition_size: str, relaxed_schema: bool, step: int
+):
+    """
+    Run TPC-H dbgen for generating the <step>th part of a multi-part load or update set
+    into an output directory.
+
+    scale: int
+        The TPC-H scale to generate
+    path: str
+        Output path of the generated parquet files
+    partition_size: str
+        Target parquet file output size. Some files may be smaller than this, when the remaining
+        data from a given table is less than this size.
+    relaxed_schema: bool
+        To cast certain datatypes like `date` or `decimal` types to `timestamp_s` and `double`;
+        this flag will call the casting done in `_alter_tables` function before outputting parquet files.
+    step: int
+        Generate the <n>th part of a multi-part load or update set in this scale.
+    """
     con = duckdb.connect()
     con.install_extension("tpch")
     con.load_extension("tpch")
 
-    session = botocore.session.Session()
-    creds = session.get_credentials()
-    con.install_extension("httpfs")
-    con.load_extension("httpfs")
+    if str(path).startswith("s3://"):
+        session = botocore.session.Session()
+        creds = session.get_credentials()
+        con.install_extension("httpfs")
+        con.load_extension("httpfs")
+        con.sql(
+            f"""
+            SET s3_region='us-east-2';
+            SET s3_access_key_id='{creds.access_key}';
+            SET s3_secret_access_key='{creds.secret_key}';
+            SET s3_session_token='{creds.token}';
+            """
+        )
+
     con.sql(
         f"""
         SET memory_limit='{psutil.virtual_memory().available // 2**30 }G';
-        SET s3_region='us-east-2';
-        SET s3_access_key_id='{creds.access_key}';
-        SET s3_secret_access_key='{creds.secret_key}';
-        SET s3_session_token='{creds.token}';
         SET preserve_insertion_order=false;
+        SET threads TO 1;
+        SET enable_progress_bar=false;
         """
     )
 
     print("Generating TPC-H data")
-    if step is None:
-        query = f"call dbgen(sf={scale})"
-    else:
-        query = f"call dbgen(sf={scale}, children={scale}, step={step})"
-    con.sql(query)
+    con.sql(f"call dbgen(sf={scale}, children={scale}, step={step})")
     print("Finished generating data, exporting...")
 
     if relaxed_schema:
@@ -142,6 +175,10 @@ def _dbgen_to_path(scale, path, partition_size, relaxed_schema, step=None):
 
 
 def rows_approx_mb(con, table_name, partition_size: str):
+    """
+    Estimate the number of rows from this table required to
+    result in a parquet file output size of `partition_size`
+    """
     partition_size = dask.utils.parse_bytes(partition_size)
     sample_size = 10_000
     table = con.sql(f"select * from {table_name} limit {sample_size}").arrow()
@@ -194,7 +231,7 @@ def _alter_tables(con):
     "--scale", default=10, help="Scale factor to use, roughly equal to number of GB"
 )
 @click.option(
-    "--partition-size", default="50 MiB", help="Target output parquet file size "
+    "--partition-size", default="128 MiB", help="Target output parquet file size "
 )
 @click.option(
     "--path",
