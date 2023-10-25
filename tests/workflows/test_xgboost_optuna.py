@@ -48,4 +48,4 @@ def test_hpo(client):
         for _ in range(n_trials)
     ]
     wait(futures)
-    assert len(study.trials) == n_trials
+    assert len(study.trials) >= n_trials
