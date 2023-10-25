@@ -11,7 +11,7 @@ import dask
 import duckdb
 import psutil
 import pyarrow.compute as pc
-from dask.distributed import LocalCluster, wait
+from dask.distributed import LocalCluster
 
 REGION = None
 
@@ -60,11 +60,8 @@ def generate(
 
 def _generate_via_cluster(cluster, scale, **kwargs):
     with cluster.get_client() as client:
-        jobs = []
-        for step in range(0, scale):
-            job = client.submit(_tpch_data_gen, step=step, scale=scale, **kwargs)
-            jobs.append(job)
-        wait(jobs)
+        jobs = client.map(_tpch_data_gen, range(0, scale), scale=scale, **kwargs)
+        client.gather(jobs)
 
 
 def retry(f):
@@ -83,12 +80,14 @@ def retry(f):
 
 @retry
 def _tpch_data_gen(
-    scale: int, path: str, partition_size: str, relaxed_schema: bool, step: int
+    step: int, scale: int, path: str, partition_size: str, relaxed_schema: bool
 ):
     """
     Run TPC-H dbgen for generating the <step>th part of a multi-part load or update set
     into an output directory.
 
+    step: int
+        Generate the <n>th part of a multi-part load or update set in this scale.
     scale: int
         The TPC-H scale to generate
     path: str
@@ -99,8 +98,6 @@ def _tpch_data_gen(
     relaxed_schema: bool
         To cast certain datatypes like `date` or `decimal` types to `timestamp_s` and `double`;
         this flag will call the casting done in `_alter_tables` function before outputting parquet files.
-    step: int
-        Generate the <n>th part of a multi-part load or update set in this scale.
     """
     with duckdb.connect() as con:
         con.install_extension("tpch")
