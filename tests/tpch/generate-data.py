@@ -102,74 +102,75 @@ def _tpch_data_gen(
     step: int
         Generate the <n>th part of a multi-part load or update set in this scale.
     """
-    con = duckdb.connect()
-    con.install_extension("tpch")
-    con.load_extension("tpch")
+    with duckdb.connect() as con:
+        con.install_extension("tpch")
+        con.load_extension("tpch")
 
-    if str(path).startswith("s3://"):
-        session = botocore.session.Session()
-        creds = session.get_credentials()
-        con.install_extension("httpfs")
-        con.load_extension("httpfs")
+        if str(path).startswith("s3://"):
+            session = botocore.session.Session()
+            creds = session.get_credentials()
+            con.install_extension("httpfs")
+            con.load_extension("httpfs")
+            con.sql(
+                f"""
+                SET s3_region='{REGION}';
+                SET s3_access_key_id='{creds.access_key}';
+                SET s3_secret_access_key='{creds.secret_key}';
+                SET s3_session_token='{creds.token}';
+                """
+            )
+
         con.sql(
             f"""
-            SET s3_region='{REGION}';
-            SET s3_access_key_id='{creds.access_key}';
-            SET s3_secret_access_key='{creds.secret_key}';
-            SET s3_session_token='{creds.token}';
+            SET memory_limit='{psutil.virtual_memory().available // 2**30 }G';
+            SET preserve_insertion_order=false;
+            SET threads TO 1;
+            SET enable_progress_bar=false;
             """
         )
 
-    con.sql(
-        f"""
-        SET memory_limit='{psutil.virtual_memory().available // 2**30 }G';
-        SET preserve_insertion_order=false;
-        SET threads TO 1;
-        SET enable_progress_bar=false;
-        """
-    )
+        print("Generating TPC-H data")
+        con.sql(f"call dbgen(sf={scale}, children={scale}, step={step})")
+        print("Finished generating data, exporting...")
 
-    print("Generating TPC-H data")
-    con.sql(f"call dbgen(sf={scale}, children={scale}, step={step})")
-    print("Finished generating data, exporting...")
+        if relaxed_schema:
+            print("Converting types date -> timestamp_s and decimal -> double")
+            _alter_tables(con)
+            print("Done altering tables")
 
-    if relaxed_schema:
-        print("Converting types date -> timestamp_s and decimal -> double")
-        _alter_tables(con)
-        print("Done altering tables")
+        tables = (
+            con.sql("select * from information_schema.tables")
+            .arrow()
+            .column("table_name")
+        )
+        for table in map(str, tables):
+            print(f"Exporting table: {table}")
+            if str(path).startswith("s3://"):
+                out = path + table
+            else:
+                out = path / table
 
-    tables = (
-        con.sql("select * from information_schema.tables").arrow().column("table_name")
-    )
-    for table in map(str, tables):
-        print(f"Exporting table: {table}")
-        if str(path).startswith("s3://"):
-            out = path + table
-        else:
-            out = path / table
+            # TODO: duckdb doesn't (yet) support writing parquet files by limited file size
+            #       so we estimate the page size required for each table to get files of about a target size
+            n_rows_total = con.sql(f"select count(*) from {table}").fetchone()[0]
+            n_rows_per_page = rows_approx_mb(con, table, partition_size=partition_size)
+            if n_rows_total == 0:
+                continue  # In case of step based production, some tables may already be fully generated
 
-        # TODO: duckdb doesn't (yet) support writing parquet files by limited file size
-        #       so we estimate the page size required for each table to get files of about a target size
-        n_rows_total = con.sql(f"select count(*) from {table}").fetchone()[0]
-        n_rows_per_page = rows_approx_mb(con, table, partition_size=partition_size)
-        if n_rows_total == 0:
-            continue  # In case of step based production, some tables may already be fully generated
-
-        for offset in range(0, n_rows_total, n_rows_per_page):
-            print(
-                f"Start Exporting Page from {table} - Page {offset} - {offset + n_rows_per_page}"
-            )
-            con.sql(
-                f"""
-                copy
-                    (select * from {table} offset {offset} limit {n_rows_per_page} )
-                to '{out}'
-                (format parquet, per_thread_output true, filename_pattern "{table}_{{uuid}}", overwrite_or_ignore)
-                """
-            )
-        print(f"Finished exporting table {table}!")
-    print("Finished exporting all data!")
-    con.close()
+            for offset in range(0, n_rows_total, n_rows_per_page):
+                print(
+                    f"Start Exporting Page from {table} - Page {offset} - {offset + n_rows_per_page}"
+                )
+                con.sql(
+                    f"""
+                    copy
+                        (select * from {table} offset {offset} limit {n_rows_per_page} )
+                    to '{out}'
+                    (format parquet, per_thread_output true, filename_pattern "{table}_{{uuid}}", overwrite_or_ignore)
+                    """
+                )
+            print(f"Finished exporting table {table}!")
+        print("Finished exporting all data!")
 
 
 def rows_approx_mb(con, table_name, partition_size: str):
