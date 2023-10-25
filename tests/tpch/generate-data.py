@@ -3,6 +3,7 @@ import pathlib
 import tempfile
 import warnings
 
+import boto3
 import botocore.session
 import click
 import coiled
@@ -11,6 +12,8 @@ import duckdb
 import psutil
 import pyarrow.compute as pc
 from dask.distributed import LocalCluster, wait
+
+REGION = None
 
 
 def generate(
@@ -23,6 +26,8 @@ def generate(
         path += "/" if not path.endswith("/") else ""
         path += f"scale-{scale}{'-strict' if not relaxed_schema else ''}/"
         use_coiled = True
+        global REGION
+        REGION = get_bucket_region(path)
     else:
         path = (
             pathlib.Path(path)
@@ -44,27 +49,20 @@ def generate(
             n_workers=10,
             worker_memory="4 GiB",
             worker_options={"nthreads": 1},
-            region="us-east-2",
+            region=REGION,
         ) as cluster:
-            cluster.adapt(minimum=1, maximum=250)
+            cluster.adapt(minimum=1, maximum=350)
             _generate_via_cluster(cluster, **kwargs)
     else:
         with LocalCluster(threads_per_worker=1) as cluster:
             _generate_via_cluster(cluster, **kwargs)
 
 
-def _generate_via_cluster(cluster, scale, path, relaxed_schema, partition_size):
+def _generate_via_cluster(cluster, scale, **kwargs):
     with cluster.get_client() as client:
         jobs = []
         for step in range(0, scale):
-            job = client.submit(
-                _tpch_data_gen,
-                scale=scale,
-                step=step,
-                path=path,
-                relaxed_schema=relaxed_schema,
-                partition_size=partition_size,
-            )
+            job = client.submit(_tpch_data_gen, step=step, scale=scale, **kwargs)
             jobs.append(job)
         wait(jobs)
 
@@ -115,7 +113,7 @@ def _tpch_data_gen(
         con.load_extension("httpfs")
         con.sql(
             f"""
-            SET s3_region='us-east-2';
+            SET s3_region='{REGION}';
             SET s3_access_key_id='{creds.access_key}';
             SET s3_secret_access_key='{creds.secret_key}';
             SET s3_session_token='{creds.token}';
@@ -224,6 +222,16 @@ def _alter_tables(con):
             "column_name"
         ):
             con.sql(f"alter table {table} alter {column} type timestamp_s")
+
+
+def get_bucket_region(path: str):
+    if not path.startswith("s3://"):
+        raise ValueError(f"'{path}' is not an S3 path")
+    bucket = path.replace("s3://", "").split("/")[0]
+    resp = boto3.client("s3").get_bucket_location(Bucket=bucket)
+    # Buckets in region 'us-east-1' results in None, b/c why not.
+    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3/client/get_bucket_location.html#S3.Client.get_bucket_location
+    return resp["LocationConstraint"] or "us-east-1"
 
 
 @click.command()
