@@ -58,7 +58,7 @@ def _generate_via_cluster(cluster, scale, path, relaxed_schema, partition_size):
         jobs = []
         for step in range(0, scale):
             job = client.submit(
-                _dbgen_to_path,
+                _tpch_data_gen,
                 scale=scale,
                 step=step,
                 path=path,
@@ -84,7 +84,7 @@ def retry(f):
 
 
 @retry
-def _dbgen_to_path(
+def _tpch_data_gen(
     scale: int, path: str, partition_size: str, relaxed_schema: bool, step: int
 ):
     """
