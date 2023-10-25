@@ -11,7 +11,6 @@ import dask
 import duckdb
 import psutil
 import pyarrow.compute as pc
-from dask.distributed import LocalCluster
 
 REGION = None
 
@@ -53,16 +52,11 @@ def generate(
             region=REGION,
         ) as cluster:
             cluster.adapt(minimum=1, maximum=350)
-            _generate_via_cluster(cluster, **kwargs)
+            with cluster.get_client() as client:
+                jobs = client.map(_tpch_data_gen, range(0, scale), **kwargs)
+                client.gather(jobs)
     else:
-        with LocalCluster(threads_per_worker=1) as cluster:
-            _generate_via_cluster(cluster, **kwargs)
-
-
-def _generate_via_cluster(cluster, scale, **kwargs):
-    with cluster.get_client() as client:
-        jobs = client.map(_tpch_data_gen, range(0, scale), scale=scale, **kwargs)
-        client.gather(jobs)
+        _tpch_data_gen(step=None, **kwargs)
 
 
 def retry(f):
@@ -87,8 +81,9 @@ def _tpch_data_gen(
     Run TPC-H dbgen for generating the <step>th part of a multi-part load or update set
     into an output directory.
 
-    step: int
-        Generate the <n>th part of a multi-part load or update set in this scale.
+    step: Union[int, None]
+        Generate the <n>th part of a multi-part load or update set in this scale, if None
+        then generate the whole scale in one call.
     scale: int
         The TPC-H scale to generate
     path: str
@@ -128,7 +123,11 @@ def _tpch_data_gen(
         )
 
         print("Generating TPC-H data")
-        con.sql(f"call dbgen(sf={scale}, children={scale}, step={step})")
+        if step is None:
+            query = f"call dbgen(sf={scale})"
+        else:
+            query = f"call dbgen(sf={scale}, children={scale}, step={step})"
+        con.sql(query)
         print("Finished generating data, exporting...")
 
         if relaxed_schema:
