@@ -431,7 +431,6 @@ def benchmark_all(
     benchmark_coiled_prometheus,
     get_cluster_info,
     benchmark_time,
-    benchmark_coiled_prometheus,
 ):
     """Benchmark all available metrics and extracts cluster information
 
