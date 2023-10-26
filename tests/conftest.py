@@ -296,12 +296,12 @@ def benchmark_coiled_prometheus(test_run_benchmark):
             end_ts=end,
         )
         test_run_benchmark.scheduler_cpu_avg = cluster.get_aggregated_metric(
-            query="scheduler:cpu_rate&scheduler",
+            # have to sum since cpu_rate returns the different types
+            query="scheduler:cpu_rate&scheduler | sum",
             over_time="avg",
             start_ts=start,
             end_ts=end,
         )
-        # TODO: Do we want to have plain max or 80th percentile?
         test_run_benchmark.worker_max_tick = cluster.get_aggregated_metric(
             query="worker_max_tick|max",
             over_time="quantile(0.80)",
