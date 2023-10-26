@@ -38,7 +38,7 @@ SPECS = [
     ChartSpec("average_memory", "Average Memory (W)", "[GiB]", 2**30),
     ChartSpec("peak_memory", "Peak Memory (W)", "[GiB]", 2**30),
     ChartSpec("scheduler_memory_max", "Peak Memory (S)", "[GiB]", 2**30),
-    ChartSpec("scheduler_cpu_avg", "Avg CPU (S)", "%", 1),
+    ChartSpec("scheduler_cpu_avg", "Avg CPU (S)", "%", 1e-2),
     ChartSpec("worker_max_tick", "Max Tick (W)", "[ms]", 1e-3),
     ChartSpec("scheduler_max_tick", "Max Tick (S)", "[ms]", 1e-3),
 ]
