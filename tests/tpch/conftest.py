@@ -291,19 +291,21 @@ def fs(local):
     if local:
         return None
     else:
-        import boto3
-        from pyarrow.fs import S3FileSystem
-
-        session = boto3.session.Session()
-        credentials = session.get_credentials()
-
-        fs = S3FileSystem(
-            secret_key=credentials.secret_key,
-            access_key=credentials.access_key,
-            region="us-east-2",
-            session_token=credentials.token,
-        )
-        return fs
+        return None
+        # TODO: Add this when arrow fs is supported
+        # import boto3
+        # from pyarrow.fs import S3FileSystem
+        #
+        # session = boto3.session.Session()
+        # credentials = session.get_credentials()
+        #
+        # fs = S3FileSystem(
+        #     secret_key=credentials.secret_key,
+        #     access_key=credentials.access_key,
+        #     region="us-east-2",
+        #     session_token=credentials.token,
+        # )
+        # return fs
 
 
 #################################################
