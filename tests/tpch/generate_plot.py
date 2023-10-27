@@ -1,10 +1,16 @@
+import warnings
 import altair as alt
 import click
 import pandas as pd
 
 
 def generate(outfile="chart.json", name=None, scale=None):
-    df = pd.read_sql_table(table_name="test_run", con="sqlite:///benchmark.db")
+    try:
+        df = pd.read_sql_table(table_name="test_run", con="sqlite:///benchmark.db")
+    except ValueError:
+        return warnings.warn(
+            "test_run table not found, run with --benchmark to generate charts"
+        )
 
     df = df[
         (df.call_outcome == "passed")
