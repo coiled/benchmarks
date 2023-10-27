@@ -2,7 +2,6 @@ import functools
 import os
 
 import coiled
-import dask_expr as dx
 import pytest
 
 DATASETS = {
@@ -13,10 +12,7 @@ DATASETS = {
 }
 
 
-if dx.__version__ == "0.1.10+1.ga61b4de":
-    ENABLED_DATASET = os.getenv("TPCH_SCALE") or "scale 1000"
-else:
-    ENABLED_DATASET = "scale 1000-date"
+ENABLED_DATASET = os.getenv("TPCH_SCALE") or "scale 1000"
 
 
 if ENABLED_DATASET not in DATASETS:

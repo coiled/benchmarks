@@ -53,6 +53,6 @@ dependencies:
     # conda. You may alternatively point to your own git fork (but make sure you
     # sync'ed tags!)
     # Read README.md for troubleshooting.
-    - git+https://github.com/phofl/dask@parquet
-    - git+https://github.com/dask/distributed@fjetter-patch-1
+    - git+https://github.com/dask/dask
+    - git+https://github.com/dask/distributed
     - git+https://github.com/dask-contrib/dask-expr
