@@ -172,8 +172,8 @@ def cluster_spec(scale):
         }
     elif scale == 100:
         return {
-            "worker_vm_types": ["m6i.large"],
-            "n_workers": 16,
+            "worker_vm_types": ["m6i.xlarge"],
+            "n_workers": 8,
             **everywhere,
         }
     elif scale == 1000:
