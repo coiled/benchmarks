@@ -33,7 +33,7 @@ def test_query_1(client, dataset_path, fs):
             "avg_qty": "mean",
             "avg_price": "mean",
             "avg_disc": "mean",
-            "count_order": "count",
+            "count_order": "size",
         }
     )
 
@@ -149,7 +149,7 @@ def test_query_4(client, dataset_path, fs):
     ).drop_duplicates(subset=["o_orderkey"])
     result_df = (
         jn.groupby("o_orderpriority")["o_orderkey"]
-        .count()
+        .size()
         .reset_index()
         .sort_values(["o_orderpriority"])
     )
