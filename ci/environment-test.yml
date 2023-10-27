@@ -4,12 +4,13 @@ channels:
   - conda-forge
 dependencies:
   # Testing dependencies
+  - alembic
+  - altair
+  - conda
+  - filelock
   - jinja2
   - packaging
   - pytest
   - pytest-timeout
   - pytest-xdist
   - pyyaml
-  - alembic
-  - filelock
-  - conda
