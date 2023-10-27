@@ -41,5 +41,6 @@ dependencies:
   - pyspark ==3.4.1
   - openjdk ==20.0.2
   - python-duckdb ==0.9.1
-  - polars >=0.19.3,<=0.19.10  # 0.19.3 on Windows, 0.19.10 on Linux and MacOS
   - altair
+  - pip:
+    - polars==0.19.12rc1

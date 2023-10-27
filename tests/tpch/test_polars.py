@@ -1,28 +1,32 @@
 from datetime import datetime
 
 import pytest
-from pyarrow.dataset import dataset
 
 pl = pytest.importorskip("polars")
 
 
 def read_data(filename):
-    pyarrow_dataset = dataset(filename, format="parquet")
-    return pl.scan_pyarrow_dataset(pyarrow_dataset)
+    # This is still faster
+    # import pyarrrow.dataset
+    # ds = pyarrow.dataset(filename, format="parquet")
+    # return pl.scan_pyarrow_dataset(ds)
 
     if filename.startswith("s3://"):
         import boto3
 
         session = boto3.session.Session()
         credentials = session.get_credentials()
-        return pl.scan_parquet(
-            filename,
+
+        df = pl.scan_parquet(
+            filename + "/*.parquet",
             storage_options={
                 "aws_access_key_id": credentials.access_key,
                 "aws_secret_access_key": credentials.secret_key,
                 "region": "us-east-2",
+                "session_token": credentials.token,
             },
         )
+        return df
     else:
         return pl.scan_parquet(filename + "/*")
 
