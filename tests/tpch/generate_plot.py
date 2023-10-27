@@ -16,7 +16,10 @@ def generate(outfile="chart.json", name=None, scale=None):
     df["library"] = df.path.map(lambda path: path.split("_")[-1].split(".")[0])
     df["query"] = df.name.map(lambda name: int(name.split("_")[-1]))
     df["name"] = df.cluster_name.map(lambda name: name.split("-", 3)[-1])
-    df["scale"] = df.cluster_name.map(lambda name: int(name.split("-")[2]))
+    try:
+        df["scale"] = df.cluster_name.map(lambda name: int(name.split("-")[2]))
+    except IndexError:
+        df["scale"] = 100  # default scale - cluster name wasn't formatted as expected
     del df["path"]
     del df["cluster_name"]
 
