@@ -1,18 +1,10 @@
-import warnings
-
 import altair as alt
 import click
 import pandas as pd
 
 
 def generate(outfile="chart.json", name=None, scale=None):
-    try:
-        df = pd.read_sql_table(table_name="test_run", con="sqlite:///benchmark.db")
-    except ValueError:
-        warnings.warn(
-            "test_run table not found, run with --benchmark to generate charts"
-        )
-        return
+    df = pd.read_sql_table(table_name="test_run", con="sqlite:///benchmark.db")
 
     df = df[
         (df.call_outcome == "passed")
@@ -24,10 +16,7 @@ def generate(outfile="chart.json", name=None, scale=None):
     df["library"] = df.path.map(lambda path: path.split("_")[-1].split(".")[0])
     df["query"] = df.name.map(lambda name: int(name.split("_")[-1]))
     df["name"] = df.cluster_name.map(lambda name: name.split("-", 3)[-1])
-    try:
-        df["scale"] = df.cluster_name.map(lambda name: int(name.split("-")[2]))
-    except IndexError:
-        df["scale"] = 100  # default scale - cluster name wasn't formatted as expected
+    df["scale"] = df.cluster_name.map(lambda name: int(name.split("-")[2]))
     del df["path"]
     del df["cluster_name"]
 

@@ -377,7 +377,13 @@ def run(module_run, restart, benchmark_time, warm_start, make_chart):
 
 
 @pytest.fixture(scope="session")
-def make_chart(name, tmp_path_factory, local, scale):
+def make_chart(request, name, tmp_path_factory, local, scale):
+    if not request.config.getoption("--benchmark"):
+        # Won't create the sqlite DB, and thus won't be able
+        # to read test run information
+        yield
+        return
+
     root_tmp_dir = tmp_path_factory.getbasetemp().parent
     lock = filelock.FileLock(root_tmp_dir / "tpch.lock")
 
