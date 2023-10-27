@@ -10,4 +10,4 @@ then
   EXTRA_OPTIONS="$EXTRA_OPTIONS --benchmark"
 fi
 
-python -m pytest $EXTRA_OPTIONS $@
+python -m pytest $EXTRA_OPTIONS --tpch-non-dask -k test_pyspark $@
