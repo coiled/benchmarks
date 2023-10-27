@@ -49,7 +49,10 @@ dependencies:
   - gilknocker ==0.4.1
   - openssl >1.1.0g
   - pyspark ==3.4.1
-  - openjdk ==20.0.2
+  - openjdk ~=11.0
+  - grpcio ==1.58.1
+  - grpcio-status ==1.57.0
+  - protobuf ==4.24.3
   - python-duckdb ==0.9.1
   - polars >=0.19.3,<=0.19.10  # 0.19.3 on Windows, 0.19.10 on Linux and MacOS
   # End copy-paste
