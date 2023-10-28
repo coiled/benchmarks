@@ -172,13 +172,13 @@ def cluster_spec(scale):
         }
     elif scale == 100:
         return {
-            "worker_vm_types": ["m6i.xlarge"],
-            "n_workers": 8,
+            "worker_vm_types": ["m6i.large"],
+            "n_workers": 16,
             **everywhere,
         }
     elif scale == 1000:
         return {
-            "worker_vm_types": ["m6i.large"],
+            "worker_vm_types": ["m6i.xlarge"],
             "n_workers": 32,
             **everywhere,
         }
@@ -325,7 +325,7 @@ def machine_spec(scale):
         }
     elif scale == 1000:
         return {
-            "vm_type": "m6i.16xlarge",
+            "vm_type": "m6i.32xlarge",
         }
     elif scale == 10000:
         return {
@@ -399,7 +399,7 @@ def make_chart(request, name, tmp_path_factory, local, scale):
 
         with lock:
             generate(
-                outfile=os.path.join("charts", f"{local}-{scale}-query-{name}.json"),
+                outfile=os.path.join("charts", f"{local}-{scale}-{name}.json"),
                 name=name,
                 scale=scale,
             )

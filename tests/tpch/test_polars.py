@@ -7,10 +7,9 @@ pl = pytest.importorskip("polars")
 
 
 def read_data(filename):
-    pyarrow_dataset = dataset(filename, format="parquet")
-    return pl.scan_pyarrow_dataset(pyarrow_dataset)
-
     if filename.startswith("s3://"):
+        pyarrow_dataset = dataset(filename, format="parquet")
+        return pl.scan_pyarrow_dataset(pyarrow_dataset)
         import boto3
 
         session = boto3.session.Session()
