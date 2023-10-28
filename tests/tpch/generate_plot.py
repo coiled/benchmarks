@@ -3,7 +3,7 @@ import click
 import pandas as pd
 
 
-def generate(outfile="chart.json", name=None, scale=None):
+def generate(outfile="chart.json", name=None, scale=None, local=None):
     df = pd.read_sql_table(table_name="test_run", con="sqlite:///benchmark.db")
 
     df = df[
@@ -47,7 +47,9 @@ def generate(outfile="chart.json", name=None, scale=None):
             ),
             tooltip=["library", "duration"],
         )
-        .properties(title=f"TPC-H -- scale:{df.scale.iloc[0]} name:{df.name.iloc[0]}")
+        .properties(
+            title=f"TPC-H: {local} scale {df.scale.iloc[0]} -- {df.name.iloc[0]}"
+        )
         .configure_title(
             fontSize=20,
         )
