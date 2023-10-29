@@ -50,7 +50,7 @@ def parquet_client(parquet_cluster, cluster_kwargs, upload_cluster_dump, benchma
             yield client
 
 
-@pytest.mark.xfail(
+@pytest.mark.skipif(
     HAS_PYARROW12,
     reason="50x slower than PyArrow 11; https://github.com/coiled/benchmarks/issues/998",
 )
