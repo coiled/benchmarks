@@ -521,7 +521,7 @@ def small_client(
         log_on_scheduler(client, "Starting client setup of %s", test_label)
         client.restart()
         small_cluster.scale(n_workers)
-        client.wait_for_workers(n_workers)
+        client.wait_for_workers(n_workers, timeout=600)
 
         with upload_cluster_dump(client):
             log_on_scheduler(client, "Finished client setup of %s", test_label)

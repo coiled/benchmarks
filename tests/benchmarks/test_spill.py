@@ -39,7 +39,7 @@ def spill_client(spill_cluster, cluster_kwargs, upload_cluster_dump, benchmark_a
     n_workers = cluster_kwargs["spill_cluster"]["n_workers"]
     with Client(spill_cluster) as client:
         spill_cluster.scale(n_workers)
-        client.wait_for_workers(n_workers)
+        client.wait_for_workers(n_workers, timeout=600)
         client.restart()
         with upload_cluster_dump(client), benchmark_all(client):
             yield client

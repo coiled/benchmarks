@@ -44,7 +44,7 @@ def parquet_client(parquet_cluster, cluster_kwargs, upload_cluster_dump, benchma
     n_workers = cluster_kwargs["parquet_cluster"]["n_workers"]
     with distributed.Client(parquet_cluster) as client:
         parquet_cluster.scale(n_workers)
-        client.wait_for_workers(n_workers)
+        client.wait_for_workers(n_workers, timeout=600)
         client.restart()
         with upload_cluster_dump(client), benchmark_all(client):
             yield client
