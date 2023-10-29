@@ -267,7 +267,9 @@ def make_ab_confidence_map(
         .mark_rect()
         .encode(
             x=altair.X("xlabel:O", title="confidence threshold (B/A - 1)", sort=None),
-            y=altair.Y("fullname_no_category:O", title="Test"),
+            y=altair.Y(
+                "fullname_no_category:O", title="", axis=altair.Axis(labelLimit=10_000)
+            ),
             color=altair.Color(
                 "color:Q",
                 scale=altair.Scale(scheme="redblue", domain=[0, 1], reverse=True),
