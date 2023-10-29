@@ -1,3 +1,4 @@
+import pytest
 from dask.sizeof import sizeof
 from dask.utils import format_bytes
 
@@ -42,6 +43,7 @@ def test_dataframe_align(small_client):
     wait(final, small_client, 10 * 60)
 
 
+@pytest.mark.xfail(reason="https://github.com/coiled/benchmarks/pull/1116")
 def test_filter(small_client):
     """How fast can we filter a DataFrame?"""
     memory = cluster_memory(small_client)
