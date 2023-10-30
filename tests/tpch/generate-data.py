@@ -20,7 +20,7 @@ def generate(
     scale: int = 10,
     partition_size: str = "128 MiB",
     path: str = "./tpch-data",
-    relaxed_schema: bool = True,
+    relaxed_schema: bool = False,
 ):
     if str(path).startswith("s3"):
         path += "/" if not path.endswith("/") else ""
@@ -124,6 +124,7 @@ def _tpch_data_gen(
         con.sql(
             f"""
             SET memory_limit='{psutil.virtual_memory().available // 2**30 }G';
+            SET threads TO 1;
             SET preserve_insertion_order=false;
             SET enable_progress_bar=false;
             """
@@ -253,7 +254,7 @@ def get_bucket_region(path: str):
 )
 @click.option(
     "--relaxed-schema",
-    default=True,
+    default=False,
     flag_value=True,
     help="Set flag to convert official TPC-H types decimal -> float and date -> timestamp_s",
 )

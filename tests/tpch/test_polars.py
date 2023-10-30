@@ -15,11 +15,12 @@ def read_data(filename):
         session = boto3.session.Session()
         credentials = session.get_credentials()
         return pl.scan_parquet(
-            filename,
+            filename + "/*",
             storage_options={
                 "aws_access_key_id": credentials.access_key,
                 "aws_secret_access_key": credentials.secret_key,
                 "region": "us-east-2",
+                "session_token": credentials.token,
             },
         )
     else:
