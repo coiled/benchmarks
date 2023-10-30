@@ -63,8 +63,8 @@ def dataset_path(local, scale):
     }
     local_paths = {
         1: "./tpch-data/scale-1/",
-        10: "./tpch-data/scale10/",
-        100: "./tpch-data/scale100/",
+        10: "./tpch-data/scale-10/",
+        100: "./tpch-data/scale-100/",
     }
 
     if local:
@@ -167,7 +167,7 @@ def cluster_spec(scale):
     if scale == 10:
         return {
             "worker_vm_types": ["m6i.large"],
-            "n_workers": 16,
+            "n_workers": 8,
             **everywhere,
         }
     elif scale == 100:
@@ -178,7 +178,7 @@ def cluster_spec(scale):
         }
     elif scale == 1000:
         return {
-            "worker_vm_types": ["m6i.large"],
+            "worker_vm_types": ["m6i.xlarge"],
             "n_workers": 32,
             **everywhere,
         }
@@ -203,8 +203,9 @@ def cluster(
     make_chart,
 ):
     if local:
-        with LocalCluster() as cluster:
-            yield cluster
+        with dask.config.set({"distributed.scheduler.worker-saturation": 4}):
+            with LocalCluster() as cluster:
+                yield cluster
     else:
         kwargs = dict(
             name=f"tpch-{module}-{scale}-{name}",
@@ -317,7 +318,7 @@ def fs(local):
 def machine_spec(scale):
     if scale == 10:
         return {
-            "vm_type": "m6i.8xlarge",
+            "vm_type": "m6i.4xlarge",
         }
     elif scale == 100:
         return {
@@ -325,7 +326,7 @@ def machine_spec(scale):
         }
     elif scale == 1000:
         return {
-            "vm_type": "m6i.16xlarge",
+            "vm_type": "m6i.32xlarge",
         }
     elif scale == 10000:
         return {
@@ -399,7 +400,8 @@ def make_chart(request, name, tmp_path_factory, local, scale):
 
         with lock:
             generate(
-                outfile=os.path.join("charts", f"{local}-{scale}-query-{name}.json"),
+                outfile=os.path.join("charts", f"{local}-{scale}-{name}.json"),
                 name=name,
                 scale=scale,
+                local=local,
             )

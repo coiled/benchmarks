@@ -1,4 +1,5 @@
 import functools
+import multiprocessing
 import pathlib
 import tempfile
 import warnings
@@ -56,7 +57,14 @@ def generate(
                 jobs = client.map(_tpch_data_gen, range(0, scale), **kwargs)
                 client.gather(jobs)
     else:
-        _tpch_data_gen(step=None, **kwargs)
+        with dask.distributed.LocalCluster(
+            threads_per_worker=1,
+            memory_limit=dask.distributed.system.MEMORY_LIMIT,
+            n_workers=multiprocessing.cpu_count() // 2,
+        ) as cluster:
+            with cluster.get_client() as client:
+                jobs = client.map(_tpch_data_gen, range(0, scale), **kwargs)
+                client.gather(jobs)
 
 
 def retry(f):
@@ -116,8 +124,8 @@ def _tpch_data_gen(
         con.sql(
             f"""
             SET memory_limit='{psutil.virtual_memory().available // 2**30 }G';
-            SET preserve_insertion_order=false;
             SET threads TO 1;
+            SET preserve_insertion_order=false;
             SET enable_progress_bar=false;
             """
         )
@@ -166,8 +174,8 @@ def _tpch_data_gen(
                     (format parquet, per_thread_output true, filename_pattern "{table}_{{uuid}}", overwrite_or_ignore)
                     """
                 )
-            print(f"Finished exporting table {table}!")
-        print("Finished exporting all data!")
+            print(f"Finished exporting table {table}")
+        print("Finished exporting all data")
 
 
 def rows_approx_mb(con, table_name, partition_size: str):
