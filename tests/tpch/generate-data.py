@@ -50,9 +50,10 @@ def generate(
             # workload is best with 1vCPU and ~3-4GiB memory
             worker_vm_types=["m7a.medium", "m3.medium"],
             worker_options={"nthreads": 1},
+            spot_policy="spot_with_fallback",
             region=REGION,
         ) as cluster:
-            cluster.adapt(minimum=1, maximum=350)
+            cluster.adapt(minimum=1, maximum=500)
             with cluster.get_client() as client:
                 jobs = client.map(_tpch_data_gen, range(0, scale), **kwargs)
                 client.gather(jobs)
