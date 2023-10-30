@@ -2,9 +2,11 @@ import altair as alt
 import click
 import pandas as pd
 
+from tests.conftest import DB_NAME
+
 
 def generate(outfile="chart.json", name=None, scale=None):
-    df = pd.read_sql_table(table_name="test_run", con="sqlite:///benchmark.db")
+    df = pd.read_sql_table(table_name="test_run", con=f"sqlite:///{DB_NAME}")
 
     df = df[
         (df.call_outcome == "passed")
