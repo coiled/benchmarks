@@ -280,3 +280,54 @@ def test_query_7(run, restart, dataset_path):
         ).collect(streaming=True)
 
     run(_)
+
+
+def test_query_8(run, restart, dataset_path):
+    def _():
+        part_ds = read_data(dataset_path + "part")
+        supplier_ds = read_data(dataset_path + "supplier")
+        line_item_ds = read_data(dataset_path + "lineitem")
+        orders_ds = read_data(dataset_path + "orders")
+        customer_ds = read_data(dataset_path + "customer")
+        nation_ds = read_data(dataset_path + "nation")
+        region_ds = read_data(dataset_path + "region")
+
+        n1 = nation_ds.select(["n_nationkey", "n_regionkey"])
+        n2 = nation_ds.clone().select(["n_nationkey", "n_name"])
+
+        (
+            part_ds.join(line_item_ds, left_on="p_partkey", right_on="l_partkey")
+            .join(supplier_ds, left_on="l_suppkey", right_on="s_suppkey")
+            .join(orders_ds, left_on="l_orderkey", right_on="o_orderkey")
+            .join(customer_ds, left_on="o_custkey", right_on="c_custkey")
+            .join(n1, left_on="c_nationkey", right_on="n_nationkey")
+            .join(region_ds, left_on="n_regionkey", right_on="r_regionkey")
+            .filter(pl.col("r_name") == "AMERICA")
+            .join(n2, left_on="s_nationkey", right_on="n_nationkey")
+            .filter(
+                pl.col("o_orderdate").is_between(
+                    datetime(1995, 1, 1), datetime(1996, 12, 31)
+                )
+            )
+            .filter(pl.col("p_type") == "ECONOMY ANODIZED STEEL")
+            .select(
+                [
+                    pl.col("o_orderdate").dt.year().alias("o_year"),
+                    (pl.col("l_extendedprice") * (1 - pl.col("l_discount"))).alias(
+                        "volume"
+                    ),
+                    pl.col("n_name").alias("nation"),
+                ]
+            )
+            .with_columns(
+                pl.when(pl.col("nation") == "BRAZIL")
+                .then(pl.col("volume"))
+                .otherwise(0)
+                .alias("_tmp")
+            )
+            .group_by("o_year")
+            .agg((pl.sum("_tmp") / pl.sum("volume")).round(2).alias("mkt_share"))
+            .sort("o_year")
+        ).collect(streaming=True)
+
+    run(_)
