@@ -1,7 +1,6 @@
 from datetime import datetime
 
 import dask_expr as dd
-from dask.dataframe import Aggregation
 
 
 def test_query_1(client, dataset_path, fs):
@@ -383,19 +382,14 @@ def test_query_8(client, dataset_path, fs):
         how="inner",
     )[["volume", "o_year", "nation"]]
 
-    def chunk_udf(df):
-        denominator = df["volume"]
-        df = df[df["nation"] == "BRAZIL"]
-        numerator = df["volume"]
-        return (numerator, denominator)
-
-    def agg_udf(x):
-        return round(x[0].sum() / x[1].sum(), 2)
-
-    agg = Aggregation(name="mkt_share", chunk=chunk_udf, agg=agg_udf)
-
-    total = total.groupby(["o_year"]).agg(agg)
-    total = total.rename(columns={"o_year": "o_year", "x": "mkt_share"})
+    mkt_brazil = (
+        total[total["nation"] == "BRAZIL"].groupby("o_year").volume.sum().reset_index()
+    )
+    mkt_total = total.groupby("o_year").volume.sum().reset_index()
+    final = mkt_total.merge(
+        mkt_brazil, left_on="o_year", right_on="o_year", suffixes=("_mkt", "_brazil")
+    )
+    final["mkt_share"] = final.volume_brazil / final.volume_mkt
     total = total.sort_values(by=["o_year"], ascending=[True])
 
     total.compute()
