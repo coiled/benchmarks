@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import logging
+import math
 import os
 import pathlib
 import pickle
@@ -262,6 +263,62 @@ def benchmark_time(test_run_benchmark):
 
 
 @pytest.fixture(scope="function")
+def benchmark_coiled_prometheus(test_run_benchmark):
+    """Benchmark the coiled prometheus metrics of executing some code.
+
+    Yields
+    ------
+    Context manager that records the coiled prometheus metrics of executing
+    the ``with`` statement if run as part of a benchmark, or does nothing otherwise.
+
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(benchmark_coiled_prometheus):
+            with benchmark_coiled_prometheus:
+                do_something()
+    """
+
+    @contextlib.contextmanager
+    def _benchmark_coiled_prometheus(client):
+        start = math.floor(time.time())
+        yield
+        if not test_run_benchmark:
+            return
+
+        end = math.ceil(time.time())
+        cluster = client.cluster
+        test_run_benchmark.scheduler_memory_max = cluster.get_aggregated_metric(
+            query="scheduler:(host_memory_total-host_memory_available)&scheduler",
+            over_time="max",
+            start_ts=start,
+            end_ts=end,
+        )
+        test_run_benchmark.scheduler_cpu_avg = cluster.get_aggregated_metric(
+            # have to sum since cpu_rate returns the different types
+            query="scheduler:cpu_rate&scheduler | sum",
+            over_time="avg",
+            start_ts=start,
+            end_ts=end,
+        )
+        test_run_benchmark.worker_max_tick = cluster.get_aggregated_metric(
+            query="worker_max_tick|max",
+            over_time="quantile(0.80)",
+            start_ts=start,
+            end_ts=end,
+        )
+        test_run_benchmark.scheduler_max_tick = cluster.get_aggregated_metric(
+            query="scheduler_max_tick|max",
+            over_time="quantile(0.80)",
+            start_ts=start,
+            end_ts=end,
+        )
+
+    return _benchmark_coiled_prometheus
+
+
+@pytest.fixture(scope="function")
 def benchmark_memory(test_run_benchmark):
     """Benchmark the memory usage of executing some code.
 
@@ -371,6 +428,7 @@ def get_cluster_info(test_run_benchmark):
 def benchmark_all(
     benchmark_memory,
     benchmark_task_durations,
+    benchmark_coiled_prometheus,
     get_cluster_info,
     benchmark_time,
 ):
@@ -405,6 +463,7 @@ def benchmark_all(
             benchmark_memory(client),
             benchmark_task_durations(client),
             get_cluster_info(client.cluster),
+            benchmark_coiled_prometheus(client),
             benchmark_time,
         ):
             yield

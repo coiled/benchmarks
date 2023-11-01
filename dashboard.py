@@ -34,9 +34,13 @@ class ChartSpec(NamedTuple):
 
 
 SPECS = [
-    ChartSpec("duration", "Wall Clock", "(s)", 1),
-    ChartSpec("average_memory", "Average Memory", "(GiB)", 2**30),
-    ChartSpec("peak_memory", "Peak Memory", "(GiB)", 2**30),
+    ChartSpec("duration", "Wall Clock", "[s]", 1),
+    ChartSpec("average_memory", "Average Memory (W)", "[GiB]", 2**30),
+    ChartSpec("peak_memory", "Peak Memory (W)", "[GiB]", 2**30),
+    ChartSpec("scheduler_memory_max", "Peak Memory (S)", "[GiB]", 2**30),
+    ChartSpec("scheduler_cpu_avg", "Avg CPU (S)", "%", 1e-2),
+    ChartSpec("worker_max_tick", "Max Tick (W)", "[ms]", 1e-3),
+    ChartSpec("scheduler_max_tick", "Max Tick (S)", "[ms]", 1e-3),
 ]
 OLD_PROMETHEUS_DATASOURCE = "AWS Prometheus - Sandbox (us east 2)"
 
@@ -160,7 +164,7 @@ def make_barchart(
     """Make a single Altair barchart for a given test or runtime"""
     df = df.dropna(subset=[spec.field_name, "start"])
     if not len(df):
-        # Some tests do not have average_memory or peak_memory measures, only runtime
+        # Some tests do not have all measures, only runtime
         return None, 0
 
     df = df[
@@ -239,7 +243,7 @@ def make_ab_confidence_map(
     """
     df = df.dropna(subset=[spec.field_name, "start"])
     if not len(df):
-        # Some tests do not have average_memory or peak_memory measures, only runtime
+        # Some tests do not have all measures, only runtime
         return None, 0
 
     df = df[
@@ -302,7 +306,7 @@ def make_timeseries(
     """Make a single Altair timeseries chart for a given test"""
     df = df.dropna(subset=[spec.field_name, "start"]).reset_index().copy()
     if not len(df):
-        # Some tests do not have average_memory or peak_memory measures, only runtime
+        # Some tests do not have all measures, only runtime
         return None
 
     df["details_url"] = [
@@ -419,13 +423,12 @@ def make_timeseries_html_report(
     runtime: str,
     ndays: int,
 ) -> None:
-    """Generate HTML report for one runtime (e.g. coiled-upstream-py3.9), showing
-    evolution of measures (wall clock, average memory, peak memory) over historical CI
-    runs.
+    """Generate HTML report for one runtime (e.g. Python 3.9), showing evolution of
+    measures (wall clock, average memory, etc.) over historical CI runs.
 
     Create one tab for each test category (e.g. benchmarks, runtime, stability),
     one graph for each test,
-    and one graph tab for each measure (wall clock, average memory, peak memory).
+    and one graph tab for each measure (wall clock, average memory, etc.).
     """
     out_fname = str(output_dir.joinpath(runtime + ".html"))
     print(f"Generating {out_fname}")
@@ -472,7 +475,7 @@ def make_barchart_html_report(
     Create one tab for each test category (e.g. benchmarks, runtime, stability),
     one graph for each runtime and one bar for each test
     OR one graph for each test and one bar for each runtime,
-    and one graph tab for each measure (wall clock, average memory, peak memory).
+    and one graph tab for each measure (wall clock, average memory, etc.).
     """
     out_fname = str(
         output_dir.joinpath(
@@ -526,7 +529,7 @@ def make_ab_html_report(
 
     Create one tab for each test category (e.g. benchmarks, runtime, stability), one
     graph for each runtime, and one graph tab for each measure (wall clock, average
-    memory, peak memory).
+    memory, etc.).
 
     Returns
     -------
@@ -626,8 +629,12 @@ def make_details_html_report(
                 txt += "| "
             elif k == "duration" or k.endswith("_time"):
                 txt += f"| {v:.1f}s "
-            elif k.endswith("_memory"):
+            elif "_tick" in k:
+                txt += f"| {v:.0f}ms "
+            elif "_memory" in k:
                 txt += f"| {v:.1f}GiB "
+            elif "_cpu" in k:
+                txt += f"| {v:.0f}% "
             elif isinstance(v, str) and "://" in v:
                 txt += f"| [🔗]({v}) "
             else:
