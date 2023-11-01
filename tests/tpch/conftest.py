@@ -291,19 +291,21 @@ def fs(local):
     if local:
         return None
     else:
-        import boto3
-        from pyarrow.fs import S3FileSystem
-
-        session = boto3.session.Session()
-        credentials = session.get_credentials()
-
-        fs = S3FileSystem(
-            secret_key=credentials.secret_key,
-            access_key=credentials.access_key,
-            region="us-east-2",
-            session_token=credentials.token,
-        )
-        return fs
+        return None
+        # TODO: Add this when arrow fs is supported
+        # import boto3
+        # from pyarrow.fs import S3FileSystem
+        #
+        # session = boto3.session.Session()
+        # credentials = session.get_credentials()
+        #
+        # fs = S3FileSystem(
+        #     secret_key=credentials.secret_key,
+        #     access_key=credentials.access_key,
+        #     region="us-east-2",
+        #     session_token=credentials.token,
+        # )
+        # return fs
 
 
 #################################################
@@ -375,7 +377,13 @@ def run(module_run, restart, benchmark_time, warm_start, make_chart):
 
 
 @pytest.fixture(scope="session")
-def make_chart(name, tmp_path_factory, local, scale):
+def make_chart(request, name, tmp_path_factory, local, scale):
+    if not request.config.getoption("--benchmark"):
+        # Won't create the sqlite DB, and thus won't be able
+        # to read test run information
+        yield
+        return
+
     root_tmp_dir = tmp_path_factory.getbasetemp().parent
     lock = filelock.FileLock(root_tmp_dir / "tpch.lock")
 

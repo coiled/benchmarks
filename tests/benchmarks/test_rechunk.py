@@ -3,34 +3,61 @@ from __future__ import annotations
 import dask
 import dask.array as da
 import pytest
+from dask.utils import parse_bytes
 
+from ..conftest import P2P_MEMORY_AVAILABLE, P2P_RECHUNK_AVAILABLE
 from ..utils_test import cluster_memory, scaled_array_shape
 
 
 @pytest.fixture(
     params=[
+        "tasks",
         pytest.param(
-            "8 MiB",
-            marks=pytest.mark.skip(
-                "FIXME: Skip for scheduled benchmarks due to runtime, uncomment on demand "
-                "or once we have a more flexible system for running tests on different schedules."
+            "p2p-disk",
+            marks=pytest.mark.skipif(
+                not P2P_RECHUNK_AVAILABLE, reason="p2p rechunk not available"
             ),
         ),
-        "128 MiB",
+        pytest.param(
+            "p2p-memory",
+            marks=pytest.mark.skipif(
+                not P2P_MEMORY_AVAILABLE, reason="Requires p2p in-memory shuffle"
+            ),
+        ),
     ]
 )
-def chunksize(request):
-    return request.param
+def configure_rechunking(request, memory_multiplier):
+    if request.param == "tasks":
+        with dask.config.set({"array.rechunk.method": "tasks"}):
+            yield
+    else:
+        disk = "disk" in request.param
+        if not disk and memory_multiplier > 0.4:
+            pytest.skip("Out of memory")
+        with dask.config.set(
+            {
+                "array.rechunk.method": "p2p",
+                "distributed.p2p.disk": disk,
+            }
+        ):
+            yield
 
 
-@pytest.fixture
-def configure_chunksize(chunksize):
-    with dask.config.set({"array.chunk-size": chunksize}):
+@pytest.fixture(params=["8 MiB", "128 MiB"])
+def configure_chunksize(request, memory_multiplier):
+    if memory_multiplier > 0.4 and parse_bytes(request.param) < parse_bytes("64 MiB"):
+        pytest.skip("too slow")
+
+    with dask.config.set({"array.chunk-size": request.param}):
         yield
 
 
 def test_tiles_to_rows(
-    small_client, memory_multiplier, configure_chunksize, configure_rechunking
+    # Order matters: don't initialize client when skipping test
+    memory_multiplier,
+    configure_chunksize,
+    configure_rechunking,
+    small_client,
 ):
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", "x"))
@@ -40,7 +67,11 @@ def test_tiles_to_rows(
 
 
 def test_swap_axes(
-    small_client, memory_multiplier, configure_chunksize, configure_rechunking
+    # Order matters: don't initialize client when skipping test
+    memory_multiplier,
+    configure_chunksize,
+    configure_rechunking,
+    small_client,
 ):
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", "x"))

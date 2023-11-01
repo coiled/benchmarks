@@ -578,7 +578,7 @@ def small_client(
         log_on_scheduler(client, "Starting client setup of %s", test_label)
         client.restart()
         small_cluster.scale(n_workers)
-        client.wait_for_workers(n_workers)
+        client.wait_for_workers(n_workers, timeout=600)
 
         with upload_cluster_dump(client):
             log_on_scheduler(client, "Finished client setup of %s", test_label)
@@ -765,29 +765,8 @@ def configure_shuffling(shuffle_method):
         yield
 
 
-# Include https://github.com/dask/distributed/pull/7534
 P2P_RECHUNK_AVAILABLE = Version(distributed.__version__) >= Version("2023.2.1")
-
-
-@pytest.fixture(
-    params=[
-        "tasks",
-        pytest.param(
-            "p2p",
-            marks=pytest.mark.skipif(
-                not P2P_RECHUNK_AVAILABLE, reason="p2p rechunk not available"
-            ),
-        ),
-    ]
-)
-def rechunk_method(request):
-    return request.param
-
-
-@pytest.fixture
-def configure_rechunking(rechunk_method):
-    with dask.config.set({"array.rechunk.method": rechunk_method}):
-        yield
+P2P_MEMORY_AVAILABLE = Version(distributed.__version__) > Version("2023.10.0")
 
 
 @pytest.fixture
