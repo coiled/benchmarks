@@ -61,13 +61,14 @@ def build_json() -> JSONOutput:
 
     n = cfg["max_parallel"]["pytest_workers_per_job"]
     xdist_args = f"-n {n} --dist loadscope " if n > 1 else ""
+    markers_args = f" -m '{cfg['markers']}' " if cfg["markers"] else ""
 
     return {
         "run_AB": True,
         "repeat": list(range(1, cfg["repeat"] + 1)),
         "runtime": runtimes,
         "max_parallel": cfg["max_parallel"]["ci_jobs"],
-        "pytest_args": [xdist_args + " ".join(cfg["targets"])],
+        "pytest_args": [xdist_args + markers_args + " ".join(cfg["targets"])],
         "h2o_datasets": [",".join(cfg["h2o_datasets"])],
     }
 

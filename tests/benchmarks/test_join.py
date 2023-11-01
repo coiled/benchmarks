@@ -4,6 +4,7 @@ import pytest
 from ..utils_test import cluster_memory, run_up_to_nthreads, timeseries_of_size, wait
 
 
+@pytest.mark.shuffle_p2p
 @run_up_to_nthreads("small_cluster", 40, reason="Does not finish")
 def test_join_big(small_client, memory_multiplier):
     memory = cluster_memory(small_client)  # 76.66 GiB
@@ -53,6 +54,7 @@ def test_join_big_small(small_client, memory_multiplier, configure_shuffling):
     wait(result, small_client, 20 * 60)
 
 
+@pytest.mark.shuffle_p2p
 @pytest.mark.parametrize("persist", [True, False])
 def test_set_index(small_client, persist, memory_multiplier):
     memory = cluster_memory(small_client)  # 76.66 GiB
