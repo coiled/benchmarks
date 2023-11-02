@@ -60,6 +60,12 @@ def pytest_addoption(parser):
     )
 
 
+def pytest_sessionfinish(session, exitstatus):
+    # https://github.com/pytest-dev/pytest/issues/2393
+    if exitstatus == 5:  # All tests excluded by markers
+        session.exitstatus = 0
+
+
 def _is_child_dir(path: str | Path, parent: str | Path) -> bool:
     _parent = Path(parent).absolute()
     _path = Path(path).absolute()

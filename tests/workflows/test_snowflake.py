@@ -7,7 +7,8 @@ import pytest
 
 pytestmark = pytest.mark.workflows
 
-pytest.importorskip("dask_snowflake", reason="Requires dask-snowflake")
+pytest.importorskip("dask_snowflake")
+pytest.importorskip("sqlalchemy")
 
 from dask_snowflake import read_snowflake, to_snowflake  # noqa: E402
 from snowflake.sqlalchemy import URL  # noqa: E402
