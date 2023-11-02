@@ -5,6 +5,8 @@ import pandas as pd
 import pytest
 from dask.distributed import wait
 
+pytestmark = pytest.mark.workflows
+
 
 @pytest.mark.client("embarrassingly_parallel")
 def test_embarassingly_parallel(client, s3_factory):

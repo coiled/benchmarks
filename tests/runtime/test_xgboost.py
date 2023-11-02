@@ -1,14 +1,11 @@
 import dask.dataframe as dd
 import pytest
 
-# `coiled-runtime=0.0.4` don't contain `xgboost`
+dask_ml = pytest.importorskip("dask_ml")
 xgb = pytest.importorskip("xgboost")
 
 
 def test_xgboost_distributed_training(small_client):
-    # `coiled-runtime=0.0.4` don't contain `dask_ml`
-    dask_ml = pytest.importorskip("dask_ml")
-
     ddf = dd.read_parquet(
         "s3://coiled-datasets/synthetic-data/synth-reg-104GB.parquet",
         storage_options={"anon": True},

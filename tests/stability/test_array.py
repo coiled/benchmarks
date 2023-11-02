@@ -5,22 +5,14 @@ import pytest
 
 from ..utils_test import cluster_memory, scaled_array_shape, wait
 
-# Don't use `scipy = pytest.importorskip("scipy") inside the test.
-# Since there's only one test in this module, the cluster would be started needlessly
-# if scipy is missing.
-try:
-    import scipy  # noqa: F401
+pytestmark = pytest.mark.stability
 
-    has_scipy = True
-except ImportError:
-    has_scipy = False
+pytest.importorskip("scipy")
 
 
-@pytest.mark.stability
 @pytest.mark.skipif(
     sys.platform.startswith("win"), reason="scaled_array_shape fails on windows"
 )
-@pytest.mark.skipif(not has_scipy, reason="requires scipy")
 def test_ols(small_client):
     chunksize = int(1e6)
     memory = cluster_memory(small_client)

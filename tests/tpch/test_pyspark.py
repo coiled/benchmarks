@@ -2,6 +2,8 @@ import re
 
 import pytest
 
+pytestmark = pytest.mark.tpch_nondask
+
 pytest.importorskip("coiled.spark")
 
 

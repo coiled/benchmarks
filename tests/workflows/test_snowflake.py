@@ -5,6 +5,8 @@ import dask.dataframe as dd
 import pandas as pd
 import pytest
 
+pytestmark = pytest.mark.workflows
+
 pytest.importorskip("dask_snowflake", reason="Requires dask-snowflake")
 
 from dask_snowflake import read_snowflake, to_snowflake  # noqa: E402

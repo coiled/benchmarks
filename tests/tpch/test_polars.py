@@ -1,8 +1,10 @@
 from datetime import datetime
 
 import pytest
-from pyarrow.dataset import dataset
 
+pytestmark = pytest.mark.tpch_nondask
+
+dataset = pytest.importorskip("pyarrow.dataset")
 pl = pytest.importorskip("polars")
 
 

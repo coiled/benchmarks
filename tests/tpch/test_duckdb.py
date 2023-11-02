@@ -1,6 +1,8 @@
 import botocore.session
 import pytest
 
+pytestmark = pytest.mark.tpch_nondask
+
 duckdb = pytest.importorskip("duckdb")
 
 
