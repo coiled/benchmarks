@@ -63,8 +63,8 @@ def dataset_path(local, scale):
     }
     local_paths = {
         1: "./tpch-data/scale-1/",
-        10: "./tpch-data/scale10/",
-        100: "./tpch-data/scale100/",
+        10: "./tpch-data/scale-10/",
+        100: "./tpch-data/scale-100/",
     }
 
     if local:
