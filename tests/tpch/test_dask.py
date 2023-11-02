@@ -44,6 +44,7 @@ def test_query_1(client, dataset_path, fs):
     total.reset_index().sort_values(["l_returnflag", "l_linestatus"]).compute()
 
 
+@pytest.mark.shuffle_p2p
 def test_query_2(client, dataset_path, fs):
     var1 = 15
     var2 = "BRASS"
@@ -112,6 +113,7 @@ def test_query_2(client, dataset_path, fs):
     )
 
 
+@pytest.mark.shuffle_p2p
 def test_query_3(client, dataset_path, fs):
     var1 = datetime.strptime("1995-03-15", "%Y-%m-%d")
     var2 = "BUILDING"
@@ -137,6 +139,7 @@ def test_query_3(client, dataset_path, fs):
     ]
 
 
+@pytest.mark.shuffle_p2p
 def test_query_4(client, dataset_path, fs):
     date1 = datetime.strptime("1993-10-01", "%Y-%m-%d")
     date2 = datetime.strptime("1993-07-01", "%Y-%m-%d")
@@ -160,6 +163,7 @@ def test_query_4(client, dataset_path, fs):
     result_df.rename(columns={"o_orderkey": "order_count"}).compute()
 
 
+@pytest.mark.shuffle_p2p
 def test_query_5(client, dataset_path, fs):
     date1 = datetime.strptime("1994-01-01", "%Y-%m-%d")
     date2 = datetime.strptime("1995-01-01", "%Y-%m-%d")
@@ -208,6 +212,7 @@ def test_query_6(client, dataset_path, fs):
     (flineitem.l_extendedprice * flineitem.l_discount).sum().compute()
 
 
+@pytest.mark.shuffle_p2p
 def test_query_7(client, dataset_path, fs):
     var1 = datetime.strptime("1995-01-01", "%Y-%m-%d")
     var2 = datetime.strptime("1997-01-01", "%Y-%m-%d")
