@@ -5,24 +5,16 @@ import dask.array as da
 import pytest
 from dask.utils import parse_bytes
 
-from ..conftest import P2P_MEMORY_AVAILABLE, P2P_RECHUNK_AVAILABLE
+from ..conftest import requires_p2p_memory, requires_p2p_rechunk
 from ..utils_test import cluster_memory, scaled_array_shape
 
 
 @pytest.fixture(
     params=[
-        "tasks",
+        pytest.param("tasks", marks=pytest.mark.shuffle_tasks),
+        pytest.param("p2p-disk", marks=[pytest.mark.shuffle_p2p, requires_p2p_rechunk]),
         pytest.param(
-            "p2p-disk",
-            marks=pytest.mark.skipif(
-                not P2P_RECHUNK_AVAILABLE, reason="p2p rechunk not available"
-            ),
-        ),
-        pytest.param(
-            "p2p-memory",
-            marks=pytest.mark.skipif(
-                not P2P_MEMORY_AVAILABLE, reason="Requires p2p in-memory shuffle"
-            ),
+            "p2p-memory", marks=[pytest.mark.shuffle_p2p, requires_p2p_memory]
         ),
     ]
 )

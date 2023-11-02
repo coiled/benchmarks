@@ -97,11 +97,10 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
           AB_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: ${{ matrix.runtime-version }}-${{ matrix.repeat }}.db
-          BENCHMARK: true
           CLUSTER_DUMP: always
           CLUSTER_KWARGS: AB_environments/${{ matrix.runtime-version }}.cluster.yaml
           H2O_DATASETS: ${{ matrix.h2o_datasets }}
-        run: bash ci/scripts/run_tests.sh ${{ matrix.pytest_args }}
+        run: pytest --benchmark ${{ matrix.pytest_args }}
 
       - name: Dump coiled.Cluster kwargs
         run: cat cluster_kwargs.merged.yaml

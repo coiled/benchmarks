@@ -127,6 +127,9 @@ setting is high enough.
 The file offers a `targets` list. These can be test directories, individual test files,
 or individual tests that you wish to run.
 
+The file offers a `markers` string expression, to be passed to the `-m` pytest parameter
+if present. See setup.cfg for the available ones.
+
 `h2o_datasets` is a list of datasets to run through in
 `tests/benchmarks/test_h2o.py`. Refer to the file for the possible choices.
 

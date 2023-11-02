@@ -742,19 +742,24 @@ def upload_cluster_dump(
     yield _upload_cluster_dump
 
 
-# Include https://github.com/dask/distributed/pull/7410 for categorical support
-P2P_SHUFFLE_AVAILABLE = Version(distributed.__version__) >= Version("2023.1.0")
+requires_p2p_shuffle = pytest.mark.skipif(
+    Version(distributed.__version__) < Version("2023.1.0"),
+    reason="p2p shuffle not available",
+)
+requires_p2p_rechunk = pytest.mark.skipif(
+    Version(distributed.__version__) < Version("2023.2.1"),
+    reason="p2p rechunk not available",
+)
+requires_p2p_memory = pytest.mark.skipif(
+    Version(distributed.__version__) < Version("2023.10.1"),
+    reason="in-memory p2p shuffle not available",
+)
 
 
 @pytest.fixture(
     params=[
-        "tasks",
-        pytest.param(
-            "p2p",
-            marks=pytest.mark.skipif(
-                not P2P_SHUFFLE_AVAILABLE, reason="p2p shuffle not available"
-            ),
-        ),
+        pytest.param("tasks", marks=pytest.mark.shuffle_tasks),
+        pytest.param("p2p", marks=[pytest.mark.shuffle_p2p, requires_p2p_shuffle]),
     ]
 )
 def shuffle_method(request):
@@ -765,10 +770,6 @@ def shuffle_method(request):
 def configure_shuffling(shuffle_method):
     with dask.config.set({"dataframe.shuffle.method": shuffle_method}):
         yield
-
-
-P2P_RECHUNK_AVAILABLE = Version(distributed.__version__) >= Version("2023.2.1")
-P2P_MEMORY_AVAILABLE = Version(distributed.__version__) > Version("2023.10.0")
 
 
 @pytest.fixture
