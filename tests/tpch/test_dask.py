@@ -1,6 +1,10 @@
 from datetime import datetime
 
-import dask_expr as dd
+import pytest
+
+pytestmark = pytest.mark.tpch_dask
+
+dd = pytest.importorskip("dask_expr")
 
 
 def test_query_1(client, dataset_path, fs):

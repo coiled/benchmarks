@@ -3,6 +3,9 @@ from collections import OrderedDict
 import dask.dataframe as dd
 import pytest
 
+pytestmark = pytest.mark.workflows
+
+
 SCHEMA = OrderedDict(
     [
         ("GlobalEventID", "Int64"),

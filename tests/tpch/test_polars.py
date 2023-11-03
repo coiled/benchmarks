@@ -1,9 +1,13 @@
 from datetime import datetime
 
 import pytest
-from pyarrow.dataset import dataset
+
+pytestmark = pytest.mark.tpch_nondask
 
 pl = pytest.importorskip("polars")
+pytest.importorskip("pyarrow")
+
+from pyarrow.dataset import dataset  # noqa: E402
 
 
 def read_data(filename):

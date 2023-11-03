@@ -8,6 +8,8 @@ from dask.distributed import Lock, PipInstall, get_worker
 
 from ..utils_test import wait
 
+pytestmark = pytest.mark.workflows
+
 optuna = pytest.importorskip("optuna")
 
 

@@ -24,11 +24,11 @@ mamba env update -f ci/environment-test.yml
 mamba install grpcio grpcio-status protobuf -y  # if you want Spark
 ```
 
-Run Single Benchmark
---------------------
+Run Dask Benchmarks
+-------------------
 
 ```
-py.test --benchmark tests/tpch/test_dask.py
+pytest --benchmark tests/tpch/test_dask.py
 ```
 
 Configure

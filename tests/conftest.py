@@ -58,37 +58,12 @@ def pytest_addoption(parser):
     parser.addoption(
         "--benchmark", action="store_true", help="Collect benchmarking data for tests"
     )
-    parser.addoption("--run-workflows", action="store_true", help="Run workflow tests")
-    parser.addoption(
-        "--tpch-non-dask",
-        action="store_true",
-        help="Run all (DuckDB / Polars / PySpark) TPCH benchmarks",
-    )
 
 
-def pytest_collection_modifyitems(config, items):
-    # Skip workflows unless --run-workflows is set OR user explicitly included some path
-    # which includes the workflows ie pytest tests/workflows/
-    skip_workflows = pytest.mark.skip(reason="need --run-workflows option to run")
-    workflows = TEST_DIR / "workflows"
-    if not config.getoption("--run-workflows") and not any(
-        _is_child_dir(path, workflows) for path in config.option.file_or_dir
-    ):
-        for item in items:
-            if workflows in item.path.parents:
-                item.add_marker(skip_workflows)
-
-    # Skip non Dask TPC-H tests unless --tpch-non-dask is set OR user explicitly
-    # included some path which inclues the `tpch` path. ie pytest tests/tpch/
-    skip_benchmarks = pytest.mark.skip(reason="need --tpch-non-dask option to run")
-    tpch = TEST_DIR / "tpch"
-    tpch_dask = tpch / "test_dask.py"
-    if not config.getoption("--tpch-non-dask") and not any(
-        _is_child_dir(path, tpch) for path in config.option.file_or_dir
-    ):
-        for item in items:
-            if tpch in item.path.parents and tpch_dask != item.path:
-                item.add_marker(skip_benchmarks)
+def pytest_sessionfinish(session, exitstatus):
+    # https://github.com/pytest-dev/pytest/issues/2393
+    if exitstatus == 5:  # All tests excluded by markers
+        session.exitstatus = 0
 
 
 def _is_child_dir(path: str | Path, parent: str | Path) -> bool:
