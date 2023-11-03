@@ -4,8 +4,10 @@ import pytest
 
 pytestmark = pytest.mark.tpch_nondask
 
-dataset = pytest.importorskip("pyarrow.dataset")
 pl = pytest.importorskip("polars")
+pytest.importorskip("pyarrow")
+
+from pyarrow.dataset import dataset  # noqa: E402
 
 
 def read_data(filename):
