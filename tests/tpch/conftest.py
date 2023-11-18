@@ -155,14 +155,6 @@ def cluster_spec(scale):
         idle_timeout="1h",
         wait_for_workers=True,
         scheduler_vm_types=["m6i.xlarge"],
-        backend_options={
-            "ingress": [
-                {
-                    "ports": [443, 8786, 8787, 7077, 8080, 4040, 15002],
-                    "cidr": "0.0.0.0/0",
-                },
-            ],
-        },
     )
     if scale == 10:
         return {
@@ -260,10 +252,7 @@ def spark_setup(cluster, local):
 
         spark = SparkSession.builder.master("local[*]").getOrCreate()
     else:
-        from coiled.spark import get_spark
-
-        with cluster.get_client() as client:
-            spark = get_spark(client)
+        spark = cluster.get_spark()
 
     # warm start
     from pyspark.sql import Row
