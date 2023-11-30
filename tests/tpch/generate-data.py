@@ -200,6 +200,7 @@ def _tpch_data_gen(
                     out_,
                     compression=compression.value.lower(),
                     write_statistics=True,
+                    write_page_index=True,
                 )
             print(f"Finished exporting table {table}!")
         print("Finished exporting all data!")
@@ -219,7 +220,11 @@ def rows_approx_mb(con, table_name, partition_size: str, compression: Compressio
         stmt = f"select * from {table_name} limit {sample_size}"
         df = con.sql(stmt).arrow()
         pq.write_table(
-            df, tmp, compression=compression.value.lower(), write_statistics=True
+            df,
+            tmp,
+            compression=compression.value.lower(),
+            write_statistics=True,
+            write_page_index=True,
         )
         mb = tmp.stat().st_size
     return int(
