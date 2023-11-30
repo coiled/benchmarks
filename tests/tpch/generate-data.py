@@ -195,7 +195,12 @@ def _tpch_data_gen(
                     out_ = pathlib.Path(out)
                     out_.mkdir(exist_ok=True, parents=True)
                     out_ = str(out_ / file)
-                pq.write_table(df, out_, compression=compression.value.lower())
+                pq.write_table(
+                    df,
+                    out_,
+                    compression=compression.value.lower(),
+                    write_statistics=True,
+                )
             print(f"Finished exporting table {table}!")
         print("Finished exporting all data!")
 
@@ -213,7 +218,9 @@ def rows_approx_mb(con, table_name, partition_size: str, compression: Compressio
         tmp = pathlib.Path(tmpdir) / "tmp.parquet"
         stmt = f"select * from {table_name} limit {sample_size}"
         df = con.sql(stmt).arrow()
-        pq.write_table(df, tmp, compression=compression.value.lower())
+        pq.write_table(
+            df, tmp, compression=compression.value.lower(), write_statistics=True
+        )
         mb = tmp.stat().st_size
     return int(
         (len(table) * ((len(table) / sample_size) * partition_size)) / mb
