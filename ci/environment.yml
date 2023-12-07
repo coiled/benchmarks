@@ -8,14 +8,13 @@ dependencies:
 # - AB_environments/AB_sample.conda.yaml
 ########################################################
 
-  - python >=3.9
+  - python >=3.9,<3.11
   - pip
   - coiled >=0.2.54
   - numpy ==1.24.4
   - pandas ==2.1.1
   - dask ==2023.10.1
   - distributed ==2023.10.1
-  - dask-expr ==0.1.11
   - dask-labextension ==7.0.0
   - dask-ml ==2023.3.24
   - fsspec ==2023.9.1

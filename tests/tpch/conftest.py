@@ -17,6 +17,7 @@ from dask.distributed import LocalCluster, performance_report
 
 def pytest_addoption(parser):
     parser.addoption("--local", action="store_true", default=False, help="")
+    parser.addoption("--rapids", action="store_true", default=False, help="")
     parser.addoption("--cloud", action="store_false", dest="local", help="")
     parser.addoption("--restart", action="store_true", default=True, help="")
     parser.addoption("--no-restart", action="store_false", dest="restart", help="")
@@ -49,6 +50,11 @@ def local(request):
 
 
 @pytest.fixture(scope="session")
+def rapids(request):
+    return request.config.getoption("rapids")
+
+
+@pytest.fixture(scope="session")
 def restart(request):
     return request.config.getoption("restart")
 
@@ -64,7 +70,7 @@ def dataset_path(local, scale):
     local_paths = {
         1: "./tpch-data/scale-1/",
         10: "./tpch-data/scale-10/",
-        100: "./tpch-data/scale-100/",
+        100: "/raid/charlesb/tpc-h/sf100/repartitioned/",
     }
 
     if local:
@@ -186,6 +192,7 @@ def cluster_spec(scale):
 @pytest.fixture(scope="module")
 def cluster(
     local,
+    rapids,
     scale,
     module,
     dask_env_variables,
@@ -195,19 +202,29 @@ def cluster(
     make_chart,
 ):
     if local:
-        with LocalCluster() as cluster:
-            yield cluster
-    else:
-        kwargs = dict(
-            name=f"tpch-{module}-{scale}-{name}",
-            environ=dask_env_variables,
-            tags=github_cluster_tags,
-            region="us-east-2",
-            **cluster_spec,
-        )
-        with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
-            with coiled.Cluster(**kwargs) as cluster:
+        if not rapids:
+            with LocalCluster() as cluster:
                 yield cluster
+        else:
+            from dask_cuda import LocalCUDACluster
+
+            with dask.config.set({"dataframe.backend": "cudf", "dataframe.shuffle.method": "tasks"}):
+                with LocalCUDACluster() as cluster:
+                    yield cluster
+    else:
+        if not rapids:
+            kwargs = dict(
+                name=f"tpch-{module}-{scale}-{name}",
+                environ=dask_env_variables,
+                tags=github_cluster_tags,
+                region="us-east-2",
+                **cluster_spec,
+            )
+            with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
+                with coiled.Cluster(**kwargs) as cluster:
+                    yield cluster
+        else:
+            raise NotImplementedError("RAPIDS on Coiled not yet supported")
 
 
 @pytest.fixture
