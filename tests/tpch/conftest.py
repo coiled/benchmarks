@@ -211,7 +211,7 @@ def cluster(
             with dask.config.set(
                 {"dataframe.backend": "cudf", "dataframe.shuffle.method": "tasks"}
             ):
-                with LocalCUDACluster() as cluster:
+                with LocalCUDACluster(rmm_pool_size="24GB") as cluster:
                     yield cluster
     else:
         if not rapids:
@@ -226,12 +226,13 @@ def cluster(
                 with coiled.Cluster(**kwargs) as cluster:
                     yield cluster
         else:
+            # should be using Coiled for this
             from dask_cuda import LocalCUDACluster
 
             with dask.config.set(
                 {"dataframe.backend": "cudf", "dataframe.shuffle.method": "tasks"}
             ):
-                with LocalCUDACluster() as cluster:
+                with LocalCUDACluster(rmm_pool_size="24GB") as cluster:
                     yield cluster
 
 
