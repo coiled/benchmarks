@@ -226,7 +226,13 @@ def cluster(
                 with coiled.Cluster(**kwargs) as cluster:
                     yield cluster
         else:
-            raise NotImplementedError("RAPIDS on Coiled not yet supported")
+            from dask_cuda import LocalCUDACluster
+
+            with dask.config.set(
+                {"dataframe.backend": "cudf", "dataframe.shuffle.method": "tasks"}
+            ):
+                with LocalCUDACluster() as cluster:
+                    yield cluster
 
 
 @pytest.fixture
