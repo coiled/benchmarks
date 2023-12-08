@@ -9,5 +9,5 @@ dependencies:
 
     - pip:
       - git+https://github.com/dask/dask@191d39177009d2cce25b818878118e35329b6db3
-      - git+https://github.com/rjzamora/distributed@4c16a25643ffb211e511dda239ea0e501f98bd01
+      - git+https://github.com/rjzamora/distributed@cfe4ad5d88f997af71ff48740eed26961519b459
       - git+https://github.com/dask-contrib/dask-expr@cd3506ef48a0c8a46e144fa584728d17a5229854
