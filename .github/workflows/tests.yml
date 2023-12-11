@@ -60,6 +60,10 @@ jobs:
             python-version: "3.9"
             os: ubuntu-latest
             extra-env: ci/environment-snowflake.yml
+          - pytest_args: tests/tpch -m tpch_nondask
+            python-version: "3.9"
+            os: ubuntu-latest
+            extra-env: ci/environment-tpch-nondask.yml
 
     steps:
       - name: Checkout
