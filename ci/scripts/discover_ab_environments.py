@@ -59,16 +59,20 @@ def build_json() -> JSONOutput:
     if cfg["test_null_hypothesis"]:
         runtimes += ["AB_null_hypothesis"]
 
-    n = cfg["max_parallel"]["pytest_workers_per_job"]
-    xdist_args = f"-n {n} --dist loadscope " if n > 1 else ""
-    markers_args = f" -m '{cfg['markers']}' " if cfg["markers"] else ""
+    pytest_args = []
+    if (n := cfg["max_parallel"]["pytest_workers_per_job"]) > 1:
+        pytest_args.append(f"-n {n} --dist loadscope")
+    if cfg["markers"]:
+        pytest_args.append(f"-m '{cfg['markers']}'")
+    for target in cfg["targets"]:
+        pytest_args.append(f"'{target}'")
 
     return {
         "run_AB": True,
         "repeat": list(range(1, cfg["repeat"] + 1)),
         "runtime": runtimes,
         "max_parallel": cfg["max_parallel"]["ci_jobs"],
-        "pytest_args": [xdist_args + markers_args + " ".join(cfg["targets"])],
+        "pytest_args": [" ".join(pytest_args)],
         "h2o_datasets": [",".join(cfg["h2o_datasets"])],
     }
 
