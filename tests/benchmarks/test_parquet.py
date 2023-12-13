@@ -82,7 +82,7 @@ def test_read_hive_partitioned_data(parquet_client):
     https://registry.opendata.aws/speedtest-global-performance/
     """
     ddf = dd.read_parquet(
-        "s3://coiled-runtime-ci/ookla-open-data/type=fixed/**.parquet",
+        "s3://coiled-runtime-ci/ookla-open-data/type=fixed/*/*/*.parquet",
         engine="pyarrow",
     )
     coll = ddf.groupby(["year", "quarter"]).first()
