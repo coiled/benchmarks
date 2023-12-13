@@ -10,7 +10,7 @@ Set of Dask benchmarks run daily at scale in Coiled Clusters.
 
 The `coiled benchmarks` test suite can be run locally with the following steps:
 
-1. Ensure your local machine is authenticated to use the `dask-engineering` Coiled
+1. Ensure your local machine is authenticated to use the `dask-benchmarks` Coiled
    account and the Coiled Dask Engineering AWS S3 account.
 2. Create a new Python environment with
    `mamba env create -n test-env -f ci/environment.yml`. You could alternatively use
@@ -18,9 +18,17 @@ The `coiled benchmarks` test suite can be run locally with the following steps:
    This test suite is configured to run Coiled's `package_sync` feature, so your local
    environment will be copied to the cluster.
 3. Activate the environment with `conda activate test-env`
-4. Upgrade dask to the git tip with `mamba env update -f ci/environment-git-tip.yml`
-5. Add test-specific packages with `mamba env update -f ci/environment-test.yml`
-6. Run tests with `python -m pytest tests`
+4. Some tests require additional dependencies:
+   - For snowflake: `mamba env update -f ci/environment-snowflake.yml`  
+   - For non-dask TPCH: `mamba env update -f ci/environment-tpch-nondask.yml`
+
+    Look at `ci/environment-*.yml` for more options.
+5. Upgrade dask to the git tip with `mamba env update -f ci/environment-git-tip.yml`
+6. Add test-specific packages with `mamba env update -f ci/environment-test.yml`
+7. Run tests with `python -m pytest tests`.
+   You may consider running instead individual tests or categories of tests; e.g.
+   `python -m pytest tests -m shuffle_p2p`.
+   Look at `setup.cfg` for all available test markers.
 
 Additionally, tests are automatically run on pull requests to this repository.
 See the section below on creating pull requests.
@@ -127,7 +135,8 @@ and one with a `dask` repository with which to drive bisecting.
 
 #### Create your software environment
 
-You should create a software environment which can run this test suite, but with an editable install of `dask`.
+You should create a software environment which can run this test suite, but with an
+editable install of `dask`.
 You can do this in any of a number of ways, but one approach coule be
 ```bash
 mamba env create -n test-env --file ci/environment.yml  # Create a test environment
@@ -138,7 +147,10 @@ mamba env update --file ci/environment-test.yml
 
 #### Start bisecting
 
-Let's say the current `HEAD` of `dask` is known to be bad, and `$REF` is known to be good. If you are looking at an upstream run where you have access to the static page, you can check the dates reported for each run and do a `git log` with the corresponding dates to get a list of commits to use in the bisecting process.
+Let's say the current `HEAD` of `dask` is known to be bad, and `$REF` is known to be
+good. If you are looking at an upstream run where you have access to the static page,
+you can check the dates reported for each run and do a `git log` with the corresponding
+dates to get a list of commits to use in the bisecting process.
 
 `git log --since='2022-08-15 14:15' --until='2022-08-18 14:15' --pretty=oneline`
 In the terminal opened to your dask repository you can initialize a bisect workflow with
@@ -152,7 +164,8 @@ git bisect good $REF
 
 #### Test for regressions
 
-Now that your editable install is bisecting, run a test or subset of tests which demonstrate the regression in your `coiled-runtime` terminal.
+Now that your editable install is bisecting, run a test or subset of tests which
+demonstrate the regression in your `coiled-runtime` terminal.
 Presume that `tests/benchmarks/test_parquet.py::test_write_wide_data` is such a test:
 
 ```bash
@@ -194,11 +207,12 @@ It's possible to run the Coiled Runtime benchmarks for A/B comparisons.
 
 ## Contribute
 
-This repository uses GitHub Actions secrets for managing authentication tokens used
-to access resources like Coiled clusters, S3 buckets, etc. However, because GitHub Actions [doesn't
-grant access to secrets for forked repositories](https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow),
-**please submit pull requests directly from the `coiled/benchmarks` repository,
-not a personal fork**.
+This repository uses GitHub Actions secrets for managing authentication tokens used to
+access resources like Coiled clusters, S3 buckets, etc. However, because GitHub Actions
+[doesn't grant access to secrets for forked
+repositories](https://docs.github.com/en/actions/security-guides/encrypted-secrets#using-encrypted-secrets-in-a-workflow),
+**please submit pull requests directly from the `coiled/benchmarks` repository, not a
+personal fork**.
 
 
 ## License
