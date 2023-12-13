@@ -57,6 +57,6 @@ dependencies:
     # conda. You may alternatively point to your own git fork (but make sure you
     # sync'ed tags!)
     # Read README.md for troubleshooting.
-    - git+https://github.com/dask/dask@ff6ad1be901c427b839ae3174b0366fb5ff02a3a
+    - git+https://github.com/dask/dask@6a4172700f6c2ba036d992020d586fa98e5844bb
     # - git+https://github.com/dask/distributed@285893037fe9eac83f363611b4799168aabb3992
     # - git+https://github.com/dask-contrib/dask-expr@0485e1e280d3892529b2c88e8bf0caaa6dffc821
