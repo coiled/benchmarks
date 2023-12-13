@@ -199,7 +199,7 @@ def _tpch_data_gen(
                     df,
                     out_,
                     compression=compression.value.lower(),
-                    write_statistics=True,
+                    write_statistics=False,
                     write_page_index=True,
                 )
             print(f"Finished exporting table {table}!")
