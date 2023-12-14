@@ -51,6 +51,11 @@ def test_tiles_to_rows(
     configure_rechunking,
     small_client,
 ):
+    """2D array sliced into square tiles becomes sliced by columns.
+    This use case can be broken down into N independent problems, which can benefit from
+    partial p2p rechunking.
+    In task rechunk, this generates O(n) intermediate tasks and graph edges.
+    """
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", "x"))
 
@@ -66,6 +71,10 @@ def test_swap_axes(
     configure_rechunking,
     small_client,
 ):
+    """2D array sliced by columns becomes sliced by rows.
+    This is a n-to-n problem, so partial rechunking is impossible.
+    In task rechunk, this generatesw O(n^2) intermediate tasks and graph edges.
+    """
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", "x"))
 
@@ -74,30 +83,16 @@ def test_swap_axes(
     wait(a, small_client, timeout=600)
 
 
-def test_partial_rechunk(
+def test_local_groups(
     # Order matters: don't initialize client when skipping test
     memory_multiplier,
     configure_chunksize,
     configure_rechunking,
     small_client,
 ):
-    """Test a complete, varied use case for partial rechunking:
-
-    test_swap_axes
-        This is a n-to-n problem, so partial rechunking is impossible.
-        Each random_sample task feeds into exactly one rechunk_transfer task.
-        There is a single shuffle-barrier for the whole graph.
-    test_tiles_to_rows
-        P2P rechunking is broken down into multiple partial rechunks.
-        Eeach random_sample task feeds exactly into two rechunk_slice tasks belonging
-        to two different partial rechunks (different shuffle-barrier tasks).
-        Each rechunk_slice task feeds into exactly one rechunk_transfer task.
-    test_partial_rechunk
-        P2P rechunking is broken down into multiple partial rechunks.
-        random_sample tasks:
-        - sometimes feed into two rechunk_slice tasks belonging to two different
-          partial rechunks
-        - sometimes feed directly into a rechunk task (without barrier)
+    """m-to-n use case, where each input task feeds into a localized but substantial
+    subset of the output tasks, with limited but not zero interaction between adjacent
+    zones.
     """
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", 10, 10_000))
@@ -114,13 +109,13 @@ def test_heal_oversplit(
     small_client,
 ):
     """rechunk() is used to heal a situation where chunks are too small.
-    This use case gets no benefit whatsoever from P2P rechunking.
-    Measure the performance discrepancy between p2p and task rechunk.
+    This is a trivial n-to-1 reduction step that gets no benefit from p2p rechunking.
+    This test highlights the performance discrepancy between p2p and task rechunking.
     """
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", "x"))
     # Avoid exact n:1 rechunking, which would be a simpler special case.
-    # Dask should be smart enough to avoid splitting input chunks over multiple output
+    # Dask should be smart enough to avoid splitting input chunks out to multiple output
     # chunks.
     with dask.config.set({"array.chunk-size": "8.5 MiB"}):
         a = da.random.random(shape, chunks="auto")

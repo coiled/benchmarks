@@ -140,3 +140,6 @@ cluster_kwargs.*.yaml
 benchmark.db
 static/
 mamba_env_export.yml
+
+# .visualize() output of dask collections
+mydask.html
