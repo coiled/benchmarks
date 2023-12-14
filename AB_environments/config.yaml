@@ -13,7 +13,7 @@ test_null_hypothesis: false
 # Test directories, test files, or individual tests to run.
 targets:
   # - tests
-  - tests/benchmarks
+  - tests/benchmarks/test_array.py
   # - tests/runtime
   # - tests/stability
   # - tests/tpch/test_dask.py
