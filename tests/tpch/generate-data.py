@@ -32,7 +32,7 @@ def generate(
     partition_size: str = "128 MiB",
     path: str = "./tpch-data",
     relaxed_schema: bool = False,
-    compression: CompressionCodec = CompressionCodec.LZ4,
+    compression: CompressionCodec = CompressionCodec.SNAPPY,
 ):
     if str(path).startswith("s3"):
         path += "/" if not path.endswith("/") else ""
@@ -296,7 +296,7 @@ def get_bucket_region(path: str):
     "--compression",
     type=click.Choice(v.lower() for v in CompressionCodec.__members__),
     callback=lambda _c, _p, v: getattr(CompressionCodec, v.upper()),
-    default=CompressionCodec.LZ4.value,
+    default=CompressionCodec.SNAPPY.value,
     help="Set compression codec",
 )
 def main(
