@@ -52,8 +52,7 @@ def test_tiles_to_rows(
     small_client,
 ):
     """2D array sliced into square tiles becomes sliced by columns.
-    This use case can be broken down into N independent problems, which can benefit from
-    partial p2p rechunking.
+    This use case can be broken down into N independent problems.
     In task rechunk, this generates O(N) intermediate tasks and graph edges.
     """
     memory = cluster_memory(small_client)
@@ -73,7 +72,7 @@ def test_swap_axes(
 ):
     """2D array sliced by columns becomes sliced by rows.
     This is an N-to-N problem, so grouping into sub-problems is impossible.
-    In task rechunk, this generates O(n^2) intermediate tasks and graph edges.
+    In task rechunk, this generates O(N^2) intermediate tasks and graph edges.
     """
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", "x"))
@@ -115,8 +114,6 @@ def test_heal_oversplit(
     # Avoid exact n:1 rechunking, which would be a simpler special case.
     # Dask should be smart enough to avoid splitting input chunks out to multiple output
     # chunks.
-    with dask.config.set({"array.chunk-size": "8.5 MiB"}):
-        a = da.random.random(shape, chunks="auto")
-    with dask.config.set({"array.chunk-size": "128 MiB"}):
-        a = a.rechunk("auto").sum()
+    a = da.random.random(shape, chunks="8.5 MiB")
+    a = a.rechunk("128 MiB").sum()
     wait(a, small_client, timeout=600)
