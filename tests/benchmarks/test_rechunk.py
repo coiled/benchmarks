@@ -54,7 +54,7 @@ def test_tiles_to_rows(
     """2D array sliced into square tiles becomes sliced by columns.
     This use case can be broken down into N independent problems, which can benefit from
     partial p2p rechunking.
-    In task rechunk, this generates O(n) intermediate tasks and graph edges.
+    In task rechunk, this generates O(N) intermediate tasks and graph edges.
     """
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", "x"))
@@ -72,8 +72,8 @@ def test_swap_axes(
     small_client,
 ):
     """2D array sliced by columns becomes sliced by rows.
-    This is a n-to-n problem, so partial rechunking is impossible.
-    In task rechunk, this generatesw O(n^2) intermediate tasks and graph edges.
+    This is an N-to-N problem, so grouping into sub-problems is impossible.
+    In task rechunk, this generates O(n^2) intermediate tasks and graph edges.
     """
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", "x"))
@@ -83,16 +83,15 @@ def test_swap_axes(
     wait(a, small_client, timeout=600)
 
 
-def test_local_groups(
+def test_adjacent_groups(
     # Order matters: don't initialize client when skipping test
     memory_multiplier,
     configure_chunksize,
     configure_rechunking,
     small_client,
 ):
-    """m-to-n use case, where each input task feeds into a localized but substantial
-    subset of the output tasks, with limited but not zero interaction between adjacent
-    zones.
+    """M-to-N use case, where each input task feeds into a localized but substantial
+    subset of the output tasks, with partial interaction between adjacent zones.
     """
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", 10, 10_000))
@@ -109,8 +108,7 @@ def test_heal_oversplit(
     small_client,
 ):
     """rechunk() is used to heal a situation where chunks are too small.
-    This is a trivial n-to-1 reduction step that gets no benefit from p2p rechunking.
-    This test highlights the performance discrepancy between p2p and task rechunking.
+    This is a trivial N-to-1 reduction step that gets no benefit from p2p rechunking.
     """
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * memory_multiplier, ("x", "x"))
