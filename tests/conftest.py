@@ -460,6 +460,7 @@ def github_cluster_tags():
         "GITHUB_RUN_ID",
         "GITHUB_RUN_NUMBER",
         "GITHUB_SHA",
+        "AB_TEST_NAME",
     ]
 
     return {tag: os.environ.get(tag, "") for tag in tag_names}
