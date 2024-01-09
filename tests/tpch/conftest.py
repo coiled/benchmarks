@@ -378,15 +378,14 @@ def make_chart(request, name, tmp_path_factory, local, scale):
 
     local = "local" if local else "cloud"
 
-    if not os.path.exists("charts"):
-        os.mkdir("charts")
-
     try:
         yield
     finally:
         from .generate_plot import generate
 
         with lock:
+            if not os.path.exists("charts"):
+                os.mkdir("charts")
             generate(
                 outfile=os.path.join("charts", f"{local}-{scale}-query-{name}.json"),
                 name=name,
