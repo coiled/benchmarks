@@ -26,9 +26,10 @@ optuna = pytest.importorskip("optuna")
             "torchvision",
         ],
         pip_options=[
-            "--force-reinstall",
             "--index-url",
             "https://download.pytorch.org/whl/cu118",
+            "--extra-index-url",
+            "https://pypi.org/simple",
         ],
         restart_workers=True,
     ),
