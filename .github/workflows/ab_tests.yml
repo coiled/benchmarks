@@ -56,7 +56,8 @@ jobs:
         runtime-version: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).runtime }}
         repeat: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).repeat }}
         h2o_datasets: ${{ fromJson(needs.discover_ab_envs.outputs.matrix).h2o_datasets }}
-
+    env:
+      AB_TEST_NAME: ${{ matrix.runtime-version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
