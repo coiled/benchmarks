@@ -383,6 +383,81 @@ def test_query_9(client, dataset_path, fs):
 
 
 @pytest.mark.shuffle_p2p
+def test_query_10(client, dataset_path, fs):
+    """
+    select
+        c_custkey,
+        c_name,
+        round(sum(l_extendedprice * (1 - l_discount)), 2) as revenue,
+        c_acctbal,
+        n_name,
+        c_address,
+        c_phone,
+        c_comment
+    from
+        customer,
+        orders,
+        lineitem,
+        nation
+    where
+        c_custkey = o_custkey
+        and l_orderkey = o_orderkey
+        and o_orderdate >= date '1993-10-01'
+        and o_orderdate < date '1993-10-01' + interval '3' month
+        and l_returnflag = 'R'
+        and c_nationkey = n_nationkey
+    group by
+        c_custkey,
+        c_name,
+        c_acctbal,
+        c_phone,
+        n_name,
+        c_address,
+        c_comment
+    order by
+        revenue desc
+    limit 20
+    """
+    customer = dd.read_parquet(dataset_path + "customer", filesystem=fs)
+    orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+    nation = dd.read_parquet(dataset_path + "nation", filesystem=fs)
+
+    orderdate_from = datetime.strptime("1993-10-01", "%Y-%m-%d")
+    orderdate_to = orderdate_from + timedelta(days=3 * (365 / 12))
+
+    query = (
+        lineitem.merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="left")
+        .merge(customer, left_on="o_custkey", right_on="c_custkey", how="left")
+        .merge(nation, left_on="c_nationkey", right_on="n_nationkey", how="left")
+    )
+    query[
+        (query.o_orderdate >= orderdate_from)
+        & (query.o_orderdate < orderdate_to)
+        & (query.l_returnflag == "R")
+    ]
+    query["revenue"] = query.l_extendedprice * (1 - query.l_discount)
+    _ = (
+        query.groupby(
+            [
+                "c_custkey",
+                "c_name",
+                "c_acctbal",
+                "c_phone",
+                "n_name",
+                "c_address",
+                "c_comment",
+            ]
+        )
+        .revenue.sum()
+        .round(2)
+        .to_frame()
+        .sort_values(by=["revenue"], ascending=[False])
+        .head(20)
+    )
+
+
+@pytest.mark.shuffle_p2p
 def test_query_12(client, dataset_path, fs):
     """
     select
