@@ -312,3 +312,51 @@ def test_query_7(run, connection, dataset_path):
         ).arrow()
 
     run(_)
+
+
+def test_query_22(run, connection, dataset_path):
+    def _():
+        connection().execute(
+            f"""
+            with orders as (select * from read_parquet('{dataset_path}orders/*.parquet')),
+                customer as (select * from read_parquet('{dataset_path}customer/*.parquet')),
+            select
+                cntrycode,
+                count(*) as numcust,
+                sum(c_acctbal) as totacctbal
+            from (
+                select
+                    substring(c_phone from 1 for 2) as cntrycode,
+                    c_acctbal
+                from
+                    customer
+                where
+                    substring(c_phone from 1 for 2) in
+                        (13, 31, 23, 29, 30, 18, 17)
+                    and c_acctbal > (
+                        select
+                            avg(c_acctbal)
+                        from
+                            customer
+                        where
+                            c_acctbal > 0.00
+                            and substring (c_phone from 1 for 2) in
+                                (13, 31, 23, 29, 30, 18, 17)
+                    )
+                    and not exists (
+                        select
+                            *
+                        from
+                            order
+                        where
+                            o_custkey = c_custkey
+                    )
+                ) as custsale
+            group by
+                cntrycode
+            order by
+                cntrycode
+            """
+        ).arrow()
+
+    run(_)
