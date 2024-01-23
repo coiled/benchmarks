@@ -1,4 +1,4 @@
-import dask.dataframe as dd
+import dask_expr as dd
 import pytest
 
 dask_ml = pytest.importorskip("dask_ml")
