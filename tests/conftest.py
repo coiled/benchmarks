@@ -74,7 +74,7 @@ def _is_child_dir(path: str | Path, parent: str | Path) -> bool:
 
 dask.config.set(
     {
-        "coiled.account": "dask-benchmarks",
+        "coiled.account": "dask-engineering",
         "distributed.admin.system-monitor.gil.enabled": True,
     }
 )
