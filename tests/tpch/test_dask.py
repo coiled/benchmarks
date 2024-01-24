@@ -306,3 +306,64 @@ def test_query_7(client, dataset_path, fs):
         by=["supp_nation", "cust_nation", "l_year"],
         ascending=True,
     ).compute()
+
+
+def test_query_22(client, dataset_path, fs):
+    """
+    select
+        cntrycode,
+        count(*) as numcust,
+        sum(c_acctbal) as totacctbal
+    from (
+        select
+            substring(c_phone from 1 for 2) as cntrycode,
+            c_acctbal
+        from
+            customer
+        where
+            substring(c_phone from 1 for 2) in
+                (13, 31, 23, 29, 30, 18, 17)
+            and c_acctbal > (
+                select
+                    avg(c_acctbal)
+                from
+                    customer
+                where
+                    c_acctbal > 0.00
+                    and substring (c_phone from 1 for 2) in
+                        (13, 31, 23, 29, 30, 18, 17)
+            )
+            and not exists (
+                select
+                    *
+                from
+                    order
+                where
+                    o_custkey = c_custkey
+            )
+        ) as custsale
+    group by
+        cntrycode
+    order by
+        cntrycode
+    """
+    orders_ds = dd.read_parquet(dataset_path + "orders", filesystem=fs)
+    customer_ds = dd.read_parquet(dataset_path + "customer", filesystem=fs)
+
+    res_1 = customer_ds
+    res_1["cntrycode"] = res_1["c_phone"].str.slice(0, 2)
+    res_1 = res_1[res_1["cntrycode"].str.contains("13|31|23|29|30|18|17")]
+    res_1 = res_1[["c_acctbal", "c_custkey", "cntrycode"]]
+
+    res_2 = res_1[res_1["c_acctbal"] > 0.0]["c_acctbal"].mean()
+
+    res_3 = orders_ds["o_custkey"].unique().to_frame()
+
+    res_4 = res_1.merge(res_3, left_on="c_custkey", right_on="o_custkey", how="left")
+    res_4 = (
+        res_4[res_4["o_custkey"].isnull() & (res_4["c_acctbal"] > res_2)]
+        .groupby("cntrycode")
+        .agg(numcust=("c_acctbal", "count"), totacctbal=("c_acctbal", "sum"))
+    )
+    res = res_4.reset_index().sort_values("cntrycode", ascending=True)
+    res.compute()

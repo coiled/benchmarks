@@ -319,7 +319,7 @@ def test_query_22(run, connection, dataset_path):
         connection().execute(
             f"""
             with orders as (select * from read_parquet('{dataset_path}orders/*.parquet')),
-                customer as (select * from read_parquet('{dataset_path}customer/*.parquet')),
+                customer as (select * from read_parquet('{dataset_path}customer/*.parquet'))
             select
                 cntrycode,
                 count(*) as numcust,
@@ -347,7 +347,7 @@ def test_query_22(run, connection, dataset_path):
                         select
                             *
                         from
-                            order
+                            orders
                         where
                             o_custkey = c_custkey
                     )
