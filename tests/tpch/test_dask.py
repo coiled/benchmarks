@@ -615,3 +615,36 @@ def test_query_14(client, dataset_path, fs):
         .round(2)
         .compute()
     )
+
+
+@pytest.mark.shuffle_p2p
+def test_query_17(client, dataset_path, fs):
+    """
+    select
+        round(sum(l_extendedprice) / 7.0, 2) as avg_yearly
+    from
+        lineitem,
+        part
+    where
+        p_partkey = l_partkey
+        and p_brand = 'Brand#23'
+        and p_container = 'MED BOX'
+        and l_quantity < (
+            select
+                0.2 * avg(l_quantity)
+            from
+                lineitem
+            where
+                l_partkey = p_partkey
+        )
+    """
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+    part = dd.read_parquet(dataset_path + "part", filesystem=fs)
+
+    table = lineitem.merge(part, left_on="l_partkey", right_on="p_partkey", how="left")
+    table = table[
+        (table.p_brand == "Brand#23")
+        & (table.p_container == "MED BOX")
+        & (table.l_quantity < 0.2 * table.l_quantity.mean())
+    ]
+    _ = round((table.l_extendedprice.sum() / 7.0).compute(), 2)
