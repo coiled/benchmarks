@@ -655,3 +655,65 @@ def test_query_14(client, dataset_path, fs):
     )
 
     return pd.DataFrame({"promo_revenue": [result]})
+
+
+@pytest.mark.shuffle_p2p
+def test_query_18(client, dataset_path, fs):
+    """
+    select
+        c_name,
+        c_custkey,
+        o_orderkey,
+        to_date(o_orderdate) as o_orderdat,
+        o_totalprice,
+        DOUBLE(sum(l_quantity)) as col6
+    from
+        customer,
+        orders,
+        lineitem
+    where
+        o_orderkey in (
+            select
+                l_orderkey
+            from
+                lineitem
+            group by
+                l_orderkey having
+                    sum(l_quantity) > 300
+        )
+        and c_custkey = o_custkey
+        and o_orderkey = l_orderkey
+    group by
+        c_name,
+        c_custkey,
+        o_orderkey,
+        o_orderdate,
+        o_totalprice
+    order by
+        o_totalprice desc,
+        o_orderdate
+    limit 100
+    """
+    customer = dd.read_parquet(dataset_path + "customer", filesystem=fs)
+    orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+
+    table = customer.merge(
+        orders, left_on="c_custkey", right_on="o_custkey", how="inner"
+    ).merge(lineitem, left_on="o_orderkey", right_on="l_orderkey", how="inner")
+
+    qnt_over_300 = (
+        lineitem.groupby("l_orderkey").l_quantity.sum().to_frame().reset_index()
+    )
+    qnt_over_300 = qnt_over_300[qnt_over_300.l_quantity > 300].l_orderkey.compute()
+
+    _ = (
+        table[table.o_orderkey.isin(qnt_over_300)]
+        .groupby(["c_name", "c_custkey", "o_orderkey", "o_orderdate", "o_totalprice"])
+        .l_quantity.sum()
+        .astype(float)
+        .to_frame()
+        .reset_index()
+        .sort_values(["o_totalprice", "o_orderdate"], ascending=[False, True])
+        .head(100)
+    )
