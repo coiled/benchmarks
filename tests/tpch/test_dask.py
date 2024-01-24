@@ -353,16 +353,16 @@ def test_query_9(client, dataset_path, fs):
     nation = dd.read_parquet(dataset_path + "nation", filesystem=fs)
 
     subquery = (
-        part.merge(partsupp, left_on="p_partkey", right_on="ps_partkey", how="left")
-        .merge(supplier, left_on="ps_suppkey", right_on="s_suppkey", how="left")
+        part.merge(partsupp, left_on="p_partkey", right_on="ps_partkey", how="inner")
+        .merge(supplier, left_on="ps_suppkey", right_on="s_suppkey", how="inner")
         .merge(
             lineitem,
             left_on=["ps_partkey", "ps_suppkey"],
             right_on=["l_partkey", "l_suppkey"],
             how="right",
         )
-        .merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="left")
-        .merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="left")
+        .merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="inner")
+        .merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="inner")
     )
     subquery = subquery[subquery.p_name.str.contains("green")]
     subquery["o_year"] = subquery.o_orderdate.dt.year
@@ -373,7 +373,7 @@ def test_query_9(client, dataset_path, fs):
     )
     subquery = subquery[["o_year", "nation", "amount"]]
 
-    result = (
+    _ = (
         subquery.groupby(["nation", "o_year"])
         .amount.sum()
         .round(2)
