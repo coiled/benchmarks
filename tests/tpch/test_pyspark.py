@@ -695,7 +695,6 @@ def test_query_19(spark, dataset_path):
 
     query = """
     select
-        select
         round(sum(l_extendedprice* (1 - l_discount)), 2) as revenue
     from
         lineitem,
