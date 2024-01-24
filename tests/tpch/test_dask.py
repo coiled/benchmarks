@@ -592,7 +592,7 @@ def test_query_14(client, dataset_path, fs):
     shipdate_from = datetime.strptime("1995-09-01", "%Y-%m-%d")
     shipdate_to = shipdate_from + timedelta(days=365 / 12)
 
-    table = lineitem.merge(part, left_on="l_partkey", right_on="p_partkey", how="left")
+    table = lineitem.merge(part, left_on="l_partkey", right_on="p_partkey", how="inner")
     table = table[
         (table.l_shipdate >= shipdate_from) & (table.l_shipdate < shipdate_to)
     ]
