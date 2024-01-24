@@ -284,3 +284,40 @@ def test_query_7(run, restart, dataset_path):
         ).collect(streaming=True)
 
     run(_)
+
+
+def test_query_21(run, restart, dataset_path):
+    def _():
+        line_item_ds = read_data(dataset_path + "lineitem")
+        supplier_ds = read_data(dataset_path + "supplier")
+        nation_ds = read_data(dataset_path + "nation")
+        orders_ds = read_data(dataset_path + "orders")
+
+        var_1 = "SAUDI ARABIA"
+
+        res_1 = (
+            line_item_ds.group_by("l_orderkey")
+            .agg(pl.col("l_suppkey").n_unique().alias("nunique_col"))
+            .filter(pl.col("nunique_col") > 1)
+            .join(
+                line_item_ds.filter(pl.col("l_receiptdate") > pl.col("l_commitdate")),
+                on="l_orderkey",
+            )
+        ).cache()
+
+        q_final = (
+            res_1.group_by("l_orderkey")
+            .agg(pl.col("l_suppkey").n_unique().alias("nunique_col"))
+            .join(res_1, on="l_orderkey")
+            .join(supplier_ds, left_on="l_suppkey", right_on="s_suppkey")
+            .join(nation_ds, left_on="s_nationkey", right_on="n_nationkey")
+            .join(orders_ds, left_on="l_orderkey", right_on="o_orderkey")
+            .filter(pl.col("nunique_col") == 1)
+            .filter(pl.col("n_name") == var_1)
+            .filter(pl.col("o_orderstatus") == "F")
+            .group_by("s_name")
+            .agg(pl.count().alias("numwait"))
+            .sort(by=["numwait", "s_name"], descending=[True, False])
+            .limit(100)
+        )
+        q_final.collect(streaming=True)
