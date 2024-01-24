@@ -609,16 +609,15 @@ def test_query_14(run, connection, dataset_path):
 
 def test_query_15(run, connection, dataset_path):
     def _():
-        connection().execute(
+        conn = connection()
+        conn.execute(
             f"""
-            with lineitem as (select * from read_parquet('{dataset_path}lineitem/*.parquet'))
-
             create or replace temporary view revenue (supplier_no, total_revenue) as
                 select
                     l_suppkey,
                     sum(l_extendedprice * (1 - l_discount))
                 from
-                    lineitem
+                    read_parquet('{dataset_path}lineitem/*.parquet')
                 where
                     l_shipdate >= date '1996-01-01'
                     and l_shipdate < date '1996-01-01' + interval '3' month
@@ -627,7 +626,7 @@ def test_query_15(run, connection, dataset_path):
             """
         )
 
-        connection.execute(
+        conn.execute(
             f"""
             with supplier as (select * from read_parquet('{dataset_path}supplier/*.parquet'))
 
@@ -653,7 +652,7 @@ def test_query_15(run, connection, dataset_path):
             """
         ).arrow()
 
-        connection.execute("DROP VIEW IF EXISTS revenue")
+        connection().execute("DROP VIEW IF EXISTS revenue")
 
     run(_)
 
