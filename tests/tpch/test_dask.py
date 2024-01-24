@@ -427,9 +427,9 @@ def test_query_10(client, dataset_path, fs):
     orderdate_to = orderdate_from + timedelta(days=3 * (365 / 12))
 
     query = (
-        lineitem.merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="left")
-        .merge(customer, left_on="o_custkey", right_on="c_custkey", how="left")
-        .merge(nation, left_on="c_nationkey", right_on="n_nationkey", how="left")
+        lineitem.merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="inner")
+        .merge(customer, left_on="o_custkey", right_on="c_custkey", how="inner")
+        .merge(nation, left_on="c_nationkey", right_on="n_nationkey", how="inner")
     )
     query[
         (query.o_orderdate >= orderdate_from)
