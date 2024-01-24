@@ -788,7 +788,6 @@ def test_query_21(spark, dataset_path):
 
     query = """
     select
-        select
         s_name,
         count(*) as numwait
     from
