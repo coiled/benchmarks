@@ -715,7 +715,7 @@ def test_query_15(client, dataset_path, fs):
 
     # Query
     table = supplier.merge(
-        revenue, left_on="s_suppkey", right_on="supplier_no", how="left"
+        revenue, left_on="s_suppkey", right_on="supplier_no", how="inner"
     )
     _ = (
         table[table.total_revenue == revenue.total_revenue.max()][
