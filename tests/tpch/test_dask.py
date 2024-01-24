@@ -655,3 +655,72 @@ def test_query_14(client, dataset_path, fs):
     )
 
     return pd.DataFrame({"promo_revenue": [result]})
+
+
+@pytest.mark.shuffle_p2p
+def test_query_15(client, dataset_path, fs):
+    """
+    DDL:
+    create temp view revenue (supplier_no, total_revenue) as
+        select
+            l_suppkey,
+            sum(l_extendedprice * (1 - l_discount))
+        from
+            lineitem
+        where
+            l_shipdate >= date '1996-01-01'
+            and l_shipdate < date '1996-01-01' + interval '3' month
+        group by
+            l_suppkey
+
+    QUERY:
+    select
+        s_suppkey,
+        s_name,
+        s_address,
+        s_phone,
+        total_revenue
+    from
+        supplier,
+        revenue
+    where
+        s_suppkey = supplier_no
+        and total_revenue = (
+            select
+                max(total_revenue)
+            from
+                revenue
+        )
+    order by
+        s_suppkey
+    """
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+    supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
+
+    shipdate_from = datetime.strptime("1996-01-01", "%Y-%m-%d")
+    shipdate_to = shipdate_from + timedelta(days=(365 / 12) * 3)
+
+    # Create revenue view
+    lineitem = lineitem[
+        (lineitem.l_shipdate >= shipdate_from) & (lineitem.l_shipdate < shipdate_to)
+    ]
+    lineitem["revenue"] = lineitem.l_extendedprice * (1 - lineitem.l_discount)
+    revenue = (
+        lineitem.groupby("l_suppkey")
+        .revenue.sum()
+        .to_frame()
+        .reset_index()
+        .rename(columns={"revenue": "total_revenue", "l_suppkey": "supplier_no"})
+    )
+
+    # Query
+    table = supplier.merge(
+        revenue, left_on="s_suppkey", right_on="supplier_no", how="left"
+    )
+    _ = (
+        table[table.total_revenue == revenue.total_revenue.max()][
+            ["s_suppkey", "s_name", "s_address", "s_phone", "total_revenue"]
+        ]
+        .sort_values(by="s_suppkey")
+        .compute()
+    )
