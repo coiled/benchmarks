@@ -641,7 +641,7 @@ def test_query_17(client, dataset_path, fs):
     lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
     part = dd.read_parquet(dataset_path + "part", filesystem=fs)
 
-    table = lineitem.merge(part, left_on="l_partkey", right_on="p_partkey", how="left")
+    table = lineitem.merge(part, left_on="l_partkey", right_on="p_partkey", how="inner")
     table = table[
         (table.p_brand == "Brand#23")
         & (table.p_container == "MED BOX")
