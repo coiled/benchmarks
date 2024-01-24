@@ -496,8 +496,8 @@ def test_query_11(client, dataset_path, fs):
     nation = dd.read_parquet(dataset_path + "nation", filesystem=fs)
 
     joined = partsupp.merge(
-        supplier, left_on="ps_suppkey", right_on="s_suppkey", how="left"
-    ).merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="left")
+        supplier, left_on="ps_suppkey", right_on="s_suppkey", how="inner"
+    ).merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="inner")
 
     joined = joined[joined.n_name == "GERMANY"]
 
