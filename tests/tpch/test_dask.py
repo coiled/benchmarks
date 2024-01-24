@@ -695,7 +695,9 @@ def test_query_16(client, dataset_path, fs):
     part = dd.read_parquet(dataset_path + "part", filesystem=fs)
     supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
 
-    table = partsupp.merge(part, left_on="ps_partkey", right_on="p_partkey", how="left")
+    table = partsupp.merge(
+        part, left_on="ps_partkey", right_on="p_partkey", how="inner"
+    )
     table = table[
         (table.p_brand != "Brand#45")
         & (~table.p_type.str.match("MEDIUM POLISHED*"))
