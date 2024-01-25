@@ -698,7 +698,7 @@ def test_query_15(client, dataset_path, fs):
     supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
 
     shipdate_from = datetime.strptime("1996-01-01", "%Y-%m-%d")
-    shipdate_to = shipdate_from + timedelta(days=(365 / 12) * 3)
+    shipdate_to = datetime.strptime("1996-04-01", "%Y-%m-%d")
 
     # Create revenue view
     lineitem = lineitem[
