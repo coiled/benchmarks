@@ -703,12 +703,16 @@ def test_query_18(client, dataset_path, fs):
     ).merge(lineitem, left_on="o_orderkey", right_on="l_orderkey", how="inner")
 
     qnt_over_300 = (
-        lineitem.groupby("l_orderkey").l_quantity.sum().to_frame().reset_index()
+        lineitem.groupby("l_orderkey")
+        .l_quantity.sum()
+        .to_frame()
+        .query("l_quantity > 300")
+        .drop(columns=["l_quantity"])
     )
-    qnt_over_300 = qnt_over_300[qnt_over_300.l_quantity > 300].l_orderkey.compute()
 
     _ = (
-        table[table.o_orderkey.isin(qnt_over_300)]
+        table.set_index("l_orderkey")
+        .join(qnt_over_300, how="right")
         .groupby(["c_name", "c_custkey", "o_orderkey", "o_orderdate", "o_totalprice"])
         .l_quantity.sum()
         .astype(float)
