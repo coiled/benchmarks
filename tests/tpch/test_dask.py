@@ -658,6 +658,14 @@ def test_query_14(client, dataset_path, fs):
 
 
 @pytest.mark.shuffle_p2p
+@pytest.mark.xfail(
+    raises=RuntimeError,
+    reason=(
+        "Works w/ dask.dataframe, dask-expr fails - "
+        "RuntimeError: Sequence [('dtype_backend', None)] "
+        "cannot be deterministically hashed."
+    ),
+)
 def test_query_16(client, dataset_path, fs):
     """
     select
