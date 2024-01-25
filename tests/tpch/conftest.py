@@ -10,6 +10,8 @@ import filelock
 import pytest
 from dask.distributed import LocalCluster, performance_report
 
+from .generate_answers import generate as generate_answers
+
 ##################
 # Global Options #
 ##################
@@ -208,6 +210,28 @@ def cluster(
         with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
             with coiled.Cluster(**kwargs) as cluster:
                 yield cluster
+
+
+@pytest.fixture(scope="module")
+def answers_dir(tmp_path):
+    generate_answers(tmp_path)
+    return tmp_path
+
+
+@pytest.fixture(scope="module")
+def verification_cluster():
+    with LocalCluster() as cluster:
+        yield cluster
+
+
+@pytest.fixture
+def verification_client(verification_cluster, restart):
+    with cluster.get_client() as client:
+        if restart:
+            client.restart()
+        client.run(lambda: None)
+
+        yield client
 
 
 @pytest.fixture

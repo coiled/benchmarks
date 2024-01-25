@@ -1,6 +1,9 @@
 from datetime import datetime, timedelta
 
+import pandas as pd
 import pytest
+
+from .utils import DEFAULT_DATA_BASE_DIR, verify_result
 
 pytestmark = pytest.mark.tpch_dask
 
@@ -41,7 +44,9 @@ def test_query_1(client, dataset_path, fs):
         }
     )
 
-    total.reset_index().sort_values(["l_returnflag", "l_linestatus"]).compute()
+    result = total.reset_index().sort_values(["l_returnflag", "l_linestatus"]).compute()
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -84,33 +89,37 @@ def test_query_2(client, dataset_path, fs):
         right_on=["P_PARTKEY_CPY", "MIN_SUPPLYCOST"],
         how="inner",
     )
-    merged_df[
-        [
-            "s_acctbal",
-            "s_name",
-            "n_name",
-            "p_partkey",
-            "p_mfgr",
-            "s_address",
-            "s_phone",
-            "s_comment",
+    result = (
+        merged_df[
+            [
+                "s_acctbal",
+                "s_name",
+                "n_name",
+                "p_partkey",
+                "p_mfgr",
+                "s_address",
+                "s_phone",
+                "s_comment",
+            ]
         ]
-    ].compute().sort_values(
-        by=[
-            "s_acctbal",
-            "n_name",
-            "s_name",
-            "p_partkey",
-        ],
-        ascending=[
-            False,
-            True,
-            True,
-            True,
-        ],
-    ).head(
-        100
+        .compute()
+        .sort_values(
+            by=[
+                "s_acctbal",
+                "n_name",
+                "s_name",
+                "p_partkey",
+            ],
+            ascending=[
+                False,
+                True,
+                True,
+                True,
+            ],
+        )
+        .head(100)
     )
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -134,9 +143,13 @@ def test_query_3(client, dataset_path, fs):
     total = jn2.groupby(["l_orderkey", "o_orderdate", "o_shippriority"])[
         "revenue"
     ].sum()
-    total.reset_index().sort_values(["revenue"], ascending=False).head(10)[
-        ["l_orderkey", "revenue", "o_orderdate", "o_shippriority"]
-    ]
+    result = (
+        total.reset_index()
+        .sort_values(["revenue"], ascending=False)
+        .head(10)[["l_orderkey", "revenue", "o_orderdate", "o_shippriority"]]
+    )
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -160,7 +173,9 @@ def test_query_4(client, dataset_path, fs):
         .reset_index()
         .sort_values(["o_orderpriority"])
     )
-    result_df.rename(columns={"o_orderkey": "order_count"}).compute()
+    result = result_df.rename(columns={"o_orderkey": "order_count"}).compute()
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -190,7 +205,9 @@ def test_query_5(client, dataset_path, fs):
     )
     jn5["revenue"] = jn5.l_extendedprice * (1.0 - jn5.l_discount)
     gb = jn5.groupby("n_name")["revenue"].sum()
-    gb.reset_index().sort_values("revenue", ascending=False).compute()
+    result = gb.reset_index().sort_values("revenue", ascending=False).compute()
+
+    return result
 
 
 def test_query_6(client, dataset_path, fs):
@@ -209,7 +226,9 @@ def test_query_6(client, dataset_path, fs):
     )
 
     flineitem = line_item_ds[sel]
-    (flineitem.l_extendedprice * flineitem.l_discount).sum().compute()
+    result = (flineitem.l_extendedprice * flineitem.l_discount).sum().compute()
+
+    return pd.DataFrame({"revenue": [result]})
 
 
 @pytest.mark.shuffle_p2p
@@ -226,7 +245,7 @@ def test_query_7(client, dataset_path, fs):
     lineitem_filtered = line_item_ds[
         (line_item_ds["l_shipdate"] >= var1) & (line_item_ds["l_shipdate"] < var2)
     ]
-    lineitem_filtered["l_year"] = 1  # lineitem_filtered["l_shipdate"].dt.year
+    lineitem_filtered["l_year"] = lineitem_filtered["l_shipdate"].dt.year
     lineitem_filtered["revenue"] = lineitem_filtered["l_extendedprice"] * (
         1.0 - lineitem_filtered["l_discount"]
     )
@@ -302,10 +321,12 @@ def test_query_7(client, dataset_path, fs):
     )
     result_df.columns = ["supp_nation", "cust_nation", "l_year", "revenue"]
 
-    result_df.sort_values(
+    result = result_df.sort_values(
         by=["supp_nation", "cust_nation", "l_year"],
         ascending=True,
     ).compute()
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -615,3 +636,10 @@ def test_query_14(client, dataset_path, fs):
         .round(2)
         .compute()
     )
+
+
+@pytest.mark.parametrize("query", range(1, 8))
+def test_verify_results(query, verification_client):
+    func = globals()[f"test_query_{query}"]
+    result = func(verification_client, DEFAULT_DATA_BASE_DIR + "/scale-1/", None)
+    verify_result(result, query, DEFAULT_DATA_BASE_DIR)
