@@ -2,7 +2,7 @@ import click
 import duckdb
 import fsspec
 
-from tests.tpch.utils import (
+from .utils import (
     DEFAULT_DATA_BASE_DIR,
     DEFAULT_VERIFICATION_SCALE,
     compose_answer_dir,
