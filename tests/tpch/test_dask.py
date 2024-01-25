@@ -363,7 +363,6 @@ def test_query_9(client, dataset_path, fs):
         nation,
         o_year desc
     """
-
     part = dd.read_parquet(dataset_path + "part", filesystem=fs)
     partsupp = dd.read_parquet(dataset_path + "partsupp", filesystem=fs)
     supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
@@ -382,15 +381,16 @@ def test_query_9(client, dataset_path, fs):
         )
         .merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="inner")
         .merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="inner")
+        .assign(part_contains_green=lambda df: df.p_name.str.match("*green*"))
+        .query("part_contains_green")
+        .rename(columns={"n_name": "nation"})
+        .assign(
+            o_year=lambda df: df.o_orderdate.dt.year,
+            amount=lambda df: df.l_extendedprice * (1 - df.l_discount)
+            - df.ps_supplycost * df.l_quantity,
+        )
+        .loc[:, ["o_year", "nation", "amount"]]
     )
-    subquery = subquery[subquery.p_name.str.contains("green")]
-    subquery["o_year"] = subquery.o_orderdate.dt.year
-    subquery["nation"] = subquery.n_name
-    subquery["amount"] = (
-        subquery.l_extendedprice * (1 - subquery.l_discount)
-        - subquery.ps_supplycost * subquery.l_quantity
-    )
-    subquery = subquery[["o_year", "nation", "amount"]]
 
     result = (
         subquery.groupby(["nation", "o_year"])
@@ -398,7 +398,8 @@ def test_query_9(client, dataset_path, fs):
         .round(2)
         .to_frame()
         .sort_values(by=["nation", "o_year"], ascending=[True, False])
-    ).compute()
+        .compute()
+    )
 
     return result
 
