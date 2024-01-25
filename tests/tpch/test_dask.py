@@ -309,6 +309,9 @@ def test_query_7(client, dataset_path, fs):
 
 
 @pytest.mark.shuffle_p2p
+@pytest.mark.xfail(
+    raises=RecursionError, reasion="Works with dask.dataframe, fails w/ dask-expr"
+)
 def test_query_9(client, dataset_path, fs):
     """
     select
