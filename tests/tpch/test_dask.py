@@ -359,7 +359,7 @@ def test_query_9(client, dataset_path, fs):
             lineitem,
             left_on=["ps_partkey", "ps_suppkey"],
             right_on=["l_partkey", "l_suppkey"],
-            how="right",
+            how="inner",
         )
         .merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="inner")
         .merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="inner")
