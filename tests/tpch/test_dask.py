@@ -519,3 +519,51 @@ def test_query_12(client, dataset_path, fs):
         .sort_values(by="l_shipmode")
         .compute()
     )
+
+
+@pytest.mark.shuffle_p2p
+def test_query_13(client, dataset_path, fs):
+    """
+    select
+        c_count, count(*) as custdist
+    from (
+        select
+            c_custkey,
+            count(o_orderkey)
+        from
+            customer left outer join orders on
+            c_custkey = o_custkey
+            and o_comment not like '%special%requests%'
+        group by
+            c_custkey
+        )as c_orders (c_custkey, c_count)
+    group by
+        c_count
+    order by
+        custdist desc,
+        c_count desc
+    """
+    customer = dd.read_parquet(dataset_path + "customer", filesystem=fs)
+    orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
+
+    subquery = customer.merge(
+        orders, left_on="c_custkey", right_on="o_custkey", how="left"
+    )
+    subquery = subquery[~subquery.o_comment.str.match("*special*requests*")]
+    subquery = (
+        subquery.groupby("c_custkey")
+        .size()
+        .to_frame()
+        .reset_index()
+        .rename(columns={0: "c_count"})[["c_custkey", "c_count"]]
+    )
+
+    _ = (
+        subquery.groupby("c_count")
+        .size()
+        .to_frame()
+        .rename(columns={0: "custdist"})
+        .reset_index()
+        .sort_values(by=["custdist", "c_count"], ascending=[False, False])
+        .compute()
+    )
