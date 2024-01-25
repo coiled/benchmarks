@@ -658,14 +658,6 @@ def test_query_14(client, dataset_path, fs):
 
 
 @pytest.mark.shuffle_p2p
-@pytest.mark.xfail(
-    raises=RuntimeError,
-    reason=(
-        "Works w/ dask.dataframe, dask-expr fails - "
-        "RuntimeError: Sequence [('dtype_backend', None)] "
-        "cannot be deterministically hashed."
-    ),
-)
 def test_query_16(client, dataset_path, fs):
     """
     select
@@ -703,6 +695,9 @@ def test_query_16(client, dataset_path, fs):
     part = dd.read_parquet(dataset_path + "part", filesystem=fs)
     supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
 
+    supplier["is_complaint"] = supplier.s_comment.str.match("*Customer*Complaints*")
+    complaint_suppkeys = supplier[supplier.is_complaint].s_suppkey.compute()
+
     table = partsupp.merge(
         part, left_on="ps_partkey", right_on="p_partkey", how="inner"
     )
@@ -710,16 +705,7 @@ def test_query_16(client, dataset_path, fs):
         (table.p_brand != "Brand#45")
         & (~table.p_type.str.match("MEDIUM POLISHED*"))
         & (table.p_size.isin((49, 14, 23, 45, 19, 3, 36, 9)))
-        & (
-            # Need to compute, otherwise get NotImplementedErrror
-            # this works for dask.dataframe, fails for dask-expr w/
-            # RuntimeError: Sequence [('dtype_backend', None)] cannot be deterministically hashed.
-            ~table.ps_suppkey.isin(
-                supplier[
-                    supplier.s_comment.str.match("*Customer*Complaints*")
-                ].s_suppkey.compute()
-            )
-        )
+        & (~table.ps_suppkey.isin(complaint_suppkeys))
     ]
     _ = (
         table.groupby(by=["p_brand", "p_type", "p_size"])
