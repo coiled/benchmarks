@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import pytest
 
@@ -306,3 +306,67 @@ def test_query_7(client, dataset_path, fs):
         by=["supp_nation", "cust_nation", "l_year"],
         ascending=True,
     ).compute()
+
+
+@pytest.mark.shuffle_p2p
+def test_query_12(client, dataset_path, fs):
+    """
+    select
+        l_shipmode,
+        sum(case
+            when o_orderpriority = '1-URGENT'
+                or o_orderpriority = '2-HIGH'
+                then 1
+            else 0
+        end) as high_line_count,
+        sum(case
+            when o_orderpriority <> '1-URGENT'
+                and o_orderpriority <> '2-HIGH'
+                then 1
+            else 0
+        end) as low_line_count
+    from
+        orders,
+        lineitem
+    where
+        o_orderkey = l_orderkey
+        and l_shipmode in ('MAIL', 'SHIP')
+        and l_commitdate < l_receiptdate
+        and l_shipdate < l_commitdate
+        and l_receiptdate >= date '1994-01-01'
+        and l_receiptdate < date '1994-01-01' + interval '1' year
+    group by
+        l_shipmode
+    order by
+        l_shipmode
+    """
+    orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+
+    receiptdate_from = datetime.strptime("1994-01-01", "%Y-%m-%d")
+    receiptdate_to = receiptdate_from + timedelta(days=365)
+
+    table = orders.merge(
+        lineitem, left_on="o_orderkey", right_on="l_orderkey", how="left"
+    )
+    table = table[
+        (table.l_shipmode.isin(("MAIL", "SHIP")))
+        & (table.l_commitdate < table.l_receiptdate)
+        & (table.l_shipdate < table.l_commitdate)
+        & (table.l_receiptdate >= receiptdate_from)
+        & (table.l_receiptdate < receiptdate_to)
+    ]
+
+    mask = table.o_orderpriority.isin(("1-URGENT", "2-HIGH"))
+    table["high_line_count"] = 0
+    table["high_line_count"] = table.high_line_count.where(mask, 1)
+    table["low_line_count"] = 0
+    table["low_line_count"] = table.low_line_count.where(~mask, 1)
+
+    _ = (
+        table.groupby("l_shipmode")
+        .agg({"low_line_count": "sum", "high_line_count": "sum"})
+        .reset_index()
+        .sort_values(by="l_shipmode")
+        .compute()
+    )
