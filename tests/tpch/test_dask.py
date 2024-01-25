@@ -309,6 +309,80 @@ def test_query_7(client, dataset_path, fs):
 
 
 @pytest.mark.shuffle_p2p
+def test_query_9(client, dataset_path, fs):
+    """
+    select
+        nation,
+        o_year,
+        round(sum(amount), 2) as sum_profit
+    from
+        (
+            select
+                n_name as nation,
+                year(o_orderdate) as o_year,
+                l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity as amount
+            from
+                part,
+                supplier,
+                lineitem,
+                partsupp,
+                orders,
+                nation
+            where
+                s_suppkey = l_suppkey
+                and ps_suppkey = l_suppkey
+                and ps_partkey = l_partkey
+                and p_partkey = l_partkey
+                and o_orderkey = l_orderkey
+                and s_nationkey = n_nationkey
+                and p_name like '%green%'
+        ) as profit
+    group by
+        nation,
+        o_year
+    order by
+        nation,
+        o_year desc
+    """
+
+    part = dd.read_parquet(dataset_path + "part", filesystem=fs)
+    partsupp = dd.read_parquet(dataset_path + "partsupp", filesystem=fs)
+    supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+    orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
+    nation = dd.read_parquet(dataset_path + "nation", filesystem=fs)
+
+    subquery = (
+        part.merge(partsupp, left_on="p_partkey", right_on="ps_partkey", how="inner")
+        .merge(supplier, left_on="ps_suppkey", right_on="s_suppkey", how="inner")
+        .merge(
+            lineitem,
+            left_on=["ps_partkey", "ps_suppkey"],
+            right_on=["l_partkey", "l_suppkey"],
+            how="inner",
+        )
+        .merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="inner")
+        .merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="inner")
+    )
+    subquery = subquery[subquery.p_name.str.contains("green")]
+    subquery["o_year"] = subquery.o_orderdate.dt.year
+    subquery["nation"] = subquery.n_name
+    subquery["amount"] = (
+        subquery.l_extendedprice * (1 - subquery.l_discount)
+        - subquery.ps_supplycost * subquery.l_quantity
+    )
+    subquery = subquery[["o_year", "nation", "amount"]]
+
+    _ = (
+        subquery.groupby(["nation", "o_year"])
+        .amount.sum()
+        .round(2)
+        .to_frame()
+        .sort_values(by=["nation", "o_year"], ascending=[True, False])
+    ).compute()
+
+
+@pytest.mark.shuffle_p2p
 def test_query_12(client, dataset_path, fs):
     """
     select
