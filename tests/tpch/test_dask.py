@@ -424,7 +424,7 @@ def test_query_10(client, dataset_path, fs):
     nation = dd.read_parquet(dataset_path + "nation", filesystem=fs)
 
     orderdate_from = datetime.strptime("1993-10-01", "%Y-%m-%d")
-    orderdate_to = orderdate_from + timedelta(days=3 * (365 / 12))
+    orderdate_to = datetime.strptime("1994-01-01", "%Y-%m-%d")
 
     query = (
         lineitem.merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="inner")
