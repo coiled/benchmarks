@@ -567,3 +567,51 @@ def test_query_13(client, dataset_path, fs):
         .sort_values(by=["custdist", "c_count"], ascending=[False, False])
         .compute()
     )
+
+
+@pytest.mark.shuffle_p2p
+def test_query_14(client, dataset_path, fs):
+    """
+    select
+        round(100.00 * sum(case
+            when p_type like 'PROMO%'
+                then l_extendedprice * (1 - l_discount)
+            else 0
+        end) / sum(l_extendedprice * (1 - l_discount)), 2) as promo_revenue
+    from
+        lineitem,
+        part
+    where
+        l_partkey = p_partkey
+        and l_shipdate >= date '1995-09-01'
+        and l_shipdate < date '1995-09-01' + interval '1' month
+    """
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+    part = dd.read_parquet(dataset_path + "part", filesystem=fs)
+
+    shipdate_from = datetime.strptime("1995-09-01", "%Y-%m-%d")
+    shipdate_to = datetime.strptime("1995-10-01", "%Y-%m-%d")
+
+    table = lineitem.merge(part, left_on="l_partkey", right_on="p_partkey", how="inner")
+    table = table[
+        (table.l_shipdate >= shipdate_from) & (table.l_shipdate < shipdate_to)
+    ]
+
+    # Promo revenue by line; CASE clause
+    table["promo_revenue"] = 0.00
+    mask = table.p_type.str.match("PROMO*")
+    table["promo_revenue"] = table.promo_revenue.where(
+        mask, table.l_extendedprice * (1 - table.l_discount)
+    )
+
+    # aggregate promo revenue calculation
+    _ = (
+        (
+            100.00
+            * table.promo_revenue.sum()
+            / (table.l_extendedprice * (1 - table.l_discount)).sum()
+        )
+        .to_delayed()
+        .round(2)
+        .compute()
+    )
