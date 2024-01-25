@@ -488,9 +488,6 @@ def test_query_11(client, dataset_path, fs):
         order by
             value desc
     """
-    # Note this query is a bit strange, the HAVING clause is pointless.
-    # It's comparing a sum to the same sum multiplied by 0.0001 so will always be true.
-    # Assuming it's there as part of the benchmark test we'll keep it.
     partsupp = dd.read_parquet(dataset_path + "partsupp", filesystem=fs)
     supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
     nation = dd.read_parquet(dataset_path + "nation", filesystem=fs)
@@ -498,18 +495,18 @@ def test_query_11(client, dataset_path, fs):
     joined = partsupp.merge(
         supplier, left_on="ps_suppkey", right_on="s_suppkey", how="inner"
     ).merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="inner")
-
     joined = joined[joined.n_name == "GERMANY"]
 
-    joined["value"] = (joined.ps_supplycost * joined.ps_availqty).sum()
-    mask = joined.value > joined.value * 0.0001
+    threshold = ((joined.ps_supplycost * joined.ps_availqty).sum() * 0.0001).compute()
+
+    def calc_value(df):
+        return (df.ps_supplycost * df.ps_availqty).sum().round(2)
 
     _ = (
-        joined.loc[mask]
-        .groupby("ps_partkey")
-        .value.sum()
-        .round(2)
+        joined.groupby("ps_partkey")
+        .apply(calc_value, meta=("value", "f8"))
         .to_frame()
+        .query(f"value > {threshold}")
         .sort_values(by="value", ascending=False)
         .compute()
     )
