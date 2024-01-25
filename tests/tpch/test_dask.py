@@ -641,10 +641,20 @@ def test_query_17(client, dataset_path, fs):
     lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
     part = dd.read_parquet(dataset_path + "part", filesystem=fs)
 
-    table = lineitem.merge(part, left_on="l_partkey", right_on="p_partkey", how="inner")
+    avg_qnty_by_partkey = (
+        lineitem.groupby("l_partkey")
+        .l_quantity.mean()
+        .to_frame()
+        .rename(columns={"l_quantity": "l_quantity_avg"})
+    )
+
+    table = lineitem.merge(
+        part, left_on="l_partkey", right_on="p_partkey", how="inner"
+    ).merge(avg_qnty_by_partkey, left_on="l_partkey", right_index=True, how="left")
+
     table = table[
         (table.p_brand == "Brand#23")
         & (table.p_container == "MED BOX")
-        & (table.l_quantity < 0.2 * table.l_quantity.mean())
+        & (table.l_quantity < 0.2 * table.l_quantity_avg)
     ]
     _ = round((table.l_extendedprice.sum() / 7.0).compute(), 2)
