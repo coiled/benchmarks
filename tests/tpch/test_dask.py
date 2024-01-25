@@ -397,7 +397,9 @@ def test_query_13(client, dataset_path, fs):
     customer = dd.read_parquet(dataset_path + "customer", filesystem=fs)
     orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
 
-    subquery = customer.merge(orders, left_on="c_custkey", right_on="o_custkey", how="left")
+    subquery = customer.merge(
+        orders, left_on="c_custkey", right_on="o_custkey", how="left"
+    )
     subquery = subquery[~subquery.o_comment.str.match("*special*requests*")]
     subquery = (
         subquery.groupby("c_custkey")
