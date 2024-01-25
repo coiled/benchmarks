@@ -712,7 +712,7 @@ def test_query_18(client, dataset_path, fs):
 
     _ = (
         table.set_index("l_orderkey")
-        .join(qnt_over_300, how="right")
+        .join(qnt_over_300, how="inner")
         .groupby(["c_name", "c_custkey", "o_orderkey", "o_orderdate", "o_totalprice"])
         .l_quantity.sum()
         .astype(float)
