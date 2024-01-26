@@ -532,9 +532,9 @@ def test_query_12(client, dataset_path, fs):
 
     mask = table.o_orderpriority.isin(("1-URGENT", "2-HIGH"))
     table["high_line_count"] = 0
-    table["high_line_count"] = table.high_line_count.where(mask, 1)
+    table["high_line_count"] = table.high_line_count.where(~mask, 1)
     table["low_line_count"] = 0
-    table["low_line_count"] = table.low_line_count.where(~mask, 1)
+    table["low_line_count"] = table.low_line_count.where(mask, 1)
 
     result = (
         table.groupby("l_shipmode")
