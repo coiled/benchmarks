@@ -1,23 +1,15 @@
+import pathlib
+
 import click
 import duckdb
-import fsspec
-from utils import (
-    DEFAULT_DATA_BASE_DIR,
-    VERIFICATION_SCALE,
-    compose_answer_dir,
-    compose_answer_fpath,
-)
+
+VERIFICATION_SCALE = 1
 
 
 def generate(base_dir: str):
     scale = VERIFICATION_SCALE
-    path = compose_answer_dir(base_dir=base_dir, scale=scale)
-
-    if path.startswith("s3://"):
-        fs = fsspec.filesystem("s3")
-    else:
-        fs = fsspec.filesystem("file")
-    fs.mkdirs(path, exist_ok=True)
+    path = pathlib.Path(base_dir) / "answers" / f"scale-{scale}"
+    path.mkdir(parents=True, exist_ok=True)
 
     print(f"Scale: {scale}, Path: {path}")
 
@@ -39,7 +31,7 @@ def generate(base_dir: str):
         for tpl in answers.itertuples():
             query = tpl.query_nr
             answer = tpl.answer
-            with fs.open(compose_answer_fpath(base_dir, scale, query), mode="w") as f:
+            with (path / f"q{query}.out").open(mode="w") as f:
                 f.write(answer)
         print("Finished exporting all answers!")
 
@@ -47,8 +39,8 @@ def generate(base_dir: str):
 @click.command()
 @click.option(
     "--path",
-    default=DEFAULT_DATA_BASE_DIR,
-    help="Local or S3 base path, will affix '/answers/scale-1' subdirectory to this path",
+    default="./tests/tpch",
+    help="Local or S3 base path, will affix '/answers' subdirectory to this path",
 )
 def main(
     path: str,
