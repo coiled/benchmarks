@@ -67,7 +67,33 @@ def verify_result(result: pd.DataFrame, query: int, answer_dir: pathlib.Path):
 
 
 @pytest.mark.tpch_correctness
-@pytest.mark.parametrize("query", range(1, 8))
+@pytest.mark.parametrize(
+    "query",
+    [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        pytest.param(8, marks=pytest.mark.skip(reason="Not implemented")),
+        pytest.param(9, marks=pytest.mark.xfail(reason="Result is wrong")),
+        pytest.param(10, marks=pytest.mark.xfail(reason="Result is wrong")),
+        pytest.param(11, marks=pytest.mark.skip(reason="Not implemented")),
+        pytest.param(12, marks=pytest.mark.xfail(reason="Result is wrong")),
+        pytest.param(13, marks=pytest.mark.xfail(reason="Result is wrong")),
+        pytest.param(14, marks=pytest.mark.xfail(reason="Result is wrong")),
+        pytest.param(15, marks=pytest.mark.skip(reason="Not implemented")),
+        pytest.param(16, marks=pytest.mark.skip(reason="Not implemented")),
+        pytest.param(17, marks=pytest.mark.skip(reason="Not implemented")),
+        pytest.param(18, marks=pytest.mark.skip(reason="Not implemented")),
+        pytest.param(19, marks=pytest.mark.skip(reason="Not implemented")),
+        pytest.param(20, marks=pytest.mark.skip(reason="Not implemented")),
+        pytest.param(21, marks=pytest.mark.skip(reason="Not implemented")),
+        pytest.param(22, marks=pytest.mark.skip(reason="Not implemented")),
+    ],
+)
 def test_dask_results(query, client, answers_path, data_path):
     from . import test_dask
 

@@ -392,13 +392,15 @@ def test_query_9(client, dataset_path, fs):
     )
     subquery = subquery[["o_year", "nation", "amount"]]
 
-    _ = (
+    result = (
         subquery.groupby(["nation", "o_year"])
         .amount.sum()
         .round(2)
         .to_frame()
         .sort_values(by=["nation", "o_year"], ascending=[True, False])
     ).compute()
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -456,7 +458,7 @@ def test_query_10(client, dataset_path, fs):
         & (query.l_returnflag == "R")
     ]
     query["revenue"] = query.l_extendedprice * (1 - query.l_discount)
-    _ = (
+    result = (
         query.groupby(
             [
                 "c_custkey",
@@ -470,10 +472,13 @@ def test_query_10(client, dataset_path, fs):
         )
         .revenue.sum()
         .round(2)
-        .to_frame()
+        # .to_frame()
+        .reset_index()
         .sort_values(by=["revenue"], ascending=[False])
         .head(20)
     )
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -531,13 +536,15 @@ def test_query_12(client, dataset_path, fs):
     table["low_line_count"] = 0
     table["low_line_count"] = table.low_line_count.where(~mask, 1)
 
-    _ = (
+    result = (
         table.groupby("l_shipmode")
-        .agg({"low_line_count": "sum", "high_line_count": "sum"})
+        .agg({"high_line_count": "sum", "low_line_count": "sum"})
         .reset_index()
         .sort_values(by="l_shipmode")
         .compute()
     )
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -577,7 +584,7 @@ def test_query_13(client, dataset_path, fs):
         .rename(columns={0: "c_count"})[["c_custkey", "c_count"]]
     )
 
-    _ = (
+    result = (
         subquery.groupby("c_count")
         .size()
         .to_frame()
@@ -586,6 +593,8 @@ def test_query_13(client, dataset_path, fs):
         .sort_values(by=["custdist", "c_count"], ascending=[False, False])
         .compute()
     )
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -624,7 +633,7 @@ def test_query_14(client, dataset_path, fs):
     )
 
     # aggregate promo revenue calculation
-    _ = (
+    result = (
         (
             100.00
             * table.promo_revenue.sum()
@@ -634,3 +643,5 @@ def test_query_14(client, dataset_path, fs):
         .round(2)
         .compute()
     )
+
+    return pd.DataFrame({"promo_revenue": [result]})
