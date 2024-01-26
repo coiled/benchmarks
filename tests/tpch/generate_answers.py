@@ -6,9 +6,9 @@ import duckdb
 VERIFICATION_SCALE = 1
 
 
-def generate(base_dir: str):
+def generate(base_path: pathlib.Path) -> pathlib.Path:
     scale = VERIFICATION_SCALE
-    path = pathlib.Path(base_dir) / "answers" / f"scale-{scale}"
+    path = base_path / "answers" / f"scale-{scale}"
     path.mkdir(parents=True, exist_ok=True)
 
     print(f"Scale: {scale}, Path: {path}")
@@ -34,6 +34,7 @@ def generate(base_dir: str):
             with (path / f"q{query}.out").open(mode="w") as f:
                 f.write(answer)
         print("Finished exporting all answers!")
+    return path
 
 
 @click.command()
