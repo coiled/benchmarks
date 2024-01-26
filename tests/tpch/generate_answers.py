@@ -46,7 +46,7 @@ def generate(base_path: pathlib.Path) -> pathlib.Path:
 def main(
     path: str,
 ):
-    generate(path)
+    generate(pathlib.Path(path))
 
 
 if __name__ == "__main__":
