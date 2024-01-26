@@ -17,6 +17,7 @@ from dask.distributed import LocalCluster, performance_report
 
 def pytest_addoption(parser):
     parser.addoption("--local", action="store_true", default=False, help="")
+    parser.addoption("--rapids", action="store_true", default=False, help="")
     parser.addoption("--cloud", action="store_false", dest="local", help="")
     parser.addoption("--restart", action="store_true", default=True, help="")
     parser.addoption("--no-restart", action="store_false", dest="restart", help="")
@@ -46,6 +47,11 @@ def scale(request):
 @pytest.fixture(scope="session")
 def local(request):
     return request.config.getoption("local")
+
+
+@pytest.fixture(scope="session")
+def rapids(request):
+    return request.config.getoption("rapids")
 
 
 @pytest.fixture(scope="session")
@@ -186,6 +192,7 @@ def cluster_spec(scale):
 @pytest.fixture(scope="module")
 def cluster(
     local,
+    rapids,
     scale,
     module,
     dask_env_variables,
@@ -195,19 +202,38 @@ def cluster(
     make_chart,
 ):
     if local:
-        with LocalCluster() as cluster:
-            yield cluster
-    else:
-        kwargs = dict(
-            name=f"tpch-{module}-{scale}-{name}",
-            environ=dask_env_variables,
-            tags=github_cluster_tags,
-            region="us-east-2",
-            **cluster_spec,
-        )
-        with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
-            with coiled.Cluster(**kwargs) as cluster:
+        if not rapids:
+            with LocalCluster() as cluster:
                 yield cluster
+        else:
+            from dask_cuda import LocalCUDACluster
+
+            with dask.config.set(
+                {"dataframe.backend": "cudf", "dataframe.shuffle.method": "tasks"}
+            ):
+                with LocalCUDACluster(rmm_pool_size="24GB") as cluster:
+                    yield cluster
+    else:
+        if not rapids:
+            kwargs = dict(
+                name=f"tpch-{module}-{scale}-{name}",
+                environ=dask_env_variables,
+                tags=github_cluster_tags,
+                region="us-east-2",
+                **cluster_spec,
+            )
+            with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
+                with coiled.Cluster(**kwargs) as cluster:
+                    yield cluster
+        else:
+            # should be using Coiled for this
+            from dask_cuda import LocalCUDACluster
+
+            with dask.config.set(
+                {"dataframe.backend": "cudf", "dataframe.shuffle.method": "tasks"}
+            ):
+                with LocalCUDACluster(rmm_pool_size="24GB") as cluster:
+                    yield cluster
 
 
 @pytest.fixture

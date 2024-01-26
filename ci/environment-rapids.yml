@@ -1,0 +1,11 @@
+# This is an addition to ci/environment.yml.
+# Add cudf and downgrade some pinned dependencies.
+channels:
+  - rapidsai-nightly
+  - conda-forge
+  - nvidia
+dependencies:
+  - dask-cudf =24.02
+  - dask-cuda =24.02
+  - pandas ==1.5.3  # pinned by cudf
+  - pynvml ==11.4.1  # pinned by dask-cuda
