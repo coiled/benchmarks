@@ -363,7 +363,6 @@ def test_query_9(client, dataset_path, fs):
         nation,
         o_year desc
     """
-
     part = dd.read_parquet(dataset_path + "part", filesystem=fs)
     partsupp = dd.read_parquet(dataset_path + "partsupp", filesystem=fs)
     supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
@@ -382,23 +381,26 @@ def test_query_9(client, dataset_path, fs):
         )
         .merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="inner")
         .merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="inner")
+        .assign(part_contains_green=lambda df: df.p_name.str.match("*green*"))
+        .query("part_contains_green")
+        .rename(columns={"n_name": "nation"})
+        .assign(
+            o_year=lambda df: df.o_orderdate.dt.year,
+            amount=lambda df: df.l_extendedprice * (1 - df.l_discount)
+            - df.ps_supplycost * df.l_quantity,
+        )
+        .loc[:, ["o_year", "nation", "amount"]]
     )
-    subquery = subquery[subquery.p_name.str.contains("green")]
-    subquery["o_year"] = subquery.o_orderdate.dt.year
-    subquery["nation"] = subquery.n_name
-    subquery["amount"] = (
-        subquery.l_extendedprice * (1 - subquery.l_discount)
-        - subquery.ps_supplycost * subquery.l_quantity
-    )
-    subquery = subquery[["o_year", "nation", "amount"]]
 
     result = (
         subquery.groupby(["nation", "o_year"])
         .amount.sum()
         .round(2)
-        .to_frame()
+        .reset_index()
+        .rename(columns={"amount": "sum_profit"})
         .sort_values(by=["nation", "o_year"], ascending=[True, False])
-    ).compute()
+        .compute()
+    )
 
     return result
 
@@ -452,7 +454,7 @@ def test_query_10(client, dataset_path, fs):
         .merge(customer, left_on="o_custkey", right_on="c_custkey", how="inner")
         .merge(nation, left_on="c_nationkey", right_on="n_nationkey", how="inner")
     )
-    query[
+    query = query[
         (query.o_orderdate >= orderdate_from)
         & (query.o_orderdate < orderdate_to)
         & (query.l_returnflag == "R")
@@ -472,10 +474,20 @@ def test_query_10(client, dataset_path, fs):
         )
         .revenue.sum()
         .round(2)
-        # .to_frame()
         .reset_index()
         .sort_values(by=["revenue"], ascending=[False])
-        .head(20)
+        .head(20)[
+            [
+                "c_custkey",
+                "c_name",
+                "revenue",
+                "c_acctbal",
+                "n_name",
+                "c_address",
+                "c_phone",
+                "c_comment",
+            ]
+        ]
     )
 
     return result
@@ -589,9 +601,9 @@ def test_query_12(client, dataset_path, fs):
 
     mask = table.o_orderpriority.isin(("1-URGENT", "2-HIGH"))
     table["high_line_count"] = 0
-    table["high_line_count"] = table.high_line_count.where(mask, 1)
+    table["high_line_count"] = table.high_line_count.where(~mask, 1)
     table["low_line_count"] = 0
-    table["low_line_count"] = table.low_line_count.where(~mask, 1)
+    table["low_line_count"] = table.low_line_count.where(mask, 1)
 
     result = (
         table.groupby("l_shipmode")
@@ -683,11 +695,9 @@ def test_query_14(client, dataset_path, fs):
     ]
 
     # Promo revenue by line; CASE clause
-    table["promo_revenue"] = 0.00
+    table["promo_revenue"] = table.l_extendedprice * (1 - table.l_discount)
     mask = table.p_type.str.match("PROMO*")
-    table["promo_revenue"] = table.promo_revenue.where(
-        mask, table.l_extendedprice * (1 - table.l_discount)
-    )
+    table["promo_revenue"] = table.promo_revenue.where(mask, 0.00)
 
     # aggregate promo revenue calculation
     result = (
