@@ -450,16 +450,19 @@ def test_query_10(client, dataset_path, fs):
     orderdate_to = datetime.strptime("1994-01-01", "%Y-%m-%d")
 
     query = (
-        lineitem.merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="inner")
-        .merge(customer, left_on="o_custkey", right_on="c_custkey", how="inner")
-        .merge(nation, left_on="c_nationkey", right_on="n_nationkey", how="inner")
+        customer.merge(orders, left_on="c_custkey", right_on="o_custkey")
+        .merge(lineitem, left_on="o_orderkey", right_on="l_orderkey")
+        .merge(nation, left_on="c_nationkey", right_on="n_nationkey")
     )
     query = query[
         (query.o_orderdate >= orderdate_from)
         & (query.o_orderdate < orderdate_to)
         & (query.l_returnflag == "R")
     ]
-    query["revenue"] = query.l_extendedprice * (1 - query.l_discount)
+
+    def revenue(df):
+        return (df.l_extendedprice * (1 - df.l_discount)).sum().round(2)
+
     result = (
         query.groupby(
             [
@@ -472,10 +475,9 @@ def test_query_10(client, dataset_path, fs):
                 "c_comment",
             ]
         )
-        .revenue.sum()
-        .round(2)
+        .apply(revenue, meta=("revenue", "f8"))
         .reset_index()
-        .sort_values(by=["revenue"], ascending=[False])
+        .sort_values(by="revenue", ascending=False)
         .head(20)[
             [
                 "c_custkey",
