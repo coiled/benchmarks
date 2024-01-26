@@ -526,7 +526,7 @@ def test_query_11(client, dataset_path, fs):
     def calc_value(df):
         return (df.ps_supplycost * df.ps_availqty).sum().round(2)
 
-    _ = (
+    result = (
         joined.groupby("ps_partkey")
         .apply(calc_value, meta=("value", "f8"))
         .to_frame()
@@ -534,6 +534,8 @@ def test_query_11(client, dataset_path, fs):
         .sort_values(by="value", ascending=False)
         .compute()
     )
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
