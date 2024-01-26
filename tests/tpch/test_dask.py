@@ -626,11 +626,9 @@ def test_query_14(client, dataset_path, fs):
     ]
 
     # Promo revenue by line; CASE clause
-    table["promo_revenue"] = 0.00
+    table["promo_revenue"] = table.l_extendedprice * (1 - table.l_discount)
     mask = table.p_type.str.match("PROMO*")
-    table["promo_revenue"] = table.promo_revenue.where(
-        mask, table.l_extendedprice * (1 - table.l_discount)
-    )
+    table["promo_revenue"] = table.promo_revenue.where(mask, 0.00)
 
     # aggregate promo revenue calculation
     result = (
