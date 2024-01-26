@@ -454,7 +454,7 @@ def test_query_10(client, dataset_path, fs):
         .merge(customer, left_on="o_custkey", right_on="c_custkey", how="inner")
         .merge(nation, left_on="c_nationkey", right_on="n_nationkey", how="inner")
     )
-    query[
+    query = query[
         (query.o_orderdate >= orderdate_from)
         & (query.o_orderdate < orderdate_to)
         & (query.l_returnflag == "R")
@@ -474,10 +474,20 @@ def test_query_10(client, dataset_path, fs):
         )
         .revenue.sum()
         .round(2)
-        # .to_frame()
         .reset_index()
         .sort_values(by=["revenue"], ascending=[False])
-        .head(20)
+        .head(20)[
+            [
+                "c_custkey",
+                "c_name",
+                "revenue",
+                "c_acctbal",
+                "n_name",
+                "c_address",
+                "c_phone",
+                "c_comment",
+            ]
+        ]
     )
 
     return result
