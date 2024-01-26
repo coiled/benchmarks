@@ -108,7 +108,7 @@ jobs:
         run: |
           echo PYTEST_MARKERS=" and not workflows" >> $GITHUB_ENV
 
-      - name: Disable non-Dask TPCH benchmarks and result verification on most PRs
+      - name: Disable non-Dask TPCH benchmarks on most PRs
         if: |
           github.event_name != 'schedule'
           && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch'))

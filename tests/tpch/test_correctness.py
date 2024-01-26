@@ -4,6 +4,7 @@ import pandas as pd
 import pytest
 from distributed import LocalCluster
 
+from .generate_answers import generate as generate_answers
 from .generate_data import generate as generate_data
 
 VERIFICATION_SCALE = 1
@@ -12,11 +13,16 @@ pytestmark = pytest.mark.tpch_correctness
 
 
 @pytest.fixture(scope="module")
-def data_path(tmp_path_factory):
+def answers_path(tmp_path_factory):
     path = tmp_path_factory.mktemp("answers")
+    return generate_answers(base_path=path)
+
+
+@pytest.fixture(scope="module")
+def data_path(tmp_path_factory):
+    path = tmp_path_factory.mktemp("data")
     scale = VERIFICATION_SCALE
-    generate_data(scale=scale, path=path, relaxed_schema=True)
-    return path / f"scale-{scale}"
+    return pathlib.Path(generate_data(scale=scale, path=str(path), relaxed_schema=True))
 
 
 @pytest.fixture(scope="module")
@@ -62,9 +68,9 @@ def verify_result(result: pd.DataFrame, query: int, answer_dir: pathlib.Path):
 
 @pytest.mark.tpch_correctness
 @pytest.mark.parametrize("query", range(1, 8))
-def test_dask_results(query, client, data_path):
+def test_dask_results(query, client, answers_path, data_path):
     from . import test_dask
 
     func = getattr(test_dask, f"test_query_{query}")
     result = func(client, str(data_path) + "/", None)
-    verify_result(result, query, pathlib.Path("./tests/tpch/answers/scale-1"))
+    verify_result(result, query, answers_path)
