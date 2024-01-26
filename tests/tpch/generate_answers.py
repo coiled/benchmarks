@@ -1,18 +1,16 @@
 import click
 import duckdb
 import fsspec
-
-from .utils import (
+from utils import (
     DEFAULT_DATA_BASE_DIR,
-    DEFAULT_VERIFICATION_SCALE,
+    VERIFICATION_SCALE,
     compose_answer_dir,
     compose_answer_fpath,
-    normalize_scale,
 )
 
 
 def generate(base_dir: str):
-    scale = normalize_scale(DEFAULT_VERIFICATION_SCALE)
+    scale = VERIFICATION_SCALE
     path = compose_answer_dir(base_dir=base_dir, scale=scale)
 
     if path.startswith("s3://"):

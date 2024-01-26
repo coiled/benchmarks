@@ -15,8 +15,6 @@ import psutil
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
-from .utils import DEFAULT_DATA_BASE_DIR
-
 REGION = None
 
 
@@ -32,7 +30,7 @@ class CompressionCodec(enum.Enum):
 def generate(
     scale: int = 10,
     partition_size: str = "128 MiB",
-    path: str = DEFAULT_DATA_BASE_DIR,
+    path: str = "./tpch-data",
     relaxed_schema: bool = False,
     compression: CompressionCodec = CompressionCodec.SNAPPY,
 ):
@@ -285,7 +283,7 @@ def get_bucket_region(path: str):
 )
 @click.option(
     "--path",
-    default=DEFAULT_DATA_BASE_DIR,
+    default="./tpch-data",
     help="Local or S3 base path, will affix 'scale-<scale>' subdirectory to this path",
 )
 @click.option(
