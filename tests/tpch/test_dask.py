@@ -707,7 +707,7 @@ def test_query_16(client, dataset_path, fs):
         & (table.p_size.isin((49, 14, 23, 45, 19, 3, 36, 9)))
         & (~table.ps_suppkey.isin(complaint_suppkeys))
     ]
-    _ = (
+    result = (
         table.groupby(by=["p_brand", "p_type", "p_size"])
         .ps_suppkey.count()
         .to_frame()
@@ -719,3 +719,5 @@ def test_query_16(client, dataset_path, fs):
         )
         .compute()
     )
+
+    return result
