@@ -689,4 +689,4 @@ def test_query_17(client, dataset_path, fs):
     ]
     result = round((table.l_extendedprice.sum() / 7.0).compute(), 2)
 
-    return result
+    return pd.DataFrame({"avg_yearly": [result]})
