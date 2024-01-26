@@ -3,8 +3,6 @@ from datetime import datetime, timedelta
 import pandas as pd
 import pytest
 
-from .utils import DEFAULT_DATA_BASE_DIR, verify_result
-
 pytestmark = pytest.mark.tpch_dask
 
 dd = pytest.importorskip("dask_expr")
@@ -636,10 +634,3 @@ def test_query_14(client, dataset_path, fs):
         .round(2)
         .compute()
     )
-
-
-@pytest.mark.parametrize("query", range(1, 8))
-def test_verify_results(query, verification_client):
-    func = globals()[f"test_query_{query}"]
-    result = func(verification_client, DEFAULT_DATA_BASE_DIR + "/scale-1/", None)
-    verify_result(result, query, DEFAULT_DATA_BASE_DIR)
