@@ -529,7 +529,7 @@ def test_query_11(client, dataset_path, fs):
     result = (
         joined.groupby("ps_partkey")
         .apply(calc_value, meta=("value", "f8"))
-        .to_frame()
+        .reset_index()
         .query(f"value > {threshold}")
         .sort_values(by="value", ascending=False)
         .compute()
