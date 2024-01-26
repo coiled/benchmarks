@@ -687,4 +687,6 @@ def test_query_17(client, dataset_path, fs):
         & (table.p_container == "MED BOX")
         & (table.l_quantity < 0.2 * table.l_quantity_avg)
     ]
-    _ = round((table.l_extendedprice.sum() / 7.0).compute(), 2)
+    result = round((table.l_extendedprice.sum() / 7.0).compute(), 2)
+
+    return result
