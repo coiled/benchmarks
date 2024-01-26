@@ -33,7 +33,7 @@ def generate(
     path: str = "./tpch-data",
     relaxed_schema: bool = False,
     compression: CompressionCodec = CompressionCodec.SNAPPY,
-):
+) -> str:
     if str(path).startswith("s3"):
         path += "/" if not path.endswith("/") else ""
         path += f"scale-{scale}{'-strict' if not relaxed_schema else ''}/"
@@ -71,6 +71,7 @@ def generate(
                 client.gather(jobs)
     else:
         _tpch_data_gen(step=None, **kwargs)
+    return str(path)
 
 
 def retry(f):

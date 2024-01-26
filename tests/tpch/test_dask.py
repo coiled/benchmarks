@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+import pandas as pd
 import pytest
 
 pytestmark = pytest.mark.tpch_dask
@@ -41,7 +42,9 @@ def test_query_1(client, dataset_path, fs):
         }
     )
 
-    total.reset_index().sort_values(["l_returnflag", "l_linestatus"]).compute()
+    result = total.reset_index().sort_values(["l_returnflag", "l_linestatus"]).compute()
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -84,33 +87,37 @@ def test_query_2(client, dataset_path, fs):
         right_on=["P_PARTKEY_CPY", "MIN_SUPPLYCOST"],
         how="inner",
     )
-    merged_df[
-        [
-            "s_acctbal",
-            "s_name",
-            "n_name",
-            "p_partkey",
-            "p_mfgr",
-            "s_address",
-            "s_phone",
-            "s_comment",
+    result = (
+        merged_df[
+            [
+                "s_acctbal",
+                "s_name",
+                "n_name",
+                "p_partkey",
+                "p_mfgr",
+                "s_address",
+                "s_phone",
+                "s_comment",
+            ]
         ]
-    ].compute().sort_values(
-        by=[
-            "s_acctbal",
-            "n_name",
-            "s_name",
-            "p_partkey",
-        ],
-        ascending=[
-            False,
-            True,
-            True,
-            True,
-        ],
-    ).head(
-        100
+        .compute()
+        .sort_values(
+            by=[
+                "s_acctbal",
+                "n_name",
+                "s_name",
+                "p_partkey",
+            ],
+            ascending=[
+                False,
+                True,
+                True,
+                True,
+            ],
+        )
+        .head(100)
     )
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -134,9 +141,13 @@ def test_query_3(client, dataset_path, fs):
     total = jn2.groupby(["l_orderkey", "o_orderdate", "o_shippriority"])[
         "revenue"
     ].sum()
-    total.reset_index().sort_values(["revenue"], ascending=False).head(10)[
-        ["l_orderkey", "revenue", "o_orderdate", "o_shippriority"]
-    ]
+    result = (
+        total.reset_index()
+        .sort_values(["revenue"], ascending=False)
+        .head(10)[["l_orderkey", "revenue", "o_orderdate", "o_shippriority"]]
+    )
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -160,7 +171,9 @@ def test_query_4(client, dataset_path, fs):
         .reset_index()
         .sort_values(["o_orderpriority"])
     )
-    result_df.rename(columns={"o_orderkey": "order_count"}).compute()
+    result = result_df.rename(columns={"o_orderkey": "order_count"}).compute()
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -190,7 +203,9 @@ def test_query_5(client, dataset_path, fs):
     )
     jn5["revenue"] = jn5.l_extendedprice * (1.0 - jn5.l_discount)
     gb = jn5.groupby("n_name")["revenue"].sum()
-    gb.reset_index().sort_values("revenue", ascending=False).compute()
+    result = gb.reset_index().sort_values("revenue", ascending=False).compute()
+
+    return result
 
 
 def test_query_6(client, dataset_path, fs):
@@ -209,7 +224,9 @@ def test_query_6(client, dataset_path, fs):
     )
 
     flineitem = line_item_ds[sel]
-    (flineitem.l_extendedprice * flineitem.l_discount).sum().compute()
+    result = (flineitem.l_extendedprice * flineitem.l_discount).sum().compute()
+
+    return pd.DataFrame({"revenue": [result]})
 
 
 @pytest.mark.shuffle_p2p
@@ -226,7 +243,7 @@ def test_query_7(client, dataset_path, fs):
     lineitem_filtered = line_item_ds[
         (line_item_ds["l_shipdate"] >= var1) & (line_item_ds["l_shipdate"] < var2)
     ]
-    lineitem_filtered["l_year"] = 1  # lineitem_filtered["l_shipdate"].dt.year
+    lineitem_filtered["l_year"] = lineitem_filtered["l_shipdate"].dt.year
     lineitem_filtered["revenue"] = lineitem_filtered["l_extendedprice"] * (
         1.0 - lineitem_filtered["l_discount"]
     )
@@ -302,10 +319,12 @@ def test_query_7(client, dataset_path, fs):
     )
     result_df.columns = ["supp_nation", "cust_nation", "l_year", "revenue"]
 
-    result_df.sort_values(
+    result = result_df.sort_values(
         by=["supp_nation", "cust_nation", "l_year"],
         ascending=True,
     ).compute()
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -373,13 +392,15 @@ def test_query_9(client, dataset_path, fs):
     )
     subquery = subquery[["o_year", "nation", "amount"]]
 
-    _ = (
+    result = (
         subquery.groupby(["nation", "o_year"])
         .amount.sum()
         .round(2)
         .to_frame()
         .sort_values(by=["nation", "o_year"], ascending=[True, False])
     ).compute()
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -437,7 +458,7 @@ def test_query_10(client, dataset_path, fs):
         & (query.l_returnflag == "R")
     ]
     query["revenue"] = query.l_extendedprice * (1 - query.l_discount)
-    _ = (
+    result = (
         query.groupby(
             [
                 "c_custkey",
@@ -451,10 +472,13 @@ def test_query_10(client, dataset_path, fs):
         )
         .revenue.sum()
         .round(2)
-        .to_frame()
+        # .to_frame()
+        .reset_index()
         .sort_values(by=["revenue"], ascending=[False])
         .head(20)
     )
+
+    return result
 
 
 @pytest.mark.shuffle_p2p
@@ -567,10 +591,112 @@ def test_query_12(client, dataset_path, fs):
     table["low_line_count"] = 0
     table["low_line_count"] = table.low_line_count.where(~mask, 1)
 
-    _ = (
+    result = (
         table.groupby("l_shipmode")
-        .agg({"low_line_count": "sum", "high_line_count": "sum"})
+        .agg({"high_line_count": "sum", "low_line_count": "sum"})
         .reset_index()
         .sort_values(by="l_shipmode")
         .compute()
     )
+
+    return result
+
+
+@pytest.mark.shuffle_p2p
+def test_query_13(client, dataset_path, fs):
+    """
+    select
+        c_count, count(*) as custdist
+    from (
+        select
+            c_custkey,
+            count(o_orderkey)
+        from
+            customer left outer join orders on
+            c_custkey = o_custkey
+            and o_comment not like '%special%requests%'
+        group by
+            c_custkey
+        )as c_orders (c_custkey, c_count)
+    group by
+        c_count
+    order by
+        custdist desc,
+        c_count desc
+    """
+    customer = dd.read_parquet(dataset_path + "customer", filesystem=fs)
+    orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
+
+    subquery = customer.merge(
+        orders, left_on="c_custkey", right_on="o_custkey", how="left"
+    )
+    subquery = subquery[~subquery.o_comment.str.match("*special*requests*")]
+    subquery = (
+        subquery.groupby("c_custkey")
+        .size()
+        .to_frame()
+        .reset_index()
+        .rename(columns={0: "c_count"})[["c_custkey", "c_count"]]
+    )
+
+    result = (
+        subquery.groupby("c_count")
+        .size()
+        .to_frame()
+        .rename(columns={0: "custdist"})
+        .reset_index()
+        .sort_values(by=["custdist", "c_count"], ascending=[False, False])
+        .compute()
+    )
+
+    return result
+
+
+@pytest.mark.shuffle_p2p
+def test_query_14(client, dataset_path, fs):
+    """
+    select
+        round(100.00 * sum(case
+            when p_type like 'PROMO%'
+                then l_extendedprice * (1 - l_discount)
+            else 0
+        end) / sum(l_extendedprice * (1 - l_discount)), 2) as promo_revenue
+    from
+        lineitem,
+        part
+    where
+        l_partkey = p_partkey
+        and l_shipdate >= date '1995-09-01'
+        and l_shipdate < date '1995-09-01' + interval '1' month
+    """
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+    part = dd.read_parquet(dataset_path + "part", filesystem=fs)
+
+    shipdate_from = datetime.strptime("1995-09-01", "%Y-%m-%d")
+    shipdate_to = datetime.strptime("1995-10-01", "%Y-%m-%d")
+
+    table = lineitem.merge(part, left_on="l_partkey", right_on="p_partkey", how="inner")
+    table = table[
+        (table.l_shipdate >= shipdate_from) & (table.l_shipdate < shipdate_to)
+    ]
+
+    # Promo revenue by line; CASE clause
+    table["promo_revenue"] = 0.00
+    mask = table.p_type.str.match("PROMO*")
+    table["promo_revenue"] = table.promo_revenue.where(
+        mask, table.l_extendedprice * (1 - table.l_discount)
+    )
+
+    # aggregate promo revenue calculation
+    result = (
+        (
+            100.00
+            * table.promo_revenue.sum()
+            / (table.l_extendedprice * (1 - table.l_discount)).sum()
+        )
+        .to_delayed()
+        .round(2)
+        .compute()
+    )
+
+    return pd.DataFrame({"promo_revenue": [result]})

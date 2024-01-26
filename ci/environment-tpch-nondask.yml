@@ -12,5 +12,4 @@ dependencies:
   - protobuf ==4.24.4
 
   # Other TPCH tests
-  - python-duckdb ==0.9.2
   - polars ==0.19.19
