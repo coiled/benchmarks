@@ -494,6 +494,63 @@ def test_query_10(client, dataset_path, fs):
 
 
 @pytest.mark.shuffle_p2p
+def test_query_11(client, dataset_path, fs):
+    """
+    select
+        ps_partkey,
+        round(sum(ps_supplycost * ps_availqty), 2) as value
+    from
+        partsupp,
+        supplier,
+        nation
+    where
+        ps_suppkey = s_suppkey
+        and s_nationkey = n_nationkey
+        and n_name = 'GERMANY'
+    group by
+        ps_partkey having
+                sum(ps_supplycost * ps_availqty) > (
+            select
+                sum(ps_supplycost * ps_availqty) * 0.0001
+            from
+                partsupp,
+                supplier,
+                nation
+            where
+                ps_suppkey = s_suppkey
+                and s_nationkey = n_nationkey
+                and n_name = 'GERMANY'
+            )
+        order by
+            value desc
+    """
+    partsupp = dd.read_parquet(dataset_path + "partsupp", filesystem=fs)
+    supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
+    nation = dd.read_parquet(dataset_path + "nation", filesystem=fs)
+
+    joined = partsupp.merge(
+        supplier, left_on="ps_suppkey", right_on="s_suppkey", how="inner"
+    ).merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="inner")
+    joined = joined[joined.n_name == "GERMANY"]
+
+    threshold = ((joined.ps_supplycost * joined.ps_availqty).sum() * 0.0001).compute()
+
+    def calc_value(df):
+        return (df.ps_supplycost * df.ps_availqty).sum().round(2)
+
+    result = (
+        joined.groupby("ps_partkey")
+        .apply(calc_value, meta=("value", "f8"))
+        .reset_index()
+        .query(f"value > {threshold}")
+        .sort_values(by="value", ascending=False)
+        .compute()
+    )
+
+    return result
+
+
+@pytest.mark.shuffle_p2p
 def test_query_12(client, dataset_path, fs):
     """
     select
@@ -658,6 +715,77 @@ def test_query_14(client, dataset_path, fs):
 
 
 @pytest.mark.shuffle_p2p
+def test_query_15(client, dataset_path, fs):
+    """
+    DDL:
+    create temp view revenue (supplier_no, total_revenue) as
+        select
+            l_suppkey,
+            sum(l_extendedprice * (1 - l_discount))
+        from
+            lineitem
+        where
+            l_shipdate >= date '1996-01-01'
+            and l_shipdate < date '1996-01-01' + interval '3' month
+        group by
+            l_suppkey
+
+    QUERY:
+    select
+        s_suppkey,
+        s_name,
+        s_address,
+        s_phone,
+        total_revenue
+    from
+        supplier,
+        revenue
+    where
+        s_suppkey = supplier_no
+        and total_revenue = (
+            select
+                max(total_revenue)
+            from
+                revenue
+        )
+    order by
+        s_suppkey
+    """
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+    supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
+
+    shipdate_from = datetime.strptime("1996-01-01", "%Y-%m-%d")
+    shipdate_to = datetime.strptime("1996-04-01", "%Y-%m-%d")
+
+    # Create revenue view
+    lineitem = lineitem[
+        (lineitem.l_shipdate >= shipdate_from) & (lineitem.l_shipdate < shipdate_to)
+    ]
+    lineitem["revenue"] = lineitem.l_extendedprice * (1 - lineitem.l_discount)
+    revenue = (
+        lineitem.groupby("l_suppkey")
+        .revenue.sum()
+        .to_frame()
+        .reset_index()
+        .rename(columns={"revenue": "total_revenue", "l_suppkey": "supplier_no"})
+    )
+
+    # Query
+    table = supplier.merge(
+        revenue, left_on="s_suppkey", right_on="supplier_no", how="inner"
+    )
+    result = (
+        table[table.total_revenue == revenue.total_revenue.max()][
+            ["s_suppkey", "s_name", "s_address", "s_phone", "total_revenue"]
+        ]
+        .sort_values(by="s_suppkey")
+        .compute()
+    )
+
+    return result
+
+
+@pytest.mark.shuffle_p2p
 def test_query_16(client, dataset_path, fs):
     """
     select
@@ -720,3 +848,114 @@ def test_query_16(client, dataset_path, fs):
     )
 
     return result
+
+
+@pytest.mark.shuffle_p2p
+def test_query_17(client, dataset_path, fs):
+    """
+    select
+        round(sum(l_extendedprice) / 7.0, 2) as avg_yearly
+    from
+        lineitem,
+        part
+    where
+        p_partkey = l_partkey
+        and p_brand = 'Brand#23'
+        and p_container = 'MED BOX'
+        and l_quantity < (
+            select
+                0.2 * avg(l_quantity)
+            from
+                lineitem
+            where
+                l_partkey = p_partkey
+        )
+    """
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+    part = dd.read_parquet(dataset_path + "part", filesystem=fs)
+
+    avg_qnty_by_partkey = (
+        lineitem.groupby("l_partkey")
+        .l_quantity.mean()
+        .to_frame()
+        .rename(columns={"l_quantity": "l_quantity_avg"})
+    )
+
+    table = lineitem.merge(
+        part, left_on="l_partkey", right_on="p_partkey", how="inner"
+    ).merge(avg_qnty_by_partkey, left_on="l_partkey", right_index=True, how="left")
+
+    table = table[
+        (table.p_brand == "Brand#23")
+        & (table.p_container == "MED BOX")
+        & (table.l_quantity < 0.2 * table.l_quantity_avg)
+    ]
+    result = round((table.l_extendedprice.sum() / 7.0).compute(), 2)
+
+    return pd.DataFrame({"avg_yearly": [result]})
+
+
+@pytest.mark.shuffle_p2p
+def test_query_18(client, dataset_path, fs):
+    """
+    select
+        c_name,
+        c_custkey,
+        o_orderkey,
+        to_date(o_orderdate) as o_orderdat,
+        o_totalprice,
+        DOUBLE(sum(l_quantity)) as sum
+    from
+        customer,
+        orders,
+        lineitem
+    where
+        o_orderkey in (
+            select
+                l_orderkey
+            from
+                lineitem
+            group by
+                l_orderkey having
+                    sum(l_quantity) > 300
+        )
+        and c_custkey = o_custkey
+        and o_orderkey = l_orderkey
+    group by
+        c_name,
+        c_custkey,
+        o_orderkey,
+        o_orderdate,
+        o_totalprice
+    order by
+        o_totalprice desc,
+        o_orderdate
+    limit 100
+    """
+    customer = dd.read_parquet(dataset_path + "customer", filesystem=fs)
+    orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+
+    table = customer.merge(
+        orders, left_on="c_custkey", right_on="o_custkey", how="inner"
+    ).merge(lineitem, left_on="o_orderkey", right_on="l_orderkey", how="inner")
+
+    qnt_over_300 = (
+        lineitem.groupby("l_orderkey")
+        .l_quantity.sum()
+        .to_frame()
+        .query("l_quantity > 300")
+        .drop(columns=["l_quantity"])
+    )
+
+    return (
+        table.set_index("l_orderkey")
+        .join(qnt_over_300, how="inner")
+        .groupby(["c_name", "c_custkey", "o_orderkey", "o_orderdate", "o_totalprice"])
+        .l_quantity.sum()
+        .reset_index()
+        .rename(columns={"l_quantity": "sum"})
+        .sort_values(["o_totalprice", "o_orderdate"], ascending=[False, True])
+        .compute()  # Can go away after https://github.com/dask-contrib/dask-expr/pull/811
+        .head(100)
+    )
