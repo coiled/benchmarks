@@ -658,6 +658,10 @@ def test_query_14(client, dataset_path, fs):
 
 
 @pytest.mark.shuffle_p2p
+@pytest.mark.xfail(
+    reason="https://github.com/dask-contrib/dask-expr/issues/812",
+    raises=ValueError,
+)
 def test_query_15(client, dataset_path, fs):
     """
     DDL:
