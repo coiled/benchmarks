@@ -87,7 +87,7 @@ def verify_result(result: pd.DataFrame, query: int, answer_dir: pathlib.Path):
         pytest.param(15, marks=pytest.mark.skip(reason="Not implemented")),
         pytest.param(16, marks=pytest.mark.skip(reason="Not implemented")),
         pytest.param(17, marks=pytest.mark.skip(reason="Not implemented")),
-        pytest.param(18, marks=pytest.mark.skip(reason="Not implemented")),
+        18,
         pytest.param(19, marks=pytest.mark.skip(reason="Not implemented")),
         pytest.param(20, marks=pytest.mark.skip(reason="Not implemented")),
         pytest.param(21, marks=pytest.mark.skip(reason="Not implemented")),

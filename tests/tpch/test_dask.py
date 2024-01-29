@@ -666,7 +666,7 @@ def test_query_18(client, dataset_path, fs):
         o_orderkey,
         to_date(o_orderdate) as o_orderdat,
         o_totalprice,
-        DOUBLE(sum(l_quantity)) as col6
+        DOUBLE(sum(l_quantity)) as sum
     from
         customer,
         orders,
@@ -710,14 +710,14 @@ def test_query_18(client, dataset_path, fs):
         .drop(columns=["l_quantity"])
     )
 
-    _ = (
+    return (
         table.set_index("l_orderkey")
         .join(qnt_over_300, how="inner")
         .groupby(["c_name", "c_custkey", "o_orderkey", "o_orderdate", "o_totalprice"])
         .l_quantity.sum()
-        .astype(float)
-        .to_frame()
         .reset_index()
+        .rename(columns={"l_quantity": "sum"})
         .sort_values(["o_totalprice", "o_orderdate"], ascending=[False, True])
+        .compute()  # Can go away after https://github.com/dask-contrib/dask-expr/pull/811
         .head(100)
     )
