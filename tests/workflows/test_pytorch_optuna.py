@@ -1,4 +1,5 @@
 # Derived partially from https://pytorch.org/tutorials/beginner/dcgan_faces_tutorial.html
+import os
 import pathlib
 import tempfile
 import zipfile
@@ -7,6 +8,8 @@ import pytest
 from dask.distributed import Lock, PipInstall, get_worker
 
 from ..utils_test import wait
+
+pytestmark = pytest.mark.workflows
 
 optuna = pytest.importorskip("optuna")
 
@@ -21,12 +24,13 @@ optuna = pytest.importorskip("optuna")
             "torch",
             # FIXME Windows package_sync doesn't like torchvision
             "torchvision",
-            # FIXME https://github.com/boto/botocore/issues/2926
-            #       urllib3 v2 removed openssl / ciphers which causes an error in
-            #       botocore httpsession
-            "urllib3<2.0.0",
         ],
-        pip_options=["--force-reinstall"],
+        pip_options=[
+            "--index-url",
+            "https://download.pytorch.org/whl/cu118",
+            "--extra-index-url",
+            "https://pypi.org/simple",
+        ],
         restart_workers=True,
     ),
 )
@@ -165,6 +169,8 @@ def test_hpo(client):
             subset, batch_size=128, shuffle=True, num_workers=0
         )
 
+        if not torch.cuda.is_available() and os.environ.get("CI"):
+            raise RuntimeError("Expected to run on GPU but it's not available!")
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
         # Create models

@@ -1,6 +1,8 @@
 import dask.dataframe as dd
 import pytest
 
+pytestmark = pytest.mark.workflows
+
 
 @pytest.mark.client("uber_lyft")
 def test_exploratory_analysis(client):

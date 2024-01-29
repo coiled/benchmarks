@@ -7,6 +7,8 @@ from coiled import Cluster
 from distributed import Client, wait
 from packaging.version import Version
 
+pytestmark = pytest.mark.stability
+
 
 @pytest.mark.skipif(
     Version(distributed.__version__) < Version("2022.4.2"),

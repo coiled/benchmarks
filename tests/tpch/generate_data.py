@@ -1,6 +1,8 @@
+import enum
 import functools
 import pathlib
 import tempfile
+import uuid
 import warnings
 
 import boto3
@@ -11,8 +13,18 @@ import dask
 import duckdb
 import psutil
 import pyarrow.compute as pc
+import pyarrow.parquet as pq
 
 REGION = None
+
+
+class CompressionCodec(enum.Enum):
+    SNAPPY = "SNAPPY"
+    LZ4 = "LZ4"
+    ZSTD = "ZSTD"
+    GZIP = "GZIP"
+    BROTLI = "BROTLI"
+    NONE = "NONE"
 
 
 def generate(
@@ -20,7 +32,8 @@ def generate(
     partition_size: str = "128 MiB",
     path: str = "./tpch-data",
     relaxed_schema: bool = False,
-):
+    compression: CompressionCodec = CompressionCodec.SNAPPY,
+) -> str:
     if str(path).startswith("s3"):
         path += "/" if not path.endswith("/") else ""
         path += f"scale-{scale}{'-strict' if not relaxed_schema else ''}/"
@@ -41,6 +54,7 @@ def generate(
         path=path,
         relaxed_schema=relaxed_schema,
         partition_size=partition_size,
+        compression=compression,
     )
 
     if use_coiled:
@@ -57,6 +71,7 @@ def generate(
                 client.gather(jobs)
     else:
         _tpch_data_gen(step=None, **kwargs)
+    return str(path)
 
 
 def retry(f):
@@ -75,7 +90,12 @@ def retry(f):
 
 @retry
 def _tpch_data_gen(
-    step: int, scale: int, path: str, partition_size: str, relaxed_schema: bool
+    step: int,
+    scale: int,
+    path: str,
+    partition_size: str,
+    relaxed_schema: bool,
+    compression: CompressionCodec,
 ):
     """
     Run TPC-H dbgen for generating the <step>th part of a multi-part load or update set
@@ -150,7 +170,9 @@ def _tpch_data_gen(
             # TODO: duckdb doesn't (yet) support writing parquet files by limited file size
             #       so we estimate the page size required for each table to get files of about a target size
             n_rows_total = con.sql(f"select count(*) from {table}").fetchone()[0]
-            n_rows_per_page = rows_approx_mb(con, table, partition_size=partition_size)
+            n_rows_per_page = rows_approx_mb(
+                con, table, partition_size=partition_size, compression=compression
+            )
             if n_rows_total == 0:
                 continue  # In case of step based production, some tables may already be fully generated
 
@@ -158,19 +180,34 @@ def _tpch_data_gen(
                 print(
                     f"Start Exporting Page from {table} - Page {offset} - {offset + n_rows_per_page}"
                 )
-                con.sql(
-                    f"""
-                    copy
-                        (select * from {table} offset {offset} limit {n_rows_per_page} )
-                    to '{out}'
-                    (format parquet, per_thread_output true, filename_pattern "{table}_{{uuid}}", overwrite_or_ignore)
-                    """
+                stmt = (
+                    f"""select * from {table} offset {offset} limit {n_rows_per_page}"""
+                )
+                df = con.sql(stmt).arrow()
+
+                # DuckDB doesn't support LZ4, and we want to use PyArrow to handle
+                # compression codecs.
+                # ref: https://github.com/duckdb/duckdb/discussions/8950
+                # ref: https://github.com/coiled/benchmarks/pull/1209#issuecomment-1829620531
+                file = f"{table}_{uuid.uuid4()}.{compression.value.lower()}.parquet"
+                if isinstance(out, str) and out.startswith("s3"):
+                    out_ = f"{out}/{file}"
+                else:
+                    out_ = pathlib.Path(out)
+                    out_.mkdir(exist_ok=True, parents=True)
+                    out_ = str(out_ / file)
+                pq.write_table(
+                    df,
+                    out_,
+                    compression=compression.value.lower(),
+                    write_statistics=True,
+                    write_page_index=True,
                 )
             print(f"Finished exporting table {table}!")
         print("Finished exporting all data!")
 
 
-def rows_approx_mb(con, table_name, partition_size: str):
+def rows_approx_mb(con, table_name, partition_size: str, compression: CompressionCodec):
     """
     Estimate the number of rows from this table required to
     result in a parquet file output size of `partition_size`
@@ -180,9 +217,15 @@ def rows_approx_mb(con, table_name, partition_size: str):
     table = con.sql(f"select * from {table_name} limit {sample_size}").arrow()
 
     with tempfile.TemporaryDirectory() as tmpdir:
-        tmp = pathlib.Path(tmpdir) / "out.parquet"
-        con.sql(
-            f"copy (select * from {table_name} limit {sample_size}) to '{tmp}' (format parquet)"
+        tmp = pathlib.Path(tmpdir) / "tmp.parquet"
+        stmt = f"select * from {table_name} limit {sample_size}"
+        df = con.sql(stmt).arrow()
+        pq.write_table(
+            df,
+            tmp,
+            compression=compression.value.lower(),
+            write_statistics=True,
+            write_page_index=True,
         )
         mb = tmp.stat().st_size
     return int(
@@ -250,8 +293,21 @@ def get_bucket_region(path: str):
     flag_value=True,
     help="Set flag to convert official TPC-H types decimal -> float and date -> timestamp_s",
 )
-def main(scale: int, partition_size: str, path: str, relaxed_schema: bool):
-    generate(scale, partition_size, path, relaxed_schema)
+@click.option(
+    "--compression",
+    type=click.Choice(v.lower() for v in CompressionCodec.__members__),
+    callback=lambda _c, _p, v: getattr(CompressionCodec, v.upper()),
+    default=CompressionCodec.SNAPPY.value,
+    help="Set compression codec",
+)
+def main(
+    scale: int,
+    partition_size: str,
+    path: str,
+    relaxed_schema: bool,
+    compression: CompressionCodec,
+):
+    generate(scale, partition_size, path, relaxed_schema, compression)
 
 
 if __name__ == "__main__":

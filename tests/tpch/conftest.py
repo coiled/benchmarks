@@ -56,15 +56,15 @@ def restart(request):
 @pytest.fixture(scope="session")
 def dataset_path(local, scale):
     remote_paths = {
-        10: "s3://coiled-runtime-ci/tpc-h/scale-10/",
-        100: "s3://coiled-runtime-ci/tpc-h/scale-100/",
-        1000: "s3://coiled-runtime-ci/tpc-h/scale-1000/",
-        10000: "s3://coiled-runtime-ci/tpc-h/scale-10000/",
+        10: "s3://coiled-runtime-ci/tpc-h/snappy/scale-10/",
+        100: "s3://coiled-runtime-ci/tpc-h/snappy/scale-100/",
+        1000: "s3://coiled-runtime-ci/tpc-h/snappy/scale-1000/",
+        10000: "s3://coiled-runtime-ci/tpc-h/snappy/scale-10000/",
     }
     local_paths = {
         1: "./tpch-data/scale-1/",
-        10: "./tpch-data/scale10/",
-        100: "./tpch-data/scale100/",
+        10: "./tpch-data/scale-10/",
+        100: "./tpch-data/scale-100/",
     }
 
     if local:
@@ -155,14 +155,6 @@ def cluster_spec(scale):
         idle_timeout="1h",
         wait_for_workers=True,
         scheduler_vm_types=["m6i.xlarge"],
-        backend_options={
-            "ingress": [
-                {
-                    "ports": [443, 8786, 8787, 7077, 8080, 4040, 15002],
-                    "cidr": "0.0.0.0/0",
-                },
-            ],
-        },
     )
     if scale == 10:
         return {
@@ -260,10 +252,7 @@ def spark_setup(cluster, local):
 
         spark = SparkSession.builder.master("local[*]").getOrCreate()
     else:
-        from coiled.spark import get_spark
-
-        with cluster.get_client() as client:
-            spark = get_spark(client)
+        spark = cluster.get_spark()
 
     # warm start
     from pyspark.sql import Row
@@ -389,15 +378,14 @@ def make_chart(request, name, tmp_path_factory, local, scale):
 
     local = "local" if local else "cloud"
 
-    if not os.path.exists("charts"):
-        os.mkdir("charts")
-
     try:
         yield
     finally:
         from .generate_plot import generate
 
         with lock:
+            if not os.path.exists("charts"):
+                os.mkdir("charts")
             generate(
                 outfile=os.path.join("charts", f"{local}-{scale}-query-{name}.json"),
                 name=name,

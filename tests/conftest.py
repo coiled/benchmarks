@@ -3,6 +3,7 @@ from __future__ import annotations
 import contextlib
 import datetime
 import logging
+import math
 import os
 import pathlib
 import pickle
@@ -57,37 +58,12 @@ def pytest_addoption(parser):
     parser.addoption(
         "--benchmark", action="store_true", help="Collect benchmarking data for tests"
     )
-    parser.addoption("--run-workflows", action="store_true", help="Run workflow tests")
-    parser.addoption(
-        "--tpch-non-dask",
-        action="store_true",
-        help="Run all (DuckDB / Polars / PySpark) TPCH benchmarks",
-    )
 
 
-def pytest_collection_modifyitems(config, items):
-    # Skip workflows unless --run-workflows is set OR user explicitly included some path
-    # which includes the workflows ie pytest tests/workflows/
-    skip_workflows = pytest.mark.skip(reason="need --run-workflows option to run")
-    workflows = TEST_DIR / "workflows"
-    if not config.getoption("--run-workflows") and not any(
-        _is_child_dir(path, workflows) for path in config.option.file_or_dir
-    ):
-        for item in items:
-            if workflows in item.path.parents:
-                item.add_marker(skip_workflows)
-
-    # Skip non Dask TPC-H tests unless --tpch-non-dask is set OR user explicitly
-    # included some path which inclues the `tpch` path. ie pytest tests/tpch/
-    skip_benchmarks = pytest.mark.skip(reason="need --tpch-non-dask option to run")
-    tpch = TEST_DIR / "tpch"
-    tpch_dask = tpch / "test_dask.py"
-    if not config.getoption("--tpch-non-dask") and not any(
-        _is_child_dir(path, tpch) for path in config.option.file_or_dir
-    ):
-        for item in items:
-            if tpch in item.path.parents and tpch_dask != item.path:
-                item.add_marker(skip_benchmarks)
+def pytest_sessionfinish(session, exitstatus):
+    # https://github.com/pytest-dev/pytest/issues/2393
+    if exitstatus == 5:  # All tests excluded by markers
+        session.exitstatus = 0
 
 
 def _is_child_dir(path: str | Path, parent: str | Path) -> bool:
@@ -262,6 +238,62 @@ def benchmark_time(test_run_benchmark):
 
 
 @pytest.fixture(scope="function")
+def benchmark_coiled_prometheus(test_run_benchmark):
+    """Benchmark the coiled prometheus metrics of executing some code.
+
+    Yields
+    ------
+    Context manager that records the coiled prometheus metrics of executing
+    the ``with`` statement if run as part of a benchmark, or does nothing otherwise.
+
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(benchmark_coiled_prometheus):
+            with benchmark_coiled_prometheus:
+                do_something()
+    """
+
+    @contextlib.contextmanager
+    def _benchmark_coiled_prometheus(client):
+        start = math.floor(time.time())
+        yield
+        if not test_run_benchmark:
+            return
+
+        end = math.ceil(time.time())
+        cluster = client.cluster
+        test_run_benchmark.scheduler_memory_max = cluster.get_aggregated_metric(
+            query="scheduler:(host_memory_total-host_memory_available)&scheduler",
+            over_time="max",
+            start_ts=start,
+            end_ts=end,
+        )
+        test_run_benchmark.scheduler_cpu_avg = cluster.get_aggregated_metric(
+            # have to sum since cpu_rate returns the different types
+            query="scheduler:cpu_rate&scheduler | sum",
+            over_time="avg",
+            start_ts=start,
+            end_ts=end,
+        )
+        test_run_benchmark.worker_max_tick = cluster.get_aggregated_metric(
+            query="worker_max_tick|max",
+            over_time="quantile(0.80)",
+            start_ts=start,
+            end_ts=end,
+        )
+        test_run_benchmark.scheduler_max_tick = cluster.get_aggregated_metric(
+            query="scheduler_max_tick|max",
+            over_time="quantile(0.80)",
+            start_ts=start,
+            end_ts=end,
+        )
+
+    return _benchmark_coiled_prometheus
+
+
+@pytest.fixture(scope="function")
 def benchmark_memory(test_run_benchmark):
     """Benchmark the memory usage of executing some code.
 
@@ -371,6 +403,7 @@ def get_cluster_info(test_run_benchmark):
 def benchmark_all(
     benchmark_memory,
     benchmark_task_durations,
+    benchmark_coiled_prometheus,
     get_cluster_info,
     benchmark_time,
 ):
@@ -405,6 +438,7 @@ def benchmark_all(
             benchmark_memory(client),
             benchmark_task_durations(client),
             get_cluster_info(client.cluster),
+            benchmark_coiled_prometheus(client),
             benchmark_time,
         ):
             yield
@@ -426,6 +460,7 @@ def github_cluster_tags():
         "GITHUB_RUN_ID",
         "GITHUB_RUN_NUMBER",
         "GITHUB_SHA",
+        "AB_TEST_NAME",
     ]
 
     return {tag: os.environ.get(tag, "") for tag in tag_names}
@@ -683,19 +718,24 @@ def upload_cluster_dump(
     yield _upload_cluster_dump
 
 
-# Include https://github.com/dask/distributed/pull/7410 for categorical support
-P2P_SHUFFLE_AVAILABLE = Version(distributed.__version__) >= Version("2023.1.0")
+requires_p2p_shuffle = pytest.mark.skipif(
+    Version(distributed.__version__) < Version("2023.1.0"),
+    reason="p2p shuffle not available",
+)
+requires_p2p_rechunk = pytest.mark.skipif(
+    Version(distributed.__version__) < Version("2023.2.1"),
+    reason="p2p rechunk not available",
+)
+requires_p2p_memory = pytest.mark.skipif(
+    Version(distributed.__version__) < Version("2023.10.1"),
+    reason="in-memory p2p shuffle not available",
+)
 
 
 @pytest.fixture(
     params=[
-        "tasks",
-        pytest.param(
-            "p2p",
-            marks=pytest.mark.skipif(
-                not P2P_SHUFFLE_AVAILABLE, reason="p2p shuffle not available"
-            ),
-        ),
+        pytest.param("tasks", marks=pytest.mark.shuffle_tasks),
+        pytest.param("p2p", marks=[pytest.mark.shuffle_p2p, requires_p2p_shuffle]),
     ]
 )
 def shuffle_method(request):
@@ -706,10 +746,6 @@ def shuffle_method(request):
 def configure_shuffling(shuffle_method):
     with dask.config.set({"dataframe.shuffle.method": shuffle_method}):
         yield
-
-
-P2P_RECHUNK_AVAILABLE = Version(distributed.__version__) >= Version("2023.2.1")
-P2P_MEMORY_AVAILABLE = Version(distributed.__version__) > Version("2023.10.0")
 
 
 @pytest.fixture

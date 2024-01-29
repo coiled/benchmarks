@@ -60,6 +60,10 @@ jobs:
             python-version: "3.9"
             os: ubuntu-latest
             extra-env: ci/environment-snowflake.yml
+          - pytest_args: tests/tpch -m tpch_nondask
+            python-version: "3.9"
+            os: ubuntu-latest
+            extra-env: ci/environment-tpch-nondask.yml
 
     steps:
       - name: Checkout
@@ -96,26 +100,29 @@ jobs:
           echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
           mamba env export | grep -E -v '^prefix:.*$'
 
-      - name: Determine if workflows should be run
+      - name: Disable workflows on most PRs
         # Run workflows on PRs with `workflows` label and nightly cron job
         if: |
-          github.event_name == 'schedule'
-          || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'workflows'))
+          github.event_name != 'schedule'
+          && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'workflows'))
         run: |
-          # Put EXTRA_OPTIONS into $GITHUB_ENV so it can be used in subsequent workflow steps
-          export EXTRA_OPTIONS="--run-workflows"
-          echo $EXTRA_OPTIONS
-          echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
+          echo PYTEST_MARKERS=" and not workflows" >> $GITHUB_ENV
 
-      - name: Determine if all TPC-H benchmarks should be run
+      - name: Disable non-Dask TPCH benchmarks on most PRs
         if: |
-          github.event_name == 'schedule'
-          || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch'))
+          github.event_name != 'schedule'
+          && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch'))
         run: |
-          # Put EXTRA_OPTIONS into $GITHUB_ENV so it can be used in subsequent workflow steps
-          export EXTRA_OPTIONS="${EXTRA_OPTIONS} --tpch-non-dask"
-          echo $EXTRA_OPTIONS
-          echo EXTRA_OPTIONS=$EXTRA_OPTIONS >> $GITHUB_ENV
+          echo PYTEST_MARKERS="${{ env.PYTEST_MARKERS }} and not tpch_nondask" >> $GITHUB_ENV
+
+      - name: Finalize PYTEST_MARKERS
+        run: |
+          if [ -n "$PYTEST_MARKERS" ]; then
+            PYTEST_MARKERS=${PYTEST_MARKERS# and }
+            PYTEST_MARKERS="-m '${PYTEST_MARKERS}'"
+            echo PYTEST_MARKERS=${PYTEST_MARKERS}
+            echo PYTEST_MARKERS=${PYTEST_MARKERS} >> $GITHUB_ENV
+          fi
 
       - name: Run Coiled Runtime Tests
         env:
@@ -130,9 +137,9 @@ jobs:
           SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: ${{ matrix.os }}-py${{ matrix.python-version }}.db
-          BENCHMARK: true
           CLUSTER_DUMP: always
-        run: bash ci/scripts/run_tests.sh -n 4 --dist loadscope ${{ env.EXTRA_OPTIONS }} ${{ matrix.pytest_args }}
+        run: |
+          pytest --benchmark -n 4 --dist loadscope ${{ env.PYTEST_MARKERS }} ${{ matrix.pytest_args }}
 
       - name: Dump coiled.Cluster kwargs
         run: cat cluster_kwargs.merged.yaml || true

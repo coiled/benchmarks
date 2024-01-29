@@ -1,6 +1,8 @@
 import pytest
 from dask.distributed import wait
 
+pytestmark = pytest.mark.workflows
+
 optuna = pytest.importorskip("optuna")
 xgb = pytest.importorskip("xgboost")
 pytest.importorskip("sklearn")
