@@ -655,3 +655,48 @@ def test_query_14(client, dataset_path, fs):
     )
 
     return pd.DataFrame({"promo_revenue": [result]})
+
+
+@pytest.mark.shuffle_p2p
+def test_query_17(client, dataset_path, fs):
+    """
+    select
+        round(sum(l_extendedprice) / 7.0, 2) as avg_yearly
+    from
+        lineitem,
+        part
+    where
+        p_partkey = l_partkey
+        and p_brand = 'Brand#23'
+        and p_container = 'MED BOX'
+        and l_quantity < (
+            select
+                0.2 * avg(l_quantity)
+            from
+                lineitem
+            where
+                l_partkey = p_partkey
+        )
+    """
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+    part = dd.read_parquet(dataset_path + "part", filesystem=fs)
+
+    avg_qnty_by_partkey = (
+        lineitem.groupby("l_partkey")
+        .l_quantity.mean()
+        .to_frame()
+        .rename(columns={"l_quantity": "l_quantity_avg"})
+    )
+
+    table = lineitem.merge(
+        part, left_on="l_partkey", right_on="p_partkey", how="inner"
+    ).merge(avg_qnty_by_partkey, left_on="l_partkey", right_index=True, how="left")
+
+    table = table[
+        (table.p_brand == "Brand#23")
+        & (table.p_container == "MED BOX")
+        & (table.l_quantity < 0.2 * table.l_quantity_avg)
+    ]
+    result = round((table.l_extendedprice.sum() / 7.0).compute(), 2)
+
+    return pd.DataFrame({"avg_yearly": [result]})
