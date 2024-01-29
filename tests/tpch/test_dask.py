@@ -757,3 +757,69 @@ def test_query_17(client, dataset_path, fs):
     result = round((table.l_extendedprice.sum() / 7.0).compute(), 2)
 
     return pd.DataFrame({"avg_yearly": [result]})
+
+
+@pytest.mark.shuffle_p2p
+def test_query_18(client, dataset_path, fs):
+    """
+    select
+        c_name,
+        c_custkey,
+        o_orderkey,
+        to_date(o_orderdate) as o_orderdat,
+        o_totalprice,
+        DOUBLE(sum(l_quantity)) as sum
+    from
+        customer,
+        orders,
+        lineitem
+    where
+        o_orderkey in (
+            select
+                l_orderkey
+            from
+                lineitem
+            group by
+                l_orderkey having
+                    sum(l_quantity) > 300
+        )
+        and c_custkey = o_custkey
+        and o_orderkey = l_orderkey
+    group by
+        c_name,
+        c_custkey,
+        o_orderkey,
+        o_orderdate,
+        o_totalprice
+    order by
+        o_totalprice desc,
+        o_orderdate
+    limit 100
+    """
+    customer = dd.read_parquet(dataset_path + "customer", filesystem=fs)
+    orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+
+    table = customer.merge(
+        orders, left_on="c_custkey", right_on="o_custkey", how="inner"
+    ).merge(lineitem, left_on="o_orderkey", right_on="l_orderkey", how="inner")
+
+    qnt_over_300 = (
+        lineitem.groupby("l_orderkey")
+        .l_quantity.sum()
+        .to_frame()
+        .query("l_quantity > 300")
+        .drop(columns=["l_quantity"])
+    )
+
+    return (
+        table.set_index("l_orderkey")
+        .join(qnt_over_300, how="inner")
+        .groupby(["c_name", "c_custkey", "o_orderkey", "o_orderdate", "o_totalprice"])
+        .l_quantity.sum()
+        .reset_index()
+        .rename(columns={"l_quantity": "sum"})
+        .sort_values(["o_totalprice", "o_orderdate"], ascending=[False, True])
+        .compute()  # Can go away after https://github.com/dask-contrib/dask-expr/pull/811
+        .head(100)
+    )
