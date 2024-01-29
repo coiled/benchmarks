@@ -494,6 +494,63 @@ def test_query_10(client, dataset_path, fs):
 
 
 @pytest.mark.shuffle_p2p
+def test_query_11(client, dataset_path, fs):
+    """
+    select
+        ps_partkey,
+        round(sum(ps_supplycost * ps_availqty), 2) as value
+    from
+        partsupp,
+        supplier,
+        nation
+    where
+        ps_suppkey = s_suppkey
+        and s_nationkey = n_nationkey
+        and n_name = 'GERMANY'
+    group by
+        ps_partkey having
+                sum(ps_supplycost * ps_availqty) > (
+            select
+                sum(ps_supplycost * ps_availqty) * 0.0001
+            from
+                partsupp,
+                supplier,
+                nation
+            where
+                ps_suppkey = s_suppkey
+                and s_nationkey = n_nationkey
+                and n_name = 'GERMANY'
+            )
+        order by
+            value desc
+    """
+    partsupp = dd.read_parquet(dataset_path + "partsupp", filesystem=fs)
+    supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
+    nation = dd.read_parquet(dataset_path + "nation", filesystem=fs)
+
+    joined = partsupp.merge(
+        supplier, left_on="ps_suppkey", right_on="s_suppkey", how="inner"
+    ).merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="inner")
+    joined = joined[joined.n_name == "GERMANY"]
+
+    threshold = ((joined.ps_supplycost * joined.ps_availqty).sum() * 0.0001).compute()
+
+    def calc_value(df):
+        return (df.ps_supplycost * df.ps_availqty).sum().round(2)
+
+    result = (
+        joined.groupby("ps_partkey")
+        .apply(calc_value, meta=("value", "f8"))
+        .reset_index()
+        .query(f"value > {threshold}")
+        .sort_values(by="value", ascending=False)
+        .compute()
+    )
+
+    return result
+
+
+@pytest.mark.shuffle_p2p
 def test_query_12(client, dataset_path, fs):
     """
     select
@@ -730,3 +787,48 @@ def test_query_15(client, dataset_path, fs):
     )
 
     return result
+
+
+@pytest.mark.shuffle_p2p
+def test_query_17(client, dataset_path, fs):
+    """
+    select
+        round(sum(l_extendedprice) / 7.0, 2) as avg_yearly
+    from
+        lineitem,
+        part
+    where
+        p_partkey = l_partkey
+        and p_brand = 'Brand#23'
+        and p_container = 'MED BOX'
+        and l_quantity < (
+            select
+                0.2 * avg(l_quantity)
+            from
+                lineitem
+            where
+                l_partkey = p_partkey
+        )
+    """
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+    part = dd.read_parquet(dataset_path + "part", filesystem=fs)
+
+    avg_qnty_by_partkey = (
+        lineitem.groupby("l_partkey")
+        .l_quantity.mean()
+        .to_frame()
+        .rename(columns={"l_quantity": "l_quantity_avg"})
+    )
+
+    table = lineitem.merge(
+        part, left_on="l_partkey", right_on="p_partkey", how="inner"
+    ).merge(avg_qnty_by_partkey, left_on="l_partkey", right_index=True, how="left")
+
+    table = table[
+        (table.p_brand == "Brand#23")
+        & (table.p_container == "MED BOX")
+        & (table.l_quantity < 0.2 * table.l_quantity_avg)
+    ]
+    result = round((table.l_extendedprice.sum() / 7.0).compute(), 2)
+
+    return pd.DataFrame({"avg_yearly": [result]})
