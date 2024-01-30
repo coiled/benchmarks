@@ -1149,24 +1149,22 @@ def test_query_20(client, dataset_path, fs):
     shipdate_to = datetime.strptime("1995-01-01", "%Y-%m-%d")
 
     res_1 = lineitem[
-        (lineitem["l_shipdate"] > shipdate_from)
+        (lineitem["l_shipdate"] >= shipdate_from)
         & (lineitem["l_shipdate"] < shipdate_to)
     ]
     res_1 = (
         res_1.groupby(["l_partkey", "l_suppkey"])["l_quantity"]
         .sum()
         .rename("sum_quantity")
-        .to_frame()
+        .reset_index()
     )
     res_1["sum_quantity"] = res_1["sum_quantity"] * 0.5
-
     res_2 = nation[nation["n_name"] == "CANADA"]
     res_3 = supplier.merge(res_2, left_on="s_nationkey", right_on="n_nationkey")
 
     q_final = (
-        part[part["p_name"].str.startswith("forest")]["p_partkey"]
-        .unique()
-        .to_frame()
+        part[part["p_name"].str.strip().str.startswith("forest")][["p_partkey"]]
+        .drop_duplicates()
         .merge(partsupp, left_on="p_partkey", right_on="ps_partkey")
         .merge(
             res_1,
@@ -1174,11 +1172,9 @@ def test_query_20(client, dataset_path, fs):
             right_on=["l_suppkey", "l_partkey"],
         )
     )
-    q_final = (
-        q_final[q_final["ps_availqty"] > q_final["sum_quantity"]]["ps_suppkey"]
-        .unique()
-        .to_frame()
-    )
+    q_final = q_final[q_final["ps_availqty"] > q_final["sum_quantity"]][
+        ["ps_suppkey"]
+    ].drop_duplicates()
     q_final = q_final.merge(res_3, left_on="ps_suppkey", right_on="s_suppkey")
     q_final["s_address"] = q_final["s_address"].str.strip()
     q_final = q_final[["s_name", "s_address"]].sort_values("s_name", ascending=True)
