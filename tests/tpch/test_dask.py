@@ -509,16 +509,24 @@ def test_query_10(client, dataset_path, fs):
     orderdate_from = datetime.strptime("1993-10-01", "%Y-%m-%d")
     orderdate_to = datetime.strptime("1994-01-01", "%Y-%m-%d")
 
+    orders = orders[
+        (orders.o_orderdate >= orderdate_from) & (orders.o_orderdate < orderdate_to)
+    ]
+    lineitem = lineitem[lineitem.l_returnflag == "R"]
+
     query = (
         lineitem.merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="inner")
         .merge(customer, left_on="o_custkey", right_on="c_custkey", how="inner")
         .merge(nation, left_on="c_nationkey", right_on="n_nationkey", how="inner")
     )
-    query = query[
-        (query.o_orderdate >= orderdate_from)
-        & (query.o_orderdate < orderdate_to)
-        & (query.l_returnflag == "R")
-    ]
+
+    # TODO: ideally the filters are pushed up before the merge during optimization
+    # query = query[
+    #     (query.o_orderdate >= orderdate_from)
+    #     & (query.o_orderdate < orderdate_to)
+    #     & (query.l_returnflag == "R")
+    # ]
+
     query["revenue"] = query.l_extendedprice * (1 - query.l_discount)
     result = (
         query.groupby(
