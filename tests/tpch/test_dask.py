@@ -396,9 +396,11 @@ def test_query_9(client, dataset_path, fs):
         subquery.groupby(["nation", "o_year"])
         .amount.sum()
         .round(2)
-        .to_frame()
+        .reset_index()
+        .rename(columns={"amount": "sum_profit"})
         .sort_values(by=["nation", "o_year"], ascending=[True, False])
-    ).compute()
+        .compute()
+    )
 
     return result
 
