@@ -1017,3 +1017,72 @@ def test_query_18(client, dataset_path, fs):
         .compute()  # Can go away after https://github.com/dask-contrib/dask-expr/pull/811
         .head(100)
     )
+
+
+def test_query_22(client, dataset_path, fs):
+    """
+    select
+        cntrycode,
+        count(*) as numcust,
+        sum(c_acctbal) as totacctbal
+    from (
+        select
+            substring(c_phone from 1 for 2) as cntrycode,
+            c_acctbal
+        from
+            customer
+        where
+            substring(c_phone from 1 for 2) in
+                (13, 31, 23, 29, 30, 18, 17)
+            and c_acctbal > (
+                select
+                    avg(c_acctbal)
+                from
+                    customer
+                where
+                    c_acctbal > 0.00
+                    and substring (c_phone from 1 for 2) in
+                        (13, 31, 23, 29, 30, 18, 17)
+            )
+            and not exists (
+                select
+                    *
+                from
+                    orders
+                where
+                    o_custkey = c_custkey
+            )
+        ) as custsale
+    group by
+        cntrycode
+    order by
+        cntrycode
+    """
+    orders_ds = dd.read_parquet(dataset_path + "orders", filesystem=fs)
+    customer_ds = dd.read_parquet(dataset_path + "customer", filesystem=fs)
+
+    customers = customer_ds
+    customers["cntrycode"] = customers["c_phone"].str.strip().str.slice(0, 2)
+    customers = customers[
+        customers["cntrycode"].isin(("13", "31", "23", "29", "30", "18", "17"))
+    ]
+
+    average_c_acctbal = (
+        customers[customers["c_acctbal"] > 0.0]["c_acctbal"].mean().compute()
+    )
+
+    custsale = customers[customers["c_acctbal"] > average_c_acctbal]
+    custsale = custsale.merge(
+        orders_ds, left_on="c_custkey", right_on="o_custkey", how="left"
+    )
+    custsale = custsale[custsale["o_custkey"].isnull()]
+    custsale = custsale.groupby("cntrycode").agg({"c_acctbal": ["size", "sum"]})
+    custsale.columns = custsale.columns.get_level_values(-1)
+    custsale = (
+        custsale.rename(columns={"sum": "totacctbal", "size": "numcust"})
+        .reset_index()
+        .sort_values("cntrycode", ascending=True)
+    )
+    result = custsale.compute()
+
+    return result

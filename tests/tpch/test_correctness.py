@@ -49,6 +49,8 @@ def get_expected_answer(query: int, answer_dir: pathlib.Path):
     answer = answer.rename(columns=lambda x: x.strip())
     if "o_orderdate" in answer.columns:
         answer["o_orderdate"] = pd.to_datetime(answer["o_orderdate"])
+    if "cntrycode" in answer.columns:
+        answer["cntrycode"] = answer["cntrycode"].astype(str)
 
     return answer
 
@@ -91,7 +93,7 @@ def verify_result(result: pd.DataFrame, query: int, answer_dir: pathlib.Path):
         pytest.param(19, marks=pytest.mark.skip(reason="Not implemented")),
         pytest.param(20, marks=pytest.mark.skip(reason="Not implemented")),
         pytest.param(21, marks=pytest.mark.skip(reason="Not implemented")),
-        pytest.param(22, marks=pytest.mark.skip(reason="Not implemented")),
+        22,
     ],
 )
 def test_dask_results(query, client, answers_path, data_path):
