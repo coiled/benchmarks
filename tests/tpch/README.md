@@ -45,7 +45,7 @@ If you want to run locally, you'll need to generate data.  Run the following
 from the **root directory** of this repository.
 
 ```
-python tests/tpch/generate-data.py --scale 10
+python tests/tpch/generate_data.py --scale 10
 ```
 
 Run Many Tests
