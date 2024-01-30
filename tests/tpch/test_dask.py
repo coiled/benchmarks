@@ -786,6 +786,71 @@ def test_query_15(client, dataset_path, fs):
 
 
 @pytest.mark.shuffle_p2p
+def test_query_16(client, dataset_path, fs):
+    """
+    select
+        p_brand,
+        p_type,
+        p_size,
+        count(distinct ps_suppkey) as supplier_cnt
+    from
+        partsupp,
+        part
+    where
+        p_partkey = ps_partkey
+        and p_brand <> 'Brand#45'
+        and p_type not like 'MEDIUM POLISHED%'
+        and p_size in (49, 14, 23, 45, 19, 3, 36, 9)
+        and ps_suppkey not in (
+            select
+                s_suppkey
+            from
+                supplier
+            where
+                s_comment like '%Customer%Complaints%'
+        )
+    group by
+        p_brand,
+        p_type,
+        p_size
+    order by
+        supplier_cnt desc,
+        p_brand,
+        p_type,
+        p_size
+    """
+    partsupp = dd.read_parquet(dataset_path + "partsupp", filesystem=fs)
+    part = dd.read_parquet(dataset_path + "part", filesystem=fs)
+    supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
+
+    supplier["is_complaint"] = supplier.s_comment.str.contains(
+        "Customer"
+    ) & supplier.s_comment.str.contains("Complaints")
+    complaint_suppkeys = supplier[supplier.is_complaint].s_suppkey.compute()
+
+    table = partsupp.merge(part, left_on="ps_partkey", right_on="p_partkey")
+    table = table[
+        (table.p_brand != "Brand#45")
+        & (~table.p_type.str.match("MEDIUM POLISHED*"))
+        & (table.p_size.isin((49, 14, 23, 45, 19, 3, 36, 9)))
+        & (~table.ps_suppkey.isin(complaint_suppkeys))
+    ]
+    result = (
+        table.groupby(by=["p_brand", "p_type", "p_size"])
+        .ps_suppkey.nunique()
+        .reset_index()
+        .rename(columns={"ps_suppkey": "supplier_cnt"})
+        .sort_values(
+            by=["supplier_cnt", "p_brand", "p_type", "p_size"],
+            ascending=[False, True, True, True],
+        )
+        .compute()
+    )
+
+    return result
+
+
+@pytest.mark.shuffle_p2p
 def test_query_17(client, dataset_path, fs):
     """
     select
