@@ -1019,6 +1019,85 @@ def test_query_18(client, dataset_path, fs):
     )
 
 
+@pytest.mark.shuffle_p2p
+def test_query_19(client, dataset_path, fs):
+    """
+    select
+        round(sum(l_extendedprice* (1 - l_discount)), 2) as revenue
+    from
+        lineitem,
+        part
+    where
+        (
+            p_partkey = l_partkey
+            and p_brand = 'Brand#12'
+            and p_container in ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')
+            and l_quantity >= 1 and l_quantity <= 1 + 10
+            and p_size between 1 and 5
+            and l_shipmode in ('AIR', 'AIR REG')
+            and l_shipinstruct = 'DELIVER IN PERSON'
+        )
+        or
+        (
+            p_partkey = l_partkey
+            and p_brand = 'Brand#23'
+            and p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')
+            and l_quantity >= 10 and l_quantity <= 20
+            and p_size between 1 and 10
+            and l_shipmode in ('AIR', 'AIR REG')
+            and l_shipinstruct = 'DELIVER IN PERSON'
+        )
+        or
+        (
+            p_partkey = l_partkey
+            and p_brand = 'Brand#34'
+            and p_container in ('LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')
+            and l_quantity >= 20 and l_quantity <= 30
+            and p_size between 1 and 15
+            and l_shipmode in ('AIR', 'AIR REG')
+            and l_shipinstruct = 'DELIVER IN PERSON'
+        )
+    """
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+    part = dd.read_parquet(dataset_path + "part", filesystem=fs)
+
+    table = lineitem.merge(part, left_on="l_partkey", right_on="p_partkey")
+    table = table[
+        (
+            (table.p_brand == "Brand#12")
+            & (table.p_container.isin(("SM CASE", "SM BOX", "SM PACK", "SM PKG")))
+            & ((table.l_quantity >= 1) & (table.l_quantity <= 1 + 10))
+            & (table.p_size.between(1, 5))
+            & (table.l_shipmode.isin(("AIR", "AIR REG")))
+            & (table.l_shipinstruct == "DELIVER IN PERSON")
+        )
+        | (
+            (table.p_brand == "Brand#23")
+            & (table.p_container.isin(("MED BAG", "MED BOX", "MED PKG", "MED PACK")))
+            & ((table.l_quantity >= 10) & (table.l_quantity <= 20))
+            & (table.p_size.between(1, 10))
+            & (table.l_shipmode.isin(("AIR", "AIR REG")))
+            & (table.l_shipinstruct == "DELIVER IN PERSON")
+        )
+        | (
+            (table.p_brand == "Brand#34")
+            & (table.p_container.isin(("LG CASE", "LG BOX", "LG PACK", "LG PKG")))
+            & ((table.l_quantity >= 20) & (table.l_quantity <= 30))
+            & (table.p_size.between(1, 15))
+            & (table.l_shipmode.isin(("AIR", "AIR REG")))
+            & (table.l_shipinstruct == "DELIVER IN PERSON")
+        )
+    ]
+    revenue = (
+        (table.l_extendedprice * (1 - table.l_discount))
+        .sum()
+        .to_delayed()
+        .round(2)
+        .compute()
+    )
+    return pd.DataFrame({"revenue": [revenue]})
+
+
 def test_query_22(client, dataset_path, fs):
     """
     select
