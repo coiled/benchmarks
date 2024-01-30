@@ -83,7 +83,6 @@ def verify_result(result: pd.DataFrame, query: int, answer_dir: pathlib.Path):
         11,
         12,
         13,
-        # pytest.param(13, marks=pytest.mark.xfail(reason="Result is wrong")),
         14,
         15,
         16,
