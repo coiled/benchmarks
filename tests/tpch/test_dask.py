@@ -1098,6 +1098,95 @@ def test_query_19(client, dataset_path, fs):
     return pd.DataFrame({"revenue": [revenue]})
 
 
+@pytest.mark.shuffle_p2p
+def test_query_20(client, dataset_path, fs):
+    """
+    select
+        s_name,
+        s_address
+    from
+        supplier,
+        nation
+    where
+        s_suppkey in (
+            select
+                ps_suppkey
+            from
+                partsupp
+            where
+                ps_partkey in (
+                    select
+                        p_partkey
+                    from
+                        part
+                    where
+                        p_name like 'forest%'
+                )
+                and ps_availqty > (
+                    select
+                        0.5 * sum(l_quantity)
+                    from
+                        lineitem
+                    where
+                        l_partkey = ps_partkey
+                        and l_suppkey = ps_suppkey
+                        and l_shipdate >= date '1994-01-01'
+                        and l_shipdate < date '1994-01-01' + interval '1' year
+                )
+        )
+        and s_nationkey = n_nationkey
+        and n_name = 'CANADA'
+    order by
+        s_name
+    """
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+    supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
+    nation = dd.read_parquet(dataset_path + "nation", filesystem=fs)
+    part = dd.read_parquet(dataset_path + "part", filesystem=fs)
+    partsupp = dd.read_parquet(dataset_path + "partsupp", filesystem=fs)
+
+    shipdate_from = datetime.strptime("1994-01-01", "%Y-%m-%d")
+    shipdate_to = datetime.strptime("1995-01-01", "%Y-%m-%d")
+
+    res_1 = lineitem[
+        (lineitem["l_shipdate"] > shipdate_from)
+        & (lineitem["l_shipdate"] < shipdate_to)
+    ]
+    res_1 = (
+        res_1.groupby(["l_partkey", "l_suppkey"])["l_quantity"]
+        .sum()
+        .rename("sum_quantity")
+        .to_frame()
+    )
+    res_1["sum_quantity"] = res_1["sum_quantity"] * 0.5
+
+    res_2 = nation[nation["n_name"] == "CANADA"]
+    res_3 = supplier.merge(res_2, left_on="s_nationkey", right_on="n_nationkey")
+
+    q_final = (
+        part[part["p_name"].str.startswith("forest")]["p_partkey"]
+        .unique()
+        .to_frame()
+        .merge(partsupp, left_on="p_partkey", right_on="ps_partkey")
+        .merge(
+            res_1,
+            left_on=["ps_suppkey", "p_partkey"],
+            right_on=["l_suppkey", "l_partkey"],
+        )
+    )
+    q_final = (
+        q_final[q_final["ps_availqty"] > q_final["sum_quantity"]]["ps_suppkey"]
+        .unique()
+        .to_frame()
+    )
+    q_final = q_final.merge(res_3, left_on="ps_suppkey", right_on="s_suppkey")
+    q_final["s_address"] = q_final["s_address"].str.strip()
+    q_final = q_final[["s_name", "s_address"]].sort_values("s_name", ascending=True)
+
+    result = q_final.compute()
+    return result
+
+
 def test_query_22(client, dataset_path, fs):
     """
     select
