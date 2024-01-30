@@ -77,7 +77,7 @@ def verify_result(result: pd.DataFrame, query: int, answer_dir: pathlib.Path):
         5,
         6,
         7,
-        pytest.param(8, marks=pytest.mark.skip(reason="Not implemented")),
+        8,
         9,
         pytest.param(10, marks=pytest.mark.xfail(reason="Result is wrong")),
         11,
