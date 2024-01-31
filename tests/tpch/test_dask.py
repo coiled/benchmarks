@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta
 
-import pandas as pd
 import pytest
 
 pytestmark = pytest.mark.tpch_dask
@@ -100,7 +99,6 @@ def test_query_2(client, dataset_path, fs):
                 "s_comment",
             ]
         ]
-        .compute()
         .sort_values(
             by=[
                 "s_acctbal",
@@ -115,9 +113,9 @@ def test_query_2(client, dataset_path, fs):
                 True,
             ],
         )
-        .head(100)
+        .head(100, compute=False)
     )
-    return result
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -144,10 +142,12 @@ def test_query_3(client, dataset_path, fs):
     result = (
         total.reset_index()
         .sort_values(["revenue"], ascending=False)
-        .head(10)[["l_orderkey", "revenue", "o_orderdate", "o_shippriority"]]
+        .head(10, compute=False)[
+            ["l_orderkey", "revenue", "o_orderdate", "o_shippriority"]
+        ]
     )
 
-    return result
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -171,9 +171,9 @@ def test_query_4(client, dataset_path, fs):
         .reset_index()
         .sort_values(["o_orderpriority"])
     )
-    result = result_df.rename(columns={"o_orderkey": "order_count"}).compute()
+    result = result_df.rename(columns={"o_orderkey": "order_count"})
 
-    return result
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -203,9 +203,9 @@ def test_query_5(client, dataset_path, fs):
     )
     jn5["revenue"] = jn5.l_extendedprice * (1.0 - jn5.l_discount)
     gb = jn5.groupby("n_name")["revenue"].sum()
-    result = gb.reset_index().sort_values("revenue", ascending=False).compute()
+    result = gb.reset_index().sort_values("revenue", ascending=False)
 
-    return result
+    return result.compute()
 
 
 def test_query_6(client, dataset_path, fs):
@@ -224,9 +224,10 @@ def test_query_6(client, dataset_path, fs):
     )
 
     flineitem = line_item_ds[sel]
-    result = (flineitem.l_extendedprice * flineitem.l_discount).sum().compute()
+    revenue = (flineitem.l_extendedprice * flineitem.l_discount).to_frame()
+    result = revenue.sum().to_frame("revenue")
 
-    return pd.DataFrame({"revenue": [result]})
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -322,9 +323,9 @@ def test_query_7(client, dataset_path, fs):
     result = result_df.sort_values(
         by=["supp_nation", "cust_nation", "l_year"],
         ascending=True,
-    ).compute()
+    )
 
-    return result
+    return result.compute()
 
 
 def test_query_8(client, dataset_path, fs):
@@ -382,9 +383,9 @@ def test_query_8(client, dataset_path, fs):
     )
     final["mkt_share"] = final.volume_brazil / final.volume_mkt
     final = final.sort_values(by=["o_year"], ascending=[True])[["o_year", "mkt_share"]]
-    result = final.compute()
+    result = final
 
-    return result
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -460,10 +461,9 @@ def test_query_9(client, dataset_path, fs):
         .reset_index()
         .rename(columns={"amount": "sum_profit"})
         .sort_values(by=["nation", "o_year"], ascending=[True, False])
-        .compute()
     )
 
-    return result
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -545,7 +545,7 @@ def test_query_10(client, dataset_path, fs):
         .round(2)
         .reset_index()
         .sort_values(by=["revenue"], ascending=[False])
-        .head(20)[
+        .head(20, compute=False)[
             [
                 "c_custkey",
                 "c_name",
@@ -559,7 +559,7 @@ def test_query_10(client, dataset_path, fs):
         ]
     )
 
-    return result
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -613,10 +613,9 @@ def test_query_11(client, dataset_path, fs):
         .reset_index()
         .query(f"value > {threshold}")
         .sort_values(by="value", ascending=False)
-        .compute()
     )
 
-    return result
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -679,10 +678,9 @@ def test_query_12(client, dataset_path, fs):
         .agg({"high_line_count": "sum", "low_line_count": "sum"})
         .reset_index()
         .sort_values(by="l_shipmode")
-        .compute()
     )
 
-    return result
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -727,10 +725,9 @@ def test_query_13(client, dataset_path, fs):
         .rename(columns={0: "custdist"})
         .reset_index()
         .sort_values(by=["custdist", "c_count"], ascending=[False, False])
-        .compute()
     )
 
-    return result
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -766,19 +763,21 @@ def test_query_14(client, dataset_path, fs):
     mask = table.p_type.str.match("PROMO*")
     table["promo_revenue"] = table.promo_revenue.where(mask, 0.00)
 
+    total_promo_revenue = table.promo_revenue.to_frame().sum().reset_index(drop=True)
+    total_revenue = (
+        (table.l_extendedprice * (1 - table.l_discount))
+        .to_frame()
+        .sum()
+        .reset_index(drop=True)
+    )
     # aggregate promo revenue calculation
     result = (
-        (
-            100.00
-            * table.promo_revenue.sum()
-            / (table.l_extendedprice * (1 - table.l_discount)).sum()
-        )
-        .to_delayed()
+        (100.00 * total_promo_revenue / total_revenue)
         .round(2)
-        .compute()
+        .to_frame("promo_revenue")
     )
 
-    return pd.DataFrame({"promo_revenue": [result]})
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -841,15 +840,11 @@ def test_query_15(client, dataset_path, fs):
     table = supplier.merge(
         revenue, left_on="s_suppkey", right_on="supplier_no", how="inner"
     )
-    result = (
-        table[table.total_revenue == revenue.total_revenue.max()][
-            ["s_suppkey", "s_name", "s_address", "s_phone", "total_revenue"]
-        ]
-        .sort_values(by="s_suppkey")
-        .compute()
-    )
+    result = table[table.total_revenue == revenue.total_revenue.max()][
+        ["s_suppkey", "s_name", "s_address", "s_phone", "total_revenue"]
+    ].sort_values(by="s_suppkey")
 
-    return result
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -955,9 +950,11 @@ def test_query_17(client, dataset_path, fs):
         & (table.p_container == "MED BOX")
         & (table.l_quantity < 0.2 * table.l_quantity_avg)
     ]
-    result = round((table.l_extendedprice.sum() / 7.0).compute(), 2)
+    result = (
+        (table.l_extendedprice.to_frame().sum() / 7.0).round(2).to_frame("avg_yearly")
+    )
 
-    return pd.DataFrame({"avg_yearly": [result]})
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -1013,7 +1010,7 @@ def test_query_18(client, dataset_path, fs):
         .drop(columns=["l_quantity"])
     )
 
-    return (
+    result = (
         table.set_index("l_orderkey")
         .join(qnt_over_300, how="inner")
         .groupby(["c_name", "c_custkey", "o_orderkey", "o_orderdate", "o_totalprice"])
@@ -1021,9 +1018,10 @@ def test_query_18(client, dataset_path, fs):
         .reset_index()
         .rename(columns={"l_quantity": "sum"})
         .sort_values(["o_totalprice", "o_orderdate"], ascending=[False, True])
-        .compute()  # Can go away after https://github.com/dask-contrib/dask-expr/pull/811
-        .head(100)
+        .head(100, compute=False)
     )
+
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -1095,14 +1093,15 @@ def test_query_19(client, dataset_path, fs):
             & (table.l_shipinstruct == "DELIVER IN PERSON")
         )
     ]
-    revenue = (
+    result = (
         (table.l_extendedprice * (1 - table.l_discount))
+        .to_frame()
         .sum()
-        .to_delayed()
         .round(2)
-        .compute()
+        .to_frame("revenue")
     )
-    return pd.DataFrame({"revenue": [revenue]})
+
+    return result.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -1186,8 +1185,7 @@ def test_query_20(client, dataset_path, fs):
     q_final["s_address"] = q_final["s_address"].str.strip()
     q_final = q_final[["s_name", "s_address"]].sort_values("s_name", ascending=True)
 
-    result = q_final.compute()
-    return result
+    return q_final.compute()
 
 
 @pytest.mark.shuffle_p2p
@@ -1278,8 +1276,7 @@ def test_query_21(client, dataset_path, fs):
         .head(100, compute=False)
     )
 
-    result = q_final.compute()
-    return result
+    return q_final.compute()
 
 
 def test_query_22(client, dataset_path, fs):
@@ -1346,6 +1343,4 @@ def test_query_22(client, dataset_path, fs):
         .reset_index()
         .sort_values("cntrycode", ascending=True)
     )
-    result = custsale.compute()
-
-    return result
+    return custsale.compute()
