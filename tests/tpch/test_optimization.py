@@ -10,7 +10,7 @@ def cluster():
         yield cluster
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def client(cluster, restart, benchmark_time):
     with cluster.get_client() as client:
         if restart:
@@ -52,5 +52,5 @@ def test_optimization(query, dataset_path, fs, client):
     from . import dask_queries
 
     func = getattr(dask_queries, f"query_{query}")
-    result = func(client, dataset_path, fs)
+    result = func(dataset_path, fs)
     result.optimize()

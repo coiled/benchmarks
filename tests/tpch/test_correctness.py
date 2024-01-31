@@ -31,7 +31,7 @@ def cluster():
         yield cluster
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def client(cluster, restart):
     with cluster.get_client() as client:
         if restart:
