@@ -890,15 +890,13 @@ def test_query_16(client, dataset_path, fs):
     part = dd.read_parquet(dataset_path + "part", filesystem=fs)
     supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
 
-    supplier["is_complaint"] = supplier.s_comment.str.contains(
-        "Customer"
-    ) & supplier.s_comment.str.contains("Complaints")
+    supplier["is_complaint"] = supplier.s_comment.str.contains("Customer.*Complaints")
     complaint_suppkeys = supplier[supplier.is_complaint].s_suppkey.compute()
 
     table = partsupp.merge(part, left_on="ps_partkey", right_on="p_partkey")
     table = table[
         (table.p_brand != "Brand#45")
-        & (~table.p_type.str.match("MEDIUM POLISHED*"))
+        & (~table.p_type.str.startswith("MEDIUM POLISHED"))
         & (table.p_size.isin((49, 14, 23, 45, 19, 3, 36, 9)))
         & (~table.ps_suppkey.isin(complaint_suppkeys))
     ]
