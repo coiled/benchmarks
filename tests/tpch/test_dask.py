@@ -1183,6 +1183,98 @@ def test_query_20(client, dataset_path, fs):
     return result
 
 
+@pytest.mark.shuffle_p2p
+def test_query_21(client, dataset_path, fs):
+    """
+    select
+        s_name,
+        count(*) as numwait
+    from
+        supplier,
+        lineitem l1,
+        orders,
+        nation
+    where
+        s_suppkey = l1.l_suppkey
+        and o_orderkey = l1.l_orderkey
+        and o_orderstatus = 'F'
+        and l1.l_receiptdate > l1.l_commitdate
+        and exists (
+            select
+                *
+            from
+                lineitem l2
+            where
+                l2.l_orderkey = l1.l_orderkey
+                and l2.l_suppkey <> l1.l_suppkey
+        )
+        and not exists (
+            select
+                *
+            from
+                lineitem l3
+            where
+                l3.l_orderkey = l1.l_orderkey
+                and l3.l_suppkey <> l1.l_suppkey
+                and l3.l_receiptdate > l3.l_commitdate
+        )
+        and s_nationkey = n_nationkey
+        and n_name = 'SAUDI ARABIA'
+    group by
+        s_name
+    order by
+        numwait desc,
+        s_name
+    limit 100
+    """
+    supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
+    lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
+    orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
+    nation = dd.read_parquet(dataset_path + "nation", filesystem=fs)
+
+    NATION = "SAUDI ARABIA"
+
+    res_1 = (
+        lineitem.groupby("l_orderkey")["l_suppkey"]
+        .nunique()
+        .rename("nunique_col")
+        .reset_index()
+    )
+    res_1 = res_1[res_1["nunique_col"] > 1].merge(
+        lineitem[lineitem["l_receiptdate"] > lineitem["l_commitdate"]], on="l_orderkey"
+    )
+
+    q_final = (
+        res_1.groupby("l_orderkey")["l_suppkey"]
+        .nunique()
+        .rename("nunique_col")
+        .reset_index()
+        .merge(res_1, on="l_orderkey", suffixes=("", "_right"))
+        .merge(supplier, left_on="l_suppkey", right_on="s_suppkey")
+        .merge(nation, left_on="s_nationkey", right_on="n_nationkey")
+        .merge(orders, left_on="l_orderkey", right_on="o_orderkey")
+    )
+
+    predicate = (
+        (q_final["nunique_col"] == 1)
+        & (q_final["n_name"] == NATION)
+        & (q_final["o_orderstatus"] == "F")
+    )
+
+    q_final = (
+        q_final[predicate]
+        .groupby("s_name")
+        .size()
+        .rename("numwait")
+        .reset_index()
+        .sort_values(["numwait", "s_name"], ascending=[False, True])
+        .head(100, compute=False)
+    )
+
+    result = q_final.compute()
+    return result
+
+
 def test_query_22(client, dataset_path, fs):
     """
     select
