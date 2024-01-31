@@ -431,6 +431,8 @@ def test_query_9(client, dataset_path, fs):
     orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
     nation = dd.read_parquet(dataset_path + "nation", filesystem=fs)
 
+    part = part[part.p_name.str.contains("green")]
+
     subquery = (
         part.merge(partsupp, left_on="p_partkey", right_on="ps_partkey", how="inner")
         .merge(supplier, left_on="ps_suppkey", right_on="s_suppkey", how="inner")
@@ -443,7 +445,6 @@ def test_query_9(client, dataset_path, fs):
         .merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="inner")
         .merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="inner")
     )
-    subquery = subquery[subquery.p_name.str.contains("green")]
     subquery["o_year"] = subquery.o_orderdate.dt.year
     subquery["nation"] = subquery.n_name
     subquery["amount"] = (
