@@ -1,6 +1,8 @@
 import pytest
 from distributed import LocalCluster
 
+from . import dask_queries
+
 pytestmark = pytest.mark.tpch_dask
 
 
@@ -49,8 +51,6 @@ def client(cluster, restart, benchmark_time):
     ],
 )
 def test_optimization(query, dataset_path, fs, client):
-    from . import dask_queries
-
     func = getattr(dask_queries, f"query_{query}")
     result = func(dataset_path, fs)
     result.optimize()
