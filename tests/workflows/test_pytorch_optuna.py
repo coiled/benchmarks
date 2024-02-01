@@ -14,6 +14,13 @@ pytestmark = pytest.mark.workflows
 optuna = pytest.importorskip("optuna")
 
 
+@pytest.mark.xfail(
+    raises=TimeoutError,
+    reason=(
+        "Occasionally fails to install/attach CUDA, "
+        "will then run on CPU and get a TimeoutError"
+    ),
+)
 @pytest.mark.client(
     "pytorch_optuna",
     worker_plugin=PipInstall(
