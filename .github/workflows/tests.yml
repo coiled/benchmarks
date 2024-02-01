@@ -34,36 +34,37 @@ jobs:
         python-version: ["3.9"]
         pytest_args: [tests]
         extra-env: [""]
+        db-prefix: [tests]
         include:
           # Run stability tests on the lowest and highest versions of Python only
           # These are temporarily redundant with the current global python-version
           # - pytest_args: tests/stability
           #   python-version: "3.9"
           #   os: ubuntu-latest
-          # - pytest_args: tests/stability
-          #   python-version: "3.9"
-          #   os: ubuntu-latest
+          #   db-prefix: stability
           - pytest_args: tests/stability
             python-version: "3.11"
             os: ubuntu-latest
-          - pytest_args: tests/stability
-            python-version: "3.11"
-            os: ubuntu-latest
+            db-prefix: stability
           # Run stability tests on Python Windows and MacOS (latest py39 only)
           - pytest_args: tests/stability
             python-version: "3.9"
             os: windows-latest
+            db-prefix: stability
           - pytest_args: tests/stability
             python-version: "3.9"
             os: macos-latest
+            db-prefix: stability
           - pytest_args: tests/workflows/test_snowflake.py
             python-version: "3.9"
             os: ubuntu-latest
+            db-prefix: snowflake
             extra-env: ci/environment-snowflake.yml
           - pytest_args: tests/tpch -m tpch_nondask
             python-version: "3.9"
             os: ubuntu-latest
             extra-env: ci/environment-tpch-nondask.yml
+            db-prefix: tpch-nondask
 
     steps:
       - name: Checkout
@@ -136,7 +137,7 @@ jobs:
           SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
           SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-          DB_NAME: ${{ matrix.os }}-py${{ matrix.python-version }}.db
+          DB_NAME: ${{ matrix.db-prefix }}-${{ matrix.os }}-py${{ matrix.python-version }}.db
           CLUSTER_DUMP: always
         run: |
           pytest --benchmark -n 4 --dist loadscope ${{ env.PYTEST_MARKERS }} ${{ matrix.pytest_args }}
@@ -150,7 +151,7 @@ jobs:
         with:
           name: ${{ matrix.os }}-py${{ matrix.python-version }}
           path: |
-            ${{ matrix.os }}-py${{ matrix.python-version }}.db
+            ${{ matrix.db-prefix }}-${{ matrix.os }}-py${{ matrix.python-version }}.db
             cluster_kwargs.*.*
             mamba_env_export.yml
 
