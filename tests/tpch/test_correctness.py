@@ -31,7 +31,7 @@ def cluster():
         yield cluster
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture
 def client(cluster, restart):
     with cluster.get_client() as client:
         if restart:
@@ -97,8 +97,8 @@ def verify_result(result: pd.DataFrame, query: int, answer_dir: pathlib.Path):
     ],
 )
 def test_dask_results(query, client, answers_path, data_path):
-    from . import test_dask
+    from . import dask_queries
 
-    func = getattr(test_dask, f"test_query_{query}")
-    result = func(client, str(data_path) + "/", None)
+    func = getattr(dask_queries, f"query_{query}")
+    result = func(str(data_path) + "/", None).compute()
     verify_result(result, query, answers_path)
