@@ -1,26 +1,8 @@
 import pytest
-from distributed import LocalCluster
 
 from . import dask_queries
 
 pytestmark = pytest.mark.tpch_dask
-
-
-@pytest.fixture(scope="module")
-def cluster():
-    with LocalCluster() as cluster:
-        yield cluster
-
-
-@pytest.fixture
-def client(cluster, restart, benchmark_time):
-    with cluster.get_client() as client:
-        if restart:
-            client.restart()
-        client.run(lambda: None)
-
-        with benchmark_time:
-            yield client
 
 
 @pytest.mark.parametrize(
