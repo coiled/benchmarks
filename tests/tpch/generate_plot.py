@@ -10,7 +10,7 @@ def generate(outfile="chart.json", name=None, scale=None):
 
     df = df[
         (df.call_outcome == "passed")
-        & (df.path.str.startswith("tpch/"))
+        & (df.path.str.contains("^tpch/test_(?:dask|duckdb|polars|pyspark)"))
         & df.cluster_name
     ]
     df = df[["path", "name", "duration", "start", "cluster_name"]]

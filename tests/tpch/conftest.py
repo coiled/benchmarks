@@ -36,6 +36,7 @@ def pytest_addoption(parser):
         default="",
         help="Name to use for run",
     )
+    parser.addoption("--plot", action="store_true", default=False, help="")
 
 
 @pytest.fixture(scope="session")
@@ -370,6 +371,11 @@ def make_chart(request, name, tmp_path_factory, local, scale):
     if not request.config.getoption("--benchmark"):
         # Won't create the sqlite DB, and thus won't be able
         # to read test run information
+        yield
+        return
+
+    if not request.config.getoption("--plot"):
+        # Don't generate the plot
         yield
         return
 
