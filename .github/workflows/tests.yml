@@ -113,7 +113,7 @@ jobs:
       - name: Disable non-Dask TPCH benchmarks on most PRs and on daily schedule (except Sundays)
         if: |
           ${{ 
-            !contains(matrix.pytest_args, 'tpch_nondask')
+            !contains(matrix.name-prefix, 'tpch')
             || !(
               (github.event_name == 'schedule' || github.event.schedule == '1 0 * * 0')
               || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch'))
