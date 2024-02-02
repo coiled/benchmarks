@@ -65,7 +65,7 @@ jobs:
             python-version: "3.9"
             os: ubuntu-latest
             extra-env: ci/environment-tpch-nondask.yml
-            name-prefix: tpch-nondask
+            name-prefix: tpch
 
     steps:
       - name: Checkout
