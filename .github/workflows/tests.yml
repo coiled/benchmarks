@@ -114,7 +114,7 @@ jobs:
           ${{ 
             !contains(matrix.pytest_args, 'tpch_nondask')
             || !(
-              (github.event_name == 'schedule' || github.event.schedule == "1 0 * * 0")
+              (github.event_name == 'schedule' || github.event.schedule == '1 0 * * 0')
               || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch'))
             )
           ) }}
