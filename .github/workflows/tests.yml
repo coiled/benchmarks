@@ -25,7 +25,7 @@ defaults:
 
 jobs:
   tests:
-    name: ${{ matrix.name-prefix }} ${{ matrix.os }} py${{ matrix.python-version }}
+    name: Tests / ${{ matrix.name-prefix }} ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
