@@ -8,7 +8,8 @@ on:
   pull_request:
   schedule:
     # Runs "At 00:01" (see https://crontab.guru)
-    - cron: "1 0 * * *"
+    - cron: "1 0 * * 0" # every Sunday (relevant for non-Dask TPC-H benchmarks) 
+    - cron: "1 0 * * 1-6" # every day except Sunday
   workflow_dispatch:
 
 concurrency:
@@ -32,7 +33,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
-        pytest_args: [tests]
+        pytest_args: [tests --ignore=tests/tpch]
         extra-env: [""]
         name-prefix: [tests]
         include:
@@ -60,7 +61,7 @@ jobs:
             os: ubuntu-latest
             name-prefix: snowflake
             extra-env: ci/environment-snowflake.yml
-          - pytest_args: tests/tpch -m tpch_nondask
+          - pytest_args: tests/tpch
             python-version: "3.9"
             os: ubuntu-latest
             extra-env: ci/environment-tpch-nondask.yml
@@ -109,10 +110,15 @@ jobs:
         run: |
           echo PYTEST_MARKERS=" and not workflows" >> $GITHUB_ENV
 
-      - name: Disable non-Dask TPCH benchmarks on most PRs
+      - name: Disable non-Dask TPCH benchmarks on most PRs and on daily schedule (except Sundays)
         if: |
-          github.event_name != 'schedule'
-          && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch'))
+          ${{ 
+            !contains(matrix.pytest_args, 'tpch_nondask')
+            || !(
+              (github.event_name == 'schedule' || github.event.schedule == '1 0 * * 0')
+              || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch'))
+            )
+          }}
         run: |
           echo PYTEST_MARKERS="${{ env.PYTEST_MARKERS }} and not tpch_nondask" >> $GITHUB_ENV
 
