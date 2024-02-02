@@ -25,7 +25,7 @@ defaults:
 
 jobs:
   tests:
-    name: ${{ matrix.pytest_args }} ${{ matrix.os }} py${{ matrix.python-version }}
+    name: ${{ matrix.name-prefix }} ${{ matrix.os }} py${{ matrix.python-version }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     strategy:
@@ -65,7 +65,7 @@ jobs:
             python-version: "3.9"
             os: ubuntu-latest
             extra-env: ci/environment-tpch-nondask.yml
-            name-prefix: tpch-nondask
+            name-prefix: tpch
 
     steps:
       - name: Checkout
@@ -113,7 +113,7 @@ jobs:
       - name: Disable non-Dask TPCH benchmarks on most PRs and on daily schedule (except Sundays)
         if: |
           ${{ 
-            !contains(matrix.pytest_args, 'tpch_nondask')
+            matrix.name-prefix != 'tpch'
             || !(
               (github.event_name == 'schedule' || github.event.schedule == '1 0 * * 0')
               || (github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch'))
