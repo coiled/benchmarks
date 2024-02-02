@@ -841,6 +841,7 @@ def query_16(dataset_path, fs):
     supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
 
     supplier["is_complaint"] = supplier.s_comment.str.contains("Customer.*Complaints")
+    # FIXME: We have to compute this early because passing a `dask_expr.Series` to `isin` is not supported
     complaint_suppkeys = supplier[supplier.is_complaint].s_suppkey.compute()
 
     table = partsupp.merge(part, left_on="ps_partkey", right_on="p_partkey")
@@ -1260,9 +1261,7 @@ def query_22(dataset_path, fs):
         customers["cntrycode"].isin(("13", "31", "23", "29", "30", "18", "17"))
     ]
 
-    average_c_acctbal = (
-        customers[customers["c_acctbal"] > 0.0]["c_acctbal"].mean().compute()
-    )
+    average_c_acctbal = customers[customers["c_acctbal"] > 0.0]["c_acctbal"].mean()
 
     custsale = customers[customers["c_acctbal"] > average_c_acctbal]
     custsale = custsale.merge(
