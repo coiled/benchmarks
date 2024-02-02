@@ -950,17 +950,13 @@ def query_18(dataset_path, fs):
         orders, left_on="c_custkey", right_on="o_custkey", how="inner"
     ).merge(lineitem, left_on="o_orderkey", right_on="l_orderkey", how="inner")
 
-    qnt_over_300 = (
-        lineitem.groupby("l_orderkey")
-        .l_quantity.sum()
-        .to_frame()
-        .query("l_quantity > 300")
-        .drop(columns=["l_quantity"])
+    qnt_over_300 = lineitem.groupby("l_orderkey").l_quantity.sum().to_frame()
+    qnt_over_300 = qnt_over_300[qnt_over_300.l_quantity > 300].drop(
+        columns=["l_quantity"]
     )
 
     return (
-        table.set_index("l_orderkey")
-        .join(qnt_over_300, how="inner")
+        table.merge(qnt_over_300, on="l_orderkey")
         .groupby(["c_name", "c_custkey", "o_orderkey", "o_orderdate", "o_totalprice"])
         .l_quantity.sum()
         .reset_index()
