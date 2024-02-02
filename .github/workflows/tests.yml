@@ -33,7 +33,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.9"]
-        pytest_args: [tests]
+        pytest_args: [tests --ignore=tests/tpch]
         extra-env: [""]
         include:
           # Run stability tests on the lowest and highest versions of Python only
@@ -61,7 +61,7 @@ jobs:
             python-version: "3.9"
             os: ubuntu-latest
             extra-env: ci/environment-snowflake.yml
-          - pytest_args: tests/tpch -m tpch_nondask
+          - pytest_args: tests/tpch
             python-version: "3.9"
             os: ubuntu-latest
             extra-env: ci/environment-tpch-nondask.yml
