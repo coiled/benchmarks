@@ -101,6 +101,21 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
 
+      - name: Dump matrix.name_prefix != 'tpch'
+        env: 
+          CONDITION: ${{ matrix.name_prefix != 'tpch' }}
+        run: echo "$CONDITION"
+      
+      - name: Dump !(github.event_name == 'schedule' && github.event.schedule == '0,10,20,30,40,50 * * * *')
+        env: 
+          CONDITION: ${{ !(github.event_name == 'schedule' && github.event.schedule == '0,10,20,30,40,50 * * * *') }}
+        run: echo "$CONDITION"
+      
+      - name: Dump !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch'))
+        env: 
+          CONDITION: ${{ !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch')) }}
+        run: echo "$CONDITION"
+
       - name: Dump environment
         run: |
           # For debugging
