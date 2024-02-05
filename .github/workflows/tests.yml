@@ -8,7 +8,7 @@ on:
   pull_request:
   schedule:
     # Runs "At 00:01" (see https://crontab.guru)
-    - cron: "1 * * * *" # every Sunday (relevant for non-Dask TPC-H benchmarks) 
+    - cron: "0,10,20,30,40,50 * * * *" # every Sunday (relevant for non-Dask TPC-H benchmarks) 
     - cron: "1 0 * * 1-6" # every day except Sunday
   workflow_dispatch:
 
@@ -96,6 +96,11 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: sed -i.bak 's/timeout_method = signal/timeout_method = thread/' setup.cfg
 
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+
       - name: Dump environment
         run: |
           # For debugging
@@ -115,7 +120,7 @@ jobs:
           ${{ 
             matrix.name_prefix != 'tpch'
             || !(
-              github.event_name == 'schedule' && github.event.schedule == '1 * * * *'
+              github.event_name == 'schedule' && github.event.schedule == '0,10,20,30,40,50 * * * *'
             )
             || !(
               github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch')
