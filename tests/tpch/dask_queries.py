@@ -623,9 +623,7 @@ def query_12(dataset_path, fs):
     receiptdate_from = datetime.strptime("1994-01-01", "%Y-%m-%d")
     receiptdate_to = receiptdate_from + timedelta(days=365)
 
-    table = orders.merge(
-        lineitem, left_on="o_orderkey", right_on="l_orderkey", how="left"
-    )
+    table = orders.merge(lineitem, left_on="o_orderkey", right_on="l_orderkey")
     table = table[
         (table.l_shipmode.isin(("MAIL", "SHIP")))
         & (table.l_commitdate < table.l_receiptdate)
