@@ -672,6 +672,7 @@ def query_13(dataset_path, fs):
     customer = dd.read_parquet(dataset_path + "customer", filesystem=fs)
     orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
     orders = orders[~orders.o_comment.str.contains("special.*requests")]
+
     subquery = customer.merge(
         orders, left_on="c_custkey", right_on="o_custkey", how="left"
     )
