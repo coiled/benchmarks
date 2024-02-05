@@ -8,7 +8,7 @@ on:
   pull_request:
   schedule:
     # Runs "At 00:01" (see https://crontab.guru)
-    - cron: "0/10 * * * *" # every Sunday (relevant for non-Dask TPC-H benchmarks) 
+    - cron: "1 * * * *" # every Sunday (relevant for non-Dask TPC-H benchmarks) 
     - cron: "1 0 * * 1-6" # every day except Sunday
   workflow_dispatch:
 
@@ -101,21 +101,6 @@ jobs:
           GITHUB_CONTEXT: ${{ toJson(github) }}
         run: echo "$GITHUB_CONTEXT"
 
-      - name: Dump matrix.name_prefix != 'tpch'
-        env: 
-          CONDITION: ${{ matrix.name_prefix != 'tpch' }}
-        run: echo "$CONDITION"
-      
-      - name: Dump !(github.event_name == 'schedule' && github.event.schedule == '0,10,20,30,40,50 * * * *')
-        env: 
-          CONDITION: ${{ !(github.event_name == 'schedule' && github.event.schedule == '0,10,20,30,40,50 * * * *') }}
-        run: echo "$CONDITION"
-      
-      - name: Dump !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch'))
-        env: 
-          CONDITION: ${{ !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'tpch')) }}
-        run: echo "$CONDITION"
-
       - name: Dump environment
         run: |
           # For debugging
@@ -133,7 +118,7 @@ jobs:
       - name: Disable non-Dask TPCH benchmarks on most PRs and on daily schedule (except Sundays)
         if: |
             matrix.name_prefix != 'tpch' ||
-            (github.event_name != 'schedule' || github.event.schedule != '0,10,20,30,40,50 * * * *') &&
+            (github.event_name != 'schedule' || github.event.schedule != '1 * * * *') &&
             (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'tpch'))
         run: |
           echo PYTEST_MARKERS="${{ env.PYTEST_MARKERS }} and not tpch_nondask" >> $GITHUB_ENV
