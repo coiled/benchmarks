@@ -96,11 +96,6 @@ jobs:
         if: ${{ matrix.os == 'windows-latest' }}
         run: sed -i.bak 's/timeout_method = signal/timeout_method = thread/' setup.cfg
 
-      - name: Dump GitHub context
-        env:
-          GITHUB_CONTEXT: ${{ toJson(github) }}
-        run: echo "$GITHUB_CONTEXT"
-
       - name: Dump environment
         run: |
           # For debugging
