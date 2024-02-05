@@ -295,7 +295,7 @@ def get_bucket_region(path: str):
 )
 @click.option(
     "--compression",
-    type=click.Choice(v.lower() for v in CompressionCodec.__members__),
+    type=click.Choice([v.upper() for v in CompressionCodec.__members__]),
     callback=lambda _c, _p, v: getattr(CompressionCodec, v.upper()),
     default=CompressionCodec.SNAPPY.value,
     help="Set compression codec",
