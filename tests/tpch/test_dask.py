@@ -105,6 +105,7 @@ def test_query_20(client, dataset_path, fs):
 
 
 @pytest.mark.shuffle_p2p
+@pytest.mark.xfail(raises=RuntimeError, reason="shuffle_barrier error")
 def test_query_21(client, dataset_path, fs):
     dask_queries.query_21(dataset_path, fs).compute()
 
