@@ -1107,16 +1107,17 @@ def query_20(dataset_path, fs):
     res_3 = supplier.merge(res_2, left_on="s_nationkey", right_on="n_nationkey")
     res_4 = part[part["p_name"].str.strip().str.startswith("forest")]
 
-    q_final = (
-        partsupp.merge(res_4, how="leftsemi", left_on="ps_partkey", right_on="p_partkey")
-        .merge(
-            res_1,
-            left_on=["ps_suppkey", "ps_partkey"],
-            right_on=["l_suppkey", "l_partkey"],
-        )
+    q_final = partsupp.merge(
+        res_4, how="leftsemi", left_on="ps_partkey", right_on="p_partkey"
+    ).merge(
+        res_1,
+        left_on=["ps_suppkey", "ps_partkey"],
+        right_on=["l_suppkey", "l_partkey"],
     )
     q_final = q_final[q_final["ps_availqty"] > q_final["sum_quantity"]]
-    q_final = res_3.merge(q_final, how="leftsemi", left_on="s_suppkey", right_on="ps_suppkey")
+    q_final = res_3.merge(
+        q_final, how="leftsemi", left_on="s_suppkey", right_on="ps_suppkey"
+    )
     q_final["s_address"] = q_final["s_address"].str.strip()
     return q_final[["s_name", "s_address"]].sort_values("s_name", ascending=True)
 
