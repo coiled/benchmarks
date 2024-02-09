@@ -147,7 +147,7 @@ def cluster_spec(scale):
     if scale == 10:
         return {
             "worker_vm_types": ["m6i.large"],
-            "n_workers": 16,
+            "n_workers": 8,
             **everywhere,
         }
     elif scale == 100:
@@ -158,15 +158,15 @@ def cluster_spec(scale):
         }
     elif scale == 1000:
         return {
-            "worker_vm_types": ["m6i.large"],
+            "worker_vm_types": ["m6i.xlarge"],
             "n_workers": 32,
             **everywhere,
         }
     elif scale == 10000:
         return {
-            "worker_vm_types": ["m6i.2xlarge"],
-            "n_workers": 64,
-            "worker_disk_size": 100,
+            "worker_vm_types": ["m6i.xlarge"],
+            "n_workers": 32,
+            "worker_disk_size": 200,
             **everywhere,
         }
 
@@ -294,7 +294,7 @@ def fs(local):
 def machine_spec(scale):
     if scale == 10:
         return {
-            "vm_type": "m6i.8xlarge",
+            "vm_type": "m6i.4xlarge",
         }
     elif scale == 100:
         return {
@@ -302,7 +302,7 @@ def machine_spec(scale):
         }
     elif scale == 1000:
         return {
-            "vm_type": "m6i.16xlarge",
+            "vm_type": "m6i.32xlarge",
         }
     elif scale == 10000:
         return {
