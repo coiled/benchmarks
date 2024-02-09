@@ -151,15 +151,16 @@ def query_4(dataset_path, fs):
     flineitem = line_item_ds[lsel]
     forders = orders_ds[osel]
     jn = forders.merge(
-        flineitem, left_on="o_orderkey", right_on="l_orderkey"
-    ).drop_duplicates(subset=["o_orderkey"])
+        flineitem, how="leftsemi", left_on="o_orderkey", right_on="l_orderkey"
+    )
     result_df = (
-        jn.groupby("o_orderpriority")["o_orderkey"]
+        jn.groupby("o_orderpriority")
         .size()
+        .to_frame("order_count")
         .reset_index()
         .sort_values(["o_orderpriority"])
     )
-    return result_df.rename(columns={"o_orderkey": "order_count"})
+    return result_df
 
 
 def query_5(dataset_path, fs):
@@ -1104,21 +1105,18 @@ def query_20(dataset_path, fs):
     res_1["sum_quantity"] = res_1["sum_quantity"] * 0.5
     res_2 = nation[nation["n_name"] == "CANADA"]
     res_3 = supplier.merge(res_2, left_on="s_nationkey", right_on="n_nationkey")
+    res_4 = part[part["p_name"].str.strip().str.startswith("forest")]
 
     q_final = (
-        part[part["p_name"].str.strip().str.startswith("forest")][["p_partkey"]]
-        .drop_duplicates()
-        .merge(partsupp, left_on="p_partkey", right_on="ps_partkey")
+        partsupp.merge(res_4, how="leftsemi", left_on="ps_partkey", right_on="p_partkey")
         .merge(
             res_1,
-            left_on=["ps_suppkey", "p_partkey"],
+            left_on=["ps_suppkey", "ps_partkey"],
             right_on=["l_suppkey", "l_partkey"],
         )
     )
-    q_final = q_final[q_final["ps_availqty"] > q_final["sum_quantity"]][
-        ["ps_suppkey"]
-    ].drop_duplicates()
-    q_final = q_final.merge(res_3, left_on="ps_suppkey", right_on="s_suppkey")
+    q_final = q_final[q_final["ps_availqty"] > q_final["sum_quantity"]]
+    q_final = res_3.merge(q_final, how="leftsemi", left_on="s_suppkey", right_on="ps_suppkey")
     q_final["s_address"] = q_final["s_address"].str.strip()
     return q_final[["s_name", "s_address"]].sort_values("s_name", ascending=True)
 
