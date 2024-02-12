@@ -887,7 +887,7 @@ def query_17(dataset_path, fs):
 
     avg_qnty_by_partkey = (
         lineitem.groupby("l_partkey")
-        .l_quantity.mean()
+        .l_quantity.mean(split_out=True)
         .to_frame()
         .rename(columns={"l_quantity": "l_quantity_avg"})
     )
@@ -950,7 +950,7 @@ def query_18(dataset_path, fs):
         orders, left_on="c_custkey", right_on="o_custkey", how="inner"
     ).merge(lineitem, left_on="o_orderkey", right_on="l_orderkey", how="inner")
 
-    qnt_over_300 = lineitem.groupby("l_orderkey").l_quantity.sum().to_frame()
+    qnt_over_300 = lineitem.groupby("l_orderkey").l_quantity.sum(split_out=True).to_frame()
     qnt_over_300 = qnt_over_300[qnt_over_300.l_quantity > 300].drop(
         columns=["l_quantity"]
     )
