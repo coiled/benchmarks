@@ -408,19 +408,12 @@ def query_9(dataset_path, fs):
     nation = dd.read_parquet(dataset_path + "nation", filesystem=fs)
 
     part = part[part.p_name.str.contains("green")]
+    res1 = part.merge(lineitem, left_on="p_partkey", right_on="l_partkey", how="inner")
+    res2 = orders.merge(res1, left_on="o_orderkey", right_on="l_orderkey")
+    res3 = supplier.merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="inner")
+    res4 = partsupp.merge(res3, left_on="ps_suppkey", right_on="s_suppkey", how="inner")
+    subquery = res2.merge(res4, left_on=["p_partkey", "l_suppkey"], right_on=["ps_partkey", "s_suppkey"], how="inner")
 
-    subquery = (
-        part.merge(partsupp, left_on="p_partkey", right_on="ps_partkey", how="inner")
-        .merge(supplier, left_on="ps_suppkey", right_on="s_suppkey", how="inner")
-        .merge(
-            lineitem,
-            left_on=["ps_partkey", "ps_suppkey"],
-            right_on=["l_partkey", "l_suppkey"],
-            how="inner",
-        )
-        .merge(orders, left_on="l_orderkey", right_on="o_orderkey", how="inner")
-        .merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="inner")
-    )
     subquery["o_year"] = subquery.o_orderdate.dt.year
     subquery["nation"] = subquery.n_name
     subquery["amount"] = (
@@ -437,7 +430,6 @@ def query_9(dataset_path, fs):
         .rename(columns={"amount": "sum_profit"})
         .sort_values(by=["nation", "o_year"], ascending=[True, False])
     )
-
 
 def query_10(dataset_path, fs):
     """
