@@ -677,6 +677,7 @@ def query_13(dataset_path, fs):
     )
     subquery = (
         subquery.groupby("c_custkey")
+        # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
         .o_orderkey.count(split_out=True)
         .to_frame()
         .reset_index()
