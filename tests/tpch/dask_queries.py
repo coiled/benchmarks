@@ -953,7 +953,9 @@ def query_18(dataset_path, fs):
     ).merge(lineitem, left_on="o_orderkey", right_on="l_orderkey", how="inner")
 
     # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
-    qnt_over_300 = lineitem.groupby("l_orderkey").l_quantity.sum(split_out=True).to_frame()
+    qnt_over_300 = (
+        lineitem.groupby("l_orderkey").l_quantity.sum(split_out=True).to_frame()
+    )
     qnt_over_300 = qnt_over_300[qnt_over_300.l_quantity > 300].drop(
         columns=["l_quantity"]
     )
