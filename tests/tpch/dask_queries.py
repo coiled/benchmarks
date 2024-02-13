@@ -576,7 +576,8 @@ def query_11(dataset_path, fs):
 
     joined["value"] = joined.ps_supplycost * joined.ps_availqty
 
-    res = joined.groupby("ps_partkey")["value"].sum()
+    # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
+    res = joined.groupby("ps_partkey")["value"].sum(split_out=True)
     res = (
         res[res > threshold]
         .round(2)
