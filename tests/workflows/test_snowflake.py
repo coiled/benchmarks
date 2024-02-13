@@ -7,6 +7,10 @@ import pytest
 
 pytestmark = pytest.mark.workflows
 
+pytest.skip(
+    reason="https://github.com/coiled/benchmarks/issues/1341", allow_module_level=True
+)
+
 pytest.importorskip("dask_snowflake")
 pytest.importorskip("sqlalchemy")
 
