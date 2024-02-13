@@ -677,7 +677,7 @@ def query_13(dataset_path, fs):
     )
     subquery = (
         subquery.groupby("c_custkey")
-        .o_orderkey.count()
+        .o_orderkey.count(split_out=True)
         .to_frame()
         .reset_index()
         .rename(columns={"o_orderkey": "c_count"})[["c_custkey", "c_count"]]
