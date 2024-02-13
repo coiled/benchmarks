@@ -576,7 +576,8 @@ def query_11(dataset_path, fs):
 
     joined["value"] = joined.ps_supplycost * joined.ps_availqty
 
-    res = joined.groupby("ps_partkey")["value"].sum()
+    # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
+    res = joined.groupby("ps_partkey")["value"].sum(split_out=True)
     res = (
         res[res > threshold]
         .round(2)
@@ -676,7 +677,8 @@ def query_13(dataset_path, fs):
     )
     subquery = (
         subquery.groupby("c_custkey")
-        .o_orderkey.count()
+        # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
+        .o_orderkey.count(split_out=True)
         .to_frame()
         .reset_index()
         .rename(columns={"o_orderkey": "c_count"})[["c_custkey", "c_count"]]
@@ -887,7 +889,8 @@ def query_17(dataset_path, fs):
 
     avg_qnty_by_partkey = (
         lineitem.groupby("l_partkey")
-        .l_quantity.mean()
+        # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
+        .l_quantity.mean(split_out=True)
         .to_frame()
         .rename(columns={"l_quantity": "l_quantity_avg"})
     )
@@ -950,7 +953,10 @@ def query_18(dataset_path, fs):
         orders, left_on="c_custkey", right_on="o_custkey", how="inner"
     ).merge(lineitem, left_on="o_orderkey", right_on="l_orderkey", how="inner")
 
-    qnt_over_300 = lineitem.groupby("l_orderkey").l_quantity.sum().to_frame()
+    # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
+    qnt_over_300 = (
+        lineitem.groupby("l_orderkey").l_quantity.sum(split_out=True).to_frame()
+    )
     qnt_over_300 = qnt_over_300[qnt_over_300.l_quantity > 300].drop(
         columns=["l_quantity"]
     )
