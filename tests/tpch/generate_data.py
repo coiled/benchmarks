@@ -2,8 +2,11 @@ import enum
 import functools
 import pathlib
 import tempfile
+import time
 import uuid
 import warnings
+from collections import namedtuple
+from typing import Union
 
 import boto3
 import botocore.session
@@ -12,10 +15,13 @@ import coiled
 import dask
 import duckdb
 import psutil
+import pyarrow as pa
 import pyarrow.compute as pc
 import pyarrow.parquet as pq
 
 REGION = None
+SMALL_TABLES = {"region", "nation"}
+SmallTable = namedtuple("SmallTable", ("name", "out_dir", "data"))
 
 
 class CompressionCodec(enum.Enum):
@@ -67,11 +73,65 @@ def generate(
         ) as cluster:
             cluster.adapt(minimum=1, maximum=350)
             with cluster.get_client() as client:
-                jobs = client.map(_tpch_data_gen, range(0, scale), **kwargs)
-                client.gather(jobs)
+                tpch_from_client(client, **kwargs)
     else:
-        _tpch_data_gen(step=None, **kwargs)
+        with dask.distributed.Client() as client:
+            tpch_from_client(client, **kwargs)
+
+            # TODO: hack to suppress noisy "CommClosedError"s
+            # xref: https://github.com/dask/distributed/issues/7192
+            client.retire_workers()
+            time.sleep(5)
     return str(path)
+
+
+def tpch_from_client(client, scale: int, compression: CompressionCodec, **kwargs):
+    jobs = client.map(
+        _tpch_data_gen, range(0, scale), scale=scale, compression=compression, **kwargs
+    )
+    small_tables = client.gather(jobs)
+    client.submit(
+        collect_small_tables, tables=small_tables, compression=compression
+    ).result()
+
+
+def collect_small_tables(
+    tables: list[dict[str, SmallTable]], compression: CompressionCodec
+):
+    table_names = {t for d in tables for t in d}
+    for table in table_names:
+        small_tables: list[SmallTable] = [t[table] for t in tables if table in t]
+        if small_tables:
+            name = small_tables[0].name
+            out_dir = small_tables[0].out_dir
+            table = pa.concat_tables(t.data for t in small_tables)
+            write_table(name, table, out_dir, compression)
+            print(f"Combined {len(small_tables)} partitions for small table '{name}'")
+
+
+def write_table(
+    name: str,
+    table: pa.Table,
+    dir: Union[str, pathlib.Path],
+    compression: CompressionCodec,
+) -> str:
+    filename = f"{name}_{uuid.uuid4()}.{compression.value.lower()}.parquet"
+
+    if isinstance(dir, str) and dir.startswith("s3"):
+        path = f"{dir}/{filename}"
+    else:
+        path = pathlib.Path(dir)
+        path.mkdir(exist_ok=True, parents=True)
+        path = str(path / filename)
+
+    pq.write_table(
+        table,
+        path,
+        compression=compression.value.lower(),
+        write_statistics=True,
+        write_page_index=True,
+    )
+    return path
 
 
 def retry(f):
@@ -96,7 +156,7 @@ def _tpch_data_gen(
     partition_size: str,
     relaxed_schema: bool,
     compression: CompressionCodec,
-):
+) -> dict[str, SmallTable]:
     """
     Run TPC-H dbgen for generating the <step>th part of a multi-part load or update set
     into an output directory.
@@ -115,6 +175,7 @@ def _tpch_data_gen(
         To cast certain datatypes like `date` or `decimal` types to `timestamp_s` and `double`;
         this flag will call the casting done in `_alter_tables` function before outputting parquet files.
     """
+    small_tables = dict()
     with duckdb.connect() as con:
         con.install_extension("tpch")
         con.load_extension("tpch")
@@ -162,13 +223,19 @@ def _tpch_data_gen(
         )
         for table in map(str, tables):
             print(f"Exporting table: {table}")
-            if str(path).startswith("s3://"):
-                out = path + table
-            else:
-                out = path / table
 
-            # TODO: duckdb doesn't (yet) support writing parquet files by limited file size
-            #       so we estimate the page size required for each table to get files of about a target size
+            if str(path).startswith("s3://"):
+                out_dir = path + table
+            else:
+                out_dir = path / table
+
+            # Avoid writing out partitions for small tables, they'll be collected
+            # and written out at the end.
+            if table in SMALL_TABLES:
+                df = con.sql(f"select * from {table}").arrow()
+                small_tables[table] = SmallTable(table, out_dir, df)
+                continue
+
             n_rows_total = con.sql(f"select count(*) from {table}").fetchone()[0]
             n_rows_per_page = rows_approx_mb(
                 con, table, partition_size=partition_size, compression=compression
@@ -180,31 +247,11 @@ def _tpch_data_gen(
                 print(
                     f"Start Exporting Page from {table} - Page {offset} - {offset + n_rows_per_page}"
                 )
-                stmt = (
-                    f"""select * from {table} offset {offset} limit {n_rows_per_page}"""
-                )
+                stmt = f"select * from {table} offset {offset} limit {n_rows_per_page}"
                 df = con.sql(stmt).arrow()
-
-                # DuckDB doesn't support LZ4, and we want to use PyArrow to handle
-                # compression codecs.
-                # ref: https://github.com/duckdb/duckdb/discussions/8950
-                # ref: https://github.com/coiled/benchmarks/pull/1209#issuecomment-1829620531
-                file = f"{table}_{uuid.uuid4()}.{compression.value.lower()}.parquet"
-                if isinstance(out, str) and out.startswith("s3"):
-                    out_ = f"{out}/{file}"
-                else:
-                    out_ = pathlib.Path(out)
-                    out_.mkdir(exist_ok=True, parents=True)
-                    out_ = str(out_ / file)
-                pq.write_table(
-                    df,
-                    out_,
-                    compression=compression.value.lower(),
-                    write_statistics=True,
-                    write_page_index=True,
-                )
-            print(f"Finished exporting table {table}!")
-        print("Finished exporting all data!")
+                out_path = write_table(table, df, out_dir, compression)
+                print(f"Wrote {len(df)} rows of table {table} to {out_path}")
+        return small_tables
 
 
 def rows_approx_mb(con, table_name, partition_size: str, compression: CompressionCodec):
@@ -220,13 +267,7 @@ def rows_approx_mb(con, table_name, partition_size: str, compression: Compressio
         tmp = pathlib.Path(tmpdir) / "tmp.parquet"
         stmt = f"select * from {table_name} limit {sample_size}"
         df = con.sql(stmt).arrow()
-        pq.write_table(
-            df,
-            tmp,
-            compression=compression.value.lower(),
-            write_statistics=True,
-            write_page_index=True,
-        )
+        write_table(table_name, df, tmp, compression)
         mb = tmp.stat().st_size
     return int(
         (len(table) * ((len(table) / sample_size) * partition_size)) / mb
@@ -239,16 +280,9 @@ def _alter_tables(con):
 
     ref discussion here: https://github.com/coiled/benchmarks/pull/1131
     """
-    tables = [
-        "nation",
-        "region",
-        "customer",
-        "supplier",
-        "lineitem",
-        "orders",
-        "partsupp",
-        "part",
-    ]
+    tables = (
+        con.sql("select * from information_schema.tables").arrow().column("table_name")
+    )
     for table in tables:
         schema = con.sql(f"describe {table}").arrow()
 
