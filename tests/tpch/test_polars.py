@@ -19,7 +19,8 @@ def read_data(filename):
             storage_options={
                 "aws_access_key_id": credentials.access_key,
                 "aws_secret_access_key": credentials.secret_key,
-                "region": "us-east-2",
+                "aws_region": "us-east-2",
+                "aws_session_token": credentials.token,
             },
         )
     else:
