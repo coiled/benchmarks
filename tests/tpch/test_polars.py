@@ -532,7 +532,7 @@ def test_query_13(run, restart, dataset_path):
             .agg(pl.col("o_orderkey").len().alias("c_count"))
             .group_by("c_count")
             .len()
-            .select([pl.col("c_count"), pl.col("count").alias("custdist")])
+            .select([pl.col("c_count"), pl.col("len").alias("custdist")])
             .sort(["custdist", "c_count"], descending=[True, True])
         )
         q_final.collect(streaming=True)
