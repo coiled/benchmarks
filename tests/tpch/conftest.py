@@ -340,7 +340,7 @@ def warm_start(module_run, local):
 
 
 @pytest.fixture(scope="function")
-def run(module_run, restart, benchmark_time, warm_start, make_chart):
+def run(module_run, local, restart, benchmark_time, warm_start, make_chart):
     if restart and not local:
         module_run.client.restart()
 
