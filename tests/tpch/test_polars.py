@@ -54,7 +54,7 @@ def test_query_1(run, restart, dataset_path):
                     pl.mean("l_quantity").alias("avg_qty"),
                     pl.mean("l_extendedprice").alias("avg_price"),
                     pl.mean("l_discount").alias("avg_disc"),
-                    pl.count().alias("count_order"),
+                    pl.len().alias("count_order"),
                 ],
             )
             .sort(["l_returnflag", "l_linestatus"])
@@ -167,7 +167,7 @@ def test_query_4(run, restart, dataset_path):
             .filter(pl.col("l_commitdate") < pl.col("l_receiptdate"))
             .unique(subset=["o_orderpriority", "l_orderkey"])
             .group_by("o_orderpriority")
-            .agg(pl.count().alias("order_count"))
+            .agg(pl.len().alias("order_count"))
             .sort(by="o_orderpriority")
             .with_columns(pl.col("order_count").cast(pl.datatypes.Int64))
         ).collect(streaming=True)
@@ -529,9 +529,9 @@ def test_query_13(run, restart, dataset_path):
                 orders_ds, left_on="c_custkey", right_on="o_custkey", how="left"
             )
             .group_by("c_custkey")
-            .agg(pl.col("o_orderkey").count().alias("c_count"))
+            .agg(pl.col("o_orderkey").len().alias("c_count"))
             .group_by("c_count")
-            .count()
+            .len()
             .select([pl.col("c_count"), pl.col("count").alias("custdist")])
             .sort(["custdist", "c_count"], descending=[True, True])
         )
@@ -819,7 +819,7 @@ def test_query_21(run, restart, dataset_path):
             .filter(pl.col("n_name") == var_1)
             .filter(pl.col("o_orderstatus") == "F")
             .group_by("s_name")
-            .agg(pl.count().alias("numwait"))
+            .agg(pl.len().alias("numwait"))
             .sort(by=["numwait", "s_name"], descending=[True, False])
             .limit(100)
         )
