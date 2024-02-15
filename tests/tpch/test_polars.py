@@ -860,7 +860,7 @@ def test_query_22(run, restart, dataset_path):
             .group_by("cntrycode")
             .agg(
                 [
-                    pl.col("c_acctbal").count().alias("numcust"),
+                    pl.col("c_acctbal").len().alias("numcust"),
                     pl.col("c_acctbal").sum().round(2).alias("totacctbal"),
                 ]
             )
