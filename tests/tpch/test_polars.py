@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 import pytest
@@ -9,13 +10,15 @@ pytest.importorskip("pyarrow")
 
 
 def read_data(filename):
+    fileglob = os.path.join(filename, "*")
+
     if filename.startswith("s3://"):
         import boto3
 
         session = boto3.session.Session()
         credentials = session.get_credentials()
         return pl.scan_parquet(
-            filename,
+            fileglob,
             storage_options={
                 "aws_access_key_id": credentials.access_key,
                 "aws_secret_access_key": credentials.secret_key,
@@ -24,7 +27,7 @@ def read_data(filename):
             },
         )
     else:
-        return pl.scan_parquet(filename + "/*")
+        return pl.scan_parquet(fileglob)
 
 
 def test_query_1(run, restart, dataset_path):
