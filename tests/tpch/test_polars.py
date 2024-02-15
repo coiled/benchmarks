@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 
 import pytest
@@ -7,12 +8,9 @@ pytestmark = pytest.mark.tpch_nondask
 pl = pytest.importorskip("polars")
 pytest.importorskip("pyarrow")
 
-from pyarrow.dataset import dataset  # noqa: E402
-
 
 def read_data(filename):
-    pyarrow_dataset = dataset(filename, format="parquet")
-    return pl.scan_pyarrow_dataset(pyarrow_dataset)
+    fileglob = os.path.join(filename, "*")
 
     if filename.startswith("s3://"):
         import boto3
@@ -20,15 +18,16 @@ def read_data(filename):
         session = boto3.session.Session()
         credentials = session.get_credentials()
         return pl.scan_parquet(
-            filename,
+            fileglob,
             storage_options={
                 "aws_access_key_id": credentials.access_key,
                 "aws_secret_access_key": credentials.secret_key,
-                "region": "us-east-2",
+                "aws_region": "us-east-2",
+                "aws_session_token": credentials.token,
             },
         )
     else:
-        return pl.scan_parquet(filename + "/*")
+        return pl.scan_parquet(fileglob)
 
 
 def test_query_1(run, restart, dataset_path):
