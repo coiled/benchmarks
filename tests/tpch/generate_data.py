@@ -66,8 +66,9 @@ def generate(
     if use_coiled:
         with coiled.Cluster(
             n_workers=10,
-            # workload is best with 1vCPU and ~3-4GiB memory
-            worker_vm_types=["m7a.medium", "m3.medium"],
+            # workload is best with 1vCPU and ~6-8GiB memory
+            worker_cpu=[1, 2],
+            worker_memory=["6GiB", "8GiB"],
             worker_options={"nthreads": 1},
             region=REGION,
         ) as cluster:
