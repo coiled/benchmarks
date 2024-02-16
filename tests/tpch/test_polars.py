@@ -8,6 +8,8 @@ pytestmark = pytest.mark.tpch_nondask
 pl = pytest.importorskip("polars")
 pytest.importorskip("pyarrow")
 
+CACHE = False
+
 
 def read_data(filename):
     fileglob = os.path.join(filename, "*")
@@ -83,7 +85,9 @@ def test_query_2(run, restart, dataset_path):
             .filter(pl.col("p_size") == var_1)
             .filter(pl.col("p_type").str.ends_with(var_2))
             .filter(pl.col("r_name") == var_3)
-        ).cache()
+        )
+        if CACHE:
+            result_q1 = result_q1.cache()
 
         final_cols = [
             "s_acctbal",
@@ -645,7 +649,9 @@ def test_query_17(run, restart, dataset_path):
             part_ds.filter(pl.col("p_brand") == var_1)
             .filter(pl.col("p_container") == var_2)
             .join(line_item_ds, how="left", left_on="p_partkey", right_on="l_partkey")
-        ).cache()
+        )
+        if CACHE:
+            res_1 = res_1.cache()
 
         q_final = (
             res_1.group_by("p_partkey")
@@ -806,7 +812,9 @@ def test_query_21(run, restart, dataset_path):
                 line_item_ds.filter(pl.col("l_receiptdate") > pl.col("l_commitdate")),
                 on="l_orderkey",
             )
-        ).cache()
+        )
+        if CACHE:
+            res_1 = res_1.cache()
 
         q_final = (
             res_1.group_by("l_orderkey")
