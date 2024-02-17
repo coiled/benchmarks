@@ -956,13 +956,11 @@ def query_18(dataset_path, fs):
     )
     qnt_over_300 = qnt_over_300[qnt_over_300.l_quantity > 300]
 
-    table = (
-        orders.merge(
-            qnt_over_300, left_on="o_orderkey", right_on="l_orderkey", how="leftsemi"
-        )
-        .merge(lineitem, left_on="o_orderkey", right_on="l_orderkey", how="inner")
-        .merge(customer, left_on="o_custkey", right_on="c_custkey")
+    L = lineitem.merge(
+        qnt_over_300, left_on="l_orderkey", right_on="l_orderkey", how="leftsemi"
     )
+    C_O = customer.merge(orders, left_on="c_custkey", right_on="o_custkey", how="inner")
+    table = C_O.merge(L, left_on="o_orderkey", right_on="l_orderkey", how="inner")
 
     return (
         table.groupby(
