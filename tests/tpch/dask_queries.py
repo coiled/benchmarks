@@ -945,7 +945,6 @@ def query_18(dataset_path, fs):
         o_orderdate
     limit 100
     """
-
     customer = dd.read_parquet(dataset_path + "customer", filesystem=fs)
     orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
     lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
