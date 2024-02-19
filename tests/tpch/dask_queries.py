@@ -949,21 +949,22 @@ def query_18(dataset_path, fs):
     orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
     lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
 
-    table = customer.merge(
-        orders, left_on="c_custkey", right_on="o_custkey", how="inner"
-    ).merge(lineitem, left_on="o_orderkey", right_on="l_orderkey", how="inner")
-
     # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
     qnt_over_300 = (
-        lineitem.groupby("l_orderkey").l_quantity.sum(split_out=True).to_frame()
+        lineitem.groupby("l_orderkey").l_quantity.sum(split_out=True).reset_index()
     )
-    qnt_over_300 = qnt_over_300[qnt_over_300.l_quantity > 300].drop(
-        columns=["l_quantity"]
+    qnt_over_300 = qnt_over_300[qnt_over_300.l_quantity > 300]
+
+    L = lineitem.merge(
+        qnt_over_300, left_on="l_orderkey", right_on="l_orderkey", how="leftsemi"
     )
+    C_O = customer.merge(orders, left_on="c_custkey", right_on="o_custkey", how="inner")
+    table = C_O.merge(L, left_on="o_orderkey", right_on="l_orderkey", how="inner")
 
     return (
-        table.merge(qnt_over_300, on="l_orderkey")
-        .groupby(["c_name", "c_custkey", "o_orderkey", "o_orderdate", "o_totalprice"])
+        table.groupby(
+            ["c_name", "c_custkey", "o_orderkey", "o_orderdate", "o_totalprice"]
+        )
         .l_quantity.sum()
         .reset_index()
         .rename(columns={"l_quantity": "sum"})
