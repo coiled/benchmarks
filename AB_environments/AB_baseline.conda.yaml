@@ -53,4 +53,7 @@ dependencies:
     # - git+https://github.com/dask/dask@main
     # - git+https://github.com/dask/distributed@main
     # This is a commit just before the parquet rewrite
+    - git+https://github.com/dask/dask
+    - git+https://github.com/dask/distributed
+    - git+https://github.com/dask/zict
     - git+https://github.com/dask-contrib/dask-expr@ea63638e280932b96db364eab2428f008f6438dc
