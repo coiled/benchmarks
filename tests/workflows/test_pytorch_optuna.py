@@ -3,6 +3,7 @@ import os
 import pathlib
 import tempfile
 import zipfile
+from asyncio.exceptions import TimeoutError
 
 import pytest
 from dask.distributed import Lock, PipInstall, get_worker
