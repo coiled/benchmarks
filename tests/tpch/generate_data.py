@@ -21,7 +21,7 @@ import pyarrow.parquet as pq
 
 REGION = None
 SMALL_TABLES = {"region", "nation"}
-SmallTable = namedtuple("SmallTable", ("name", "out_dir", "data"))
+SmallTable = namedtuple("SmallTable", ("name", "out_dir", "data", "step"))
 
 
 class CompressionCodec(enum.Enum):
@@ -101,7 +101,10 @@ def collect_small_tables(
 ):
     table_names = {t for d in tables for t in d}
     for table in table_names:
-        small_tables: list[SmallTable] = [t[table] for t in tables if table in t]
+        # sorted to ensure the file rows are the same order as if generated in one go
+        small_tables: list[SmallTable] = sorted(
+            [t[table] for t in tables if table in t], key=lambda t: t.step
+        )
         if small_tables:
             name = small_tables[0].name
             out_dir = small_tables[0].out_dir
@@ -234,7 +237,7 @@ def _tpch_data_gen(
             # and written out at the end.
             if table in SMALL_TABLES:
                 df = con.sql(f"select * from {table}").arrow()
-                small_tables[table] = SmallTable(table, out_dir, df)
+                small_tables[table] = SmallTable(table, out_dir, df, step)
                 continue
 
             n_rows_total = con.sql(f"select count(*) from {table}").fetchone()[0]
