@@ -56,4 +56,4 @@ dependencies:
     - git+https://github.com/dask/dask
     - git+https://github.com/dask/distributed
     - git+https://github.com/dask/zict
-    - git+https://github.com/dask-contrib/dask-expr@07c78dca7c349e6f7d95a5d876af04fe7cea6739
+    - git+https://github.com/phofl/dask-expr@parquet_check
