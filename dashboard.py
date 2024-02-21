@@ -804,7 +804,12 @@ def main() -> None:
     make_barchart_html_report(df_recent, output_dir, by_test=False)
 
     baselines = []
-    for baseline in args.baseline:
+    if "all" in args.baseline:
+        baselines_input = list(df_recent["runtime"].unique())
+    else:
+        baselines_input = args.baseline
+
+    for baseline in baselines_input:
         has_baseline = make_ab_html_report(df_recent, output_dir, baseline)
         if has_baseline:
             baselines.append(baseline)
