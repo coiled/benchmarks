@@ -58,4 +58,4 @@ dependencies:
     - git+https://github.com/dask/dask
     - git+https://github.com/dask/distributed
     - git+https://github.com/dask/zict
-    - git+https://github.com/dask-contrib/dask-expr@02cee357ee1c26c2ed2c60a03055375782c31b2e
+    - git+https://github.com/dask-contrib/dask-expr@717ad0b872e0ae4c655b1671511a6af9d6084be9
