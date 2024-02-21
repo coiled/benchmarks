@@ -32,6 +32,7 @@ def query_11(dataset_path, fs):
     order by
         value desc
     """
+
     partsupp = dd.read_parquet(dataset_path + "partsupp", filesystem=fs)
     supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
     nation = dd.read_parquet(dataset_path + "nation", filesystem=fs)
