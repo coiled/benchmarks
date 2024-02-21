@@ -89,6 +89,7 @@ def test_query_17(client, dataset_path, fs):
     dask_queries.query_17(dataset_path, fs).compute()
 
 
+@pytest.mark.skip(reason="OOM")
 @pytest.mark.shuffle_p2p
 def test_query_18(client, dataset_path, fs):
     dask_queries.query_18(dataset_path, fs).compute()
@@ -99,6 +100,7 @@ def test_query_19(client, dataset_path, fs):
     dask_queries.query_19(dataset_path, fs).compute()
 
 
+@pytest.mark.skip(reason="OOM")
 @pytest.mark.shuffle_p2p
 def test_query_20(client, dataset_path, fs):
     dask_queries.query_20(dataset_path, fs).compute()
