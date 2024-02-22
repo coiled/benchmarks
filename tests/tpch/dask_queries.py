@@ -360,6 +360,7 @@ def query_8(dataset_path, fs):
     final = mkt_total.merge(
         mkt_brazil, left_on="o_year", right_on="o_year", suffixes=("_mkt", "_brazil")
     )
+
     final["mkt_share"] = final.volume_brazil / final.volume_mkt
     return final.sort_values(by=["o_year"], ascending=[True])[["o_year", "mkt_share"]]
 
