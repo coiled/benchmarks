@@ -495,6 +495,7 @@ def query_10(dataset_path, fs):
     )
 
     # TODO: ideally the filters are pushed up before the merge during optimization
+
     # query = query[
     #     (query.o_orderdate >= orderdate_from)
     #     & (query.o_orderdate < orderdate_to)
