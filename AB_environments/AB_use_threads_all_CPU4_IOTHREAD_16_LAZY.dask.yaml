@@ -14,7 +14,7 @@
 pyarrow:
   use_threads:
     to_table: true
-    to_pandas: true
+    to_pandas: false
   cpu_count: 4
   io_thread_count: 16
   buffer:
