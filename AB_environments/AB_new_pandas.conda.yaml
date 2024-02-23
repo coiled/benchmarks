@@ -15,7 +15,7 @@ dependencies:
   - pip
   - coiled >=0.2.54
   - numpy ==1.26.2
-  - pandas ==2.2.1
+  - pandas ==2.2.0
   - dask ==2024.02.0
   - distributed ==2024.02.0
   - dask-expr ==0.2.8
@@ -55,6 +55,7 @@ dependencies:
     # conda. You may alternatively point to your own git fork (but make sure you
     # sync'ed tags!)
     # Read README.md for troubleshooting.
+    - pandas==2.2.1
     - git+https://github.com/dask/dask
     - git+https://github.com/dask/distributed
     - git+https://github.com/dask/zict
