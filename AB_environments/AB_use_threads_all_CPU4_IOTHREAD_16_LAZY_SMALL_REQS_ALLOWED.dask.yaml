@@ -15,3 +15,9 @@ pyarrow:
   use_threads:
     to_table: true
     to_pandas: false
+  cpu_count: 4
+  io_thread_count: 16
+  buffer:
+    hole_size_limit: "100KiB"
+    range_size_limit: "10MiB"
+
