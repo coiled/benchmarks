@@ -1,10 +1,10 @@
 def get_dataset_path(local, scale):
     remote_paths = {
-        1: "s3://coiled-runtime-ci/tpc-h/snappy/scale-1/",
-        10: "s3://coiled-runtime-ci/tpc-h/snappy/scale-10/",
-        100: "s3://coiled-runtime-ci/tpc-h/snappy/scale-100/",
-        1000: "s3://coiled-runtime-ci/tpc-h/snappy/scale-1000/",
-        10000: "s3://coiled-runtime-ci/tpc-h/snappy/scale-10000/",
+        1: "s3://coiled-runtime-ci/tpc_h/snappy/scale-1/",
+        10: "s3://coiled-runtime-ci/tpc_h/snappy/scale-10/",
+        100: "s3://coiled-runtime-ci/tpc_h/snappy/scale-100/",
+        1000: "s3://coiled-runtime-ci/tpc_h/snappy/scale-1000/",
+        10000: "s3://coiled-runtime-ci/tpc_h/snappy/scale-10000/",
     }
     local_paths = {
         1: "./tpch-data/scale-1/",
