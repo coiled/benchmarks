@@ -12,6 +12,7 @@
 #   scheduler:
 #     worker-saturation: 1.2
 pyarrow:
+  batch_size: 100_000_000
   use_threads:
     to_table: true
     to_pandas: false
