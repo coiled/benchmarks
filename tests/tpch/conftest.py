@@ -43,7 +43,7 @@ def pytest_addoption(parser):
 
 @pytest.fixture(scope="session")
 def scale(request):
-    return 1000
+    return 100
 
 
 @pytest.fixture(scope="session")
