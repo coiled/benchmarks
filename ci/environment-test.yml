@@ -15,4 +15,4 @@ dependencies:
   - pytest-xdist
   - pyyaml
   # TPC-H correctness test and DuckDB implementation
-  - python-duckdb ==0.9.2
+  - python-duckdb ==0.10.0
