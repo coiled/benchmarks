@@ -23,6 +23,7 @@ class TestRun(Base):
     coiled_runtime_version = Column(String, nullable=True)
     coiled_software_name = Column(String, nullable=True)
     dask_version = Column(String, nullable=True)
+    dask_expr_version = Column(String, nullable=True)
     distributed_version = Column(String, nullable=True)
     python_version = Column(String, nullable=True)
     platform = Column(String, nullable=True)
