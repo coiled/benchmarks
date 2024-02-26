@@ -4,7 +4,7 @@ from . import dask_queries
 
 pytestmark = pytest.mark.tpch_dask
 
-dd = pytest.importorskip("dask_expr")
+dd = pytest.importorskip("dask.dataframe")
 
 
 def test_query_1(client, dataset_path, fs):
