@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-import dask_expr as dd
+import dask.dataframe as dd
 
 
 def query_1(dataset_path, fs):
