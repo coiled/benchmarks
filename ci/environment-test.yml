@@ -14,5 +14,5 @@ dependencies:
   - pytest-timeout
   - pytest-xdist
   - pyyaml
-  # TPC-H correctness test and DuckDB implementation
-  - python-duckdb ==0.10.0
+  # FIXME: Do not upgrade until 0.10.0 Windows build is released on conda-forge (#1418) 
+  - python-duckdb ==0.9.2
