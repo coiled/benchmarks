@@ -48,11 +48,9 @@ jobs:
             os: ubuntu-latest
             name_prefix: stability
           # Run stability tests on Python Windows and MacOS (latest py39 only)
-          # TODO: duckdb 0.10.0 cannot be install on windows
-          #       xref: https://github.com/coiled/benchmarks/issues/1418
-          # - pytest_args: tests/stability
-          #   python_version: "3.9"
-          #   os: windows-latest
+          - pytest_args: tests/stability
+            python_version: "3.9"
+            os: windows-latest
             name_prefix: stability
           - pytest_args: tests/stability
             python_version: "3.9"

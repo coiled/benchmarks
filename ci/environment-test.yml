@@ -15,4 +15,9 @@ dependencies:
   - pytest-xdist
   - pyyaml
   # TPC-H correctness test and DuckDB implementation
-  - python-duckdb ==0.10.0
+  # Can add duckdb back to conda install after:
+  # https://github.com/coiled/benchmarks/issues/1418
+  # python-duckdb ==0.10.0
+  - pip
+  - pip:
+    - duckdb==0.10.0
