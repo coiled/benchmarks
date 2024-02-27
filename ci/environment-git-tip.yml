@@ -3,7 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - pip:
-    - git+https://github.com/dask/dask
-    - git+https://github.com/dask/distributed
+    - git+https://github.com/dask/dask@ff7551bc9884279eb61c3017e8c4e33084aaf1e5
+    - git+https://github.com/dask/distributed@a61e92eea11cd8228be73a26f07891fa1826e865
     - git+https://github.com/dask/zict
     - git+https://github.com/dask-contrib/dask-expr
