@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-import dask_expr as dd
+import dask.dataframe as dd
 
 
 def query_1(dataset_path, fs):
@@ -360,6 +360,7 @@ def query_8(dataset_path, fs):
     final = mkt_total.merge(
         mkt_brazil, left_on="o_year", right_on="o_year", suffixes=("_mkt", "_brazil")
     )
+
     final["mkt_share"] = final.volume_brazil / final.volume_mkt
     return final.sort_values(by=["o_year"], ascending=[True])[["o_year", "mkt_share"]]
 
@@ -494,6 +495,7 @@ def query_10(dataset_path, fs):
     )
 
     # TODO: ideally the filters are pushed up before the merge during optimization
+
     # query = query[
     #     (query.o_orderdate >= orderdate_from)
     #     & (query.o_orderdate < orderdate_to)

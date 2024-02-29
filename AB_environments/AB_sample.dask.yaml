@@ -11,3 +11,6 @@
 # distributed:
 #   scheduler:
 #     worker-saturation: 1.2
+dask:
+  dataframe:
+    query-planning: True
