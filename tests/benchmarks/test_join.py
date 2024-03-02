@@ -24,6 +24,8 @@ def test_join_big(small_client, memory_multiplier):
     df2_big = df2_big.astype({"predicate": "int"})
 
     join = df1_big.merge(df2_big, on="predicate", how="inner")
+    # Avoid column projections
+    join = join.map_partitions(lambda x: x)
     result = join.size
     wait(result, small_client, 20 * 60)
 
@@ -50,6 +52,8 @@ def test_join_big_small(small_client, memory_multiplier, configure_shuffling):
     df_small_pd = df_small.astype({"predicate": "int"}).compute()
 
     join = df_big.merge(df_small_pd, on="predicate", how="inner")
+    # Avoid column projections
+    join = join.map_partitions(lambda x: x)
     result = join.size
     wait(result, small_client, 20 * 60)
 
@@ -67,6 +71,8 @@ def test_set_index(small_client, persist, memory_multiplier):
     if persist:
         df_big = df_big.persist()
     df_indexed = df_big.set_index("0")
+    # Avoid column projections
+    df_indexed = df_indexed.map_partitions(lambda x: x)
     wait(df_indexed.size, small_client, 20 * 60)
 
 
