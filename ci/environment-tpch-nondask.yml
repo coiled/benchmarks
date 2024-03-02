@@ -12,4 +12,4 @@ dependencies:
   - protobuf ==4.25.2
 
   # Other TPCH tests
-  - polars ==0.20.10
+  - polars ==0.20.13
