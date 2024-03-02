@@ -53,7 +53,7 @@ def test_join_big_small(small_client, memory_multiplier, configure_shuffling):
 
     join = df_big.merge(df_small_pd, on="predicate", how="inner")
     # Avoid column projections
-    join = join.map_partitions(lambda x: x)
+    # join = join.map_partitions(lambda x: x)
     result = join.size
     wait(result, small_client, 20 * 60)
 
