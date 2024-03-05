@@ -47,7 +47,7 @@ h2o_datasets:
 # never actually reached with real paying users.
 max_parallel:
   # Number of parallel A/B test jobs per branch.
-  ci_jobs: 5
+  ci_jobs: 6
   # Number of parallel test_*.py modules per A/B test job.
   # Each module typically spawns one Coiled cluster at a time.
   # Set to 1 to disable pytest-xdist.
