@@ -177,7 +177,7 @@ jobs:
           environment-file: ci/environment-dashboard.yml
 
       - name: Generate dashboards
-        run: python dashboard.py -d benchmark.db -o static -b baseline
+        run: python dashboard.py -d benchmark.db -o static -b all
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
