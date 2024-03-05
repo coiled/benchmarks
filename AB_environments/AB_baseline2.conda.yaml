@@ -1,17 +1,13 @@
-# Sample conda environment file for A/B testing.
-# Change contents/delete/rename as needed.
 
-# Every A/B environment *must* present these three files:
-# - AB_<name>.conda.yaml
-# - AB_<name>.dask.yaml
-# - AB_<name>.cluster.yaml
+# Special environment file for A/B testing, used to define the conda environment for the
+# baseline environment.
+# Change contents, but do not rename.
 
-# You should always start from a copy-paste from AB_baseline.conda.yaml
 channels:
   - conda-forge
 dependencies:
   - python =3.9  # Single '=' means latest patch version available
-  # Copy-paste from AB_baseline.conda.yaml
+  # Copy-paste from ci/environment.yml
   - pip
   - coiled >=0.2.54
   - numpy ==1.26.2
@@ -57,4 +53,4 @@ dependencies:
     # Read README.md for troubleshooting.
     - git+https://github.com/dask/dask@0a0065d2c2749516ee64ef290286fb253910d27b
     - git+https://github.com/dask/distributed@bec6ea59d4535d972d3b82a8cef8a6697f637b18
-    - git+https://github.com/dask-contrib/dask-expr@c0fc7d38ced8b636e19df209311a36d59f4a3f8c
+    - git+https://github.com/dask-contrib/dask-expr@248d97f6babb59b15d5babc71b22f0be63237849
