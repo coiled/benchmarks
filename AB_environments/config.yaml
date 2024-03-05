@@ -17,7 +17,6 @@ targets:
   # - tests/runtime
   # - tests/stability
   - tests/tpch/test_dask.py
-  - tests/tpch/test_optimization.py
   # - tests/benchmarks/test_futures.py
   # - tests/benchmarks/test_array.py::test_basic_sum
 
@@ -47,7 +46,7 @@ h2o_datasets:
 # never actually reached with real paying users.
 max_parallel:
   # Number of parallel A/B test jobs per branch.
-  ci_jobs: 9
+  ci_jobs: 6
   # Number of parallel test_*.py modules per A/B test job.
   # Each module typically spawns one Coiled cluster at a time.
   # Set to 1 to disable pytest-xdist.
