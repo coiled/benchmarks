@@ -29,7 +29,7 @@ def pytest_addoption(parser):
     parser.addoption(
         "--scale",
         action="store",
-        default=100,
+        default=1000,
         help="Scale to run, 10, 100, 1000, or 10000",
     )
     parser.addoption(
