@@ -1,0 +1,68 @@
+name: TPC-H Scale 1000
+on:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: tpch
+  cancel-in-progress: true
+
+defaults:
+  # Required shell entrypoint to have properly activated conda environments
+  run:
+    shell: bash -l {0}
+
+job:
+  tpch:
+    name: TPC-H
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up environment
+      uses: conda-incubator/setup-miniconda@v2
+      with:
+        miniforge-variant: Mambaforge
+        use-mamba: true
+        condarc-file: ci/condarc
+        python-version: "3.9"
+        environment-file: ci/environment.yml
+
+    - name: Add TPC-H non-dask dependencies 
+      run: mamba env update --file ci-environment-tpch-nondask.yml
+
+    - name: Upgrade dask to git tip
+      run: mamba env update --file ci/environment-git-tip.yml
+
+    - name: Add test dependencies
+      run: mamba env update --file ci/environment-test.yml
+
+    - name: Dump environment
+      run: |
+        # For debugging
+        echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
+        mamba env export | grep -E -v '^prefix:.*$'
+
+    - name: Run TPC-H benchmarks (except polars)
+      env:
+        DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+        AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+        COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        DB_NAME: tpch_1000.db
+        CLUSTER_DUMP: always
+        DASK_DATAFRAME__QUERY_PLANNING: True
+      run: |
+        pytest --benchmark tests/tpch/test_dask.py tests/tpch/test_duckdb.py tests/tpch/test_pyspark.py -n 4 --dist loadscope --scale 1000
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: tpch-benchmark
+        path: |
+          tpch_1000.db
+          mamba_env_export.yml
