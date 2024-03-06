@@ -31,7 +31,7 @@ jobs:
         environment-file: ci/environment.yml
 
     - name: Add TPC-H non-dask dependencies 
-      run: mamba env update --file ci-environment-tpch-nondask.yml
+      run: mamba env update --file ci/environment-tpch-nondask.yml
 
     - name: Upgrade dask to git tip
       run: mamba env update --file ci/environment-git-tip.yml
