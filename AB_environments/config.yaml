@@ -8,7 +8,7 @@ repeat: 3
 # Set to true to automatically create a verbatim copy of AB_baseline and then compare
 # the two in the A/B tests. Set to false to save some money if you are already confident
 # that the 'repeat' setting is high enough.
-test_null_hypothesis: false
+test_null_hypothesis: true
 
 # Test directories, test files, or individual tests to run.
 targets:
@@ -47,8 +47,8 @@ h2o_datasets:
 # never actually reached with real paying users.
 max_parallel:
   # Number of parallel A/B test jobs per branch.
-  ci_jobs: 6
+  ci_jobs: 10
   # Number of parallel test_*.py modules per A/B test job.
   # Each module typically spawns one Coiled cluster at a time.
   # Set to 1 to disable pytest-xdist.
-  pytest_workers_per_job: 4
+  pytest_workers_per_job: 2
