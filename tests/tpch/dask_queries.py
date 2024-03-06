@@ -3,6 +3,12 @@ from datetime import datetime, timedelta
 import dask.dataframe as dd
 
 
+def get_kwargs():
+    import dask_expr as dx
+
+    return {} if dx.__version__ == "0.5.3+25.gb117d6a" else {"split_out": True}
+
+
 def query_1(dataset_path, fs):
     VAR1 = datetime(1998, 9, 2)
     lineitem_ds = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
@@ -579,7 +585,7 @@ def query_11(dataset_path, fs):
     joined["value"] = joined.ps_supplycost * joined.ps_availqty
 
     # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
-    res = joined.groupby("ps_partkey")["value"].sum(split_out=True)
+    res = joined.groupby("ps_partkey")["value"].sum(**get_kwargs())
     res = (
         res[res > threshold]
         .round(2)
@@ -680,7 +686,7 @@ def query_13(dataset_path, fs):
     subquery = (
         subquery.groupby("c_custkey")
         # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
-        .o_orderkey.count(split_out=True)
+        .o_orderkey.count(**get_kwargs())
         .to_frame()
         .reset_index()
         .rename(columns={"o_orderkey": "c_count"})[["c_custkey", "c_count"]]
@@ -892,7 +898,7 @@ def query_17(dataset_path, fs):
     avg_qnty_by_partkey = (
         lineitem.groupby("l_partkey")
         # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
-        .l_quantity.mean(split_out=True)
+        .l_quantity.mean(**get_kwargs())
         .to_frame()
         .rename(columns={"l_quantity": "l_quantity_avg"})
     )
@@ -953,7 +959,7 @@ def query_18(dataset_path, fs):
 
     # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
     qnt_over_300 = (
-        lineitem.groupby("l_orderkey").l_quantity.sum(split_out=True).reset_index()
+        lineitem.groupby("l_orderkey").l_quantity.sum(**get_kwargs()).reset_index()
     )
     qnt_over_300 = qnt_over_300[qnt_over_300.l_quantity > 300]
 
