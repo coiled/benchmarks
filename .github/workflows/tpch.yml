@@ -12,7 +12,7 @@ defaults:
   run:
     shell: bash -l {0}
 
-job:
+jobs:
   tpch:
     name: TPC-H
     runs-on: ubuntu-latest
