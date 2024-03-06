@@ -6,7 +6,7 @@ import dask.dataframe as dd
 def get_kwargs():
     import dask_expr as dx
 
-    return {} if dx.__version__ == "0.5.3+27.g83f104e" else {"split_out": True}
+    return {} if dx.__version__ == "0.5.3+30.gcfa1a02" else {"split_out": True}
 
 
 def query_1(dataset_path, fs):
@@ -898,7 +898,7 @@ def query_17(dataset_path, fs):
     avg_qnty_by_partkey = (
         lineitem.groupby("l_partkey")
         # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
-        .l_quantity.mean(**get_kwargs())
+        .l_quantity.mean(split_out=True)
         .to_frame()
         .rename(columns={"l_quantity": "l_quantity_avg"})
     )
