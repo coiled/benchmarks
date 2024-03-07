@@ -795,6 +795,7 @@ def query_15(dataset_path, fs):
         (lineitem.l_shipdate >= shipdate_from) & (lineitem.l_shipdate < shipdate_to)
     ]
     lineitem["revenue"] = lineitem.l_extendedprice * (1 - lineitem.l_discount)
+
     revenue = (
         lineitem.groupby("l_suppkey")
         .revenue.sum()
