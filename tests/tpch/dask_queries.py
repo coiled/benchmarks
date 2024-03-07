@@ -534,7 +534,7 @@ def query_10(dataset_path, fs):
     )
 
 
-def query_11(dataset_path, fs):
+def query_11(dataset_path, fs, scale=1):
     """
     select
         ps_partkey,
@@ -552,7 +552,7 @@ def query_11(dataset_path, fs):
     having
             sum(ps_supplycost * ps_availqty) > (
         select
-            sum(ps_supplycost * ps_availqty) * 0.0001
+            sum(ps_supplycost * ps_availqty) * 0.0001 / SF
         from
             partsupp,
             supplier,
@@ -574,7 +574,7 @@ def query_11(dataset_path, fs):
     ).merge(nation, left_on="s_nationkey", right_on="n_nationkey", how="inner")
     joined = joined[joined.n_name == "GERMANY"]
 
-    threshold = (joined.ps_supplycost * joined.ps_availqty).sum() * 0.0001
+    threshold = (joined.ps_supplycost * joined.ps_availqty).sum() * 0.0001 / scale
 
     joined["value"] = joined.ps_supplycost * joined.ps_availqty
 

@@ -468,7 +468,7 @@ def test_query_10(run, connection, dataset_path):
     run(_)
 
 
-def test_query_11(run, connection, dataset_path):
+def test_query_11(run, connection, dataset_path, scale):
     def _():
         connection().execute(
             f"""
@@ -491,7 +491,7 @@ def test_query_11(run, connection, dataset_path):
                 ps_partkey having
                         sum(ps_supplycost * ps_availqty) > (
                     select
-                        sum(ps_supplycost * ps_availqty) * 0.0001
+                        sum(ps_supplycost * ps_availqty) * {0.0001 / scale}
                     from
                         partsupp,
                         supplier,
