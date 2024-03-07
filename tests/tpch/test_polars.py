@@ -435,14 +435,14 @@ def test_query_10(run, restart, dataset_path):
     run(_)
 
 
-def test_query_11(run, restart, dataset_path):
+def test_query_11(run, restart, dataset_path, scale):
     def _():
         supplier_ds = read_data(dataset_path + "supplier")
         part_supp_ds = read_data(dataset_path + "partsupp")
         nation_ds = read_data(dataset_path + "nation")
 
         var_1 = "GERMANY"
-        var_2 = 0.0001
+        var_2 = 0.0001 / scale
 
         res_1 = (
             part_supp_ds.join(supplier_ds, left_on="ps_suppkey", right_on="s_suppkey")

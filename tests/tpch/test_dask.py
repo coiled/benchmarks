@@ -55,8 +55,8 @@ def test_query_10(client, dataset_path, fs):
 
 
 @pytest.mark.shuffle_p2p
-def test_query_11(client, dataset_path, fs):
-    dask_queries.query_11(dataset_path, fs).compute()
+def test_query_11(client, dataset_path, fs, scale):
+    dask_queries.query_11(dataset_path, fs, scale).compute()
 
 
 @pytest.mark.shuffle_p2p
