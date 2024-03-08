@@ -267,10 +267,6 @@ def spark(spark_setup, benchmark_time):
 def fs(local):
     if local:
         return None
-    import dask_expr as dx
-
-    if dx.__version__ == "0.5.3+36.g4ee453c":
-        return None
     else:
         import boto3
         from pyarrow.fs import S3FileSystem
