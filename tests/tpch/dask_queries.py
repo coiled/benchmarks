@@ -4,9 +4,7 @@ import dask.dataframe as dd
 
 
 def get_kwargs():
-    import dask_expr as dx
-
-    return {} if dx.__version__ == "0.5.3+30.gcfa1a02" else {"split_out": True}
+    return {"split_out": True}
 
 
 def query_1(dataset_path, fs):
