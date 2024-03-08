@@ -269,7 +269,7 @@ def fs(local):
         return None
     import dask_expr as dx
 
-    if dx.__version__ == "0.5.3+43.gef4ce5c":
+    if dx.__version__ == "0.5.3+36.g4ee453c":
         return None
     else:
         import boto3
