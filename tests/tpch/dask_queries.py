@@ -361,7 +361,7 @@ def query_8(dataset_path, fs, scale):
         mkt_brazil, left_on="o_year", right_on="o_year", suffixes=("_mkt", "_brazil")
     )
 
-    final["mkt_share"] = final.volume_brazil / final.volume_mkt
+    final["mkt_share"] = (final.volume_brazil / final.volume_mkt).round(2)
     return final.sort_values(by=["o_year"], ascending=[True])[["o_year", "mkt_share"]]
 
 
@@ -968,7 +968,7 @@ def query_18(dataset_path, fs, scale):
         )
         .l_quantity.sum()
         .reset_index()
-        .rename(columns={"l_quantity": "sum"})
+        .rename(columns={"l_quantity": "col6"})
         .sort_values(["o_totalprice", "o_orderdate"], ascending=[False, True])
         .head(100, compute=False)
     )
