@@ -1,6 +1,17 @@
-name: TPC-H Scale 1000
+name: TPC-H Benchmarks
 on:
   workflow_dispatch:
+    inputs:
+    scale:
+      description: 'Scale Factor'
+      required: true
+      default: 1000
+      type: choice
+      options:
+        - 1000
+        - 100
+        - 10
+        - 1
 
 concurrency:
   group: tpch
@@ -51,7 +62,7 @@ jobs:
         AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
         AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-        DB_NAME: tpch_1000.db
+        DB_NAME: tpch_${{ inputs.scale }}.db
         CLUSTER_DUMP: always
         DASK_DATAFRAME__QUERY_PLANNING: True
       run: |
@@ -60,7 +71,7 @@ jobs:
             tests/tpch/test_duckdb.py \
             tests/tpch/test_pyspark.py \
             -n 4 --dist loadscope \
-            --scale 1000
+            --scale ${{ inputs.scale }}
 
     - name: Upload benchmark results
       uses: actions/upload-artifact@v3
@@ -68,5 +79,5 @@ jobs:
       with:
         name: tpch-benchmark
         path: |
-          tpch_1000.db
+          tpch_${{ inputs.scale }}.db
           mamba_env_export.yml
