@@ -18,33 +18,29 @@ workflows will not work on a fork (`yourname/benchmarks`).
 
 Open the `AB_environments/` directory and rename/create files as needed.
 Each A/B runtime is made of exactly three files:
-- `AB_<name>.conda.yaml` (a conda environment file)
+- `AB_<name>.requirements.txt` (a pip requirements file)
 - `AB_<name>.dask.yaml` (a dask configuration file)
 - `AB_<name>.cluster.yaml` (coiled.Cluster kwargs)
+- `AB_<name>.conda.yaml` (a conda environment file, specifying python version)
 
 You may create as many A/B runtime configs as you want in a single `coiled-runtime`
 branch.
 
-The conda environment file can contain whatever you want, as long as it can run the
+The requirements file can contain whatever you want, as long as it can run the
 tests; e.g.
 
-```yaml
-channels:
-  - conda-forge
-dependencies:
-    - python =3.9
-    - <copy-paste from ci/environment.yaml, minus bits you want to change>
-    # Changes from the default environment start here
-    - dask ==2023.4.1
-    - distributed ==2023.4.1
+```
+    <copy-paste from ci/environment.yaml, minus bits you want to change>
+    Changes from the default environment start here
+    dask==2023.4.1
+    distributed==2023.4.1
 ```
 Instead of published packages, you could also use arbitrary git hashes of arbitrary
 forks, e.g.
 
-```yaml
-    - pip:
-      - git+https://github.com/dask/dask@b85bf5be72b02342222c8a0452596539fce19bce
-      - git+https://github.com/yourname/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+    git+https://github.com/dask/dask@b85bf5be72b02342222c8a0452596539fce19bce
+    git+https://github.com/yourname/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
 ```
 
 You may also ignore the default environment and go for a barebones environment. The bare
@@ -52,15 +48,11 @@ minimum you need to install is ``dask``, ``distributed``, ``coiled`` and ``s3fs`
 This will however skip some tests, e.g. zarr and ML-related ones, and it will also
 expose you to less controlled behaviour e.g. dependent on which versions of numpy and
 pandas are pulled in:
-```yaml
-channels:
-  - conda-forge
-dependencies:
-    - python =3.9
-    - dask ==2023.4.1
-    - distributed ==2023.4.1
-    - coiled
-    - s3fs
+```
+    dask ==2023.4.1
+    distributed ==2023.4.1
+    coiled
+    s3fs
 ```
 
 The second file in each triplet is a dask config file. If you don't want to change the
@@ -73,7 +65,7 @@ distributed:
     work-stealing: False
 ```
 
-The third and final file defines creation options to the dask cluster. It must be
+The third file defines creation options to the dask cluster. It must be
 formatted as follows:
 ```yaml
 default:
@@ -106,9 +98,10 @@ small_cluster:
 ### 3. Create baseline files
 If you create *any* files in `AB_environments/`, you *must* create the baseline environment:
 
-- `AB_baseline.conda.yaml`
+- `AB_baseline.requirements.txt`
 - `AB_baseline.dask.yaml`
 - `AB_baseline.cluster.yaml`
+- `AB_baseline.conda.yaml`
 
 ### 4. Tweak configuration file
 Open `AB_environments/config.yaml` and set the `repeat` setting to a number higher than 0.
@@ -155,14 +148,22 @@ channels:
   - conda-forge
 dependencies:
     - python =3.9
-    - coiled
-    - dask
-    - distributed
-    - s3fs
+
 ```
+  
+- `AB_environments/AB_baseline.requirements.txt`:
+
+```
+    coiled
+    dask
+    distributed
+    s3fs
+```
+
 - `AB_environments/AB_baseline.dask.yaml`: (empty file)
 - `AB_environments/AB_baseline.cluster.yaml`: (empty file)
 - `AB_environments/AB_no_steal.conda.yaml`: (same as baseline)
+- `AB_environments/AB_no_steal.requirements.txt`: (same as baseline)
 - `AB_environments/AB_no_steal.dask.yaml`:
 ```yaml
 distributed:

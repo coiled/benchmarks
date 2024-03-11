@@ -81,6 +81,9 @@ jobs:
       - name: Add test dependencies
         run: mamba env update --file ci/environment-test.yml
 
+      - name: Add Environment dependencies
+        run: python -m pip install -r AB_environments/${{ matrix.runtime-version }}.requirements.txt
+
       - name: Dump environment
         run: |
           # For debugging
