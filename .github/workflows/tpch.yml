@@ -14,22 +14,22 @@ on:
           - 1
       dask:
         description: 'Dask'
-        required: false
+        required: true
         default: true
         type: boolean
       duckdb:
         description: 'DuckDB'
-        required: false
+        required: true
         default: true
         type: boolean
       polars:
         description: 'Polars'
-        required: false
+        required: true
         default: false
         type: boolean
       pyspark:
         description: 'PySpark'
-        required: false
+        required: true
         default: true
         type: boolean
 
