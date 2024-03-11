@@ -56,7 +56,12 @@ jobs:
         CLUSTER_DUMP: always
         DASK_DATAFRAME__QUERY_PLANNING: True
       run: |
-        pytest --benchmark tests/tpch/test_dask.py tests/tpch/test_duckdb.py tests/tpch/test_pyspark.py -n 4 --dist loadscope --scale 1000
+        pytest --benchmark \
+            tests/tpch/test_dask.py \
+            tests/tpch/test_duckdb.py \
+            tests/tpch/test_pyspark.py \
+            -n 4 --dist loadscope \
+            --scale 1000
 
     - name: Upload benchmark results
       uses: actions/upload-artifact@v3
