@@ -1,6 +1,5 @@
 name: TPC-H Scale 1000
 on:
-  pull_request:
   workflow_dispatch:
 
 concurrency:
