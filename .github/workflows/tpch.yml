@@ -12,6 +12,26 @@ on:
         - 100
         - 10
         - 1
+    dask:
+      description: 'Dask'
+      required: false
+      default: true
+      type: boolean
+    duckdb:
+      description: 'DuckDB'
+      required: false
+      default: true
+      type: boolean
+    polars:
+      description: 'Polars'
+      required: false
+      default: false
+      type: boolean
+    pyspark:
+      description: 'PySpark'
+      required: false
+      default: true
+      type: boolean
 
 concurrency:
   # Only allow a single run at a time to rate limiting
@@ -56,6 +76,26 @@ jobs:
         echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
         mamba env export | grep -E -v '^prefix:.*$'
 
+    - name: Add Dask to benchmark if enabled
+      if: ${{ inputs.dask }}
+      run: |
+        echo PYTEST_BENCHMARKS=" tests/tpch/test_dask.py" >> $GITHUB_ENV
+
+    - name: Add DuckDB to benchmark if enabled
+      if: ${{ inputs.duckb }}
+      run: |
+        echo PYTEST_BENCHMARKS=" tests/tpch/test_duckdb.py" >> $GITHUB_ENV
+    
+    - name: Add Polars to benchmark if enabled
+      if: ${{ inputs.polars }}
+      run: |
+        echo PYTEST_BENCHMARKS=" tests/tpch/test_polars.py" >> $GITHUB_ENV
+    
+    - name: Add PySpark to benchmark if enabled
+      if: ${{ inputs.pyspark }}
+      run: |
+        echo PYTEST_BENCHMARKS=" tests/tpch/test_pyspark.py" >> $GITHUB_ENV
+
     - name: Run TPC-H benchmarks (except polars)
       env:
         DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
@@ -68,9 +108,7 @@ jobs:
         DASK_DATAFRAME__QUERY_PLANNING: True
       run: |
         pytest --benchmark \
-            tests/tpch/test_dask.py \
-            tests/tpch/test_duckdb.py \
-            tests/tpch/test_pyspark.py \
+            ${{ env.PYTEST_BENCHMARKS }}
             -n 4 --dist loadscope \
             --scale ${{ inputs.scale }}
 
