@@ -2,36 +2,36 @@ name: TPC-H Benchmarks
 on:
   workflow_dispatch:
     inputs:
-    scale:
-      description: 'Scale Factor'
-      required: true
-      default: 1000
-      type: choice
-      options:
-        - 1000
-        - 100
-        - 10
-        - 1
-    dask:
-      description: 'Dask'
-      required: false
-      default: true
-      type: boolean
-    duckdb:
-      description: 'DuckDB'
-      required: false
-      default: true
-      type: boolean
-    polars:
-      description: 'Polars'
-      required: false
-      default: false
-      type: boolean
-    pyspark:
-      description: 'PySpark'
-      required: false
-      default: true
-      type: boolean
+      scale:
+        description: 'Scale Factor'
+        required: true
+        default: 1000
+        type: choice
+        options:
+          - 1000
+          - 100
+          - 10
+          - 1
+      dask:
+        description: 'Dask'
+        required: false
+        default: true
+        type: boolean
+      duckdb:
+        description: 'DuckDB'
+        required: false
+        default: true
+        type: boolean
+      polars:
+        description: 'Polars'
+        required: false
+        default: false
+        type: boolean
+      pyspark:
+        description: 'PySpark'
+        required: false
+        default: true
+        type: boolean
 
 concurrency:
   # Only allow a single run at a time to rate limiting
