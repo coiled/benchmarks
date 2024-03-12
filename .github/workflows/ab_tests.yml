@@ -69,6 +69,7 @@ jobs:
           cp AB_baseline.conda.yaml AB_null_hypothesis.conda.yaml
           cp AB_baseline.dask.yaml AB_null_hypothesis.dask.yaml
           cp AB_baseline.cluster.yaml AB_null_hypothesis.cluster.yaml
+          cp AB_baseline.requirements.txt AB_null_hypothesis.requirements.txt
 
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v2
