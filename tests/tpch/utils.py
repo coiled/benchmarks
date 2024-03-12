@@ -40,7 +40,7 @@ def get_cluster_spec(scale):
     if scale == 1:
         return {
             "worker_vm_types": ["m6i.large"],
-            "n_workers": 2,
+            "n_workers": 4,
             **everywhere,
         }
     if scale == 10:
