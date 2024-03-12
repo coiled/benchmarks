@@ -2,9 +2,6 @@
 coiled>=0.2.54
 numpy==1.26.2
 pandas==2.1.4
-dask==2023.12.0
-distributed==2023.12.0
-dask-expr==0.2.8
 dask-labextension==7.0.0
 dask-ml==2023.3.24
 fsspec==2023.12.1
@@ -21,7 +18,7 @@ click==8.1.7
 xarray==2023.12.0
 zarr==2.16.1
 cftime==1.6.3
-msgpack-python==1.0.7
+msgpack==1.0.7
 cloudpickle==3.0.0
 tornado==6.3.3
 toolz==0.12.0
@@ -33,13 +30,15 @@ sqlalchemy==2.0.23
 pynvml==11.5.0
 bokeh==3.3.2
 gilknocker==0.4.1
-openssl>1.1.0g
 # End copy-paste
 
 # Make sure you install dask and distributed either both from pip or both from
 # conda. You may alternatively point to your own git fork (but make sure you
 # sync'ed tags!)
 # Read README.md for troubleshooting.
+dask==2023.12.0
+distributed==2023.12.0
+dask-expr==0.2.8
 # git+https://github.com/dask/dask@191d39177009d2cce25b818878118e35329b6db3
 # git+https://github.com/dask/distributed@0304fb6e665e36abf9e3086173cccd36e29ae84d
 # git+https://github.com/dask-contrib/dask-expr@9f765764da3f518ddd4c896c98b8a40a979a5553

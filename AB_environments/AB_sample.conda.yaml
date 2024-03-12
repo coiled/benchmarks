@@ -11,4 +11,5 @@ channels:
   - conda-forge
 dependencies:
   - python =3.9  # Single '=' means latest patch version available
+  - openssl>1.1.0g
   # NOTE: Add/Change/Remove packages using AB_<name>.requirements.txt file
