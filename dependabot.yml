@@ -1,2 +1,6 @@
-directory: AB_environments
-package-ecosystem: pip
+version: 2
+updates:
+  - directory: AB_environments
+    package-ecosystem: pip
+    schedule:
+      interval: "weekly"
