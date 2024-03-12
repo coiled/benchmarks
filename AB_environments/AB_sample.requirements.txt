@@ -32,9 +32,8 @@ bokeh==3.3.2
 gilknocker==0.4.1
 # End copy-paste
 
-# Make sure you install dask and distributed either both from pip or both from
-# conda. You may alternatively point to your own git fork (but make sure you
-# sync'ed tags!)
+# Make sure you install dask and distributed, you may alternatively
+# point to your own git fork (but make sure you sync'ed tags!)
 # Read README.md for troubleshooting.
 dask==2023.12.0
 distributed==2023.12.0
