@@ -615,7 +615,7 @@ def test_query_15(run, connection, dataset_path):
             create or replace temporary view revenue (supplier_no, total_revenue) as
                 select
                     l_suppkey,
-                    sum(l_extendedprice * (1 - l_discount))
+                    sum(l_extendedprice::DECIMAL * (1 - l_discount::DECIMAL))
                 from
                     read_parquet('{dataset_path}lineitem/*.parquet')
                 where
@@ -743,7 +743,7 @@ def test_query_18(run, connection, dataset_path):
                 c_name,
                 c_custkey,
                 o_orderkey,
-                o_orderdate as o_orderdat,
+                o_orderdate,
                 o_totalprice,
                 sum(l_quantity) as col6
             from
