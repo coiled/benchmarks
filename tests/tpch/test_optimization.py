@@ -42,9 +42,9 @@ def test_optimization(query, dataset_path, fs, client):
     result.repartition(npartitions=1).optimize()
 
 
-def test_delay_computation_start(query, dataset_path, fs, client):
+def test_delay_computation_start(query, dataset_path, fs, client, scale):
     func = getattr(dask_queries, f"query_{query}")
-    result = func(dataset_path, fs).optimize()
+    result = func(dataset_path, fs, scale).optimize()
     # Client.compute unblocks as soon as update_graph finishes, i.e. graph is
     # submitted and parsed. This is the time until the dashboard kicks off
     client.compute(result)
