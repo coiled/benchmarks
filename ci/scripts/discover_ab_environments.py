@@ -3,6 +3,7 @@ from __future__ import annotations
 import glob
 import json
 import os.path
+import pathlib
 from typing import TypedDict
 
 import yaml
@@ -44,9 +45,10 @@ def build_json() -> JSONOutput:
     runtimes = []
     for conda_fname in sorted(glob.glob("AB_environments/AB_*.conda.yaml")):
         env_name = os.path.basename(conda_fname)[: -len(".conda.yaml")]
-        dask_fname = f"AB_environments/{env_name}.dask.yaml"
-        # Raise FileNotFoundError if missing
-        open(dask_fname).close()
+        for reqf in ("dask.yaml", "requirements.txt"):
+            path = pathlib.Path(f"AB_environments/{env_name}.{reqf}")
+            if not path.exists():
+                raise FileNotFoundError(f"Required file '{path}' not found.")
         runtimes.append(env_name)
 
     if not runtimes:
