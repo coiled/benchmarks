@@ -73,7 +73,7 @@ def get_cluster_spec(scale):
 def get_single_vm_spec(scale):
     if scale == 1:
         return {
-            "vm_type": "m6i.xlarge",
+            "vm_type": "m6i.2xlarge",
         }
     if scale == 10:
         return {
