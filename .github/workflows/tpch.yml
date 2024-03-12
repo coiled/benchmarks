@@ -108,7 +108,7 @@ jobs:
         DASK_DATAFRAME__QUERY_PLANNING: True
       run: |
         pytest --benchmark \
-            ${{ env.PYTEST_BENCHMARKS }}
+            ${{ env.PYTEST_BENCHMARKS }} \
             -n 4 --dist loadscope \
             --scale ${{ inputs.scale }}
 
