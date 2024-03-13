@@ -958,10 +958,10 @@ def query_18(dataset_path, fs):
     qnt_over_300 = qnt_over_300[qnt_over_300.l_quantity > 300]
 
     table = (
-        qnt_over_300.merge(
-            orders, left_on="l_orderkey", right_on="o_orderkey", how="inner"
+        orders.merge(
+            qnt_over_300, left_on="o_orderkey", right_on="l_orderkey", how="leftsemi"
         )
-        .merge(lineitem, left_on="l_orderkey", right_on="l_orderkey", how="leftsemi")
+        .merge(lineitem, left_on="o_orderkey", right_on="l_orderkey", how="inner")
         .merge(customer, left_on="o_custkey", right_on="c_custkey", how="inner")
     )
 
