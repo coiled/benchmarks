@@ -889,23 +889,22 @@ def query_17(dataset_path, fs):
     lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
     part = dd.read_parquet(dataset_path + "part", filesystem=fs)
 
+    joined = lineitem.merge(
+        part, left_on="l_partkey", right_on="p_partkey", how="inner"
+    )
+    joined = joined[joined.p_brand == "Brand#23"]
+    joined = joined[joined.p_container == "MED BOX"]
     avg_qnty_by_partkey = (
-        lineitem.groupby("l_partkey")
-        # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
-        .l_quantity.mean(split_out=True)
+        joined.groupby("l_partkey")
+        .l_quantity.mean()
         .to_frame()
         .rename(columns={"l_quantity": "l_quantity_avg"})
     )
+    table = joined.merge(
+        avg_qnty_by_partkey, left_on="l_partkey", right_index=True, how="left"
+    )
 
-    table = lineitem.merge(
-        part, left_on="l_partkey", right_on="p_partkey", how="inner"
-    ).merge(avg_qnty_by_partkey, left_on="l_partkey", right_index=True, how="left")
-
-    table = table[
-        (table.p_brand == "Brand#23")
-        & (table.p_container == "MED BOX")
-        & (table.l_quantity < 0.2 * table.l_quantity_avg)
-    ]
+    table = table[table.l_quantity < 0.2 * table.l_quantity_avg]
     return (
         (table.l_extendedprice.to_frame().sum() / 7.0).round(2).to_frame("avg_yearly")
     )
