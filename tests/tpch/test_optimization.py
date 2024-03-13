@@ -35,9 +35,9 @@ def query(request):
     return request.param
 
 
-def test_optimization(query, dataset_path, fs, client):
+def test_optimization(query, dataset_path, fs, client, scale):
     func = getattr(dask_queries, f"query_{query}")
-    result = func(dataset_path, fs)
+    result = func(dataset_path, fs, scale)
     # We need to inject .repartition(npartitions=1) which .compute() does under the hood
     result.repartition(npartitions=1).optimize()
 
