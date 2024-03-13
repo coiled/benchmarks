@@ -139,5 +139,7 @@ def test_dask_results(query, local, answers_path, client):
     from . import dask_queries
 
     func = getattr(dask_queries, f"query_{query}")
-    result = func(get_dataset_path(local, VERIFICATION_SCALE), None).compute()
+    result = func(
+        get_dataset_path(local, VERIFICATION_SCALE), None, VERIFICATION_SCALE
+    ).compute()
     verify_result(result, query, answers_path)
