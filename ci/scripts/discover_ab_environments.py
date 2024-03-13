@@ -45,7 +45,7 @@ def build_json() -> JSONOutput:
     runtimes = []
     for conda_fname in sorted(glob.glob("AB_environments/AB_*.conda.yaml")):
         env_name = os.path.basename(conda_fname)[: -len(".conda.yaml")]
-        for reqf in ("dask.yaml", "requirements.txt"):
+        for reqf in ("dask.yaml", "requirements.in"):
             path = pathlib.Path(f"AB_environments/{env_name}.{reqf}")
             if not path.exists():
                 raise FileNotFoundError(f"Required file '{path}' not found.")
