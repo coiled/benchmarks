@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import dask.dataframe as dd
 
 
-def query_1(dataset_path, fs):
+def query_1(dataset_path, fs, scale):
     VAR1 = datetime(1998, 9, 2)
     lineitem_ds = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
 
@@ -40,7 +40,7 @@ def query_1(dataset_path, fs):
     return total.reset_index().sort_values(["l_returnflag", "l_linestatus"])
 
 
-def query_2(dataset_path, fs):
+def query_2(dataset_path, fs, scale):
     var1 = 15
     var2 = "BRASS"
     var3 = "EUROPE"
@@ -110,7 +110,7 @@ def query_2(dataset_path, fs):
     )
 
 
-def query_3(dataset_path, fs):
+def query_3(dataset_path, fs, scale):
     var1 = datetime.strptime("1995-03-15", "%Y-%m-%d")
     var2 = "BUILDING"
 
@@ -139,7 +139,7 @@ def query_3(dataset_path, fs):
     )
 
 
-def query_4(dataset_path, fs):
+def query_4(dataset_path, fs, scale):
     date1 = datetime.strptime("1993-10-01", "%Y-%m-%d")
     date2 = datetime.strptime("1993-07-01", "%Y-%m-%d")
 
@@ -163,7 +163,7 @@ def query_4(dataset_path, fs):
     return result_df
 
 
-def query_5(dataset_path, fs):
+def query_5(dataset_path, fs, scale):
     date1 = datetime.strptime("1994-01-01", "%Y-%m-%d")
     date2 = datetime.strptime("1995-01-01", "%Y-%m-%d")
 
@@ -192,7 +192,7 @@ def query_5(dataset_path, fs):
     return gb.reset_index().sort_values("revenue", ascending=False)
 
 
-def query_6(dataset_path, fs):
+def query_6(dataset_path, fs, scale):
     date1 = datetime.strptime("1994-01-01", "%Y-%m-%d")
     date2 = datetime.strptime("1995-01-01", "%Y-%m-%d")
     var3 = 24
@@ -212,7 +212,7 @@ def query_6(dataset_path, fs):
     return revenue.sum().to_frame("revenue")
 
 
-def query_7(dataset_path, fs):
+def query_7(dataset_path, fs, scale):
     var1 = datetime.strptime("1995-01-01", "%Y-%m-%d")
     var2 = datetime.strptime("1997-01-01", "%Y-%m-%d")
 
@@ -307,7 +307,7 @@ def query_7(dataset_path, fs):
     )
 
 
-def query_8(dataset_path, fs):
+def query_8(dataset_path, fs, scale):
     var1 = datetime.strptime("1995-01-01", "%Y-%m-%d")
     var2 = datetime.strptime("1997-01-01", "%Y-%m-%d")
 
@@ -365,7 +365,7 @@ def query_8(dataset_path, fs):
     return final.sort_values(by=["o_year"], ascending=[True])[["o_year", "mkt_share"]]
 
 
-def query_9(dataset_path, fs):
+def query_9(dataset_path, fs, scale):
     """
     select
         nation,
@@ -440,7 +440,7 @@ def query_9(dataset_path, fs):
     )
 
 
-def query_10(dataset_path, fs):
+def query_10(dataset_path, fs, scale):
     """
     select
         c_custkey,
@@ -534,7 +534,7 @@ def query_10(dataset_path, fs):
     )
 
 
-def query_11(dataset_path, fs, scale=1):
+def query_11(dataset_path, fs, scale):
     """
     select
         ps_partkey,
@@ -590,7 +590,7 @@ def query_11(dataset_path, fs, scale=1):
     return res
 
 
-def query_12(dataset_path, fs):
+def query_12(dataset_path, fs, scale):
     """
     select
         l_shipmode,
@@ -650,7 +650,7 @@ def query_12(dataset_path, fs):
     )
 
 
-def query_13(dataset_path, fs):
+def query_13(dataset_path, fs, scale):
     """
     select
         c_count, count(*) as custdist
@@ -695,7 +695,7 @@ def query_13(dataset_path, fs):
     )
 
 
-def query_14(dataset_path, fs):
+def query_14(dataset_path, fs, scale):
     """
     select
         round(100.00 * sum(case
@@ -742,7 +742,7 @@ def query_14(dataset_path, fs):
     )
 
 
-def query_15(dataset_path, fs):
+def query_15(dataset_path, fs, scale):
     """
     DDL:
     create temp view revenue (supplier_no, total_revenue) as
@@ -806,7 +806,7 @@ def query_15(dataset_path, fs):
     ].sort_values(by="s_suppkey")
 
 
-def query_16(dataset_path, fs):
+def query_16(dataset_path, fs, scale):
     """
     select
         p_brand,
@@ -866,7 +866,7 @@ def query_16(dataset_path, fs):
     )
 
 
-def query_17(dataset_path, fs):
+def query_17(dataset_path, fs, scale):
     """
     select
         round(sum(l_extendedprice) / 7.0, 2) as avg_yearly
@@ -889,29 +889,28 @@ def query_17(dataset_path, fs):
     lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
     part = dd.read_parquet(dataset_path + "part", filesystem=fs)
 
+    joined = lineitem.merge(
+        part, left_on="l_partkey", right_on="p_partkey", how="inner"
+    )
+    joined = joined[joined.p_brand == "Brand#23"]
+    joined = joined[joined.p_container == "MED BOX"]
     avg_qnty_by_partkey = (
-        lineitem.groupby("l_partkey")
-        # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
-        .l_quantity.mean(split_out=True)
+        joined.groupby("l_partkey")
+        .l_quantity.mean()
         .to_frame()
         .rename(columns={"l_quantity": "l_quantity_avg"})
     )
+    table = joined.merge(
+        avg_qnty_by_partkey, left_on="l_partkey", right_index=True, how="left"
+    )
 
-    table = lineitem.merge(
-        part, left_on="l_partkey", right_on="p_partkey", how="inner"
-    ).merge(avg_qnty_by_partkey, left_on="l_partkey", right_index=True, how="left")
-
-    table = table[
-        (table.p_brand == "Brand#23")
-        & (table.p_container == "MED BOX")
-        & (table.l_quantity < 0.2 * table.l_quantity_avg)
-    ]
+    table = table[table.l_quantity < 0.2 * table.l_quantity_avg]
     return (
         (table.l_extendedprice.to_frame().sum() / 7.0).round(2).to_frame("avg_yearly")
     )
 
 
-def query_18(dataset_path, fs):
+def query_18(dataset_path, fs, scale):
     """
     select
         c_name,
@@ -975,7 +974,7 @@ def query_18(dataset_path, fs):
     )
 
 
-def query_19(dataset_path, fs):
+def query_19(dataset_path, fs, scale):
     """
     select
         round(sum(l_extendedprice* (1 - l_discount)), 2) as revenue
@@ -1052,7 +1051,7 @@ def query_19(dataset_path, fs):
     )
 
 
-def query_20(dataset_path, fs):
+def query_20(dataset_path, fs, scale):
     """
     select
         s_name,
@@ -1131,7 +1130,7 @@ def query_20(dataset_path, fs):
     return q_final[["s_name", "s_address"]].sort_values("s_name", ascending=True)
 
 
-def query_21(dataset_path, fs):
+def query_21(dataset_path, fs, scale):
     """
     select
         s_name,
@@ -1219,7 +1218,7 @@ def query_21(dataset_path, fs):
     )
 
 
-def query_22(dataset_path, fs):
+def query_22(dataset_path, fs, scale):
     """
     select
         cntrycode,
