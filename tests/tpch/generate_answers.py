@@ -6,6 +6,7 @@ import click
 import coiled
 import duckdb
 import duckdb_queries
+import pyarrow as pa
 import pyarrow.parquet as pq
 from utils import (
     get_answers_path,
@@ -49,6 +50,15 @@ def generate(scale: int, path: str, local: bool) -> None:
         table = getattr(duckdb_queries, f"query_{query}")(
             connection(), dataset_path, scale
         )
+        relaxed_schema = table.schema
+        for i, field in enumerate(table.schema):
+            if pa.types.is_decimal(field.type):
+                relaxed_schema = relaxed_schema.set(i, field.with_type(pa.float64()))
+            elif pa.types.is_date(field.type):
+                relaxed_schema = relaxed_schema.set(
+                    i, field.with_type(pa.timestamp("ms"))
+                )
+        table = table.cast(relaxed_schema)
         pq.write_table(table, os.path.join(str(path), f"answer_{query}.parquet"))
 
     if use_coiled:
