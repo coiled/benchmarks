@@ -14,8 +14,8 @@ pytestmark = pytest.mark.tpch_correctness
 @pytest.fixture(params=[1, 10, 100], scope="session")
 def scale(request):
     scale = request.param
-    # if scale != 100:
-    # pytest.skip(reason="Don't test everything by default")
+    if scale != 100:
+        pytest.skip(reason="Don't test everything by default")
     return scale
 
 
