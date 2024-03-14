@@ -176,7 +176,7 @@ class TurnOnPandasCOW(WorkerPlugin):
     def setup(self, worker):
         import pandas as pd
 
-        pd.set_option("mode.copy_on_write", False)
+        pd.set_option("mode.copy_on_write", True)
 
 
 @pytest.fixture
