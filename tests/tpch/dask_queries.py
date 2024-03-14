@@ -319,50 +319,53 @@ def query_8(dataset_path, fs, scale):
     region = dd.read_parquet(dataset_path + "region", filesystem=fs)
     part = dd.read_parquet(dataset_path + "part", filesystem=fs)
 
-    part = part[part["p_type"] == "ECONOMY ANODIZED STEEL"][["p_partkey"]]
-    lineitem["volume"] = lineitem["l_extendedprice"] * (1.0 - lineitem["l_discount"])
-    total = part.merge(lineitem, left_on="p_partkey", right_on="l_partkey", how="inner")
+    table = region.merge(
+        nation,
+        left_on="r_regionkey",
+        right_on="n_regionkey",
+        how="inner",
+    )
+    table = table[table["r_name"] == "AMERICA"]
 
-    total = total.merge(
+    table = customer.merge(
+        table,
+        left_on="c_nationkey",
+        right_on="n_nationkey",
+        how="leftsemi",
+    )
+    table = table.merge(
+        orders,
+        left_on="c_custkey",
+        right_on="o_custkey",
+        how="inner",
+    )
+    table = table.merge(
+        lineitem,
+        left_on="o_orderkey",
+        right_on="l_orderkey",
+        how="inner",
+    )
+
+    table = table.merge(part, left_on="l_partkey", right_on="p_partkey", how="inner")
+    supplier = nation.merge(
+        supplier, left_on="n_nationkey", right_on="s_nationkey", how="inner"
+    )
+    table = table.merge(
         supplier, left_on="l_suppkey", right_on="s_suppkey", how="inner"
     )
 
-    orders = orders[(orders["o_orderdate"] >= var1) & (orders["o_orderdate"] < var2)]
-    orders["o_year"] = orders["o_orderdate"].dt.year
-    total = total.merge(
-        orders, left_on="l_orderkey", right_on="o_orderkey", how="inner"
-    )
+    table = table[(table["o_orderdate"] >= var1) & (table["o_orderdate"] < var2)]
+    table = table[table["p_type"] == "ECONOMY ANODIZED STEEL"]
+    table["o_year"] = table["o_orderdate"].dt.year
+    table["volume"] = table["l_extendedprice"] * (1.0 - table["l_discount"])
+    table = table.rename(columns={"n_name": "nation"})[["o_year", "volume", "nation"]]
 
-    total = total.merge(
-        customer, left_on="o_custkey", right_on="c_custkey", how="inner"
-    )
+    table["brazil_volume"] = table["volume"].where(table["nation"] == "BRAZIL", 0)
+    table = table.groupby("o_year")[["volume", "brazil_volume"]].sum()
+    table["mkt_share"] = (table["brazil_volume"] / table["volume"]).round(2)
+    table = table.reset_index()
 
-    n1_filtered = nation[["n_nationkey", "n_regionkey"]]
-    total = total.merge(
-        n1_filtered, left_on="c_nationkey", right_on="n_nationkey", how="inner"
-    )
-
-    n2_filtered = nation[["n_nationkey", "n_name"]].rename(columns={"n_name": "nation"})
-    total = total.merge(
-        n2_filtered, left_on="s_nationkey", right_on="n_nationkey", how="inner"
-    )
-
-    region = region[region["r_name"] == "AMERICA"][["r_regionkey"]]
-    total = total.merge(
-        region, left_on="n_regionkey", right_on="r_regionkey", how="inner"
-    )
-
-    mkt_brazil = (
-        total[total["nation"] == "BRAZIL"].groupby("o_year").volume.sum().reset_index()
-    )
-    mkt_total = total.groupby("o_year").volume.sum().reset_index()
-
-    final = mkt_total.merge(
-        mkt_brazil, left_on="o_year", right_on="o_year", suffixes=("_mkt", "_brazil")
-    )
-
-    final["mkt_share"] = final.volume_brazil / final.volume_mkt
-    return final.sort_values(by=["o_year"], ascending=[True])[["o_year", "mkt_share"]]
+    return table.sort_values(by=["o_year"], ascending=[True])[["o_year", "mkt_share"]]
 
 
 def query_9(dataset_path, fs, scale):
