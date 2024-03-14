@@ -145,24 +145,6 @@ def cluster_spec(scale):
         idle_timeout="1h",
         wait_for_workers=True,
         scheduler_vm_types=["m6i.xlarge"],
-        backend_options={
-            "ingress": [
-                {
-                    "ports": [
-                        443,
-                        8786,
-                        15003,
-                        22,
-                        7077,
-                        8787,
-                        4040,
-                        8080,
-                        15002,
-                    ],
-                    "cidr": "0.0.0.0/0",
-                },
-            ],
-        },
     )
     if scale == 10:
         return {
@@ -255,16 +237,18 @@ def client(
 def spark_setup(cluster, local):
     pytest.importorskip("pyspark")
 
-    # ie https://some-link-to-host.dask.host?token=some-token
-    host = cluster.dashboard_link.split("?")[0].replace("https", "http", 1)
     if local:
         cluster.close()  # no need to bootstrap with Dask
         from pyspark.sql import SparkSession
 
         spark = SparkSession.builder.master("local[*]").getOrCreate()
+        spark_dashboard, query = cluster.dashboard_link.split("?")
+        spark_dashboard = f"{spark_dashboard.split(':')[0]}:4040?{query}"
     else:
         spark = cluster.get_spark()
-    spark._host = host
+        spark_dashboard = cluster.spark_dashboard
+
+    spark._spark_dashboard = spark_dashboard
 
     # warm start
     from pyspark.sql import Row
@@ -279,11 +263,14 @@ def spark_setup(cluster, local):
     yield spark
 
 
-def get_number_spark_executors(host):
-    if not host.startswith("http"):
-        host = f"http://{host}"
+def get_number_spark_executors(spark_dashboard):
+    # ie https://some.address.dask.host/spark?token=some-token
+    #    http://127.0.0.1:4040?token=some-token
+    base, query = spark_dashboard.split("?")
+    base = base.removesuffix("/")
+    query = f"?{query}" if query else ""
 
-    url = f"{host}:4040/api/v1/applications"
+    url = f"{base}/api/v1/applications{query}"
     apps = requests.get(url).json()
     for app in apps:
         if app["name"] == "SparkConnectServer":
@@ -292,18 +279,18 @@ def get_number_spark_executors(host):
     else:
         raise ValueError("Failed to find Spark application 'SparkConnectServer'")
 
-    url = f"{url}/{appid}/allexecutors"
+    url = f"{base}/{appid}/allexecutors{query}"
     executors = requests.get(url).json()
     return sum(1 for executor in executors if executor["isActive"])
 
 
 @pytest.fixture
 def spark(spark_setup, benchmark_time):
-    n_executors_start = get_number_spark_executors(spark_setup._host)
+    n_executors_start = get_number_spark_executors(spark_setup._spark_dashboard)
     with benchmark_time:
         yield spark_setup
 
-    n_executors_finish = get_number_spark_executors(spark_setup._host)
+    n_executors_finish = get_number_spark_executors(spark_setup._spark_dashboard)
     if n_executors_finish != n_executors_start:
         warnings.warn(
             "Executor count changed between start and end of yield. "
