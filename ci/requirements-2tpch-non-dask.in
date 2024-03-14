@@ -1,7 +1,7 @@
--r requirements.in
--r requirements-test.in
+-r requirements-1general-deps.in
+-r requirements-1test.in
+-r requirements-1dask-git-tip.in
 
-# This is an addition to ci/requirements.txt
 # Add dependencies exclusively needed to run TPCH tests on dask competitors.
 # PySpark
 # See https://spark.apache.org/docs/latest/api/python/getting_started/install.html#dependencies

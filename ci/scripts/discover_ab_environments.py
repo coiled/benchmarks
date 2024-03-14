@@ -3,7 +3,7 @@ from __future__ import annotations
 import glob
 import json
 import os.path
-import pathlib
+from collections import defaultdict
 from typing import TypedDict
 
 import yaml
@@ -27,6 +27,34 @@ DO_NOT_RUN: JSONOutput = {
     "h2o_datasets": [],
 }
 
+SUFFIXES = {
+    "cluster.yaml",
+    "conda.yaml",
+    "dask.yaml",
+    "requirements.in",
+    "requirements.txt",
+}
+
+
+def discover_runtimes() -> list[str]:
+    found_files = defaultdict(set)
+    for suffix in SUFFIXES:
+        for fname in glob.glob(f"AB_environments/AB_*.{suffix}"):
+            runtime, _, _ = os.path.basename(fname).partition(".")
+            found_files[runtime].add(suffix)
+
+    missing_files = set()
+    for runtime, found_suffixes in found_files.items():
+        missing_files.update(
+            f"AB_environments/{runtime}.{suffix}"
+            for suffix in (SUFFIXES - found_suffixes)
+        )
+    if missing_files:
+        raise FileNotFoundError(
+            f"Incomplete A/B files set(s); file(s) not found: {sorted(missing_files)}"
+        )
+    return sorted(found_files)
+
 
 def build_json() -> JSONOutput:
     with open("AB_environments/config.yaml") as fh:
@@ -42,14 +70,7 @@ def build_json() -> JSONOutput:
     if not cfg["repeat"] or not cfg["targets"]:
         return DO_NOT_RUN
 
-    runtimes = []
-    for conda_fname in sorted(glob.glob("AB_environments/AB_*.conda.yaml")):
-        env_name = os.path.basename(conda_fname)[: -len(".conda.yaml")]
-        for reqf in ("dask.yaml", "requirements.in"):
-            path = pathlib.Path(f"AB_environments/{env_name}.{reqf}")
-            if not path.exists():
-                raise FileNotFoundError(f"Required file '{path}' not found.")
-        runtimes.append(env_name)
+    runtimes = discover_runtimes()
 
     if not runtimes:
         return DO_NOT_RUN

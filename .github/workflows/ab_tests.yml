@@ -81,12 +81,7 @@ jobs:
           environment-file: AB_environments/${{ matrix.runtime-version }}.conda.yaml
 
       - name: Pip Compile
-        run: |
-          python -m pip install pip-tools
-
-          pushd AB_environments
-          pip-compile ${{ matrix.runtime-version }}.requirements.in
-          popd
+        run: pip-compile AB_environments/requirements-${{ matrix.runtime-version }}.in
 
       - name: Add Environment dependencies
         run: python -m pip install -r AB_environments/${{ matrix.runtime-version }}.requirements.txt

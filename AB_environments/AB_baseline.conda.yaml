@@ -7,4 +7,6 @@ channels:
 dependencies:
   - python =3.9  # Single '=' means latest patch version available
   - openssl>1.1.0g
-  # NOTE: Packages defined in AB_baseline.requirements.txt file
+  - pip
+  - pip-tools
+  # NOTE: Packages are defined in AB_baseline.requirements.txt

@@ -34,7 +34,7 @@ jobs:
         os: [ubuntu-latest]
         python_version: ["3.9"]
         pytest_args: [tests --ignore=tests/tpch]
-        extra-env: [""]
+        requirements: [ci/requirements-2nightly.in]
         name_prefix: [tests]
         include:
           # Run stability tests on the lowest and highest versions of Python only
@@ -46,26 +46,30 @@ jobs:
           - pytest_args: tests/stability
             python_version: "3.11"
             os: ubuntu-latest
+            requirements: ci/requirements-2nightly.in
             name_prefix: stability
           # Run stability tests on Python Windows and MacOS (latest py39 only)
           - pytest_args: tests/stability
             python_version: "3.9"
             os: windows-latest
             name_prefix: stability
+            requirements: ci/requirements-2nightly.in
           - pytest_args: tests/stability
             python_version: "3.9"
             os: macos-latest
             name_prefix: stability
+            requirements: ci/requirements-2nightly.in
+          # Special environments
           - pytest_args: tests/workflows/test_snowflake.py
             python_version: "3.9"
             os: ubuntu-latest
             name_prefix: snowflake
-            extra-env: ci/requirements-snowflake.txt
+            requirements: ci/requirements-2snowflake.in
           - pytest_args: tests/tpch
             python_version: "3.9"
             os: ubuntu-latest
-            extra-env: ci/requirements-tpch-non-dask.txt
             name_prefix: tpch
+            requirements: ci/requirements-2tpch-non-dask.in
 
     steps:
       - name: Checkout
@@ -80,16 +84,13 @@ jobs:
           python-version: ${{ matrix.python_version }}
           environment-file: ci/environment.yml
 
-      - name: Add default install and test deps w/ extra packages
-        if: ${{ matrix.extra-env != '' }}
-        run: python -m pip install -r ${{ matrix.extra-env }}
+      - name: Pip Compile
+        run: pip-compile ${{ matrix.requirements }}
 
-      - name: Add default install and test packages
-        if: ${{ matrix.extra-env == '' }}
-        run: python -m pip install -r ci/requirements-test.txt
-
-      - name: Upgrade dask to git tip
-        run: mamba env update --file ci/environment-git-tip.yml
+      - name: Add Environment dependencies
+        run: |
+          IN_FILE=${{ matrix.requirements }}
+          python -m pip install -r ${IN_FILE%.*}.txt
 
       - name: Reconfigure pytest-timeout
         shell: bash -l {0}

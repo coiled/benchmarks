@@ -1,12 +1,14 @@
--r requirements-test.in
+# -r requirements-1general-deps.in
+-r requirements-1test.in
+-r requirements-1dask-git-tip.in
 
 dask-snowflake==0.3.1
 snowflake-connector-python ==3.5.0
 snowflake-sqlalchemy ==1.5.1
 
-# Mostly the same as requirements.in, except those commented
+# Mostly the same as requirements-1general-deps.in, except those commented
 # TODO: once snowflake-connector-python removed those pinned
-#       remove these and add `-r requirements.in` to top
+#       remove these and add `-r requirements-1general-deps.in` to top
 coiled>=0.2.54
 numpy==1.26.2
 pandas==2.0.3  # Pinned by snowflake-connector-python
@@ -38,3 +40,4 @@ sqlalchemy==1.4.49  # Pinned by snowflake-sqlalchemy
 pynvml==11.5.0
 bokeh==3.3.2
 gilknocker==0.4.1
+duckdb==0.10.0

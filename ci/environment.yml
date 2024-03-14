@@ -8,8 +8,8 @@ dependencies:
 # - AB_environments/AB_sample.conda.yaml
 ########################################################
 
-  - python >=3.9
   - openssl >1.1.0g
+  - pip
   - pip-tools
   - conda
   - openjdk~=11.0  # Do not upgrade, used w/ pyspark install

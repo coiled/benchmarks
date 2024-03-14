@@ -6,10 +6,11 @@
 # - AB_<name>.dask.yaml
 # - AB_<name>.cluster.yaml
 
-# You should always start from a copy-paste from AB_baseline.conda.yaml
 channels:
   - conda-forge
 dependencies:
   - python =3.9  # Single '=' means latest patch version available
   - openssl>1.1.0g
-  # NOTE: Add/Change/Remove packages using AB_<name>.requirements.txt file
+  - pip
+  - pip-tools
+  # NOTE: Packages are defined in AB_baseline.requirements.txt
