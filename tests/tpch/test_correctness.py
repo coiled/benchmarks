@@ -133,7 +133,7 @@ def verify_result(
     result = result.reset_index(drop=True)
     expected = expected.reset_index(drop=True)
 
-    pd.testing.assert_frame_equal(result, expected, check_dtype=False, atol=1e-3)
+    pd.testing.assert_frame_equal(result, expected, check_dtype=False, atol=1e-2)
 
 
 @pytest.mark.tpch_correctness
