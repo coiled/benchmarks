@@ -32,7 +32,6 @@ SUFFIXES = {
     "conda.yaml",
     "dask.yaml",
     "requirements.in",
-    "requirements.txt",
 }
 
 
