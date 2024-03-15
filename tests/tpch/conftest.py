@@ -11,6 +11,7 @@ import filelock
 import pytest
 import requests
 from dask.distributed import LocalCluster, performance_report
+from urllib3.util import Url, parse_url
 
 from .utils import get_dataset_path
 
@@ -237,18 +238,29 @@ def client(
 def spark_setup(cluster, local):
     pytest.importorskip("pyspark")
 
+    spark_dashboard: Url
     if local:
         cluster.close()  # no need to bootstrap with Dask
         from pyspark.sql import SparkSession
 
-        spark = SparkSession.builder.master("local[*]").getOrCreate()
-        spark_dashboard, query = cluster.dashboard_link.split("?")
-        spark_dashboard = f"{spark_dashboard.split(':')[0]}:4040?{query}"
+        # Set app name to match that used in Coiled Spark
+        spark = (
+            SparkSession.builder.master("local[*]")
+            .appName("SparkConnectServer")
+            .getOrCreate()
+        )
+        spark_dashboard = parse_url("http://localhost:4040")
     else:
         spark = cluster.get_spark()
-        spark_dashboard = cluster.spark_dashboard
 
-    spark._spark_dashboard = spark_dashboard
+        # Available on coiled>=1.12.4
+        if not hasattr(cluster, "_spark_dashboard"):
+            cluster._spark_dashboard = (
+                parse_url(cluster._dashboard_address)._replace(path="/spark").url
+            )
+        spark_dashboard = parse_url(cluster._spark_dashboard)
+
+    spark._spark_dashboard: Url = spark_dashboard
 
     # warm start
     from pyspark.sql import Row
@@ -263,15 +275,11 @@ def spark_setup(cluster, local):
     yield spark
 
 
-def get_number_spark_executors(spark_dashboard):
-    # ie https://some.address.dask.host/spark?token=some-token
-    #    http://127.0.0.1:4040?token=some-token
-    base, query = spark_dashboard.split("?")
-    base = base.removesuffix("/")
-    query = f"?{query}" if query else ""
+def get_number_spark_executors(spark_dashboard: Url):
+    base_path = spark_dashboard.path or ""
 
-    url = f"{base}/api/v1/applications{query}"
-    apps = requests.get(url).json()
+    url = spark_dashboard._replace(path=f"{base_path}/api/v1/applications")
+    apps = requests.get(url.url).json()
     for app in apps:
         if app["name"] == "SparkConnectServer":
             appid = app["id"]
@@ -279,8 +287,8 @@ def get_number_spark_executors(spark_dashboard):
     else:
         raise ValueError("Failed to find Spark application 'SparkConnectServer'")
 
-    url = f"{base}/{appid}/allexecutors{query}"
-    executors = requests.get(url).json()
+    url = url._replace(path=f"{url.path}/{appid}/allexecutors")
+    executors = requests.get(url.url).json()
     return sum(1 for executor in executors if executor["isActive"])
 
 
