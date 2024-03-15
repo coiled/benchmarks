@@ -165,7 +165,7 @@ def verify_result(
     ],
 )
 def test_dask_results(
-    query, local, client, dataset_path, answers_path, s3_storage_options, scale
+    query, scale, local, dataset_path, answers_path, s3_storage_options, client
 ):
     from . import dask_queries
 
