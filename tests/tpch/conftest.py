@@ -9,6 +9,7 @@ import dask
 import filelock
 import pytest
 from dask.distributed import LocalCluster, performance_report
+from distributed.diagnostics.plugin import WorkerPlugin
 
 from .utils import get_cluster_spec, get_dataset_path, get_single_vm_spec
 
@@ -169,6 +170,15 @@ def cluster(
                 yield cluster
 
 
+class TurnOnPandasCOW(WorkerPlugin):
+    idempotent = True
+
+    def setup(self, worker):
+        import pandas as pd
+
+        pd.set_option("mode.copy_on_write", True)
+
+
 @pytest.fixture
 def client(
     request,
@@ -186,6 +196,7 @@ def client(
             client.restart()
         client.run(lambda: None)
 
+        client.register_plugin(TurnOnPandasCOW(), name="enable-cow")
         local = "local" if local else "cloud"
         if request.config.getoption("--performance-report"):
             if not os.path.exists("performance-reports"):
