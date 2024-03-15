@@ -50,6 +50,6 @@ dependencies:
     # conda. You may alternatively point to your own git fork (but make sure you
     # sync'ed tags!)
     # Read README.md for troubleshooting.
-    - git+https://github.com/fjetter/dask@0e4872816c23cd245447d47ce0dec5c600a595f7
-    - git+https://github.com/fjetter/distributed@56c6ecbdc396e19f17907da33e47d234e69e0d9b
-    - git+https://github.com/fjetter/dask-expr@e477d63cf49598ee30529a708ff714b327b93612
+    - git+https://github.com/fjetter/dask@expr_to_scheduler_v2
+    - git+https://github.com/fjetter/distributed@expr_to_scheduler_v2
+    - git+https://github.com/fjetter/dask-expr@expr_to_scheduler_v2
