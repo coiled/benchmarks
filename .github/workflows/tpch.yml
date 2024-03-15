@@ -84,17 +84,17 @@ jobs:
     - name: Add DuckDB to benchmark if enabled
       if: ${{ inputs.duckb }}
       run: |
-        echo PYTEST_BENCHMARKS=" tests/tpch/test_duckdb.py" >> $GITHUB_ENV
+        echo PYTEST_BENCHMARKS="${{ env.PYTEST_BENCHMARKS }} tests/tpch/test_duckdb.py" >> $GITHUB_ENV
     
     - name: Add Polars to benchmark if enabled
       if: ${{ inputs.polars }}
       run: |
-        echo PYTEST_BENCHMARKS=" tests/tpch/test_polars.py" >> $GITHUB_ENV
+        echo PYTEST_BENCHMARKS="{{ env.PYTEST_BENCHMARKS }} tests/tpch/test_polars.py" >> $GITHUB_ENV
     
     - name: Add PySpark to benchmark if enabled
       if: ${{ inputs.pyspark }}
       run: |
-        echo PYTEST_BENCHMARKS=" tests/tpch/test_pyspark.py" >> $GITHUB_ENV
+        echo PYTEST_BENCHMARKS="{{ env.PYTEST_BENCHMARKS }} tests/tpch/test_pyspark.py" >> $GITHUB_ENV
 
     - name: Run TPC-H benchmarks (except polars)
       env:
