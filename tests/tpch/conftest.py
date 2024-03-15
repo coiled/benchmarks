@@ -11,9 +11,10 @@ import filelock
 import pytest
 import requests
 from dask.distributed import LocalCluster, performance_report
+from distributed.diagnostics.plugin import WorkerPlugin
 from urllib3.util import Url, parse_url
 
-from .utils import get_dataset_path
+from .utils import get_cluster_spec, get_dataset_path, get_single_vm_spec
 
 ##################
 # Global Options #
@@ -142,36 +143,7 @@ def benchmark_time(test_run_benchmark, module, scale, name):
 
 @pytest.fixture(scope="session")
 def cluster_spec(scale):
-    everywhere = dict(
-        idle_timeout="1h",
-        wait_for_workers=True,
-        scheduler_vm_types=["m6i.xlarge"],
-    )
-    if scale == 10:
-        return {
-            "worker_vm_types": ["m6i.large"],
-            "n_workers": 8,
-            **everywhere,
-        }
-    elif scale == 100:
-        return {
-            "worker_vm_types": ["m6i.large"],
-            "n_workers": 16,
-            **everywhere,
-        }
-    elif scale == 1000:
-        return {
-            "worker_vm_types": ["m6i.xlarge"],
-            "n_workers": 32,
-            **everywhere,
-        }
-    elif scale == 10000:
-        return {
-            "worker_vm_types": ["m6i.xlarge"],
-            "n_workers": 32,
-            "worker_disk_size": 200,
-            **everywhere,
-        }
+    return get_cluster_spec(scale)
 
 
 @pytest.fixture(scope="module")
@@ -201,6 +173,15 @@ def cluster(
                 yield cluster
 
 
+class TurnOnPandasCOW(WorkerPlugin):
+    idempotent = True
+
+    def setup(self, worker):
+        import pandas as pd
+
+        pd.set_option("mode.copy_on_write", True)
+
+
 @pytest.fixture
 def client(
     request,
@@ -218,6 +199,7 @@ def client(
             client.restart()
         client.run(lambda: None)
 
+        client.register_plugin(TurnOnPandasCOW(), name="enable-cow")
         local = "local" if local else "cloud"
         if request.config.getoption("--performance-report"):
             if not os.path.exists("performance-reports"):
@@ -335,23 +317,7 @@ def fs(local):
 
 @pytest.fixture(scope="session")
 def machine_spec(scale):
-    if scale == 10:
-        return {
-            "vm_type": "m6i.4xlarge",
-        }
-    elif scale == 100:
-        return {
-            "vm_type": "m6i.8xlarge",
-        }
-    elif scale == 1000:
-        return {
-            "vm_type": "m6i.32xlarge",
-        }
-    elif scale == 10000:
-        return {
-            "vm_type": "m6i.32xlarge",
-            "disk_size": 1000,
-        }
+    return get_single_vm_spec(scale)
 
 
 @pytest.fixture(scope="module")
