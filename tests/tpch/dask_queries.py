@@ -65,8 +65,7 @@ def query_2(dataset_path, fs, scale):
         partsupp_filtered, left_on="s_suppkey", right_on="ps_suppkey", how="inner"
     )
     part_filtered = part_filtered[
-        (part_filtered["p_size"] == var1)
-        & (part_filtered["p_type"].str.endswith(var2))
+        (part_filtered["p_size"] == var1) & (part_filtered["p_type"].str.endswith(var2))
     ]
     merged_df = part_filtered.merge(
         ps_s_r_n_merged, left_on="p_partkey", right_on="ps_partkey", how="inner"
