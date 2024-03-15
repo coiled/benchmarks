@@ -7,7 +7,7 @@ updates:
     ignore:
       # https://github.com/coiled/benchmarks/issues/1221
       - dependency-name: pyspark
-        versions: ["1.5.x"]
+        versions: ["3.5.x"]
 
   - directory: AB_environments/
     package-ecosystem: pip
