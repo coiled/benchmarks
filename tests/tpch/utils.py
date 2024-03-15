@@ -21,6 +21,12 @@ def get_dataset_path(local, scale):
         return remote_paths[scale]
 
 
+def get_answers_path(local, scale):
+    if local:
+        return f"./tpch-data/answers/scale-{scale}/"
+    return f"s3://coiled-runtime-ci/tpc-h/answers/scale-{scale}/"
+
+
 def get_bucket_region(path: str):
     if not path.startswith("s3://"):
         raise ValueError(f"'{path}' is not an S3 path")
