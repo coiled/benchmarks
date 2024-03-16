@@ -1107,7 +1107,7 @@ def query_20(dataset_path, fs, scale):
         & (lineitem["l_shipdate"] < shipdate_to)
     ]
     res_1 = (
-        res_1.groupby(["l_partkey", "l_suppkey"])["l_quantity"]
+        res_1.groupby(["l_suppkey", "l_partkey"])["l_quantity"]
         .sum()
         .rename("sum_quantity")
         .reset_index()
