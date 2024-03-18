@@ -43,6 +43,12 @@ def pytest_addoption(parser):
         help="Name to use for run",
     )
     parser.addoption("--plot", action="store_true", default=False, help="")
+    parser.addoption(
+        "--ignore-spark-executor-count",
+        action="store_true",
+        default=False,
+        help="Don't raise an error on changes in number of Spark executors between `spark` fixture use.",
+    )
 
 
 @pytest.fixture(scope="session")
@@ -275,17 +281,21 @@ def get_number_spark_executors(spark_dashboard: Url):
 
 
 @pytest.fixture
-def spark(spark_setup, benchmark_time):
+def spark(request, spark_setup, benchmark_time):
     n_executors_start = get_number_spark_executors(spark_setup._spark_dashboard)
     with benchmark_time:
         yield spark_setup
-
     n_executors_finish = get_number_spark_executors(spark_setup._spark_dashboard)
+
     if n_executors_finish != n_executors_start:
-        warnings.warn(
+        msg = (
             "Executor count changed between start and end of yield. "
             f"Startd with {n_executors_start}, ended with {n_executors_finish}"
         )
+        if request.config.getoption("ignore-spark-executor-count"):
+            warnings.warn(msg)
+        else:
+            raise RuntimeError(msg)
 
     spark_setup.catalog.clearCache()
 
