@@ -8,7 +8,6 @@ dependencies:
   - python =3.9  # Single '=' means latest patch version available
   # Copy-paste from ci/environment.yml
   - pip
-  - coiled >=0.2.54
   - numpy ==1.26.2
   - pandas <2
   - dask-core ==2024.3.1
@@ -22,6 +21,7 @@ dependencies:
   # End copy-paste
 
   - pip:
+    - coiled
     # Make sure you install dask and distributed either both from pip or both from
     # conda. You may alternatively point to your own git fork (but make sure you
     # sync'ed tags!)
