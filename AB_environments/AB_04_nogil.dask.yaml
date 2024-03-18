@@ -1,0 +1,14 @@
+# Special environment file for A/B testing, used to define dask config options
+# (overriding the built-in config) for the baseline environment.
+# Change contents, but do not rename.
+# Leave empty if you don't want to override anything.
+dask:
+  dataframe:
+    query-planning: false
+    convert-string: true
+    shuffle:
+      method: p2p
+
+benchmarks:
+  cow: false
+  filesystem: fsspec

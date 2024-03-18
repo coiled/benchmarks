@@ -1,0 +1,6 @@
+# Special environment file for A/B testing, used to define cluster creation options for
+# the baseline environment.
+# Change contents, but do not rename.
+
+# Overrides ../cluster_kwargs.yaml.
+# Leave empty if you don't want to override anything.
