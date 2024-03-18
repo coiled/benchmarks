@@ -294,10 +294,10 @@ def spark(spark_setup, benchmark_time):
 
 @pytest.fixture
 def fs(local):
-    if local or dask.config.get("benchmarks.filesystem") == "fsspec":
+    if local or dask.config.get("benchmarks.filesystem", "fsspec") == "fsspec":
         return None
     else:
-        assert dask.config.get("benchmarks.filesystem") == "pyarrow"
+        assert dask.config.get("benchmarks.filesystem", "fsspec") == "pyarrow"
         import boto3
         from pyarrow.fs import S3FileSystem
 
