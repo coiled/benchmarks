@@ -14,3 +14,7 @@
 dask:
   dataframe:
     query-planning: True
+
+
+benchmarks:
+  worker_disk_throughput: 1000

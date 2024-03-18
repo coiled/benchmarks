@@ -43,6 +43,10 @@ def get_cluster_spec(scale):
         wait_for_workers=True,
         scheduler_vm_types=["m6i.xlarge"],
     )
+    import dask
+
+    if v := dask.config.get("benchmarks.worker_disk_throughput"):
+        everywhere["worker_disk_throughput"] = v
     if scale == 1:
         return {
             "worker_vm_types": ["m6i.large"],
@@ -63,7 +67,7 @@ def get_cluster_spec(scale):
         }
     elif scale == 1000:
         return {
-            "worker_vm_types": ["m6i.xlarge"],
+            "worker_vm_types": [dask.config.get("benchmarks.vm_types", "m6i.xlarge")],
             "n_workers": 32,
             "worker_disk_size": 128,
             **everywhere,

@@ -1,0 +1,20 @@
+# Sample dask config file for A/B testing.
+# Change contents/delete/rename as needed.
+
+# Every A/B environment *must* present these three files:
+# - AB_<name>.conda.yaml
+# - AB_<name>.dask.yaml
+# - AB_<name>.cluster.yaml
+
+# Leave empty if you don't want to override anything.
+
+# distributed:
+#   scheduler:
+#     worker-saturation: 1.2
+dask:
+  dataframe:
+    query-planning: True
+
+
+benchmarks:
+  worker_disk_throughput: 500
