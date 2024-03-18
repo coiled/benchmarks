@@ -17,7 +17,6 @@ from pathlib import Path
 
 import dask
 import dask.array as da
-import dask_expr
 import distributed
 import filelock
 import pandas
@@ -176,13 +175,20 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
     if not benchmark_db_session:
         yield
     else:
+        try:
+            import dask_expr
+
+            dx_vr = dask_expr.__version__
+        except ImportError:
+            dx_vr = 0.0
+
         run = TestRun(
             session_id=testrun_uid,
             name=request.node.name,
             originalname=request.node.originalname,
             path=str(request.node.path.relative_to(TEST_DIR)),
             dask_version=dask.__version__,
-            dask_expr_version=dask_expr.__version__,
+            dask_expr_version=dx_vr,
             distributed_version=distributed.__version__,
             coiled_runtime_version=os.environ.get("AB_VERSION", "upstream"),
             coiled_software_name=COILED_SOFTWARE_NAME,
