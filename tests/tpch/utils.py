@@ -45,7 +45,7 @@ def get_cluster_spec(scale):
     )
     import dask
 
-    if v := dask.config.get("benchmarks.worker_disk_throughput"):
+    if v := dask.config.get("benchmarks.worker_disk_throughput", None):
         everywhere["worker_disk_throughput"] = v
     if scale == 1:
         return {
