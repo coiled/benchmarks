@@ -198,8 +198,10 @@ def client(
         if restart:
             client.restart()
         client.run(lambda: None)
+        import dask
 
-        client.register_plugin(TurnOnPandasCOW(), name="enable-cow")
+        if dask.config.get("benchmarks.cow", False):
+            client.register_plugin(TurnOnPandasCOW(), name="enable-cow")
         local = "local" if local else "cloud"
         if request.config.getoption("--performance-report"):
             if not os.path.exists("performance-reports"):
@@ -292,9 +294,10 @@ def spark(spark_setup, benchmark_time):
 
 @pytest.fixture
 def fs(local):
-    if local:
+    if local or dask.config.get("benchmarks.filesystem") == "fsspec":
         return None
     else:
+        assert dask.config.get("benchmarks.filesystem") == "pyarrow"
         import boto3
         from pyarrow.fs import S3FileSystem
 

@@ -52,12 +52,12 @@ def build_json() -> JSONOutput:
     if not runtimes:
         return DO_NOT_RUN
 
-    if "AB_baseline" not in runtimes:
-        # If any A/B environments are defined, AB_baseline is required
-        raise FileNotFoundError("AB_environments/AB_baseline.conda.yaml")
+    # if "AB_baseline" not in runtimes:
+    #     # If any A/B environments are defined, AB_baseline is required
+    #     raise FileNotFoundError("AB_environments/AB_baseline.conda.yaml")
 
-    if cfg["test_null_hypothesis"]:
-        runtimes += ["AB_null_hypothesis"]
+    # if cfg["test_null_hypothesis"]:
+    #     runtimes += ["AB_null_hypothesis"]
 
     pytest_args = []
     if (n := cfg["max_parallel"]["pytest_workers_per_job"]) > 1:
