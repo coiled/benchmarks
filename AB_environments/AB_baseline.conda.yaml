@@ -11,9 +11,9 @@ dependencies:
   - coiled >=0.2.54
   - numpy ==1.26.2
   - pandas ==2.1.4
-  - dask ==2024.3.0
-  - distributed ==2024.3.0
-  - dask-expr >1
+  - dask ==2024.3.1
+  - distributed ==2024.3.1
+  - dask-expr==1.0.4
   - dask-labextension ==7.0.0
   - dask-ml ==2023.3.24
   - fsspec ==2023.12.1
@@ -51,5 +51,5 @@ dependencies:
     # sync'ed tags!)
     # Read README.md for troubleshooting.
     # - git+https://github.com/dask/dask@191d39177009d2cce25b818878118e35329b6db3
-    # - git+https://github.com/dask/distributed@0304fb6e665e36abf9e3086173cccd36e29ae84d
+    - git+https://github.com/dask/distributed@fa4976e3048ff37af04cb92389036b6ac1867bd9
     # - git+https://github.com/dask-contrib/dask-expr@9f765764da3f518ddd4c896c98b8a40a979a5553
