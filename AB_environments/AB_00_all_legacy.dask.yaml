@@ -2,9 +2,8 @@
 # (overriding the built-in config) for the baseline environment.
 # Change contents, but do not rename.
 # Leave empty if you don't want to override anything.
-dask:
-  dataframe:
-    query-planning: false
-    convert-string: false
-    shuffle:
-      method: tasks
+dataframe:
+  query-planning: false
+  convert-string: false
+  shuffle:
+    method: tasks
