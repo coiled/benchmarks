@@ -64,7 +64,7 @@ def get_cluster_spec(scale):
     elif scale == 1000:
         return {
             "worker_vm_types": ["m6i.xlarge"],
-            "n_workers": 32,
+            "n_workers": 50,
             "worker_disk_size": 128,
             **everywhere,
         }

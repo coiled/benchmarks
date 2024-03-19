@@ -7,3 +7,7 @@ dataframe:
   convert-string: false
   shuffle:
     method: tasks
+
+benchmarks:
+  cow: false
+  filesystem: fsspec

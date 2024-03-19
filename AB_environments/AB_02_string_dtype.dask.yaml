@@ -6,7 +6,7 @@ dataframe:
   query-planning: false
   convert-string: true
   shuffle:
-    method: p2p
+    method: tasks
 
 benchmarks:
   cow: false
