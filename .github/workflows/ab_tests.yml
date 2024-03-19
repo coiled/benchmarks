@@ -72,7 +72,7 @@ jobs:
           cp AB_baseline.requirements.in AB_null_hypothesis.requirements.in
 
       - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v2
         with:
           miniforge-variant: Mambaforge
           use-mamba: true
@@ -174,7 +174,7 @@ jobs:
           name: benchmark
 
       - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v3
+        uses: conda-incubator/setup-miniconda@v2
         with:
           miniforge-variant: Mambaforge
           use-mamba: true
