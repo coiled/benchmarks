@@ -26,6 +26,7 @@ Each A/B runtime is made of exactly four files:
 
 You may create as many A/B runtime configs as you want in a single `coiled/benchmarks`
 branch.
+You can use the utility `make_envs.py <name>, [name], ...` to automate file creation.
 
 `AB_<name>.requirements.in` can contain whatever you want, as long as it can run the
 tests; e.g.
