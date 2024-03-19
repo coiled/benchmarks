@@ -250,8 +250,7 @@ def spark_setup(cluster, local):
         )
         spark_dashboard = parse_url("http://localhost:4040")
     else:
-        spark = cluster.get_spark()
-
+        spark = cluster.get_spark(executor_memory_factor=0.8, worker_memory_factor=0.9)
         # Available on coiled>=1.12.4
         if not hasattr(cluster, "_spark_dashboard"):
             cluster._spark_dashboard = (
