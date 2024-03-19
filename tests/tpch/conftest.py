@@ -73,6 +73,11 @@ def restart(request):
 
 
 @pytest.fixture(scope="session")
+def shutdown_on_close(request):
+    return request.config.getoption("shutdown_on_close")
+
+
+@pytest.fixture(scope="session")
 def dataset_path(local, scale):
     return get_dataset_path(local, scale)
 
@@ -154,8 +159,8 @@ def benchmark_time(test_run_benchmark, module, scale, name):
 
 
 @pytest.fixture(scope="session")
-def cluster_spec(request, scale):
-    return get_cluster_spec(request, scale)
+def cluster_spec(scale, shutdown_on_close):
+    return get_cluster_spec(scale=scale, shutdown_on_close=shutdown_on_close)
 
 
 @pytest.fixture(scope="module")

@@ -1,3 +1,5 @@
+from typing import Any
+
 import boto3
 
 
@@ -37,12 +39,12 @@ def get_bucket_region(path: str):
     return resp["LocationConstraint"] or "us-east-1"
 
 
-def get_cluster_spec(request, scale):
+def get_cluster_spec(scale: int, shutdown_on_close: bool) -> dict[str, Any]:
     everywhere = dict(
         idle_timeout="1h",
         wait_for_workers=True,
         scheduler_vm_types=["m6i.xlarge"],
-        shutdown_on_close=request.config.getoption("shutdown_on_close"),
+        shutdown_on_close=shutdown_on_close,
     )
 
     if scale == 1:
