@@ -19,6 +19,7 @@ def scale(request):
     return scale
 
 
+# Override identical fixture in conftest.py to use different scale
 @pytest.fixture(scope="session")
 def dataset_path(local, scale):
     return get_dataset_path(local, scale)
@@ -29,9 +30,10 @@ def answers_path(local, scale):
     return get_answers_path(local, scale)
 
 
+# Override identical fixture in conftest.py to use different scale
 @pytest.fixture(scope="session")
-def cluster_spec(scale):
-    return get_cluster_spec(scale)
+def cluster_spec(scale, shutdown_on_close):
+    return get_cluster_spec(scale=scale, shutdown_on_close=shutdown_on_close)
 
 
 @pytest.fixture(scope="module")
