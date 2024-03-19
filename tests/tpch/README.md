@@ -19,8 +19,8 @@ following:
 ```
 mamba env create -n tpch -f ci/environment.yml
 conda activate tpch
-pip install -r ci/requirements-test.txt         # Or `ci/requirements-tpch-non-dask.txt` if you want Spark/DuckDb/Polars
-mamba env update -f ci/environment-git-tip.yml  # Update dask/distributed/dask-expr/zict to git tip
+pip-compile ci/requirements-2nightly.in         # Or `ci/requirements-2tpch-non-dask.in` if you want Spark/DuckDb/Polars
+pip install -r ci/requirements-2nightly.txt
 ```
 
 Run Dask Benchmarks
