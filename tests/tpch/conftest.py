@@ -29,7 +29,6 @@ def pytest_addoption(parser):
     parser.addoption(
         "--performance-report", action="store_true", default=False, help=""
     )
-
     parser.addoption(
         "--scale",
         action="store",
@@ -48,6 +47,13 @@ def pytest_addoption(parser):
         action="store_true",
         default=False,
         help="Don't raise an error on changes in number of Spark executors between `spark` fixture use.",
+    )
+    parser.addoption(
+        "--no-shutdown",
+        action="store_false",
+        dest="shutdown_on_close",
+        default=True,
+        help="Don't shutdown cluster when test ends",
     )
 
 
@@ -148,8 +154,8 @@ def benchmark_time(test_run_benchmark, module, scale, name):
 
 
 @pytest.fixture(scope="session")
-def cluster_spec(scale):
-    return get_cluster_spec(scale)
+def cluster_spec(request, scale):
+    return get_cluster_spec(request, scale)
 
 
 @pytest.fixture(scope="module")

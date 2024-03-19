@@ -30,8 +30,8 @@ def answers_path(local, scale):
 
 
 @pytest.fixture(scope="session")
-def cluster_spec(scale):
-    return get_cluster_spec(scale)
+def cluster_spec(request, scale):
+    return get_cluster_spec(request, scale)
 
 
 @pytest.fixture(scope="module")
