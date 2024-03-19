@@ -11,6 +11,7 @@ import filelock
 import pytest
 import requests
 from dask.distributed import LocalCluster, performance_report
+from dask.distributed.diagnostics.memory_sampler import MemorySampler
 from distributed.diagnostics.plugin import WorkerPlugin
 from urllib3.util import Url, parse_url
 
@@ -103,6 +104,44 @@ def name(request, tmp_path_factory, worker_id):
 
 
 @pytest.fixture(scope="function")
+def benchmark_memory(test_run_benchmark):
+    """Benchmark the memory usage of executing some code.
+
+    Yields
+    ------
+    Context manager factory function which takes a ``distributed.Client``
+    as input. The context manager records peak and average memory usage of
+    executing the ``with`` statement if run as part of a benchmark,
+    or does nothing otherwise.
+
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(benchmark_memory):
+            with Client() as client:
+                with benchmark_memory(client):
+                    do_something()
+    """
+
+    @contextlib.contextmanager
+    def _benchmark_memory(client):
+        if not test_run_benchmark:
+            yield
+        else:
+            sampler = MemorySampler()
+            label = uuid.uuid4().hex[:8]
+            with sampler.sample(label, client=client, measure="process"):
+                yield
+
+            df = sampler.to_pandas()
+            test_run_benchmark.average_memory = df[label].mean()
+            test_run_benchmark.peak_memory = df[label].max()
+
+    yield _benchmark_memory
+
+
+@pytest.fixture(scope="function")
 def benchmark_time(test_run_benchmark, module, scale, name):
     """Benchmark the wall clock time of executing some code.
 
@@ -189,6 +228,7 @@ def client(
     testrun_uid,
     cluster_kwargs,
     benchmark_time,
+    benchmark_memory,
     restart,
     scale,
     local,
