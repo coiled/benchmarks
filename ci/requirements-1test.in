@@ -1,0 +1,10 @@
+alembic
+altair
+filelock
+jinja2
+packaging
+pytest
+pytest-timeout
+pytest-xdist
+pyyaml
+duckdb
