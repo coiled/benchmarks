@@ -62,8 +62,10 @@ def get_cluster_spec(scale):
             **everywhere,
         }
     elif scale == 1000:
+        import dask
+
         return {
-            "worker_vm_types": ["m6i.xlarge"],
+            "worker_vm_types": [dask.config.get("benchmarks.vmtype", "m6i.xlarge")],
             "n_workers": 50,
             "worker_disk_size": 128,
             **everywhere,

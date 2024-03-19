@@ -11,3 +11,4 @@ dataframe:
 benchmarks:
   cow: false
   filesystem: fsspec
+  vmtype: r6i.xlarge
