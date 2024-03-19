@@ -29,7 +29,6 @@ def pytest_addoption(parser):
     parser.addoption(
         "--performance-report", action="store_true", default=False, help=""
     )
-
     parser.addoption(
         "--scale",
         action="store",
@@ -43,6 +42,19 @@ def pytest_addoption(parser):
         help="Name to use for run",
     )
     parser.addoption("--plot", action="store_true", default=False, help="")
+    parser.addoption(
+        "--ignore-spark-executor-count",
+        action="store_true",
+        default=False,
+        help="Don't raise an error on changes in number of Spark executors between `spark` fixture use.",
+    )
+    parser.addoption(
+        "--no-shutdown",
+        action="store_false",
+        dest="shutdown_on_close",
+        default=True,
+        help="Don't shutdown cluster when test ends",
+    )
 
 
 @pytest.fixture(scope="session")
@@ -58,6 +70,11 @@ def local(request):
 @pytest.fixture(scope="session")
 def restart(request):
     return request.config.getoption("restart")
+
+
+@pytest.fixture(scope="session")
+def shutdown_on_close(request):
+    return request.config.getoption("shutdown_on_close")
 
 
 @pytest.fixture(scope="session")
@@ -142,8 +159,8 @@ def benchmark_time(test_run_benchmark, module, scale, name):
 
 
 @pytest.fixture(scope="session")
-def cluster_spec(scale):
-    return get_cluster_spec(scale)
+def cluster_spec(scale, shutdown_on_close):
+    return get_cluster_spec(scale=scale, shutdown_on_close=shutdown_on_close)
 
 
 @pytest.fixture(scope="module")
@@ -275,17 +292,21 @@ def get_number_spark_executors(spark_dashboard: Url):
 
 
 @pytest.fixture
-def spark(spark_setup, benchmark_time):
+def spark(request, spark_setup, benchmark_time):
     n_executors_start = get_number_spark_executors(spark_setup._spark_dashboard)
     with benchmark_time:
         yield spark_setup
-
     n_executors_finish = get_number_spark_executors(spark_setup._spark_dashboard)
+
     if n_executors_finish != n_executors_start:
-        warnings.warn(
+        msg = (
             "Executor count changed between start and end of yield. "
             f"Startd with {n_executors_start}, ended with {n_executors_finish}"
         )
+        if request.config.getoption("ignore-spark-executor-count"):
+            warnings.warn(msg)
+        else:
+            raise RuntimeError(msg)
 
     spark_setup.catalog.clearCache()
 
