@@ -35,7 +35,13 @@ from sqlalchemy.orm import Session
 from benchmark_schema import TestRun
 from plugins import Durations
 
-logger = logging.getLogger("coiled-runtime")
+try:
+    from distributed.spans import span as span_ctx
+except ImportError:  # dask <2023.6.0
+    from contextlib import nullcontext as span_ctx
+
+
+logger = logging.getLogger("benchmarks")
 logger.setLevel(logging.INFO)
 
 coiled_logger = logging.getLogger("coiled")
@@ -402,12 +408,19 @@ def get_cluster_info(test_run_benchmark):
 
 
 @pytest.fixture(scope="function")
+def span(request):
+    with span_ctx(request.node.name):
+        yield
+
+
+@pytest.fixture(scope="function")
 def benchmark_all(
     benchmark_memory,
     benchmark_task_durations,
     benchmark_coiled_prometheus,
     get_cluster_info,
     benchmark_time,
+    span,
 ):
     """Benchmark all available metrics and extracts cluster information
 

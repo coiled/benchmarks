@@ -1107,7 +1107,7 @@ def query_20(dataset_path, fs, scale):
         & (lineitem["l_shipdate"] < shipdate_to)
     ]
     res_1 = (
-        res_1.groupby(["l_partkey", "l_suppkey"])["l_quantity"]
+        res_1.groupby(["l_suppkey", "l_partkey"])["l_quantity"]
         .sum()
         .rename("sum_quantity")
         .reset_index()
@@ -1198,9 +1198,9 @@ def query_21(dataset_path, fs, scale):
         .rename("nunique_col")
         .reset_index()
         .merge(res_1, on="l_orderkey", suffixes=("", "_right"))
+        .merge(orders, left_on="l_orderkey", right_on="o_orderkey")
         .merge(supplier, left_on="l_suppkey", right_on="s_suppkey")
         .merge(nation, left_on="s_nationkey", right_on="n_nationkey")
-        .merge(orders, left_on="l_orderkey", right_on="o_orderkey")
     )
 
     predicate = (
