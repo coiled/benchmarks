@@ -186,6 +186,7 @@ def client(
     get_cluster_info,
     performance_report,
     benchmark_time,
+    span,
     restart,
 ):
     with cluster.get_client() as client:

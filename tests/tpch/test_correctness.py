@@ -71,6 +71,7 @@ def client(
     get_cluster_info,
     performance_report,
     benchmark_time,
+    span,
     restart,
     local,
     query,
