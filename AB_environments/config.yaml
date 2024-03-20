@@ -3,12 +3,12 @@
 # Setting it to 5 is a good value to get statistically significant results.
 # This must remain set to 0 in the main branch, thus completely disabling
 # A/B tests, in order to avoid unnecessary runs.
-repeat: 0
+repeat: 1
 
 # Set to true to automatically create a verbatim copy of AB_baseline and then compare
 # the two in the A/B tests. Set to false to save some money if you are already confident
 # that the 'repeat' setting is high enough.
-test_null_hypothesis: true
+test_null_hypothesis: false
 
 # Test directories, test files, or individual tests to run.
 targets:
@@ -16,14 +16,14 @@ targets:
   - tests/benchmarks
   # - tests/runtime
   # - tests/stability
-  # - tests/tpch/test_dask.py
+  - tests/tpch/test_dask.py
   # - tests/benchmarks/test_futures.py
   # - tests/benchmarks/test_array.py::test_basic_sum
 
 # pytest markers or marker expressions. See setup.cfg for available ones.
 # Leave blank to run all marked and unmarked tests.
 markers:
-# markers: shuffle_p2p
+  markers: shuffle_p2p
 # markers: shuffle_p2p or shuffle_tasks
 # markers: not shuffle_tasks
 

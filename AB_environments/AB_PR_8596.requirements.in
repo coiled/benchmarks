@@ -13,10 +13,11 @@
 
 # Make sure you install dask, distributed, and dask-expr.
 dask==2024.3.1
-git+https://github.com/dask/distributed@29cb664fa434f87c62f7d6640b3687a6accac384
+distributed==2024.3.1
 dask-expr==1.0.4
 
 # You may alternatively point to your own git fork (but make sure you sync'ed tags!)
 # Read README.md for troubleshooting.
 # git+https://github.com/dask/dask@5949e54bc04158d215814586a44d51e0eb4a964d
+# git+https://github.com/dask/distributed@29cb664fa434f87c62f7d6640b3687a6accac384
 # git+https://github.com/dask-contrib/dask-expr@0aab0e0f1e4cd91b15df19512493ffe05bffb73a
