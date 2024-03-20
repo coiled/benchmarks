@@ -24,6 +24,7 @@ toolz==0.12.1
 zict==3.0.0
 xgboost==2.0.3
 optuna==3.6.0
+optuna-integration==3.6.0
 scipy==1.12.0
 sqlalchemy==2.0.28
 pynvml==11.5.0
