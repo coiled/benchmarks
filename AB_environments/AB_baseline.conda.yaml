@@ -9,7 +9,7 @@
 channels:
   - conda-forge
 dependencies:
-  - python =3.9  # Single '=' means latest patch version available
+  - python =3.11  # Single '=' means latest patch version available
   - openssl>1.1.0g
   - pip
   - pip-tools
