@@ -251,10 +251,10 @@ def client(
                     "performance-reports", f"{local}-{scale}-{query}.html"
                 )
             ):
-                with benchmark_time:
+                with benchmark_time, benchmark_memory:
                     yield client
         else:
-            with benchmark_time:
+            with benchmark_time, benchmark_memory:
                 yield client
 
 

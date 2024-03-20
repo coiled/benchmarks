@@ -16,7 +16,12 @@ targets:
   # - tests/benchmarks
   # - tests/runtime
   # - tests/stability
-  - tests/tpch/test_dask.py
+  - tests/tpch/test_dask.py::test_query_1
+  - tests/tpch/test_dask.py::test_query_2
+  - tests/tpch/test_dask.py::test_query_3
+  - tests/tpch/test_dask.py::test_query_5
+  - tests/tpch/test_dask.py::test_query_6
+  - tests/tpch/test_dask.py::test_query_7
   # - tests/benchmarks/test_futures.py
   # - tests/benchmarks/test_array.py::test_basic_sum
 
