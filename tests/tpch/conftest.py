@@ -206,6 +206,7 @@ def client(
     testrun_uid,
     cluster_kwargs,
     benchmark_time,
+    span,
     restart,
     scale,
     local,
