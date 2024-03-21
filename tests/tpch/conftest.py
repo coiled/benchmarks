@@ -22,7 +22,7 @@ from .utils import get_cluster_spec, get_dataset_path, get_single_vm_spec
 
 
 def pytest_addoption(parser):
-    parser.addoption("--local", action="store_true", default=False, help="")
+    parser.addoption("--local", action="store_true", default=True, help="")
     parser.addoption("--cloud", action="store_false", dest="local", help="")
     parser.addoption("--restart", action="store_true", default=True, help="")
     parser.addoption("--no-restart", action="store_false", dest="restart", help="")
@@ -174,18 +174,18 @@ def cluster(
     name,
     make_chart,
 ):
-    if local:
-        with LocalCluster() as cluster:
-            yield cluster
-    else:
-        kwargs = dict(
-            name=f"tpch-{module}-{scale}-{name}",
-            environ=dask_env_variables,
-            tags=github_cluster_tags,
-            region="us-east-2",
-            **cluster_spec,
-        )
-        with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
+    with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
+        if local:
+            with LocalCluster() as cluster:
+                yield cluster
+        else:
+            kwargs = dict(
+                name=f"tpch-{module}-{scale}-{name}",
+                environ=dask_env_variables,
+                tags=github_cluster_tags,
+                region="us-east-2",
+                **cluster_spec,
+            )
             with coiled.Cluster(**kwargs) as cluster:
                 yield cluster
 
@@ -240,13 +240,12 @@ def spark_setup(cluster, local):
 
     spark_dashboard: Url
     if local:
-        cluster.close()  # no need to bootstrap with Dask
         from pyspark.sql import SparkSession
 
         # Set app name to match that used in Coiled Spark
         spark = (
-            SparkSession.builder.master("local[*]")
-            .appName("SparkConnectServer")
+            SparkSession.builder.appName("SparkConnectServer")
+            .config("spark.driver.bindAddress", "127.0.0.1")
             .getOrCreate()
         )
         spark_dashboard = parse_url("http://localhost:4040")
@@ -314,7 +313,7 @@ def spark(request, spark_setup, benchmark_time):
 @pytest.fixture
 def fs(local):
     if local:
-        return None
+        return "pyarrow"
     else:
         import boto3
         from pyarrow.fs import S3FileSystem
