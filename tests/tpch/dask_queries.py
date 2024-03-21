@@ -791,7 +791,7 @@ def query_15(dataset_path, fs, scale):
     lineitem["revenue"] = lineitem.l_extendedprice * (1 - lineitem.l_discount)
     revenue = (
         lineitem.groupby("l_suppkey")
-        .revenue.sum()
+        .revenue.sum(split_out=True)
         .to_frame()
         .reset_index()
         .rename(columns={"revenue": "total_revenue", "l_suppkey": "supplier_no"})
