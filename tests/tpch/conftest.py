@@ -8,6 +8,7 @@ import warnings
 import coiled
 import dask
 import filelock
+import psutil
 import pytest
 import requests
 from dask.distributed import LocalCluster, performance_report
@@ -243,10 +244,32 @@ def spark_setup(cluster, local):
         cluster.close()  # no need to bootstrap with Dask
         from pyspark.sql import SparkSession
 
+        off_heap_size_g = 2
+        driver_memory_g = 3
+        driver_cpu = 2
+        n_executors = 2
+
+        total_executor_memory_g = (psutil.virtual_memory().available // 2**30) - (
+            driver_memory_g + off_heap_size_g
+        )
+        total_executor_cpu = psutil.cpu_count() - driver_cpu
+
+        executor_memory_g = int(total_executor_memory_g / n_executors)
+        executor_cpu = int(total_executor_cpu / n_executors)
+
         # Set app name to match that used in Coiled Spark
         spark = (
             SparkSession.builder.master("local[*]")
             .appName("SparkConnectServer")
+            .config("spark.driver.memory", f"{driver_memory_g}g")
+            .config("spark.driver.cores", driver_cpu)
+            .config("spark.executor.memory", f"{executor_memory_g}g")
+            .config("spark.executor.cores", executor_cpu)
+            .config("spark.dynamicAllocation.enabled", "true")
+            .config("spark.dynamicAllocation.maxExecutors", n_executors)
+            .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
+            .config("spark.memory.offHeap.enabled", "true")
+            .config("spark.memory.offHeap.size", f"{off_heap_size_g}g")
             .getOrCreate()
         )
         spark_dashboard = parse_url("http://localhost:4040")
