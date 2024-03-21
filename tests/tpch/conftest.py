@@ -22,7 +22,7 @@ from .utils import get_cluster_spec, get_dataset_path, get_single_vm_spec
 
 
 def pytest_addoption(parser):
-    parser.addoption("--local", action="store_true", default=True, help="")
+    parser.addoption("--local", action="store_true", default=False, help="")
     parser.addoption("--cloud", action="store_false", dest="local", help="")
     parser.addoption("--restart", action="store_true", default=True, help="")
     parser.addoption("--no-restart", action="store_false", dest="restart", help="")
