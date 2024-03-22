@@ -1,8 +1,5 @@
 # Dependencies exclusively needed to run TPCH tests on dask competitors.
 
-# First version to be able to set memory factors
-coiled>=1.13.1.dev1
-
 # PySpark
 # See https://spark.apache.org/docs/latest/api/python/getting_started/install.html#dependencies
 # NOTE: needs openjdk~=11.0 (installed with conda)
