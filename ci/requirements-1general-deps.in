@@ -1,4 +1,4 @@
-coiled>=0.2.54
+coiled>=1.13.1  # First version to be able to set memory factors
 numpy==1.26.4
 pandas==2.2.1
 dask-labextension==7.0.0
