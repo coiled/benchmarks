@@ -76,7 +76,7 @@ def get_cluster_spec(scale: int, shutdown_on_close: bool) -> dict[str, Any]:
         return {
             "worker_vm_types": ["r6i.xlarge"],
             "n_workers": 32,
-            "worker_disk_size": 100,
+            "worker_disk_size": 200,
             **everywhere,
         }
 
