@@ -1,39 +1,27 @@
 version: 2
 updates:
-  - directory: .github/workflows/
+  - directory: /
     package-ecosystem: github-actions
     schedule:
       interval: weekly
     groups:  # Group updates into a single PR
-      dependabot:  # Arbitrary label; used in branch and commit messages
+      g0:  # Arbitrary label; used in branch and commit messages
         update-types:
           - major
           - minor
           - patch
 
-  - directory: ci/
+  - directory: /
     package-ecosystem: pip
     schedule:
       interval: weekly
     groups:  # Group updates into a single PR
-      dependabot:  # Arbitrary label; used in branch and commit messages
+      g0:  # Arbitrary label; used in branch and commit messages
         update-types:
           - major
           - minor
           - patch
-
     ignore:
       # https://github.com/coiled/benchmarks/issues/1221
       - dependency-name: pyspark
         versions: ["3.5.x"]
-
-  - directory: AB_environments/
-    package-ecosystem: pip
-    schedule:
-      interval: weekly
-    groups:  # Group updates into a single PR
-      dependabot:  # Arbitrary label; used in branch and commit messages
-        update-types:
-          - major
-          - minor
-          - patch
