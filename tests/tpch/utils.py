@@ -13,6 +13,7 @@ def get_dataset_path(local, scale):
     }
     local_paths = {
         1: "./tpch-data/scale-1/",
+        5: "./tpch-data/scale-5/",
         10: "./tpch-data/scale-10/",
         100: "./tpch-data/scale-100/",
     }
