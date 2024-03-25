@@ -163,7 +163,7 @@ def cluster_spec(scale, shutdown_on_close):
     return get_cluster_spec(scale=scale, shutdown_on_close=shutdown_on_close)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def cluster(
     local,
     scale,
@@ -234,7 +234,7 @@ def client(
                 yield client
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def spark_setup(cluster, local):
     pytest.importorskip("pyspark")
 
