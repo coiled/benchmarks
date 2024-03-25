@@ -76,7 +76,9 @@ def generate(
             with cluster.get_client() as client:
                 tpch_from_client(client, **kwargs)
     else:
-        with dask.distributed.Client() as client:
+        with dask.distributed.Client(
+            threads_per_worker=1,
+        ) as client:
             tpch_from_client(client, **kwargs)
 
             # TODO: hack to suppress noisy "CommClosedError"s
