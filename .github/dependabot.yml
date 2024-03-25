@@ -23,5 +23,5 @@ updates:
           - patch
     ignore:
       # https://github.com/coiled/benchmarks/issues/1221
-      - dependency-name: pyspark
+      - dependency-name: pyspark[sql]
         versions: ["3.5.x"]
