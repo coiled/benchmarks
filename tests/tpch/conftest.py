@@ -173,13 +173,14 @@ def cluster(
     github_cluster_tags,
     name,
     make_chart,
+    worker_id,
 ):
     if local:
         with LocalCluster() as cluster:
             yield cluster
     else:
         kwargs = dict(
-            name=f"tpch-{module}-{scale}-{name}",
+            name=f"tpch-{module}-{scale}-{name}-{worker_id}",
             environ=dask_env_variables,
             tags=github_cluster_tags,
             region="us-east-2",
