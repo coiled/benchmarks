@@ -41,9 +41,9 @@ def get_bucket_region(path: str):
 
 def get_cluster_spec(scale: int, shutdown_on_close: bool) -> dict[str, Any]:
     everywhere = dict(
-        idle_timeout="1h",
+        idle_timeout="12h",
         wait_for_workers=True,
-        scheduler_vm_types=["r6i.2xlarge"],
+        scheduler_vm_types=["m6i.xlarge"],
         shutdown_on_close=shutdown_on_close,
     )
 
@@ -76,7 +76,7 @@ def get_cluster_spec(scale: int, shutdown_on_close: bool) -> dict[str, Any]:
         return {
             "worker_vm_types": ["r6i.xlarge"],
             "n_workers": 32,
-            "worker_disk_size": 200,
+            "worker_disk_size": 100,
             **everywhere,
         }
 
