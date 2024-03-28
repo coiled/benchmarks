@@ -1,10 +1,109 @@
 import re
+import warnings
 
 import pytest
+import requests
+from urllib3.util import Url, parse_url
 
 pytestmark = pytest.mark.tpch_nondask
+coiled_spark = pytest.importorskip("coiled.spark")
 
-pytest.importorskip("coiled.spark")
+
+@pytest.fixture(scope="module")
+def cluster(
+    local,
+    scale,
+    module,
+    dask_env_variables,
+    cluster_spec,
+    github_cluster_tags,
+    name,
+    make_chart,
+):
+    if not local:
+        kwargs = dict(
+            name=f"tpch-{module}-{scale}-{name}",
+            environ=dask_env_variables,
+            tags=github_cluster_tags,
+            region="us-east-2",
+            **cluster_spec,
+        )
+        with coiled_spark.get_spark_cluster(**kwargs) as cluster:
+            yield cluster
+    else:
+        yield
+
+
+@pytest.fixture(scope="module")
+def spark_setup(cluster, local):
+    pytest.importorskip("pyspark")
+
+    spark_dashboard: Url
+    if local:
+        from pyspark.sql import SparkSession
+
+        # Set app name to match that used in Coiled Spark
+        spark = (
+            SparkSession.builder.appName("SparkConnectServer")
+            .config("spark.driver.bindAddress", "127.0.0.1")
+            .getOrCreate()
+        )
+        spark_dashboard = parse_url("http://localhost:4040")
+    else:
+        spark = cluster.get_spark(executor_memory_factor=0.8, worker_memory_factor=0.9)
+        # Available on coiled>=1.12.4
+        if not hasattr(cluster, "_spark_dashboard"):
+            cluster._spark_dashboard = (
+                parse_url(cluster._dashboard_address)._replace(path="/spark").url
+            )
+        spark_dashboard = parse_url(cluster._spark_dashboard)
+
+    spark._spark_dashboard: Url = spark_dashboard
+
+    # warm start
+    from pyspark.sql import Row
+
+    df = spark.createDataFrame([Row(a=1, b=2.0, c="string1")])
+    df.show()
+
+    yield spark
+
+
+def get_number_spark_executors(spark_dashboard: Url):
+    base_path = spark_dashboard.path or ""
+
+    url = spark_dashboard._replace(path=f"{base_path}/api/v1/applications")
+    apps = requests.get(url.url).json()
+    for app in apps:
+        if app["name"] == "SparkConnectServer":
+            appid = app["id"]
+            break
+    else:
+        raise ValueError("Failed to find Spark application 'SparkConnectServer'")
+
+    url = url._replace(path=f"{url.path}/{appid}/allexecutors")
+    executors = requests.get(url.url).json()
+    return sum(1 for executor in executors if executor["isActive"])
+
+
+@pytest.fixture
+def spark(request, spark_setup, benchmark_time):
+    n_executors_start = get_number_spark_executors(spark_setup._spark_dashboard)
+    with benchmark_time:
+        yield spark_setup
+    n_executors_finish = get_number_spark_executors(spark_setup._spark_dashboard)
+
+    if n_executors_finish != n_executors_start:
+        msg = (
+            "Executor count changed between start and end of yield. "
+            f"Startd with {n_executors_start}, ended with {n_executors_finish}"
+        )
+        if request.config.getoption("ignore-spark-executor-count"):
+            warnings.warn(msg)
+        else:
+            raise RuntimeError(msg)
+
+    spark_setup.catalog.clearCache()
 
 
 def register_table(spark, path, name):
