@@ -1,0 +1,12 @@
+# Environment file for A/B testing, used to define dask config options
+# (overriding the built-in config).
+# Leave empty if you don't want to override anything.
+#
+# You may change contents and duplicate to other environments, but do not rename
+# the AB_baseline files.
+# Please read README.md for more information.
+
+# EXAMPLE - uncomment/change as needed
+# distributed:
+#   scheduler:
+#     worker-saturation: 1.2

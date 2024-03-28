@@ -11,6 +11,6 @@
 -r ../ci/requirements-1general-deps.in
 -r ../ci/requirements-1test.in
 
-git+https://github.com/dask/dask@b663dca0fa4ca4686b8c08f7cb30d11320012901
-git+https://github.com/dask/distributed@e7f756b48d2625f1ebfba4bc32e1e30174325a5f
-git+https://github.com/dask-contrib/dask-expr@29182888270bef2014506bb0b49df9041f40d39c
+git+https://github.com/crusaderky/dask@shuffle_noarrow
+git+https://github.com/crusaderky/distributed@shuffle_noarrow
+git+https://github.com/crusaderky/dask-expr@shuffle_noarrow
