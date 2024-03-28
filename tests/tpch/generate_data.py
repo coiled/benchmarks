@@ -76,7 +76,9 @@ def generate(
             with cluster.get_client() as client:
                 tpch_from_client(client, **kwargs)
     else:
-        with dask.distributed.Client() as client:
+        with dask.distributed.Client(
+            threads_per_worker=1,
+        ) as client:
             tpch_from_client(client, **kwargs)
 
             # TODO: hack to suppress noisy "CommClosedError"s
@@ -271,8 +273,8 @@ def rows_approx_mb(con, table_name, partition_size: str, compression: Compressio
         tmp = pathlib.Path(tmpdir) / "tmp.parquet"
         stmt = f"select * from {table_name} limit {sample_size}"
         df = con.sql(stmt).arrow()
-        write_table(table_name, df, tmp, compression)
-        mb = tmp.stat().st_size
+        file = write_table(table_name, df, tmp, compression)
+        mb = pathlib.Path(file).stat().st_size
     return int(
         (len(table) * ((len(table) / sample_size) * partition_size)) / mb
     ) or len(table)

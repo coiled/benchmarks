@@ -13,19 +13,23 @@ The `coiled benchmarks` test suite can be run locally with the following steps:
 1. Ensure your local machine is authenticated to use the `dask-benchmarks` Coiled
    account and the Coiled Dask Engineering AWS S3 account.
 2. Create a new Python environment with
-   `mamba env create -n test-env -f ci/environment.yml`. You could alternatively use
-   different packages, e.g. if you are testing feature branches of dask or distributed.
+
+   ```bash
+   mamba env create -n test-env -f ci/environment.yml
+   conda activate test-env
+   pip-compile ci/requirements-2nightly.in
+   pip install -r ci/requirements-2nightly.txt
+   ```
+   You could alternatively use different packages, e.g. if you are testing feature branches
+   of dask or distributed.
    This test suite is configured to run Coiled's `package_sync` feature, so your local
    environment will be copied to the cluster.
-3. Activate the environment with `conda activate test-env`
-4. Some tests require additional dependencies:
-   - For snowflake: `mamba env update -f ci/environment-snowflake.yml`  
-   - For non-dask TPCH: `mamba env update -f ci/environment-tpch-nondask.yml`
+3. Some tests require different dependencies:
+   - For snowflake, use `ci/requirements-2snowflake.in` *instead*  
+   - For non-dask TPCH, use `ci/requirements-2tpch-nondask.in` *instead*
 
-    Look at `ci/environment-*.yml` for more options.
-5. Upgrade dask to the git tip with `mamba env update -f ci/environment-git-tip.yml`
-6. Add test-specific packages with `mamba env update -f ci/environment-test.yml`
-7. Run tests with `python -m pytest tests`.
+   Look at `ci/requirements-*.in` for more options.
+4. Run tests with `python -m pytest tests`.
    You may consider running instead individual tests or categories of tests; e.g.
    `python -m pytest tests -m shuffle_p2p`.
    Look at `setup.cfg` for all available test markers.
@@ -127,11 +131,13 @@ It is not always obvious what the cause of a seeming performance regression is.
 It could be due to a new version of a direct or transitive dependency,
 and it could be due to a change in the Coiled platform.
 But often it is due to a change in `dask` or `distributed`.
-If you suspect that is the case, Coiled's `package_sync` feature combines well with the benchmarking infrastructure here and `git bisect`.
+If you suspect that is the case, Coiled's `package_sync` feature combines well with the
+benchmarking infrastructure here and `git bisect`.
 
-The following is an example workflow which could be used to identify a specific commit in `dask` which introduced a performance regression.
-This workflow presumes you have two terminal windows open, one with the `coiled-runtime` test suite,
-and one with a `dask` repository with which to drive bisecting.
+The following is an example workflow which could be used to identify a specific commit
+in `dask` which introduced a performance regression. This workflow presumes you have two
+terminal windows open, one with the `coiled-runtime` test suite, and one with a `dask`
+repository with which to drive bisecting.
 
 #### Create your software environment
 
@@ -139,10 +145,13 @@ You should create a software environment which can run this test suite, but with
 editable install of `dask`.
 You can do this in any of a number of ways, but one approach coule be
 ```bash
-mamba env create -n test-env --file ci/environment.yml  # Create a test environment
-conda activate test-env  # Activate your test environment
-mamba env update --file ci/environment-test.yml
-(cd <your-dask-dir> && pip install -e .)  # Do an editable install for dask
+mamba env create -n test-env -f ci/environment.yml
+conda activate test-env
+pip-compile ci/requirements-2nightly.in
+pip install -r ci/requirements-2nightly.txt
+# Do an editable install for dask
+cd <your-dask-dir>
+pip install -e .
 ```
 
 #### Start bisecting

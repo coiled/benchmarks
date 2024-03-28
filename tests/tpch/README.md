@@ -19,9 +19,8 @@ following:
 ```
 mamba env create -n tpch -f ci/environment.yml
 conda activate tpch
-mamba env update -f ci/environment-git-tip.yml
-mamba env update -f ci/environment-test.yml
-mamba install grpcio grpcio-status protobuf -y  # if you want Spark
+pip-compile ci/requirements-2nightly.in         # Or `ci/requirements-2tpch-non-dask.in` if you want Spark/DuckDb/Polars
+pip install -r ci/requirements-2nightly.txt
 ```
 
 Run Dask Benchmarks

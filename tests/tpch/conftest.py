@@ -3,12 +3,16 @@ import datetime
 import os
 import time
 import uuid
+import warnings
 
 import coiled
 import dask
 import filelock
 import pytest
+import requests
 from dask.distributed import LocalCluster, performance_report
+from distributed.diagnostics.plugin import WorkerPlugin
+from urllib3.util import Url, parse_url
 
 from .utils import get_cluster_spec, get_dataset_path, get_single_vm_spec
 
@@ -25,7 +29,6 @@ def pytest_addoption(parser):
     parser.addoption(
         "--performance-report", action="store_true", default=False, help=""
     )
-
     parser.addoption(
         "--scale",
         action="store",
@@ -39,6 +42,19 @@ def pytest_addoption(parser):
         help="Name to use for run",
     )
     parser.addoption("--plot", action="store_true", default=False, help="")
+    parser.addoption(
+        "--ignore-spark-executor-count",
+        action="store_true",
+        default=False,
+        help="Don't raise an error on changes in number of Spark executors between `spark` fixture use.",
+    )
+    parser.addoption(
+        "--no-shutdown",
+        action="store_false",
+        dest="shutdown_on_close",
+        default=True,
+        help="Don't shutdown cluster when test ends",
+    )
 
 
 @pytest.fixture(scope="session")
@@ -54,6 +70,11 @@ def local(request):
 @pytest.fixture(scope="session")
 def restart(request):
     return request.config.getoption("restart")
+
+
+@pytest.fixture(scope="session")
+def shutdown_on_close(request):
+    return request.config.getoption("shutdown_on_close")
 
 
 @pytest.fixture(scope="session")
@@ -138,8 +159,8 @@ def benchmark_time(test_run_benchmark, module, scale, name):
 
 
 @pytest.fixture(scope="session")
-def cluster_spec(scale):
-    return get_cluster_spec(scale)
+def cluster_spec(scale, shutdown_on_close):
+    return get_cluster_spec(scale=scale, shutdown_on_close=shutdown_on_close)
 
 
 @pytest.fixture(scope="module")
@@ -153,20 +174,29 @@ def cluster(
     name,
     make_chart,
 ):
-    if local:
-        with LocalCluster() as cluster:
-            yield cluster
-    else:
-        kwargs = dict(
-            name=f"tpch-{module}-{scale}-{name}",
-            environ=dask_env_variables,
-            tags=github_cluster_tags,
-            region="us-east-2",
-            **cluster_spec,
-        )
-        with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
+    with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
+        if local:
+            with LocalCluster() as cluster:
+                yield cluster
+        else:
+            kwargs = dict(
+                name=f"tpch-{module}-{scale}-{name}",
+                environ=dask_env_variables,
+                tags=github_cluster_tags,
+                region="us-east-2",
+                **cluster_spec,
+            )
             with coiled.Cluster(**kwargs) as cluster:
                 yield cluster
+
+
+class TurnOnPandasCOW(WorkerPlugin):
+    idempotent = True
+
+    def setup(self, worker):
+        import pandas as pd
+
+        pd.set_option("mode.copy_on_write", True)
 
 
 @pytest.fixture
@@ -176,6 +206,7 @@ def client(
     testrun_uid,
     cluster_kwargs,
     benchmark_time,
+    span,
     restart,
     scale,
     local,
@@ -186,6 +217,7 @@ def client(
             client.restart()
         client.run(lambda: None)
 
+        client.register_plugin(TurnOnPandasCOW(), name="enable-cow")
         local = "local" if local else "cloud"
         if request.config.getoption("--performance-report"):
             if not os.path.exists("performance-reports"):
@@ -205,13 +237,28 @@ def client(
 @pytest.fixture(scope="module")
 def spark_setup(cluster, local):
     pytest.importorskip("pyspark")
+
+    spark_dashboard: Url
     if local:
-        cluster.close()  # no need to bootstrap with Dask
         from pyspark.sql import SparkSession
 
-        spark = SparkSession.builder.master("local[*]").getOrCreate()
+        # Set app name to match that used in Coiled Spark
+        spark = (
+            SparkSession.builder.appName("SparkConnectServer")
+            .config("spark.driver.bindAddress", "127.0.0.1")
+            .getOrCreate()
+        )
+        spark_dashboard = parse_url("http://localhost:4040")
     else:
-        spark = cluster.get_spark()
+        spark = cluster.get_spark(executor_memory_factor=0.8, worker_memory_factor=0.9)
+        # Available on coiled>=1.12.4
+        if not hasattr(cluster, "_spark_dashboard"):
+            cluster._spark_dashboard = (
+                parse_url(cluster._dashboard_address)._replace(path="/spark").url
+            )
+        spark_dashboard = parse_url(cluster._spark_dashboard)
+
+    spark._spark_dashboard: Url = spark_dashboard
 
     # warm start
     from pyspark.sql import Row
@@ -226,10 +273,39 @@ def spark_setup(cluster, local):
     yield spark
 
 
+def get_number_spark_executors(spark_dashboard: Url):
+    base_path = spark_dashboard.path or ""
+
+    url = spark_dashboard._replace(path=f"{base_path}/api/v1/applications")
+    apps = requests.get(url.url).json()
+    for app in apps:
+        if app["name"] == "SparkConnectServer":
+            appid = app["id"]
+            break
+    else:
+        raise ValueError("Failed to find Spark application 'SparkConnectServer'")
+
+    url = url._replace(path=f"{url.path}/{appid}/allexecutors")
+    executors = requests.get(url.url).json()
+    return sum(1 for executor in executors if executor["isActive"])
+
+
 @pytest.fixture
-def spark(spark_setup, benchmark_time):
+def spark(request, spark_setup, benchmark_time):
+    n_executors_start = get_number_spark_executors(spark_setup._spark_dashboard)
     with benchmark_time:
         yield spark_setup
+    n_executors_finish = get_number_spark_executors(spark_setup._spark_dashboard)
+
+    if n_executors_finish != n_executors_start:
+        msg = (
+            "Executor count changed between start and end of yield. "
+            f"Startd with {n_executors_start}, ended with {n_executors_finish}"
+        )
+        if request.config.getoption("ignore-spark-executor-count"):
+            warnings.warn(msg)
+        else:
+            raise RuntimeError(msg)
 
     spark_setup.catalog.clearCache()
 
@@ -237,7 +313,7 @@ def spark(spark_setup, benchmark_time):
 @pytest.fixture
 def fs(local):
     if local:
-        return None
+        return "pyarrow"
     else:
         import boto3
         from pyarrow.fs import S3FileSystem

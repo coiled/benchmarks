@@ -360,7 +360,7 @@ def query_8(dataset_path, fs, scale):
         mkt_brazil, left_on="o_year", right_on="o_year", suffixes=("_mkt", "_brazil")
     )
 
-    final["mkt_share"] = final.volume_brazil / final.volume_mkt
+    final["mkt_share"] = (final.volume_brazil / final.volume_mkt).round(2)
     return final.sort_values(by=["o_year"], ascending=[True])[["o_year", "mkt_share"]]
 
 
@@ -790,7 +790,7 @@ def query_15(dataset_path, fs, scale):
     lineitem["revenue"] = lineitem.l_extendedprice * (1 - lineitem.l_discount)
     revenue = (
         lineitem.groupby("l_suppkey")
-        .revenue.sum()
+        .revenue.sum(split_out=True)
         .to_frame()
         .reset_index()
         .rename(columns={"revenue": "total_revenue", "l_suppkey": "supplier_no"})
@@ -955,11 +955,13 @@ def query_18(dataset_path, fs, scale):
     )
     qnt_over_300 = qnt_over_300[qnt_over_300.l_quantity > 300]
 
-    L = lineitem.merge(
-        qnt_over_300, left_on="l_orderkey", right_on="l_orderkey", how="leftsemi"
+    table = (
+        orders.merge(
+            qnt_over_300, left_on="o_orderkey", right_on="l_orderkey", how="leftsemi"
+        )
+        .merge(lineitem, left_on="o_orderkey", right_on="l_orderkey", how="inner")
+        .merge(customer, left_on="o_custkey", right_on="c_custkey", how="inner")
     )
-    C_O = customer.merge(orders, left_on="c_custkey", right_on="o_custkey", how="inner")
-    table = C_O.merge(L, left_on="o_orderkey", right_on="l_orderkey", how="inner")
 
     return (
         table.groupby(
@@ -967,7 +969,7 @@ def query_18(dataset_path, fs, scale):
         )
         .l_quantity.sum()
         .reset_index()
-        .rename(columns={"l_quantity": "sum"})
+        .rename(columns={"l_quantity": "col6"})
         .sort_values(["o_totalprice", "o_orderdate"], ascending=[False, True])
         .head(100, compute=False)
     )
@@ -1104,7 +1106,7 @@ def query_20(dataset_path, fs, scale):
         & (lineitem["l_shipdate"] < shipdate_to)
     ]
     res_1 = (
-        res_1.groupby(["l_partkey", "l_suppkey"])["l_quantity"]
+        res_1.groupby(["l_suppkey", "l_partkey"])["l_quantity"]
         .sum(split_out=True)
         .rename("sum_quantity")
         .reset_index()
@@ -1195,9 +1197,9 @@ def query_21(dataset_path, fs, scale):
         .rename("nunique_col")
         .reset_index()
         .merge(res_1, on="l_orderkey", suffixes=("", "_right"))
+        .merge(orders, left_on="l_orderkey", right_on="o_orderkey")
         .merge(supplier, left_on="l_suppkey", right_on="s_suppkey")
         .merge(nation, left_on="s_nationkey", right_on="n_nationkey")
-        .merge(orders, left_on="l_orderkey", right_on="o_orderkey")
     )
 
     predicate = (

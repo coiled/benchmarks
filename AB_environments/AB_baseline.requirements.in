@@ -1,0 +1,21 @@
+# Environment file for A/B testing, used to define the conda environment.
+# This is on top of <environment name>.conda.yaml.
+#
+# You may change contents and duplicate to other environments, but do not rename
+# the AB_baseline files.
+# Please read README.md for more information.
+
+# If you need to change a package in one of the following files,
+# remove the `-r <<path to file>>` and copy-paste file contents
+# and update the package you want to change in this file.
+-r ../ci/requirements-1general-deps.in
+-r ../ci/requirements-1test.in
+
+# Make sure you install dask, distributed, and dask-expr.
+-r ../ci/requirements-1dask-release.in
+
+# You may alternatively point to your own git fork (but make sure you sync'ed tags!)
+# Read README.md for troubleshooting.
+# git+https://github.com/dask/dask@5949e54bc04158d215814586a44d51e0eb4a964d
+# git+https://github.com/dask/distributed@29cb664fa434f87c62f7d6640b3687a6accac384
+# git+https://github.com/dask-contrib/dask-expr@0aab0e0f1e4cd91b15df19512493ffe05bffb73a
