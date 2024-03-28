@@ -65,8 +65,7 @@ def query_2(dataset_path, fs, scale):
         partsupp_filtered, left_on="s_suppkey", right_on="ps_suppkey", how="inner"
     )
     part_filtered = part_filtered[
-        (part_filtered["p_size"] == var1)
-        & (part_filtered["p_type"].astype(str).str.endswith(var2))
+        (part_filtered["p_size"] == var1) & (part_filtered["p_type"].str.endswith(var2))
     ]
     merged_df = part_filtered.merge(
         ps_s_r_n_merged, left_on="p_partkey", right_on="ps_partkey", how="inner"
@@ -1108,7 +1107,7 @@ def query_20(dataset_path, fs, scale):
     ]
     res_1 = (
         res_1.groupby(["l_suppkey", "l_partkey"])["l_quantity"]
-        .sum()
+        .sum(split_out=True)
         .rename("sum_quantity")
         .reset_index()
     )
