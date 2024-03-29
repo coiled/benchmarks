@@ -13,7 +13,7 @@ test_null_hypothesis: true
 # Test directories, test files, or individual tests to run.
 targets:
   # - tests
-  - tests/benchmarks
+  # - tests/benchmarks
   # - tests/runtime
   # - tests/stability
   - tests/tpch/test_dask.py
@@ -22,7 +22,8 @@ targets:
 
 # pytest markers or marker expressions. See setup.cfg for available ones.
 # Leave blank to run all marked and unmarked tests.
-markers: shuffle_p2p
+markers:
+# markers: shuffle_p2p
 # markers: shuffle_p2p or shuffle_tasks
 # markers: not shuffle_tasks
 
