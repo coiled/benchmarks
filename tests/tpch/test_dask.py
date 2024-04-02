@@ -90,6 +90,7 @@ def test_query_14(client, dataset_path, fs, scale):
     dask_queries.query_14(dataset_path, fs, scale).compute()
 
 
+@pytest.mark.shuffle_p2p
 def test_query_15(client, dataset_path, fs, scale):
     dask_queries.query_15(dataset_path, fs, scale).compute()
 
