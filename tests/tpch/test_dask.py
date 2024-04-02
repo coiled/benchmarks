@@ -21,6 +21,7 @@ def dataset_path(local, scale):
         return get_dataset_path(local, scale)
 
 
+@pytest.mark.shuffle_p2p
 def test_query_1(client, dataset_path, fs, scale):
     dask_queries.query_1(dataset_path, fs, scale).compute()
 
@@ -54,6 +55,7 @@ def test_query_7(client, dataset_path, fs, scale):
     dask_queries.query_7(dataset_path, fs, scale).compute()
 
 
+@pytest.mark.shuffle_p2p
 def test_query_8(client, dataset_path, fs, scale):
     dask_queries.query_8(dataset_path, fs, scale).compute()
 
@@ -123,5 +125,6 @@ def test_query_21(client, dataset_path, fs, scale):
     dask_queries.query_21(dataset_path, fs, scale).compute()
 
 
+@pytest.mark.shuffle_p2p
 def test_query_22(client, dataset_path, fs, scale):
     dask_queries.query_22(dataset_path, fs, scale).compute()
