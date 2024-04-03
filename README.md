@@ -66,6 +66,10 @@ aws s3 cp s3://coiled-runtime-ci/benchmarks/benchmark.db ./benchmark.db
 pytest --benchmark
 ```
 
+### TPC-H Benchmarks
+
+To get going with the TPC-H benchmarks, checkout the [README here](./tests/tpch/README.md)
+
 ### Changing the benchmark schema
 
 You can add, remove, or modify columns by editing the SQLAlchemy schema in `benchmark_schema.py`.
