@@ -176,7 +176,7 @@ def cluster(
     make_chart,
 ):
     if local:
-        with LocalCluster() as cluster:
+        with LocalCluster(memory_limit='60GB') as cluster:
             yield cluster
     else:
         kwargs = dict(
