@@ -1,9 +1,7 @@
-import contextlib
-import datetime
 import os
-import time
 import uuid
 import warnings
+from contextlib import nullcontext
 
 import coiled
 import dask
@@ -11,7 +9,8 @@ import filelock
 import psutil
 import pytest
 import requests
-from dask.distributed import LocalCluster, performance_report
+from dask.distributed import LocalCluster
+from dask.distributed import performance_report as performance_report_func
 from distributed.diagnostics.plugin import WorkerPlugin
 from urllib3.util import Url, parse_url
 
@@ -120,38 +119,18 @@ def name(request, tmp_path_factory, worker_id):
     return data
 
 
-@pytest.fixture(scope="function")
-def benchmark_time(test_run_benchmark, module, scale, name):
-    """Benchmark the wall clock time of executing some code.
-
-    Yields
-    ------
-    Context manager that records the wall clock time duration of executing
-    the ``with`` statement if run as part of a benchmark, or does nothing otherwise.
-
-    Example
-    -------
-    .. code-block:: python
-
-        def test_something(benchmark_time):
-            with benchmark_time:
-                do_something()
-    """
-
-    @contextlib.contextmanager
-    def _benchmark_time():
-        if not test_run_benchmark:
-            yield
-        else:
-            start = time.time()
-            yield
-            end = time.time()
-            test_run_benchmark.duration = end - start
-            test_run_benchmark.start = datetime.datetime.utcfromtimestamp(start)
-            test_run_benchmark.end = datetime.datetime.utcfromtimestamp(end)
-            test_run_benchmark.cluster_name = f"tpch-{module}-{scale}-{name}"
-
-    return _benchmark_time()
+@pytest.fixture
+def performance_report(request, local, scale, query):
+    if request.config.getoption("--performance-report"):
+        os.makedirs("performance-reports", exist_ok=True)
+        local = "local" if local else "cloud"
+        return performance_report_func(
+            filename=os.path.join(
+                "performance-reports", f"{local}-{scale}-{query}.html"
+            )
+        )
+    else:
+        return nullcontext()
 
 
 #############################################
@@ -175,18 +154,18 @@ def cluster(
     name,
     make_chart,
 ):
-    if local:
-        with LocalCluster(memory_limit='60GB') as cluster:
-            yield cluster
-    else:
-        kwargs = dict(
-            name=f"tpch-{module}-{scale}-{name}",
-            environ=dask_env_variables,
-            tags=github_cluster_tags,
-            region="us-east-2",
-            **cluster_spec,
-        )
-        with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
+    with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
+        if local:
+            with LocalCluster() as cluster:
+                yield cluster
+        else:
+            kwargs = dict(
+                name=f"tpch-{module}-{scale}-{name}",
+                environ=dask_env_variables,
+                tags=github_cluster_tags,
+                region="us-east-2",
+                **cluster_spec,
+            )
             with coiled.Cluster(**kwargs) as cluster:
                 yield cluster
 
@@ -204,14 +183,12 @@ class TurnOnPandasCOW(WorkerPlugin):
 def client(
     request,
     cluster,
-    testrun_uid,
     cluster_kwargs,
+    get_cluster_info,
+    performance_report,
     benchmark_time,
     span,
     restart,
-    scale,
-    local,
-    query,
 ):
     with cluster.get_client() as client:
         if restart:
@@ -219,20 +196,8 @@ def client(
         client.run(lambda: None)
 
         client.register_plugin(TurnOnPandasCOW(), name="enable-cow")
-        local = "local" if local else "cloud"
-        if request.config.getoption("--performance-report"):
-            if not os.path.exists("performance-reports"):
-                os.mkdir("performance-reports")
-            with performance_report(
-                filename=os.path.join(
-                    "performance-reports", f"{local}-{scale}-{query}.html"
-                )
-            ):
-                with benchmark_time:
-                    yield client
-        else:
-            with benchmark_time:
-                yield client
+        with get_cluster_info(cluster), performance_report, benchmark_time:
+            yield client
 
 
 @pytest.fixture(scope="module")
@@ -241,7 +206,6 @@ def spark_setup(cluster, local):
 
     spark_dashboard: Url
     if local:
-        cluster.close()  # no need to bootstrap with Dask
         from pyspark.sql import SparkSession
 
         off_heap_size_g = 2
@@ -270,6 +234,7 @@ def spark_setup(cluster, local):
             .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
             .config("spark.memory.offHeap.enabled", "true")
             .config("spark.memory.offHeap.size", f"{off_heap_size_g}g")
+            .config("spark.driver.bindAddress", "127.0.0.1")
             .getOrCreate()
         )
         spark_dashboard = parse_url("http://localhost:4040")
@@ -337,7 +302,7 @@ def spark(request, spark_setup, benchmark_time):
 @pytest.fixture
 def fs(local):
     if local:
-        return None
+        return "pyarrow"
     else:
         import boto3
         from pyarrow.fs import S3FileSystem

@@ -55,7 +55,7 @@ def generate(outfile="chart.json", name=None, scale=None):
         )
     )
     chart.save(outfile)
-    chart.save(outfile.replace('.json', '.html'))
+    chart.save(outfile.replace(".json", ".html"))
     print("Saving chart to", outfile)
 
 

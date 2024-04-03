@@ -1,0 +1,13 @@
+# Dependencies exclusively needed to run TPCH tests on dask competitors.
+
+# PySpark
+# See https://spark.apache.org/docs/latest/api/python/getting_started/install.html#dependencies
+# NOTE: needs openjdk~=11.0 (installed with conda)
+pyspark[sql]==3.4.1  # FIXME DO NOT UPGRADE: https://github.com/coiled/benchmarks/issues/1221
+grpcio==1.62.1
+grpcio-status==1.62.1
+protobuf==5.26.0
+
+# Other TPCH tests
+polars==0.20.16
+duckdb==0.10.1

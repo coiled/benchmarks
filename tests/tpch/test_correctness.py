@@ -4,7 +4,7 @@ import coiled
 import dask
 import pandas as pd
 import pytest
-from distributed import LocalCluster, performance_report
+from distributed import LocalCluster
 
 from .utils import get_answers_path, get_cluster_spec, get_dataset_path
 
@@ -67,8 +67,9 @@ def cluster(
 def client(
     request,
     cluster,
-    testrun_uid,
     cluster_kwargs,
+    get_cluster_info,
+    performance_report,
     benchmark_time,
     span,
     restart,
@@ -81,20 +82,8 @@ def client(
             client.restart()
         client.run(lambda: None)
 
-        local = "local" if local else "cloud"
-        if request.config.getoption("--performance-report"):
-            if not os.path.exists("performance-reports"):
-                os.mkdir("performance-reports")
-            with performance_report(
-                filename=os.path.join(
-                    "performance-reports", f"{local}-{scale}-{query}.html"
-                )
-            ):
-                with benchmark_time:
-                    yield client
-        else:
-            with benchmark_time:
-                yield client
+        with get_cluster_info(cluster), performance_report, benchmark_time:
+            yield client
 
 
 def get_expected_answer(query: int, answers_path: str, s3_storage_options):
