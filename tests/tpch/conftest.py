@@ -156,7 +156,8 @@ def cluster(
 ):
     with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
         if local:
-            with LocalCluster() as cluster:
+            memory_limit = (psutil.virtual_memory().available // 2**30)
+            with LocalCluster(memory_limit=memory_limit) as cluster:
                 yield cluster
         else:
             kwargs = dict(
@@ -210,8 +211,8 @@ def spark_setup(cluster, local):
 
         off_heap_size_g = 2
         driver_memory_g = 3
-        driver_cpu = 2
-        n_executors = 2
+        driver_cpu = 1
+        n_executors = 1
 
         total_executor_memory_g = (psutil.virtual_memory().available // 2**30) - (
             driver_memory_g + off_heap_size_g
@@ -220,6 +221,14 @@ def spark_setup(cluster, local):
 
         executor_memory_g = int(total_executor_memory_g / n_executors)
         executor_cpu = int(total_executor_cpu / n_executors)
+
+        if executor_memory_g < 2 or executor_cpu < 1:
+            warnings.warn(
+                "Appears you may not have enough resources available "
+                "to run Spark locally for TPC-H benchmarks"
+            )
+            executor_memory_g = max((executor_memory_g, 2))
+            executor_cpu = max((executor_cpu, 1))
 
         # Set app name to match that used in Coiled Spark
         spark = (
