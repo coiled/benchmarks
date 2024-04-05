@@ -211,9 +211,9 @@ def spark_setup(cluster, local):
     if local:
         from coiled.spark import get_spark
 
-        off_heap_size_g = 2
-        driver_memory_g = 3
-        driver_cpu = 2
+        off_heap_size_g = 1
+        driver_memory_g = 1
+        driver_cpu = 1
         n_executors = len(cluster.get_client().scheduler_info()["workers"])
 
         total_executor_memory_g = (psutil.virtual_memory().available // 2**30) - (
@@ -234,6 +234,7 @@ def spark_setup(cluster, local):
 
         # Set app name to match that used in Coiled Spark
         conf = {
+            "spark.driver.bindAddress": "127.0.0.1",
             "spark.driver.memory": f"{driver_memory_g}g",
             "spark.driver.cores": driver_cpu,
             "spark.executor.memory": f"{executor_memory_g}g",
