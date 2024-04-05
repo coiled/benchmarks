@@ -221,16 +221,23 @@ Environment build fails with a message such as:
 > coiled 0.2.27 requires distributed>=2.23.0, but you have distributed 2.8.0+1709.ge0932ec2 which is incompatible.
 
 #### Solution:
-Your pip environment points to a fork of dask/dask or dask/distributed, but its owner
-did not synchronize the tags. To fix, the owner of the fork must run:
+Your pip environment points to a fork of dask, distributed, and/or dask-expr, but its
+owner did not synchronize the tags. To fix, *the owner of the fork* must run:
 ```bash
 $ git remote -v
 origin  https://github.com/yourname/distributed.git (fetch)
 origin  https://github.com/yourname/distributed.git (push)
 upstream        https://github.com/dask/distributed.git (fetch)
 upstream        https://github.com/dask/distributed.git (push)
-$ git fetch upstream --tags  # Or whatever name dask was added as above
-$ git push origin --tags     # Or whatever name the fork was added as above
+$ git fetch upstream --tags  # Or whatever alias the dask org was added as above
+$ git push origin --tags     # Or whatever alias the fork was added as above
+```
+
+As a handy copy-paste to run from the root dir of this repository:
+```bash
+pushd ../dask        && git fetch upstream --tags && git push origin --tags && popd
+pushd ../distributed && git fetch upstream --tags && git push origin --tags && popd
+pushd ../dask-expr   && git fetch upstream --tags && git push origin --tags && popd
 ```
 
 #### Problem:
