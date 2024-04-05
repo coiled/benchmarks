@@ -157,7 +157,7 @@ def cluster(
     with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
         if local:
             memory_limit = (psutil.virtual_memory().available // 2**30)
-            with LocalCluster(memory_limit=memory_limit) as cluster:
+            with LocalCluster(memory_limit=f"{memory_limit}g") as cluster:
                 yield cluster
         else:
             kwargs = dict(
@@ -206,13 +206,15 @@ def spark_setup(cluster, local):
     pytest.importorskip("pyspark")
 
     spark_dashboard: Url
+    get_spark_kwargs = dict(executor_memory_factor=0.8, worker_memory_factor=0.9)
+
     if local:
-        from pyspark.sql import SparkSession
+        from coiled.spark import get_spark
 
         off_heap_size_g = 2
         driver_memory_g = 3
-        driver_cpu = 1
-        n_executors = 1
+        driver_cpu = 2
+        n_executors = len(cluster.get_client().scheduler_info()["workers"])
 
         total_executor_memory_g = (psutil.virtual_memory().available // 2**30) - (
             driver_memory_g + off_heap_size_g
@@ -231,24 +233,23 @@ def spark_setup(cluster, local):
             executor_cpu = max((executor_cpu, 1))
 
         # Set app name to match that used in Coiled Spark
-        spark = (
-            SparkSession.builder.master("local[*]")
-            .appName("SparkConnectServer")
-            .config("spark.driver.memory", f"{driver_memory_g}g")
-            .config("spark.driver.cores", driver_cpu)
-            .config("spark.executor.memory", f"{executor_memory_g}g")
-            .config("spark.executor.cores", executor_cpu)
-            .config("spark.dynamicAllocation.enabled", "true")
-            .config("spark.dynamicAllocation.maxExecutors", n_executors)
-            .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
-            .config("spark.memory.offHeap.enabled", "true")
-            .config("spark.memory.offHeap.size", f"{off_heap_size_g}g")
-            .config("spark.driver.bindAddress", "127.0.0.1")
-            .getOrCreate()
-        )
+        conf = {
+            "spark.driver.memory": f"{driver_memory_g}g",
+            "spark.driver.cores": driver_cpu,
+            "spark.executor.memory": f"{executor_memory_g}g",
+            "spark.executor.cores": executor_cpu,
+            "spark.dynamicAllocation.enabled": "true",
+            "spark.dynamicAllocation.minExecutors": n_executors,
+            "spark.dynamicAllocation.maxExecutors": n_executors,
+            "spark.sql.sources.partitionOverwriteMode": "dynamic",
+            "spark.memory.offHeap.enabled": "true",
+            "spark.memory.offHeap.size": f"{off_heap_size_g}g",
+        }
+
+        spark = get_spark(cluster.get_client(), spark_connect_config=conf, **get_spark_kwargs)
         spark_dashboard = parse_url("http://localhost:4040")
     else:
-        spark = cluster.get_spark(executor_memory_factor=0.8, worker_memory_factor=0.9)
+        spark = cluster.get_spark(**get_spark_kwargs)
         # Available on coiled>=1.12.4
         if not hasattr(cluster, "_spark_dashboard"):
             cluster._spark_dashboard = (
