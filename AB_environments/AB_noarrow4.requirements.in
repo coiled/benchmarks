@@ -11,6 +11,6 @@
 -r ../ci/requirements-1general-deps.in
 -r ../ci/requirements-1test.in
 
-dask==2024.4.1
-distributed==2024.4.1
-dask-expr==1.0.10
+git+https://github.com/crusaderky/dask@shuffle_noarrow
+git+https://github.com/crusaderky/distributed@shuffle_noarrow4
+git+https://github.com/crusaderky/dask-expr@shuffle_noarrow
