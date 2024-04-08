@@ -205,12 +205,17 @@ def spark_setup(cluster, local):
 
     spark_dashboard: Url
     if local:
+        cluster.close()
         from pyspark.sql import SparkSession
 
         # Set app name to match that used in Coiled Spark
         spark = (
             SparkSession.builder.appName("SparkConnectServer")
+            .config("spark.driver.host", "127.0.0.1")
             .config("spark.driver.bindAddress", "127.0.0.1")
+            # By default, the driver is only allowed to use up to 1g of memory
+            # which causes it to crash when collecting results
+            .config("spark.driver.memory", "10g")
             .getOrCreate()
         )
         spark_dashboard = parse_url("http://localhost:4040")
@@ -223,19 +228,21 @@ def spark_setup(cluster, local):
             )
         spark_dashboard = parse_url(cluster._spark_dashboard)
 
-    spark._spark_dashboard: Url = spark_dashboard
+    try:
+        spark._spark_dashboard: Url = spark_dashboard
 
-    # warm start
-    from pyspark.sql import Row
+        # warm start
+        from pyspark.sql import Row
 
-    df = spark.createDataFrame(
-        [
-            Row(a=1, b=2.0, c="string1"),
-        ]
-    )
-    df.show()
-
-    yield spark
+        df = spark.createDataFrame(
+            [
+                Row(a=1, b=2.0, c="string1"),
+            ]
+        )
+        df.show()
+        yield spark
+    finally:
+        spark.stop()
 
 
 def get_number_spark_executors(spark_dashboard: Url):
