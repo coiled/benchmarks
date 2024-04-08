@@ -121,7 +121,6 @@ def benchmark_db_engine(pytestconfig, tmp_path_factory):
     ------
     The SQLAlchemy engine if the ``--benchmark`` option is set, None otherwise.
     """
-
     if not pytestconfig.getoption("--benchmark"):
         yield
     else:
@@ -165,8 +164,26 @@ def benchmark_db_session(benchmark_db_engine):
             yield session
 
 
+@pytest.fixture()
+def database_table_schema(request, testrun_uid):
+    return TestRun(
+        session_id=testrun_uid,
+        name=request.node.name,
+        originalname=request.node.originalname,
+        path=str(request.node.path.relative_to(TEST_DIR)),
+        dask_version=dask.__version__,
+        dask_expr_version=dask_expr.__version__,
+        distributed_version=distributed.__version__,
+        coiled_runtime_version=os.environ.get("AB_VERSION", "upstream"),
+        coiled_software_name=COILED_SOFTWARE_NAME,
+        python_version=".".join(map(str, sys.version_info)),
+        platform=sys.platform,
+        ci_run_url=WORKFLOW_URL,
+    )
+
+
 @pytest.fixture(scope="function")
-def test_run_benchmark(benchmark_db_session, request, testrun_uid):
+def test_run_benchmark(benchmark_db_session, request, database_table_schema):
     """SQLAlchemy ORM object representing a given test run.
 
     By including this fixture in a test (or another fixture that includes it)
@@ -182,33 +199,19 @@ def test_run_benchmark(benchmark_db_session, request, testrun_uid):
     if not benchmark_db_session:
         yield
     else:
-        run = TestRun(
-            session_id=testrun_uid,
-            name=request.node.name,
-            originalname=request.node.originalname,
-            path=str(request.node.path.relative_to(TEST_DIR)),
-            dask_version=dask.__version__,
-            dask_expr_version=dask_expr.__version__,
-            distributed_version=distributed.__version__,
-            coiled_runtime_version=os.environ.get("AB_VERSION", "upstream"),
-            coiled_software_name=COILED_SOFTWARE_NAME,
-            python_version=".".join(map(str, sys.version_info)),
-            platform=sys.platform,
-            ci_run_url=WORKFLOW_URL,
-        )
-        yield run
+        yield database_table_schema
 
         rep = getattr(request.node, "rep_setup", None)
         if rep:
-            run.setup_outcome = rep.outcome
+            database_table_schema.setup_outcome = rep.outcome
         rep = getattr(request.node, "rep_call", None)
         if rep:
-            run.call_outcome = rep.outcome
+            database_table_schema.call_outcome = rep.outcome
         rep = getattr(request.node, "rep_teardown", None)
         if rep:
-            run.teardown_outcome = rep.outcome
+            database_table_schema.teardown_outcome = rep.outcome
 
-        benchmark_db_session.add(run)
+        benchmark_db_session.add(database_table_schema)
         benchmark_db_session.commit()
 
 
@@ -407,7 +410,7 @@ def get_cluster_info(test_run_benchmark):
     yield _get_cluster_info
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="function", autouse=True)
 def span(request):
     with span_ctx(request.node.name):
         yield
@@ -420,7 +423,6 @@ def benchmark_all(
     benchmark_coiled_prometheus,
     get_cluster_info,
     benchmark_time,
-    span,
 ):
     """Benchmark all available metrics and extracts cluster information
 
