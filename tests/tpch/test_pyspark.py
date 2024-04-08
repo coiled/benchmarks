@@ -38,7 +38,7 @@ def test_query_1(spark, dataset_path):
             l_returnflag,
             l_linestatus
     """
-    spark.sql(query).show()  # TODO: find better blocking method
+    spark.sql(query).collect()
 
 
 def test_query_2(spark, dataset_path):
@@ -92,7 +92,7 @@ def test_query_2(spark, dataset_path):
     limit 100
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_3(spark, dataset_path):
@@ -125,7 +125,7 @@ def test_query_3(spark, dataset_path):
         limit 10
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_4(spark, dataset_path):
@@ -156,7 +156,7 @@ def test_query_4(spark, dataset_path):
             o_orderpriority
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_5(spark, dataset_path):
@@ -196,7 +196,7 @@ def test_query_5(spark, dataset_path):
         order by
             revenue desc
     """
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_6(spark, dataset_path):
@@ -215,7 +215,7 @@ def test_query_6(spark, dataset_path):
             and l_quantity < 24
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_7(spark, dataset_path):
@@ -264,7 +264,7 @@ def test_query_7(spark, dataset_path):
         l_year
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_8(spark, dataset_path):
@@ -321,7 +321,7 @@ def test_query_8(spark, dataset_path):
         o_year
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_9(spark, dataset_path):
@@ -363,7 +363,7 @@ def test_query_9(spark, dataset_path):
         o_year desc
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_10(spark, dataset_path):
@@ -405,7 +405,7 @@ def test_query_10(spark, dataset_path):
     limit 20
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_11(spark, dataset_path, scale):
@@ -442,7 +442,7 @@ def test_query_11(spark, dataset_path, scale):
             value desc
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_12(spark, dataset_path):
@@ -480,7 +480,7 @@ def test_query_12(spark, dataset_path):
         l_shipmode
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_13(spark, dataset_path):
@@ -508,7 +508,7 @@ def test_query_13(spark, dataset_path):
         c_count desc
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_14(spark, dataset_path):
@@ -531,7 +531,7 @@ def test_query_14(spark, dataset_path):
         and l_shipdate < date '1995-09-01' + interval '1' month
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_15(spark, dataset_path):
@@ -575,7 +575,7 @@ def test_query_15(spark, dataset_path):
         s_suppkey
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
     spark.sql("drop view revenue")
 
 
@@ -616,7 +616,7 @@ def test_query_16(spark, dataset_path):
         p_size
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_17(spark, dataset_path):
@@ -643,7 +643,7 @@ def test_query_17(spark, dataset_path):
         )
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_18(spark, dataset_path):
@@ -686,7 +686,7 @@ def test_query_18(spark, dataset_path):
     limit 100
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_19(spark, dataset_path):
@@ -731,7 +731,7 @@ def test_query_19(spark, dataset_path):
         )
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_20(spark, dataset_path):
@@ -778,7 +778,7 @@ def test_query_20(spark, dataset_path):
         s_name
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_21(spark, dataset_path):
@@ -828,7 +828,7 @@ def test_query_21(spark, dataset_path):
     limit 100
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def test_query_22(spark, dataset_path):
@@ -874,7 +874,7 @@ def test_query_22(spark, dataset_path):
         cntrycode
     """
 
-    spark.sql(query).show()
+    spark.sql(query).collect()
 
 
 def fix_timestamp_ns_columns(query):
