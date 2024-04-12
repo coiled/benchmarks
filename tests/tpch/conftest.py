@@ -189,12 +189,16 @@ def benchmark_all(
 
     @contextlib.contextmanager
     def _benchmark_all(client):
-        with (
-            benchmark_memory(client) if client else nullcontext(),
-            get_cluster_info(client.cluster) if client else nullcontext(),
-            benchmark_time,
-        ):
-            yield
+        if client:
+            with (
+                benchmark_memory(client),
+                get_cluster_info(client.cluster),
+                benchmark_time,
+            ):
+                yield
+        else:
+            with benchmark_time:
+                yield
 
     yield _benchmark_all
 
@@ -245,21 +249,22 @@ class TurnOnPandasCOW(WorkerPlugin):
         pd.set_option("mode.copy_on_write", True)
 
 
-@pytest.fixture(autouse=True)
-def exec_run_and_meassure(cluster, client, restart, benchmark_all, local):
-    if restart:
-        client.run(lambda: None)
-        client.restart()
-        client.run(lambda: None)
-    with benchmark_all(client):
-        yield
+def _assert_no_queuing(dask_scheduler):
+    import math
+
+    assert dask_scheduler.WORKER_SATURATION == math.inf
 
 
-@pytest.fixture(scope="module")
-def client(cluster):
+@pytest.fixture()
+def client(cluster, restart, benchmark_all, local):
     with cluster.get_client() as client:
+        client.run_on_scheduler(_assert_no_queuing)
+        if restart:
+            client.restart()
+        client.run(lambda: None)
         client.register_plugin(TurnOnPandasCOW(), name="enable-cow")
-        yield client
+        with benchmark_all(client):
+            yield
 
 
 @pytest.fixture

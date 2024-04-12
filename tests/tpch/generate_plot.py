@@ -1,3 +1,5 @@
+import os
+
 import altair as alt
 import click
 import pandas as pd
@@ -22,7 +24,11 @@ def normalize(df):
 
 
 def generate(
-    outfile="chart.json", name=None, scale=None, db_name="benchmark.db", relative=False
+    outfile="chart.json",
+    name=None,
+    scale=None,
+    db_name="benchmark.db",
+    export_csv=False,
 ):
     df = pd.read_sql_table(
         table_name=TABLENAME,
@@ -33,6 +39,7 @@ def generate(
         & (df.path.str.contains("^tpch/test_(?:dask|duckdb|polars|pyspark)"))
     ]
     df["query"] = df.name.str.extract(r"test_query_(\d+)", expand=True).astype(int)
+    df_raw = df.copy()
     df = df[["path", "name", "duration", "start", "cluster_name", "scale", "query"]]
     df["library"] = df.path.map(lambda path: path.split("_")[-1].split(".")[0])
     df["name"] = df.cluster_name
@@ -95,8 +102,11 @@ def generate(
     )
     chart &= relative
     chart.save(outfile)
-    chart.save(outfile.replace(".json", ".html"))
     print("Saving chart to", outfile)
+    if export_csv:
+        csv_path = os.path.splitext(outfile)[0] + ".csv"
+        df_raw.to_csv(csv_path, index=False)
+        print("Saving csv to", csv_path)
 
 
 @click.command()
@@ -111,12 +121,12 @@ def generate(
     type=int,
 )
 @click.option(
-    "--relative",
+    "--export-csv",
     default=False,
     flag_value=True,
 )
-def main(outfile, scale, relative):
-    return generate(outfile, scale=scale, relative=relative)
+def main(outfile, scale, export_csv):
+    return generate(outfile, scale=scale, export_csv=export_csv)
 
 
 if __name__ == "__main__":
