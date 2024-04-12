@@ -1,5 +1,6 @@
 import contextlib
 import os
+import re
 import sys
 import uuid
 from contextlib import nullcontext
@@ -94,10 +95,10 @@ def module(request):
 
 @pytest.fixture(scope="function")
 def query(request):
-    if request.node.name.startswith("test_query_"):
-        return int(request.node.name.split("_")[-1])
-    else:
-        return None
+    pattern = re.compile(r"test_query_(\d+)")
+    if re_match := pattern.match(request.node.name):
+        return int(re_match.group(1))
+    return None
 
 
 @pytest.fixture(scope="session")
@@ -137,7 +138,7 @@ def performance_report(request, local, scale, query):
 
 
 @pytest.fixture()
-def database_table_schema(request, testrun_uid, scale):
+def database_table_schema(request, testrun_uid, scale, query, local):
     return TPCHRun(
         session_id=testrun_uid,
         name=request.node.name,
@@ -150,6 +151,8 @@ def database_table_schema(request, testrun_uid, scale):
         platform=sys.platform,
         ci_run_url=WORKFLOW_URL,
         scale=scale,
+        query=query,
+        local=local,
     )
 
 
@@ -242,24 +245,21 @@ class TurnOnPandasCOW(WorkerPlugin):
         pd.set_option("mode.copy_on_write", True)
 
 
-@pytest.fixture
-def client(
-    request,
-    cluster,
-    cluster_kwargs,
-    get_cluster_info,
-    performance_report,
-    benchmark_all,
-    restart,
-):
-    with cluster.get_client() as client:
-        if restart:
-            client.restart()
+@pytest.fixture(autouse=True)
+def exec_run_and_meassure(cluster, client, restart, benchmark_all, local):
+    if restart:
         client.run(lambda: None)
+        client.restart()
+        client.run(lambda: None)
+    with benchmark_all(client):
+        yield
 
+
+@pytest.fixture(scope="module")
+def client(cluster):
+    with cluster.get_client() as client:
         client.register_plugin(TurnOnPandasCOW(), name="enable-cow")
-        with benchmark_all(client):
-            yield client
+        yield client
 
 
 @pytest.fixture

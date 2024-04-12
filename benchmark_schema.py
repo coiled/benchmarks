@@ -1,4 +1,4 @@
-from sqlalchemy import Column, DateTime, Float, Integer, String
+from sqlalchemy import Boolean, Column, DateTime, Float, Integer, String
 from sqlalchemy.orm import declarative_base
 
 Base = declarative_base()
@@ -102,18 +102,15 @@ class TPCHRun(Base):
     average_memory = Column(Float, nullable=True)
     peak_memory = Column(Float, nullable=True)
 
-    # Durations data
-    compute_time = Column(Float, nullable=True)
-    disk_spill_time = Column(Float, nullable=True)
-    serializing_time = Column(Float, nullable=True)
-    transfer_time = Column(Float, nullable=True)
-
     # Cluster name/id/details_url
     cluster_name = Column(String, nullable=True)
     cluster_id = Column(Integer, nullable=True)
     cluster_details_url = Column(String, nullable=True)
 
     scale = Column(Integer, nullable=False)
+    query = Column(Integer, nullable=False)
+    local = Column(Boolean, nullable=False)
+
     compression = Column(String, nullable=True)
     partition_size = Column(String, nullable=True)
     partition_size = Column(String, nullable=True)

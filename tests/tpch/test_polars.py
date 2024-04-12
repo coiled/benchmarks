@@ -9,6 +9,11 @@ pl = pytest.importorskip("polars")
 pytest.importorskip("pyarrow")
 
 
+@pytest.fixture(autouse=True)
+def add_polars_version(test_run_benchmark):
+    test_run_benchmark.polars_version = pl.__version__
+
+
 def read_data(filename):
     fileglob = os.path.join(filename, "*")
 

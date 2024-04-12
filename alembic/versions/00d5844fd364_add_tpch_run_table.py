@@ -1,8 +1,8 @@
-"""Add TPCH table
+"""Add tpch run table
 
-Revision ID: 6010da85252c
+Revision ID: 00d5844fd364
 Revises: 25053f75e09f
-Create Date: 2024-04-08 17:17:31.439686
+Create Date: 2024-04-09 13:41:39.795757
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = '6010da85252c'
+revision = '00d5844fd364'
 down_revision = '25053f75e09f'
 branch_labels = None
 depends_on = None
@@ -41,14 +41,12 @@ def upgrade() -> None:
     sa.Column('duration', sa.Float(), nullable=True),
     sa.Column('average_memory', sa.Float(), nullable=True),
     sa.Column('peak_memory', sa.Float(), nullable=True),
-    sa.Column('compute_time', sa.Float(), nullable=True),
-    sa.Column('disk_spill_time', sa.Float(), nullable=True),
-    sa.Column('serializing_time', sa.Float(), nullable=True),
-    sa.Column('transfer_time', sa.Float(), nullable=True),
     sa.Column('cluster_name', sa.String(), nullable=True),
     sa.Column('cluster_id', sa.Integer(), nullable=True),
     sa.Column('cluster_details_url', sa.String(), nullable=True),
     sa.Column('scale', sa.Integer(), nullable=False),
+    sa.Column('query', sa.Integer(), nullable=False),
+    sa.Column('local', sa.Boolean(), nullable=False),
     sa.Column('compression', sa.String(), nullable=True),
     sa.Column('partition_size', sa.String(), nullable=True),
     sa.PrimaryKeyConstraint('id')

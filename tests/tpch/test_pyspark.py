@@ -10,6 +10,13 @@ pytestmark = pytest.mark.tpch_nondask
 pytest.importorskip("coiled.spark")
 
 
+@pytest.fixture(autouse=True)
+def add_pyspark_version(test_run_benchmark):
+    import pyspark
+
+    test_run_benchmark.pyspark_version = pyspark.__version__
+
+
 @pytest.fixture(scope="module")
 def spark_setup(cluster, local):
     pytest.importorskip("pyspark")

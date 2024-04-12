@@ -8,6 +8,11 @@ duckdb = pytest.importorskip("duckdb")
 from . import duckdb_queries  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def add_duckdb_version(test_run_benchmark):
+    test_run_benchmark.duckdb_version = duckdb.__version__
+
+
 @pytest.fixture
 def connection(local, restart):
     def _():
