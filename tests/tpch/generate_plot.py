@@ -39,10 +39,22 @@ def generate(
         & (df.path.str.contains("^tpch/test_(?:dask|duckdb|polars|pyspark)"))
     ]
     df["query"] = df.name.str.extract(r"test_query_(\d+)", expand=True).astype(int)
-    df_raw = df.copy()
-    df = df[["path", "name", "duration", "start", "cluster_name", "scale", "query"]]
-    df["library"] = df.path.map(lambda path: path.split("_")[-1].split(".")[0])
     df["name"] = df.cluster_name
+    df["library"] = df.path.map(lambda path: path.split("_")[-1].split(".")[0])
+    df_raw = df.copy()
+    df = df[
+        [
+            "path",
+            "name",
+            "duration",
+            "start",
+            "cluster_name",
+            "scale",
+            "query",
+            "library",
+            "name",
+        ]
+    ]
     del df["path"]
     del df["cluster_name"]
 

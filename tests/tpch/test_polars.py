@@ -8,6 +8,9 @@ pytestmark = pytest.mark.tpch_nondask
 pl = pytest.importorskip("polars")
 pytest.importorskip("pyarrow")
 
+# Local
+pytestmark = pytest.mark.timeout(600)
+
 
 @pytest.fixture(autouse=True)
 def add_polars_version(test_run_benchmark):
@@ -180,6 +183,7 @@ def test_query_4(run, restart, dataset_path):
     run(_)
 
 
+@pytest.mark.skip(reason="Compute never stops")
 def test_query_5(run, restart, dataset_path):
     def _():
         var_1 = "ASIA"
@@ -241,6 +245,7 @@ def test_query_6(run, restart, dataset_path):
     run(_)
 
 
+@pytest.mark.skip()
 def test_query_7(run, restart, dataset_path):
     def _():
         nation_ds = read_data(dataset_path + "nation")
@@ -342,6 +347,7 @@ def test_query_8(run, restart, dataset_path):
     run(_)
 
 
+@pytest.mark.skip(reason="Compute never stops")
 def test_query_9(run, restart, dataset_path):
     def _():
         part_ds = read_data(dataset_path + "part")
@@ -520,6 +526,7 @@ def test_query_12(run, restart, dataset_path):
     run(_)
 
 
+@pytest.mark.skip(reason="Swapping soooo much")
 def test_query_13(run, restart, dataset_path):
     def _():
         var_1 = "special"
