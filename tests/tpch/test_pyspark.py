@@ -3,6 +3,7 @@ import warnings
 
 import pytest
 import requests
+from distributed import Event
 from urllib3.util import Url, parse_url
 
 pytestmark = pytest.mark.tpch_nondask
@@ -15,6 +16,18 @@ def add_pyspark_version(test_run_benchmark):
     import pyspark
 
     test_run_benchmark.pyspark_version = pyspark.__version__
+
+
+@pytest.fixture(autouse=True)
+def cheat_idleness(client):
+    def wait(ev):
+        ev.wait()
+
+    ev = Event()
+    fut = client.submit(wait, ev)
+    yield
+    ev.set()
+    fut.result()
 
 
 @pytest.fixture(scope="module")
