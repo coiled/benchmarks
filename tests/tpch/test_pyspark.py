@@ -38,7 +38,7 @@ def cluster_spec(scale, shutdown_on_close):
 
 
 @pytest.fixture(autouse=True)
-def cheat_idleness(client):
+def cheat_idleness(spark_setup, client):
     def wait(ev):
         ev.wait()
 
