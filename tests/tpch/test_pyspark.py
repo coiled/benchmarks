@@ -18,6 +18,25 @@ def add_pyspark_version(test_run_benchmark):
     test_run_benchmark.pyspark_version = pyspark.__version__
 
 
+@pytest.fixture(scope="session")
+def cluster_spec(scale, shutdown_on_close):
+    everywhere = dict(
+        idle_timeout="2h",
+        wait_for_workers=True,
+        scheduler_vm_types=["m6i.xlarge"],
+        shutdown_on_close=shutdown_on_close,
+    )
+    if scale == 10000:
+        return {
+            "worker_vm_types": ["r6i.xlarge"],
+            "n_workers": 32,
+            "worker_disk_size": 100,
+            **everywhere,
+        }
+    else:
+        raise RuntimeError(f"Unsupported scale: {scale}")
+
+
 @pytest.fixture(autouse=True)
 def cheat_idleness(client):
     def wait(ev):

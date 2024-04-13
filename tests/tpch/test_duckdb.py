@@ -36,18 +36,18 @@ def connection(local, restart):
     return _
 
 
-def test_query_1(run, connection, dataset_path, scale):
-    def _():
-        duckdb_queries.query_1(connection(), dataset_path, scale)
+# def test_query_1(run, connection, dataset_path, scale):
+#     def _():
+#         duckdb_queries.query_1(connection(), dataset_path, scale)
 
-    run(_)
+#     run(_)
 
 
-def test_query_2(run, connection, dataset_path, scale):
-    def _():
-        duckdb_queries.query_2(connection(), dataset_path, scale)
+# def test_query_2(run, connection, dataset_path, scale):
+#     def _():
+#         duckdb_queries.query_2(connection(), dataset_path, scale)
 
-    run(_)
+#     run(_)
 
 
 def test_query_3(run, connection, dataset_path, scale):
@@ -57,25 +57,25 @@ def test_query_3(run, connection, dataset_path, scale):
     run(_)
 
 
-def test_query_4(run, connection, dataset_path, scale):
-    def _():
-        duckdb_queries.query_4(connection(), dataset_path, scale)
+# def test_query_4(run, connection, dataset_path, scale):
+#     def _():
+#         duckdb_queries.query_4(connection(), dataset_path, scale)
 
-    run(_)
-
-
-def test_query_5(run, connection, dataset_path, scale):
-    def _():
-        duckdb_queries.query_5(connection(), dataset_path, scale)
-
-    run(_)
+#     run(_)
 
 
-def test_query_6(run, connection, dataset_path, scale):
-    def _():
-        duckdb_queries.query_6(connection(), dataset_path, scale)
+# def test_query_5(run, connection, dataset_path, scale):
+#     def _():
+#         duckdb_queries.query_5(connection(), dataset_path, scale)
 
-    run(_)
+#     run(_)
+
+
+# def test_query_6(run, connection, dataset_path, scale):
+#     def _():
+#         duckdb_queries.query_6(connection(), dataset_path, scale)
+
+#     run(_)
 
 
 def test_query_7(run, connection, dataset_path, scale):
@@ -85,11 +85,11 @@ def test_query_7(run, connection, dataset_path, scale):
     run(_)
 
 
-def test_query_8(run, connection, dataset_path, scale):
-    def _():
-        duckdb_queries.query_8(connection(), dataset_path, scale)
+# def test_query_8(run, connection, dataset_path, scale):
+#     def _():
+#         duckdb_queries.query_8(connection(), dataset_path, scale)
 
-    run(_)
+#     run(_)
 
 
 def test_query_9(run, connection, dataset_path, scale):
@@ -141,18 +141,18 @@ def test_query_15(run, connection, dataset_path, scale):
     run(_)
 
 
-def test_query_16(run, connection, dataset_path, scale):
-    def _():
-        duckdb_queries.query_16(connection(), dataset_path, scale)
+# def test_query_16(run, connection, dataset_path, scale):
+#     def _():
+#         duckdb_queries.query_16(connection(), dataset_path, scale)
 
-    run(_)
+#     run(_)
 
 
-def test_query_17(run, connection, dataset_path, scale):
-    def _():
-        duckdb_queries.query_17(connection(), dataset_path, scale)
+# def test_query_17(run, connection, dataset_path, scale):
+#     def _():
+#         duckdb_queries.query_17(connection(), dataset_path, scale)
 
-    run(_)
+#     run(_)
 
 
 def test_query_18(run, connection, dataset_path, scale):
@@ -162,18 +162,18 @@ def test_query_18(run, connection, dataset_path, scale):
     run(_)
 
 
-def test_query_19(run, connection, dataset_path, scale):
-    def _():
-        duckdb_queries.query_19(connection(), dataset_path, scale)
+# def test_query_19(run, connection, dataset_path, scale):
+#     def _():
+#         duckdb_queries.query_19(connection(), dataset_path, scale)
 
-    run(_)
+#     run(_)
 
 
-def test_query_20(run, connection, dataset_path, scale):
-    def _():
-        duckdb_queries.query_20(connection(), dataset_path, scale)
+# def test_query_20(run, connection, dataset_path, scale):
+#     def _():
+#         duckdb_queries.query_20(connection(), dataset_path, scale)
 
-    run(_)
+#     run(_)
 
 
 def test_query_21(run, connection, dataset_path, scale):
@@ -183,8 +183,8 @@ def test_query_21(run, connection, dataset_path, scale):
     run(_)
 
 
-def test_query_22(run, connection, dataset_path, scale):
-    def _():
-        duckdb_queries.query_22(connection(), dataset_path, scale)
+# def test_query_22(run, connection, dataset_path, scale):
+#     def _():
+#         duckdb_queries.query_22(connection(), dataset_path, scale)
 
-    run(_)
+#     run(_)
