@@ -256,7 +256,7 @@ def _assert_no_queuing(dask_scheduler):
 
 
 @pytest.fixture()
-def client(cluster, restart, benchmark_all, local):
+def client(cluster, restart, benchmark_all):
     with cluster.get_client() as client:
         client.run_on_scheduler(_assert_no_queuing)
         if restart:
@@ -264,7 +264,7 @@ def client(cluster, restart, benchmark_all, local):
         client.run(lambda: None)
         client.register_plugin(TurnOnPandasCOW(), name="enable-cow")
         with benchmark_all(client):
-            yield
+            yield client
 
 
 @pytest.fixture
