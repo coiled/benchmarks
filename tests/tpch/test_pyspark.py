@@ -13,13 +13,14 @@ pytest.importorskip("coiled.spark")
 
 @pytest.fixture(autouse=True)
 def add_pyspark_version(test_run_benchmark):
-    import pyspark
+    if test_run_benchmark:
+        import pyspark
 
-    test_run_benchmark.pyspark_version = pyspark.__version__
+        test_run_benchmark.pyspark_version = pyspark.__version__
 
 
 @pytest.fixture(scope="session")
-def cluster_spec(scale, shutdown_on_close):
+def cluster_spec(cluster_spec, scale, shutdown_on_close):
     everywhere = dict(
         idle_timeout="2h",
         wait_for_workers=True,
@@ -34,7 +35,15 @@ def cluster_spec(scale, shutdown_on_close):
             **everywhere,
         }
     else:
-        raise RuntimeError(f"Unsupported scale: {scale}")
+        return cluster_spec
+
+
+@pytest.fixture()
+def client(cluster):
+    # Redefine since global client fixture is also already starting the
+    # benchmark clock
+    with cluster.get_client() as client:
+        yield client
 
 
 @pytest.fixture(autouse=True)
@@ -55,7 +64,6 @@ def spark_setup(cluster, local):
 
     spark_dashboard: Url
     if local:
-        cluster.close()
         from pyspark.sql import SparkSession
 
         # Set app name to match that used in Coiled Spark
@@ -89,7 +97,7 @@ def spark_setup(cluster, local):
                 Row(a=1, b=2.0, c="string1"),
             ]
         )
-        df.show()
+        df.collect()
         yield spark
     finally:
         spark.stop()
