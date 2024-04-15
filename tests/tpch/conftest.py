@@ -156,6 +156,14 @@ def database_table_schema(request, testrun_uid, scale, query, local):
     )
 
 
+@pytest.fixture(autouse=True)
+def add_cluster_spec_to_db(database_table_schema, cluster_spec, local):
+    if not local:
+        database_table_schema.n_workers = cluster_spec["n_workers"]
+        database_table_schema.worker_vm_type = cluster_spec["worker_vm_types"][0]
+        database_table_schema.cluster_disk_size = cluster_spec.get("worker_disk_size")
+
+
 @pytest.fixture(scope="function")
 def benchmark_all(
     benchmark_memory,

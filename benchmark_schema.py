@@ -114,3 +114,7 @@ class TPCHRun(Base):
     compression = Column(String, nullable=True)
     partition_size = Column(String, nullable=True)
     partition_size = Column(String, nullable=True)
+
+    n_workers = Column(Integer, nullable=True)
+    worker_vm_type = Column(String, nullable=True)
+    cluster_disk_size = Column(Integer, nullable=True)

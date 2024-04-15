@@ -17,6 +17,14 @@ def add_polars_version(test_run_benchmark):
     test_run_benchmark.polars_version = pl.__version__
 
 
+@pytest.fixture(autouse=True)
+def add_cluster_spec_to_db(database_table_schema, machine_spec, local):
+    if not local:
+        database_table_schema.n_workers = 1
+        database_table_schema.worker_vm_type = machine_spec["vm_type"]
+        database_table_schema.cluster_disk_size = machine_spec.get("worker_disk_size")
+
+
 def read_data(filename):
     fileglob = os.path.join(filename, "*")
 
