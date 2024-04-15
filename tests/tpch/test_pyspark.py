@@ -113,9 +113,9 @@ def get_number_spark_executors(spark_dashboard: Url):
 
 
 @pytest.fixture
-def spark(request, spark_setup, benchmark_all):
+def spark(request, spark_setup, benchmark_all, client):
     n_executors_start = get_number_spark_executors(spark_setup._spark_dashboard)
-    with benchmark_all(None):
+    with benchmark_all(client):
         yield spark_setup
     n_executors_finish = get_number_spark_executors(spark_setup._spark_dashboard)
 
