@@ -37,7 +37,6 @@ on:
 concurrency:
   # Only allow a single run at a time to rate limiting
   group: tpch
-  cancel-in-progress: true
 
 defaults:
   # Required shell entrypoint to have properly activated conda environments
