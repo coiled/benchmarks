@@ -1,0 +1,3 @@
+git+https://github.com/crusaderky/dask@shuffle_noarrow
+git+https://github.com/crusaderky/distributed@shuffle_noarrow3
+git+https://github.com/phofl/dask-expr@fuse_size
