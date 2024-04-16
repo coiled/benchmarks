@@ -735,7 +735,6 @@ def query_14(dataset_path, fs, scale):
         .reset_index(drop=True)
     )
     # aggregate promo revenue calculation
-
     return (
         (100.00 * total_promo_revenue / total_revenue)
         .round(2)
@@ -845,8 +844,10 @@ def query_16(dataset_path, fs, scale):
     supplier = dd.read_parquet(dataset_path + "supplier", filesystem=fs)
 
     supplier["is_complaint"] = supplier.s_comment.str.contains("Customer.*Complaints")
-    # FIXME: We have to compute this early because passing a `dask_expr.Series` to `isin` is not supported
-    complaint_suppkeys = supplier[supplier.is_complaint].s_suppkey.compute()
+    # We can only broadcast 1 partition series objects
+    complaint_suppkeys = supplier[supplier.is_complaint].s_suppkey.repartition(
+        npartitions=1
+    )
 
     table = partsupp.merge(part, left_on="ps_partkey", right_on="p_partkey")
     table = table[
