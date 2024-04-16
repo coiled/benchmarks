@@ -18,4 +18,4 @@
 # Read README.md for troubleshooting.
 # git+https://github.com/dask/dask
 # git+https://github.com/dask/distributed
-# git+https://github.com/dask-contrib/dask-expr
+# git+https://github.com/phofl/dask-expr@fuse_size
