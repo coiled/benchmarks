@@ -845,7 +845,6 @@ def query_16(dataset_path, fs, scale):
 
     supplier["is_complaint"] = supplier.s_comment.str.contains("Customer.*Complaints")
     # We can only broadcast 1 partition series objects
-
     complaint_suppkeys = supplier[supplier.is_complaint].s_suppkey.repartition(
         npartitions=1
     )
