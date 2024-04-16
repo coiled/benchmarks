@@ -11,5 +11,6 @@
 -r ../ci/requirements-1general-deps.in
 -r ../ci/requirements-1test.in
 
-# Make sure you install dask, distributed, and dask-expr.
--r ../ci/requirements-1dask-git-tip.in
+git+https://github.com/crusaderky/dask@shuffle_noarrow
+git+https://github.com/crusaderky/distributed@shuffle_noarrow3
+git+https://github.com/phofl/dask-expr@fuse_size
