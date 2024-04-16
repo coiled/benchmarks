@@ -12,4 +12,4 @@
 -r ../ci/requirements-1test.in
 
 # Make sure you install dask, distributed, and dask-expr.
--r ../ci/requirements-1dask-git-tip-me_arrow.in
+-r ../ci/requirements-1dask-git-tip-me.in
