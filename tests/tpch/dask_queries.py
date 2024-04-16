@@ -735,6 +735,7 @@ def query_14(dataset_path, fs, scale):
         .reset_index(drop=True)
     )
     # aggregate promo revenue calculation
+
     return (
         (100.00 * total_promo_revenue / total_revenue)
         .round(2)
