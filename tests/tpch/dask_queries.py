@@ -864,7 +864,6 @@ def query_16(dataset_path, fs, scale):
             & (table.p_size.isin((49, 14, 23, 45, 19, 3, 36, 9)))
             & (~table.ps_suppkey.isin(complaint_suppkeys.compute()))
         ]
-
     return (
         table.groupby(by=["p_brand", "p_type", "p_size"])
         .ps_suppkey.nunique()
