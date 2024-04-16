@@ -29,8 +29,8 @@ def cluster_spec(cluster_spec, scale, shutdown_on_close):
     )
     if scale == 10000:
         return {
-            "worker_vm_types": ["r6i.xlarge"],
-            "n_workers": 32,
+            "worker_vm_types": ["m6i.xlarge"],
+            "n_workers": 32 * 5,
             "worker_disk_size": 100,
             **everywhere,
         }

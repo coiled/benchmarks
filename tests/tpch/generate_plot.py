@@ -13,10 +13,11 @@ except ModuleNotFoundError:
 
 
 def normalize(df):
-    dask_durations = df[df["library"] == "dask"].set_index("query")["duration"]
-    data = df.groupby("query").apply(
+    normalize_on = ["query", "scale", "local"]
+    dask_durations = df[df["library"] == "dask"].set_index(normalize_on)["duration"]
+    data = df.groupby(normalize_on).apply(
         lambda group: group.assign(
-            relative_duration=group["duration"] / dask_durations[group.name]
+            relative_duration=group["duration"] / dask_durations.get(group.name, 0)
         )
     )
     data["relative_diff"] = data["relative_duration"] - 1
@@ -27,12 +28,24 @@ def generate(
     outfile="chart.json",
     name=None,
     scale=None,
-    db_name="benchmark.db",
+    db_names=[
+        "benchmark.db",
+        # "benchmark_local_once.db",
+        # "benchmarks_tpch_10000_run1.db",
+        # "benchmarks_tpch_10000_run2.db",
+        # "benchmarks_tpch_10000_run3.db",
+        # "tpch_10000_pyspark.db",
+    ],
     export_csv=False,
 ):
-    df = pd.read_sql_table(
-        table_name=TABLENAME,
-        con=f"sqlite:///{db_name}",
+    df = pd.concat(
+        [
+            pd.read_sql_table(
+                table_name=TABLENAME,
+                con=f"sqlite:///{db_name}",
+            )
+            for db_name in db_names
+        ]
     )
     df = df[
         (df.call_outcome == "passed")
@@ -53,13 +66,13 @@ def generate(
             "query",
             "library",
             "name",
+            "local",
         ]
     ]
     del df["path"]
     del df["cluster_name"]
-
-    if scale:
-        df = df[df.scale == scale]
+    df.local = df.local.astype(str)
+    # df = df[df.scale == 10_000]
     if df.empty:
         raise RuntimeError("No data.")
 
@@ -75,6 +88,16 @@ def generate(
         options=["duration", "relative_duration", "relative_diff"], name="Y scale: "
     )
     xcol_param = alt.param(value="duration", bind=dropdown)
+    dropdown_local = alt.binding_select(
+        options=sorted(df.local.unique()), name="Local: "
+    )
+    local_select = alt.selection_single(fields=["local"], bind=dropdown_local)
+    dropdown_scale = alt.binding_select(
+        options=sorted(df.scale.unique()), name="Scale: "
+    )
+    scale_select = alt.selection_single(
+        fields=["scale"], bind=dropdown_scale, name="TPCH Scale"
+    )
     color = alt.Color("library").scale(
         domain=["dask", "duckdb", "polars", "pyspark"],
         range=["#5677a4", "#e68b39", "#d4605b", "green"],
@@ -87,17 +110,23 @@ def generate(
             y=alt.Y("y:Q", title="Wall time"),
             xOffset="library:N",
             color=color,
-            tooltip=["library", "duration"],
+            tooltip=["library", "duration", "relative_duration", "relative_diff"],
         )
         .transform_calculate(y=f"datum[{xcol_param.name}]")
         .add_params(xcol_param)
+        .add_selection(local_select)
+        .transform_filter(local_select)
+        .add_selection(scale_select)
+        .transform_filter(scale_select)
     )
     chart = (
         alt.vconcat()
-        .properties(title=f"TPC-H -- scale:{df.scale.iloc[0]} name:{df.name.iloc[0]}")
-        .configure_title(
-            fontSize=20,
-        )
+        .properties(title="TPC-H")
+        .configure_title(fontSize=20)
+        .add_selection(local_select)
+        .transform_filter(local_select)
+        .add_selection(scale_select)
+        .transform_filter(scale_select)
     )
     chart &= base.transform_filter(alt.FieldLTEPredicate(field="query", lte=11))
     chart &= base.transform_filter(alt.FieldGTPredicate(field="query", gt=11))

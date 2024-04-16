@@ -75,7 +75,7 @@ def get_cluster_spec(scale: int, shutdown_on_close: bool) -> dict[str, Any]:
     elif scale == 10000:
         return {
             "worker_vm_types": ["m6i.xlarge"],
-            "n_workers": 32,
+            "n_workers": 32 * 10,
             "worker_disk_size": 100,
             **everywhere,
         }
