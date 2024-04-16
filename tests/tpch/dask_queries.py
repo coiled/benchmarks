@@ -579,7 +579,7 @@ def query_11(dataset_path, fs, scale):
     joined["value"] = joined.ps_supplycost * joined.ps_availqty
 
     # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
-    res = joined.groupby("ps_partkey")["value"].sum(split_out=True)
+    res = joined.groupby("ps_partkey")["value"].sum()
     res = (
         res[res > threshold]
         .round(2)
@@ -792,7 +792,7 @@ def query_15(dataset_path, fs, scale):
     lineitem["revenue"] = lineitem.l_extendedprice * (1 - lineitem.l_discount)
     revenue = (
         lineitem.groupby("l_suppkey")
-        .revenue.sum(split_out=True)
+        .revenue.sum()
         .to_frame()
         .reset_index()
         .rename(columns={"revenue": "total_revenue", "l_suppkey": "supplier_no"})
