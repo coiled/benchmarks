@@ -850,12 +850,20 @@ def query_16(dataset_path, fs, scale):
     )
 
     table = partsupp.merge(part, left_on="ps_partkey", right_on="p_partkey")
-    table = table[
-        (table.p_brand != "Brand#45")
-        & (~table.p_type.str.startswith("MEDIUM POLISHED"))
-        & (table.p_size.isin((49, 14, 23, 45, 19, 3, 36, 9)))
-        & (~table.ps_suppkey.isin(complaint_suppkeys))
-    ]
+    try:
+        table = table[
+            (table.p_brand != "Brand#45")
+            & (~table.p_type.str.startswith("MEDIUM POLISHED"))
+            & (table.p_size.isin((49, 14, 23, 45, 19, 3, 36, 9)))
+            & (~table.ps_suppkey.isin(complaint_suppkeys))
+        ]
+    except NotImplementedError:
+        table = table[
+            (table.p_brand != "Brand#45")
+            & (~table.p_type.str.startswith("MEDIUM POLISHED"))
+            & (table.p_size.isin((49, 14, 23, 45, 19, 3, 36, 9)))
+            & (~table.ps_suppkey.isin(complaint_suppkeys.compute()))
+        ]
     return (
         table.groupby(by=["p_brand", "p_type", "p_size"])
         .ps_suppkey.nunique()
