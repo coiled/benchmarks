@@ -12,8 +12,7 @@
 -r ../ci/requirements-1test.in
 
 # Make sure you install dask, distributed, and dask-expr.
--r ../ci/requirements-1dask-git-tip.in
+-r ../ci/requirements-1dask-git-tip-me.in
 
 # You may alternatively point to your own git fork (but make sure you sync'ed tags!)
 # Read README.md for troubleshooting.
-git+https://github.com/phofl/dask-expr@fuse_size
