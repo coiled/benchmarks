@@ -29,10 +29,9 @@ def cluster_spec(cluster_spec, scale, shutdown_on_close):
     )
     if scale == 10000:
         return {
-            "worker_vm_types": ["m6i.xlarge"],
+            "worker_vm_types": ["m6i.8xlarge"],
             "account": "dask-engineering",
-            "n_workers": 32 * 10,
-            "worker_disk_size": 200,
+            "n_workers": 32,
             **everywhere,
         }
     else:
