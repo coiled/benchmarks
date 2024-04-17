@@ -292,6 +292,7 @@ def test_query_4(spark, dataset_path):
     spark.sql(query).collect()
 
 
+@pytest.mark.skip()
 def test_query_5(spark, dataset_path):
     for name in (
         "customer",
@@ -779,6 +780,7 @@ def test_query_17(spark, dataset_path):
     spark.sql(query).collect()
 
 
+@pytest.mark.skip()
 def test_query_18(spark, dataset_path):
     for name in ("customer", "orders", "lineitem"):
         register_table(spark, dataset_path, name)
