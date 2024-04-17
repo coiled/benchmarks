@@ -24,6 +24,9 @@ from .utils import get_cluster_spec, get_dataset_path, get_single_vm_spec
 # Global Options #
 ##################
 
+# https://github.com/coiled/platform/issues/5329
+dask.config.set({"coiled.use_dashboard_https": False})
+
 
 def pytest_addoption(parser):
     parser.addoption("--local", action="store_true", default=False, help="")
