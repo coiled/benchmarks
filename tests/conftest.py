@@ -40,8 +40,8 @@ try:
 except ImportError:  # dask <2023.6.0
     from contextlib import nullcontext as span_ctx
 
-# https://github.com/coiled/platform/issues/5329
-dask.config.set({"coiled.use_dashboard_https": False})
+# # https://github.com/coiled/platform/issues/5329
+# dask.config.set({"coiled.use_dashboard_https": False})
 
 
 logger = logging.getLogger("benchmarks")
