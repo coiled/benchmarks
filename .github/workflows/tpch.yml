@@ -5,7 +5,7 @@ on:
       scale:
         description: 'Scale Factor'
         required: true
-        default: 1000
+        default: 10000
         type: choice
         options:
           - 10000
@@ -34,9 +34,9 @@ on:
         default: true
         type: boolean
 
-concurrency:
-  # Only allow a single run at a time to rate limiting
-  group: tpch
+# concurrency:
+#   # Only allow a single run at a time to rate limiting
+#   group: tpch
 
 defaults:
   # Required shell entrypoint to have properly activated conda environments
