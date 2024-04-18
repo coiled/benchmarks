@@ -224,7 +224,7 @@ def cluster_spec(scale, shutdown_on_close):
     return get_cluster_spec(scale=scale, shutdown_on_close=shutdown_on_close)
 
 
-@pytest.fixture()
+@pytest.fixture(scope="module")
 def cluster(
     local,
     scale,
