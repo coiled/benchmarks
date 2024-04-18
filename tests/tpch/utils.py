@@ -43,7 +43,6 @@ def get_cluster_spec(scale: int, shutdown_on_close: bool) -> dict[str, Any]:
     everywhere = dict(
         idle_timeout="24h",
         wait_for_workers=True,
-        account="dask-engineering",
         scheduler_vm_types=["m6i.2xlarge"],
         shutdown_on_close=shutdown_on_close,
     )
