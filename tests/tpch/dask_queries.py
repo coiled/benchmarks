@@ -847,7 +847,7 @@ def query_16(dataset_path, fs, scale):
     complaint_suppkeys = supplier[supplier.is_complaint].s_suppkey.repartition(
         npartitions=1
     )
-    partsupp = partsupp[partsupp.ps_suplkey.isin(complaint_suppkeys)]
+    partsupp = partsupp[partsupp.ps_suppkey.isin(complaint_suppkeys)]
 
     table = partsupp.merge(part, left_on="ps_partkey", right_on="p_partkey")
     table = table[
