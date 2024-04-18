@@ -1107,7 +1107,7 @@ def query_20(dataset_path, fs, scale):
     ]
     res_1 = (
         res_1.groupby(["l_suppkey", "l_partkey"])["l_quantity"]
-        .sum(split_out=True)
+        .sum()
         .rename("sum_quantity")
         .reset_index()
     )
