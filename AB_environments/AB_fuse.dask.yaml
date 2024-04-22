@@ -7,6 +7,6 @@
 # Please read README.md for more information.
 
 # EXAMPLE - uncomment/change as needed
-# distributed:
-#   scheduler:
-#     worker-saturation: 1.2
+ distributed:
+   scheduler:
+     work-stealing: False
