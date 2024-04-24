@@ -9,7 +9,7 @@ from . import duckdb_queries  # noqa: E402
 
 
 @pytest.fixture
-def connection(local, restart):
+def connection(local, restart, tmp_path):
     def _():
         con = duckdb.connect()
 
@@ -20,6 +20,8 @@ def connection(local, restart):
             con.load_extension("httpfs")
             con.sql(
                 f"""
+                SET temp_directory='{tmp_path}';
+
                 SET s3_region='us-east-2';
                 SET s3_access_key_id='{creds.access_key}';
                 SET s3_secret_access_key='{creds.secret_key}';
