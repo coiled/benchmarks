@@ -14,7 +14,8 @@ pytestmark = pytest.mark.timeout(600)
 
 @pytest.fixture(autouse=True)
 def add_polars_version(test_run_benchmark):
-    test_run_benchmark.polars_version = pl.__version__
+    if test_run_benchmark:
+        test_run_benchmark.polars_version = pl.__version__
 
 
 @pytest.fixture(autouse=True)
@@ -191,7 +192,6 @@ def test_query_4(run, restart, dataset_path):
     run(_)
 
 
-@pytest.mark.skip(reason="Compute never stops")
 def test_query_5(run, restart, dataset_path):
     def _():
         var_1 = "ASIA"
@@ -253,7 +253,6 @@ def test_query_6(run, restart, dataset_path):
     run(_)
 
 
-@pytest.mark.skip()
 def test_query_7(run, restart, dataset_path):
     def _():
         nation_ds = read_data(dataset_path + "nation")

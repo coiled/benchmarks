@@ -58,8 +58,20 @@ def cheat_idleness(spark_setup, client):
     fut.result()
 
 
+def enable_shuffle_option():
+    return True
+
+
 @pytest.fixture(scope="module")
-def spark_setup(cluster, local):
+def cluster_name(module, scale, name, enable_shuffle_option):
+    if enable_shuffle_option:
+        return f"tpch-{module}.tuned-{scale}-{name}"
+    else:
+        return f"tpch-{module}-{scale}-{name}"
+
+
+@pytest.fixture(scope="module")
+def spark_setup(cluster, local, enable_shuffle_option):
     pytest.importorskip("pyspark")
 
     spark_dashboard: Url
@@ -74,11 +86,20 @@ def spark_setup(cluster, local):
             # By default, the driver is only allowed to use up to 1g of memory
             # which causes it to crash when collecting results
             .config("spark.driver.memory", "10g")
-            .getOrCreate()
         )
+        if enable_shuffle_option:
+            spark.config("spark.sql.shuffle.partitions", "auto")
+        spark = spark.getOrCreate()
         spark_dashboard = parse_url("http://localhost:4040")
     else:
-        spark = cluster.get_spark(executor_memory_factor=0.8, worker_memory_factor=0.9)
+        cfg = {}
+        if enable_shuffle_option:
+            cfg["spark.sql.shuffle.partitions"] = "auto"
+        spark = cluster.get_spark(
+            executor_memory_factor=0.8,
+            worker_memory_factor=0.9,
+            spark_connect_config=cfg,
+        )
         # Available on coiled>=1.12.4
         if not hasattr(cluster, "_spark_dashboard"):
             cluster._spark_dashboard = (

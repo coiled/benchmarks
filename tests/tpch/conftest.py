@@ -225,15 +225,17 @@ def cluster_spec(scale, shutdown_on_close):
 
 
 @pytest.fixture(scope="module")
+def cluster_name(module, scale, name):
+    return f"tpch-{module}-{scale}-{name}"
+
+
+@pytest.fixture(scope="module")
 def cluster(
     local,
-    scale,
-    module,
+    cluster_name,
     dask_env_variables,
     cluster_spec,
     github_cluster_tags,
-    name,
-    make_chart,
 ):
     with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
         if local:
@@ -241,7 +243,7 @@ def cluster(
                 yield cluster
         else:
             kwargs = dict(
-                name=f"tpch-{module}-{scale}-{name}",
+                name=cluster_name,
                 environ=dask_env_variables,
                 tags=github_cluster_tags,
                 region="us-east-2",
