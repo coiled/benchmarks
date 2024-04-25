@@ -5,9 +5,10 @@ on:
       scale:
         description: 'Scale Factor'
         required: true
-        default: 1000
+        default: 10000
         type: choice
         options:
+          - 10000
           - 1000
           - 100
           - 10
@@ -33,11 +34,6 @@ on:
         default: true
         type: boolean
 
-concurrency:
-  # Only allow a single run at a time to rate limiting
-  group: tpch
-  cancel-in-progress: true
-
 defaults:
   # Required shell entrypoint to have properly activated conda environments
   run:
@@ -47,7 +43,7 @@ jobs:
   tpch:
     name: TPC-H
     runs-on: ubuntu-latest
-    
+
     steps:
     - name: Checkout
       uses: actions/checkout@v4
@@ -82,12 +78,12 @@ jobs:
       if: ${{ inputs.duckdb }}
       run: |
         echo PYTEST_BENCHMARKS="${{ env.PYTEST_BENCHMARKS }} tests/tpch/test_duckdb.py" >> $GITHUB_ENV
-    
+
     - name: Add Polars to benchmark if enabled
       if: ${{ inputs.polars }}
       run: |
         echo PYTEST_BENCHMARKS="${{ env.PYTEST_BENCHMARKS }} tests/tpch/test_polars.py" >> $GITHUB_ENV
-    
+
     - name: Add PySpark to benchmark if enabled
       if: ${{ inputs.pyspark }}
       run: |
