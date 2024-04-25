@@ -58,6 +58,7 @@ def cheat_idleness(spark_setup, client):
     fut.result()
 
 
+@pytest.fixture(scope="module")
 def enable_shuffle_option():
     return True
 
