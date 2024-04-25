@@ -66,7 +66,7 @@ def enable_shuffle_option():
 @pytest.fixture(scope="module")
 def cluster_name(module, scale, name, enable_shuffle_option):
     if enable_shuffle_option:
-        return f"tpch-{module}.tuned-{scale}-{name}"
+        return f"tpch-{module}tuned-{scale}-{name}"
     else:
         return f"tpch-{module}-{scale}-{name}"
 
