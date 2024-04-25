@@ -88,18 +88,12 @@ def spark_setup(cluster, local, enable_shuffle_option):
             # which causes it to crash when collecting results
             .config("spark.driver.memory", "10g")
         )
-        if enable_shuffle_option:
-            spark.config("spark.sql.shuffle.partitions", "auto")
         spark = spark.getOrCreate()
         spark_dashboard = parse_url("http://localhost:4040")
     else:
-        cfg = {}
-        if enable_shuffle_option:
-            cfg["spark.sql.shuffle.partitions"] = "auto"
         spark = cluster.get_spark(
             executor_memory_factor=0.8,
             worker_memory_factor=0.9,
-            spark_connect_config=cfg,
         )
         # Available on coiled>=1.12.4
         if not hasattr(cluster, "_spark_dashboard"):
@@ -109,6 +103,7 @@ def spark_setup(cluster, local, enable_shuffle_option):
         spark_dashboard = parse_url(cluster._spark_dashboard)
 
     try:
+        spark.conf.set("spark.sql.shuffle.partitions", "auto")
         spark._spark_dashboard: Url = spark_dashboard
 
         # warm start
