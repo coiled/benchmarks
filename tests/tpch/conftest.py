@@ -26,12 +26,15 @@ def pytest_addoption(parser):
     parser.addoption("--restart", action="store_true", default=True, help="")
     parser.addoption("--no-restart", action="store_false", dest="restart", help="")
     parser.addoption(
-        "--performance-report", action="store_true", default=False, help=""
+        "--performance-report",
+        action="store_true",
+        default=False,
+        help="",
     )
     parser.addoption(
         "--scale",
         action="store",
-        default=10,
+        default=1000,
         help="Scale to run, 10, 100, 1000, or 10000",
     )
     parser.addoption(
