@@ -11,9 +11,6 @@
 -r ../ci/requirements-1general-deps.in
 -r ../ci/requirements-1test.in
 
-# Make sure you install dask, distributed, and dask-expr.
--r ../ci/requirements-1dask-release.in
-
 # You may alternatively point to your own git fork (but make sure you sync'ed tags!)
 # Read README.md for troubleshooting.
 git+https://github.com/dask/dask@a2aaa4a97d356899c1d1d30f699d8f9a22084b45 # main
