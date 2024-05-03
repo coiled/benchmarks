@@ -14,5 +14,5 @@
 # You may alternatively point to your own git fork (but make sure you sync'ed tags!)
 # Read README.md for troubleshooting.
 git+https://github.com/dask/dask@a2aaa4a97d356899c1d1d30f699d8f9a22084b45 # main
-git+https://github.com/dask/distributed@458eb987c0cd5d79daaa8d92511f728c63abf6d2
+git+https://github.com/dask/distributed@a990563c4a65f407fa45bf7dab68dcaff4ab25b9
 git+https://github.com/dask-contrib/dask-expr@2f659ee8f560e9fa6544069859ff3f6f4db46c23 # main
