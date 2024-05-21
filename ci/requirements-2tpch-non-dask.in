@@ -1,4 +1,17 @@
 -r requirements-1general-deps.in
 -r requirements-1test.in
 -r requirements-1dask-git-tip.in
--r requirements-1tpch-non-dask.in
+
+# Add dependencies exclusively needed to run TPCH tests on dask competitors.
+# PySpark
+# See https://spark.apache.org/docs/latest/api/python/getting_started/install.html#dependencies
+pyspark[sql]==3.4.1 # FIXME https://github.com/coiled/benchmarks/issues/1221
+grpcio==1.62.1
+grpcio-status==1.62.1
+protobuf==4.25.2
+
+# First version to be able to set memory factors
+coiled>=1.13.1.dev1
+
+# Other TPCH tests
+polars==0.20.26

@@ -1,8 +1,22 @@
 channels:
   - conda-forge
 dependencies:
+########################################################
+# PLEASE READ:
+# When modifying this file, you must also align to match
+# - AB_environments/AB_baseline.conda.yaml
+# - AB_environments/AB_sample.conda.yaml
+########################################################
+
   - openssl >1.1.0g
   - pip
   - pip-tools
-  - conda  # Used by test_build.py
+  - conda
   - openjdk~=11.0  # Do not upgrade, used w/ pyspark install
+
+########################################################
+# PLEASE READ:
+# When modifying this file, you must also align to match
+# - AB_environments/AB_baseline.conda.yaml
+# - AB_environments/AB_sample.conda.yaml
+########################################################

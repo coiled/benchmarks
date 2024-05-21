@@ -7,4 +7,4 @@ pytest
 pytest-timeout
 pytest-xdist
 pyyaml
-duckdb  # Used by all TPCH tests (not just duckdb) to generate data
+duckdb

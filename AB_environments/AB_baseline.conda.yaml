@@ -13,4 +13,4 @@ dependencies:
   - openssl>1.1.0g
   - pip
   - pip-tools
-  # NOTE: Packages are defined in AB_baseline.requirements.in
+  # NOTE: Packages are defined in AB_baseline.requirements.txt
