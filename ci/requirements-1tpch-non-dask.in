@@ -9,5 +9,5 @@ grpcio-status==1.62.1
 protobuf==5.26.0
 
 # Other TPCH tests
-polars==0.20.21
+polars==0.20.26
 duckdb==0.10.1
