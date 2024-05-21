@@ -12,11 +12,10 @@ pytest.importorskip("coiled.spark")
 
 
 @pytest.fixture(autouse=True)
-def add_pyspark_version(test_run_benchmark):
-    if test_run_benchmark:
-        import pyspark
+def add_pyspark_version(tpch_database_table_schema):
+    import pyspark
 
-        test_run_benchmark.pyspark_version = pyspark.__version__
+    tpch_database_table_schema.pyspark_version = pyspark.__version__
 
 
 @pytest.fixture(scope="session")

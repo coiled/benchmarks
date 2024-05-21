@@ -24,9 +24,6 @@ from .utils import get_cluster_spec, get_dataset_path, get_single_vm_spec
 # Global Options #
 ##################
 
-# # https://github.com/coiled/platform/issues/5329
-# dask.config.set({"coiled.use_dashboard_https": False})
-
 
 def pytest_addoption(parser):
     parser.addoption("--local", action="store_true", default=False, help="")
@@ -141,7 +138,7 @@ def performance_report(request, local, scale, query):
 
 
 @pytest.fixture()
-def database_table_schema(request, testrun_uid, scale, query, local):
+def tpch_database_table_schema(request, testrun_uid, scale, query, local):
     return TPCHRun(
         session_id=testrun_uid,
         name=request.node.name,
@@ -160,11 +157,25 @@ def database_table_schema(request, testrun_uid, scale, query, local):
 
 
 @pytest.fixture(autouse=True)
-def add_cluster_spec_to_db(database_table_schema, cluster_spec, local):
+def add_cluster_spec_to_db(tpch_database_table_schema, cluster_spec, local):
     if not local:
-        database_table_schema.n_workers = cluster_spec["n_workers"]
-        database_table_schema.worker_vm_type = cluster_spec["worker_vm_types"][0]
-        database_table_schema.cluster_disk_size = cluster_spec.get("worker_disk_size")
+        tpch_database_table_schema.n_workers = cluster_spec["n_workers"]
+        tpch_database_table_schema.worker_vm_type = cluster_spec["worker_vm_types"][0]
+        tpch_database_table_schema.cluster_disk_size = cluster_spec.get(
+            "worker_disk_size"
+        )
+
+
+@pytest.fixture(scope="function")
+def test_run_benchmark(
+    test_run_benchmark, benchmark_db_session, tpch_database_table_schema
+):
+    yield test_run_benchmark
+    # The top level test_run_benchmark fixture will take care that the session
+    # is comitted, etc.
+    # Here, we just care about adding the additional table
+    if benchmark_db_session is not None:
+        benchmark_db_session.add(tpch_database_table_schema)
 
 
 @pytest.fixture(scope="function")
@@ -262,16 +273,9 @@ class TurnOnPandasCOW(WorkerPlugin):
         pd.set_option("mode.copy_on_write", True)
 
 
-def _assert_no_queuing(dask_scheduler):
-    import math
-
-    assert dask_scheduler.WORKER_SATURATION == math.inf
-
-
 @pytest.fixture()
 def client(cluster, restart, benchmark_all):
     with cluster.get_client() as client:
-        client.run_on_scheduler(_assert_no_queuing)
         if restart:
             client.restart()
         client.run(lambda: None)

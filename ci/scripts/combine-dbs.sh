@@ -26,13 +26,16 @@ do
   # Copy the individual table into the primary one. We make an intermediate
   # temp table so that we can null out the primary keys and reset the
   # autoincrementing
+  for tab in "tpch_run" "test_run"
+  do
   sqlite3 "$FILE" <<EOF
 attach "benchmark.tmp.db" as lead;
-create temporary table tmp as select * from main.tpch_run;
+create temporary table tmp as select * from main.$tab;
 update tmp set id=NULL;
-insert into lead.tpch_run select * from tmp;
+insert into lead.$tab select * from tmp;
 detach database lead;
 EOF
+  done
 done
 
 mv benchmark.tmp.db "$DB_NAME"

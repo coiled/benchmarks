@@ -9,8 +9,8 @@ from . import duckdb_queries  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
-def add_duckdb_version(test_run_benchmark):
-    test_run_benchmark.duckdb_version = duckdb.__version__
+def add_duckdb_version(tpch_database_table_schema):
+    tpch_database_table_schema.duckdb_version = duckdb.__version__
 
 
 @pytest.fixture(autouse=True)

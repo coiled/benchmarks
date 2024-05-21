@@ -34,10 +34,6 @@ on:
         default: true
         type: boolean
 
-# concurrency:
-#   # Only allow a single run at a time to rate limiting
-#   group: tpch
-
 defaults:
   # Required shell entrypoint to have properly activated conda environments
   run:

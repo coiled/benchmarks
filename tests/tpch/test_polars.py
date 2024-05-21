@@ -13,9 +13,8 @@ pytestmark = pytest.mark.timeout(600)
 
 
 @pytest.fixture(autouse=True)
-def add_polars_version(test_run_benchmark):
-    if test_run_benchmark:
-        test_run_benchmark.polars_version = pl.__version__
+def add_polars_version(tpch_database_table_schema):
+    tpch_database_table_schema.polars_version = pl.__version__
 
 
 @pytest.fixture(autouse=True)

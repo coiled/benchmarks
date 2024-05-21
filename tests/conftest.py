@@ -13,7 +13,6 @@ import threading
 import time
 import uuid
 from functools import lru_cache
-from pathlib import Path
 
 import dask
 import dask.array as da
@@ -39,9 +38,6 @@ try:
     from distributed.spans import span as span_ctx
 except ImportError:  # dask <2023.6.0
     from contextlib import nullcontext as span_ctx
-
-# # https://github.com/coiled/platform/issues/5329
-# dask.config.set({"coiled.use_dashboard_https": False})
 
 
 logger = logging.getLogger("benchmarks")
@@ -74,12 +70,6 @@ def pytest_sessionfinish(session, exitstatus):
     # https://github.com/pytest-dev/pytest/issues/2393
     if exitstatus == 5:  # All tests excluded by markers
         session.exitstatus = 0
-
-
-def _is_child_dir(path: str | Path, parent: str | Path) -> bool:
-    _parent = Path(parent).absolute()
-    _path = Path(path).absolute()
-    return _parent in _path.parents or _parent == _path
 
 
 dask.config.set(

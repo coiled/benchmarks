@@ -1,0 +1,323 @@
+name: Tests
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - "*"
+  pull_request:
+  schedule:
+    # Runs "At 00:01" (see https://crontab.guru)
+    - cron: "1 0 * * 0" # every Sunday (relevant for non-Dask TPC-H benchmarks) 
+    - cron: "1 0 * * 1-6" # every day except Sunday
+  workflow_dispatch:
+
+concurrency:
+  # Include `github.event_name` to avoid pushes to `main` and
+  # scheduled jobs canceling one another
+  group: tests-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  # Required shell entrypoint to have properly activated conda environments
+  run:
+    shell: bash -l {0}
+
+jobs:
+  tests:
+    name: ${{ matrix.name_prefix }} ${{ matrix.os }} py${{ matrix.python_version }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        python_version: ["3.9"]
+        pytest_args: [tests --ignore=tests/tpch]
+        requirements: [ci/requirements-2nightly.in]
+        name_prefix: [tests]
+        include:
+          # Run stability tests on the lowest and highest versions of Python only
+          # These are temporarily redundant with the current global python_version
+          # - pytest_args: tests/stability
+          #   python_version: "3.9"
+          #   os: ubuntu-latest
+          #   name_prefix: stability
+          - pytest_args: tests/stability
+            python_version: "3.11"
+            os: ubuntu-latest
+            requirements: ci/requirements-2nightly.in
+            name_prefix: stability
+          # Run stability tests on Python Windows and MacOS (latest py39 only)
+          - pytest_args: tests/stability
+            python_version: "3.9"
+            os: windows-latest
+            name_prefix: stability
+            requirements: ci/requirements-2nightly.in
+          - pytest_args: tests/stability
+            python_version: "3.9"
+            os: macos-latest
+            name_prefix: stability
+            requirements: ci/requirements-2nightly.in
+          # Special environments
+          - pytest_args: tests/workflows/test_snowflake.py
+            python_version: "3.9"
+            os: ubuntu-latest
+            name_prefix: snowflake
+            requirements: ci/requirements-2snowflake.in
+          - pytest_args: tests/tpch
+            python_version: "3.9"
+            os: ubuntu-latest
+            name_prefix: tpch
+            requirements: ci/requirements-2tpch-non-dask.in
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          condarc-file: ci/condarc
+          python-version: ${{ matrix.python_version }}
+          environment-file: ci/environment.yml
+
+      - name: Pip Compile
+        run: pip-compile ${{ matrix.requirements }}
+
+      - name: Add Environment dependencies
+        run: |
+          IN_FILE=${{ matrix.requirements }}
+          python -m pip install -r ${IN_FILE%.*}.txt
+
+      - name: Reconfigure pytest-timeout
+        shell: bash -l {0}
+        # No SIGALRM available on Windows
+        if: ${{ matrix.os == 'windows-latest' }}
+        run: sed -i.bak 's/timeout_method = signal/timeout_method = thread/' setup.cfg
+
+      - name: Dump environment
+        run: |
+          # For debugging
+          echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
+          mamba env export | grep -E -v '^prefix:.*$'
+
+      - name: Disable workflows on most PRs
+        # Run workflows on PRs with `workflows` label and nightly cron job
+        if: |
+          github.event_name != 'schedule'
+          && !(github.event_name == 'pull_request' && contains(github.event.pull_request.labels.*.name, 'workflows'))
+        run: |
+          echo PYTEST_MARKERS=" and not workflows" >> $GITHUB_ENV
+
+      - name: Disable non-Dask TPCH benchmarks on most PRs and on daily schedule (except Sundays)
+        if: |
+            matrix.name_prefix != 'tpch' ||
+            (github.event_name != 'schedule' || github.event.schedule != '1 0 * * 0') &&
+            (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'tpch'))
+        run: |
+          echo PYTEST_MARKERS="${{ env.PYTEST_MARKERS }} and not tpch_nondask" >> $GITHUB_ENV
+
+      - name: Finalize PYTEST_MARKERS
+        run: |
+          if [ -n "$PYTEST_MARKERS" ]; then
+            PYTEST_MARKERS=${PYTEST_MARKERS# and }
+            PYTEST_MARKERS="-m '${PYTEST_MARKERS}'"
+            echo PYTEST_MARKERS=${PYTEST_MARKERS}
+            echo PYTEST_MARKERS=${PYTEST_MARKERS} >> $GITHUB_ENV
+          fi
+
+      - name: Run Coiled Runtime Tests
+        env:
+          DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
+          COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+          DB_NAME: ${{ matrix.name_prefix }}-${{ matrix.os }}-py${{ matrix.python_version }}.db
+          CLUSTER_DUMP: always
+          DASK_DATAFRAME__QUERY_PLANNING: True
+        run: |
+          pytest --benchmark -n 4 --dist loadscope ${{ env.PYTEST_MARKERS }} ${{ matrix.pytest_args }}
+
+      - name: Dump coiled.Cluster kwargs
+        run: cat cluster_kwargs.merged.yaml || true
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: ${{ matrix.name_prefix }}-${{ matrix.os }}-py${{ matrix.python_version }}
+          path: |
+            ${{ matrix.name_prefix }}-${{ matrix.os }}-py${{ matrix.python_version }}.db
+            cluster_kwargs.*.*
+            mamba_env_export.yml
+
+  process-results:
+    needs: tests
+    name: Combine separate benchmark results
+    if: always() && github.repository == 'coiled/benchmarks'
+    runs-on: ubuntu-latest
+    concurrency:
+      # Fairly strict concurrency rule to avoid stepping on benchmark db.
+      # Could eventually replace with a real db in coiled, RDS, or litestream
+      group: process-benchmarks
+      cancel-in-progress: false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        run: pip install alembic
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: benchmarks
+
+      - name: Download benchmark db
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
+          DB_NAME: benchmark.db
+        run: |
+          aws s3 cp s3://coiled-runtime-ci/benchmarks/$DB_NAME . || true
+
+      - name: Combine benchmarks
+        run: |
+          ls -lhR benchmarks
+          bash ci/scripts/combine-dbs.sh
+
+      - name: Upload benchmark db
+        if: always() && github.ref == 'refs/heads/main' && github.repository == 'coiled/benchmarks'
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
+          DB_NAME: benchmark.db
+        run: |
+          aws s3 cp $DB_NAME s3://coiled-runtime-ci/benchmarks/
+
+      - name: Upload benchmark results as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark
+          path: benchmark.db
+
+  regressions:
+    needs: [tests, process-results]
+    # Always check for regressions, as this can be skipped even if an indirect dependency fails (like a test run)
+    # Not running regressions when tests are cancelled, and on PRs because of volatility of single runs
+    if: always() && github.event_name != 'pull_request' && needs.tests.result != 'cancelled'
+    name: Detect regressions
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: benchmark
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          environment-file: ci/environment-dashboard.yml
+
+      - name: Run detect regressions
+        run: |
+          if [[ ${{ github.event_name }} = 'pull_request' ]]
+          then
+            export IS_PR='true'
+          fi
+          echo "IS_PR=$IS_PR"
+          python detect_regressions.py
+
+      - name: Create regressions summary
+        if: always()
+        run: |
+          echo "$(<regressions_summary.md)" >> $GITHUB_STEP_SUMMARY
+
+  report:
+    name: report
+    needs: [tests, regressions]
+    if: |
+      always()
+      && github.event_name != 'pull_request'
+      && github.repository == 'coiled/benchmarks'
+      && (needs.tests.result == 'failure' || needs.regressions.result == 'failure')
+
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+      - name: Report failures
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+            const issue_body = `[Workflow Run URL](${workflow_url})`
+            github.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: issue_body,
+                title: "⚠️ CI failed ⚠️",
+                labels: ["ci-failure"],
+            })
+
+  static-site:
+    needs: process-results
+    # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
+    if: always()
+    name: Build static dashboards
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download tests database
+        uses: actions/download-artifact@v4
+        with:
+          name: benchmark
+
+      - name: Set up environment
+        uses: conda-incubator/setup-miniconda@v3
+        with:
+          miniforge-variant: Mambaforge
+          use-mamba: true
+          environment-file: ci/environment-dashboard.yml
+
+      - name: Generate dashboards
+        run: python dashboard.py -d benchmark.db -o static
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-dashboard
+          path: static
+
+      - name: Deploy 🚀
+        uses: JamesIves/github-pages-deploy-action@v4.5.0
+        if: github.ref == 'refs/heads/main' && github.repository == 'coiled/benchmarks'
+        with:
+          branch: gh-pages
+          folder: static
+          single-commit: true
