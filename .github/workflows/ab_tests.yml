@@ -69,7 +69,6 @@ jobs:
           cp AB_baseline.conda.yaml AB_null_hypothesis.conda.yaml
           cp AB_baseline.dask.yaml AB_null_hypothesis.dask.yaml
           cp AB_baseline.cluster.yaml AB_null_hypothesis.cluster.yaml
-          cp AB_baseline.requirements.in AB_null_hypothesis.requirements.in
 
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v3
@@ -79,11 +78,8 @@ jobs:
           condarc-file: ci/condarc
           environment-file: AB_environments/${{ matrix.runtime-version }}.conda.yaml
 
-      - name: Pip Compile
-        run: pip-compile AB_environments/${{ matrix.runtime-version }}.requirements.in
-
-      - name: Add Environment dependencies
-        run: python -m pip install -r AB_environments/${{ matrix.runtime-version }}.requirements.txt
+      - name: Add test dependencies
+        run: mamba env update --file ci/environment-test.yml
 
       - name: Dump environment
         run: |

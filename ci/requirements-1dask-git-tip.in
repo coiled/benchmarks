@@ -1,3 +1,0 @@
-git+https://github.com/dask/dask
-git+https://github.com/dask/distributed
-git+https://github.com/dask-contrib/dask-expr

@@ -1,0 +1,23 @@
+# This is an addition to either ci/environment.yml or AB_environments/AB_*.conda.yaml,
+# adding dependencies specific to this test suite.
+channels:
+  - conda-forge
+dependencies:
+  # Testing dependencies
+  - alembic
+  - altair
+  - conda
+  - filelock
+  - jinja2
+  - packaging
+  - pytest
+  - pytest-timeout
+  - pytest-xdist
+  - pyyaml
+  # TPC-H correctness test and DuckDB implementation
+  # Can add duckdb back to conda install after:
+  # https://github.com/coiled/benchmarks/issues/1418
+  # python-duckdb ==0.10.0
+  - pip
+  - pip:
+    - duckdb==0.10.0

@@ -144,7 +144,3 @@ tpch-data/
 
 # .visualize() output of dask collections
 mydask.html
-
-# pip-compiled files
-ci/requirements-*.txt
-AB_environments/AB_*.requirements.txt
