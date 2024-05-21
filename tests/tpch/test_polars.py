@@ -58,7 +58,7 @@ def test_query_1(run, restart, dataset_path):
                 ],
             )
             .sort(["l_returnflag", "l_linestatus"])
-        ).collect(streaming=True)
+        ).collect()
 
     run(_)
 
@@ -111,7 +111,7 @@ def test_query_2(run, restart, dataset_path):
             )
             .limit(100)
             .with_columns(pl.col(pl.datatypes.Utf8).str.strip_chars().keep_name())
-        ).collect(streaming=True)
+        ).collect()
 
     run(_)
 
@@ -148,7 +148,7 @@ def test_query_3(run, restart, dataset_path):
             )
             .sort(by=["revenue", "o_orderdate"], descending=[True, False])
             .limit(10)
-        ).collect(streaming=True)
+        ).collect()
 
     run(_)
 
@@ -170,7 +170,7 @@ def test_query_4(run, restart, dataset_path):
             .agg(pl.len().alias("order_count"))
             .sort(by="o_orderpriority")
             .with_columns(pl.col("order_count").cast(pl.datatypes.Int64))
-        ).collect(streaming=True)
+        ).collect()
 
     run(_)
 
@@ -208,7 +208,7 @@ def test_query_5(run, restart, dataset_path):
             .group_by("n_name")
             .agg([pl.sum("revenue")])
             .sort(by="revenue", descending=True)
-        ).collect(streaming=True)
+        ).collect()
 
     run(_)
 
@@ -231,7 +231,7 @@ def test_query_6(run, restart, dataset_path):
                 (pl.col("l_extendedprice") * pl.col("l_discount")).alias("revenue")
             )
             .select(pl.sum("revenue").alias("revenue"))
-        ).collect(streaming=True)
+        ).collect()
 
     run(_)
 
@@ -280,7 +280,7 @@ def test_query_7(run, restart, dataset_path):
             .group_by(["supp_nation", "cust_nation", "l_year"])
             .agg([pl.sum("volume").alias("revenue")])
             .sort(by=["supp_nation", "cust_nation", "l_year"])
-        ).collect(streaming=True)
+        ).collect()
 
     run(_)
 
@@ -332,7 +332,7 @@ def test_query_8(run, restart, dataset_path):
             .agg((pl.sum("_tmp") / pl.sum("volume")).round(2).alias("mkt_share"))
             .sort("o_year")
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -371,7 +371,7 @@ def test_query_9(run, restart, dataset_path):
             .agg(pl.sum("amount").round(2).alias("sum_profit"))
             .sort(by=["nation", "o_year"], descending=[False, True])
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -430,7 +430,7 @@ def test_query_10(run, restart, dataset_path):
             .sort(by="revenue", descending=True)
             .limit(20)
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -471,7 +471,7 @@ def test_query_11(run, restart, dataset_path, scale):
             .select(["ps_partkey", "value"])
             .sort("value", descending=True)
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -510,7 +510,7 @@ def test_query_12(run, restart, dataset_path):
             .agg([pl.col("high_line_count").sum(), pl.col("low_line_count").sum()])
             .sort("l_shipmode")
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -535,7 +535,7 @@ def test_query_13(run, restart, dataset_path):
             .select([pl.col("c_count"), pl.col("len").alias("custdist")])
             .sort(["custdist", "c_count"], descending=[True, True])
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -564,7 +564,7 @@ def test_query_14(run, restart, dataset_path):
                 .alias("promo_revenue")
             )
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -597,7 +597,7 @@ def test_query_15(run, restart, dataset_path):
             .select(["s_suppkey", "s_name", "s_address", "s_phone", "total_revenue"])
             .sort("s_suppkey")
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -628,7 +628,7 @@ def test_query_16(run, restart, dataset_path):
                 descending=[True, False, False, False],
             )
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -657,7 +657,7 @@ def test_query_17(run, restart, dataset_path):
                 (pl.col("l_extendedprice").sum() / 7.0).round(2).alias("avg_yearly")
             )
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -693,7 +693,7 @@ def test_query_18(run, restart, dataset_path):
             .sort(["o_totalprice", "o_orderdat"], descending=[True, False])
             .limit(100)
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -740,7 +740,7 @@ def test_query_19(run, restart, dataset_path):
                 .alias("revenue")
             )
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -784,7 +784,7 @@ def test_query_20(run, restart, dataset_path):
             .select(["s_name", "s_address"])
             .sort("s_name")
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -823,7 +823,7 @@ def test_query_21(run, restart, dataset_path):
             .sort(by=["numwait", "s_name"], descending=[True, False])
             .limit(100)
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
 
@@ -866,6 +866,6 @@ def test_query_22(run, restart, dataset_path):
             )
             .sort("cntrycode")
         )
-        q_final.collect(streaming=True)
+        q_final.collect()
 
     run(_)
