@@ -355,7 +355,6 @@ def test_query_8(run, restart, dataset_path):
     run(_)
 
 
-@pytest.mark.skip(reason="Compute never stops")
 def test_query_9(run, restart, dataset_path):
     def _():
         part_ds = read_data(dataset_path + "part")
@@ -534,7 +533,6 @@ def test_query_12(run, restart, dataset_path):
     run(_)
 
 
-@pytest.mark.skip(reason="Swapping soooo much")
 def test_query_13(run, restart, dataset_path):
     def _():
         var_1 = "special"
