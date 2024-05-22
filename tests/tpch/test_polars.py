@@ -8,9 +8,6 @@ pytestmark = pytest.mark.tpch_nondask
 pl = pytest.importorskip("polars")
 pytest.importorskip("pyarrow")
 
-# Local
-pytestmark = pytest.mark.timeout(600)
-
 
 @pytest.fixture(autouse=True)
 def add_polars_version(tpch_database_table_schema):
