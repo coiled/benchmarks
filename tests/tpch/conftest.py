@@ -1,18 +1,23 @@
+import contextlib
 import os
+import re
+import sys
 import uuid
-import warnings
 from contextlib import nullcontext
 
 import coiled
 import dask
+import dask_expr
+import distributed
 import filelock
 import pytest
-import requests
 from dask.distributed import LocalCluster
 from dask.distributed import performance_report as performance_report_func
 from distributed.diagnostics.plugin import WorkerPlugin
-from urllib3.util import Url, parse_url
 
+from benchmark_schema import TPCHRun
+
+from ..conftest import TEST_DIR, WORKFLOW_URL
 from .utils import get_cluster_spec, get_dataset_path, get_single_vm_spec
 
 ##################
@@ -90,10 +95,10 @@ def module(request):
 
 @pytest.fixture(scope="function")
 def query(request):
-    if request.node.name.startswith("test_query_"):
-        return int(request.node.name.split("_")[-1])
-    else:
-        return None
+    pattern = re.compile(r"test_query_(\d+)")
+    if re_match := pattern.match(request.node.name):
+        return int(re_match.group(1))
+    return None
 
 
 @pytest.fixture(scope="session")
@@ -132,6 +137,94 @@ def performance_report(request, local, scale, query):
         return nullcontext()
 
 
+@pytest.fixture()
+def tpch_database_table_schema(request, testrun_uid, scale, query, local):
+    return TPCHRun(
+        session_id=testrun_uid,
+        name=request.node.name,
+        originalname=request.node.originalname,
+        path=str(request.node.path.relative_to(TEST_DIR)),
+        dask_version=dask.__version__,
+        dask_expr_version=dask_expr.__version__,
+        distributed_version=distributed.__version__,
+        python_version=".".join(map(str, sys.version_info)),
+        platform=sys.platform,
+        ci_run_url=WORKFLOW_URL,
+        scale=scale,
+        query=query,
+        local=local,
+    )
+
+
+@pytest.fixture(autouse=True)
+def add_cluster_spec_to_db(tpch_database_table_schema, cluster_spec, local):
+    if not local:
+        tpch_database_table_schema.n_workers = cluster_spec["n_workers"]
+        tpch_database_table_schema.worker_vm_type = cluster_spec["worker_vm_types"][0]
+        tpch_database_table_schema.cluster_disk_size = cluster_spec.get(
+            "worker_disk_size"
+        )
+
+
+@pytest.fixture(scope="function")
+def test_run_benchmark(
+    test_run_benchmark, benchmark_db_session, tpch_database_table_schema
+):
+    yield test_run_benchmark
+    # The top level test_run_benchmark fixture will take care that the session
+    # is comitted, etc.
+    # Here, we just care about adding the additional table
+    if benchmark_db_session is not None:
+        benchmark_db_session.add(tpch_database_table_schema)
+
+
+@pytest.fixture(scope="function")
+def benchmark_all(
+    benchmark_memory,
+    get_cluster_info,
+    benchmark_time,
+):
+    """Benchmark all available metrics and extracts cluster information
+
+    Yields
+    ------
+    Context manager factory function which takes a ``distributed.Client``
+    as input. The context manager records records all available metrics while
+    executing the ``with`` statement if run as part of a benchmark,
+    or does nothing otherwise.
+
+    Example
+    -------
+    .. code-block:: python
+
+        def test_something(benchmark_all):
+            with benchmark_all(client):
+                do_something()
+
+    See Also
+    --------
+    benchmark_memory
+    benchmark_task_durations
+    benchmark_time
+    get_cluster_info
+    """
+
+    @contextlib.contextmanager
+    def _benchmark_all(client):
+        if client:
+            with (
+                benchmark_memory(client),
+                get_cluster_info(client.cluster),
+                benchmark_time,
+            ):
+                yield
+        else:
+            with benchmark_time:
+                yield
+
+    yield _benchmark_all
+
+
 #############################################
 # Multi-machine fixtures for Spark and Dask #
 #############################################
@@ -143,15 +236,17 @@ def cluster_spec(scale, shutdown_on_close):
 
 
 @pytest.fixture(scope="module")
+def cluster_name(module, scale, name):
+    return f"tpch-{module}-{scale}-{name}"
+
+
+@pytest.fixture(scope="module")
 def cluster(
     local,
-    scale,
-    module,
+    cluster_name,
     dask_env_variables,
     cluster_spec,
     github_cluster_tags,
-    name,
-    make_chart,
 ):
     with dask.config.set({"distributed.scheduler.worker-saturation": "inf"}):
         if local:
@@ -159,7 +254,7 @@ def cluster(
                 yield cluster
         else:
             kwargs = dict(
-                name=f"tpch-{module}-{scale}-{name}",
+                name=cluster_name,
                 environ=dask_env_variables,
                 tags=github_cluster_tags,
                 region="us-east-2",
@@ -178,108 +273,15 @@ class TurnOnPandasCOW(WorkerPlugin):
         pd.set_option("mode.copy_on_write", True)
 
 
-@pytest.fixture
-def client(
-    request,
-    cluster,
-    cluster_kwargs,
-    get_cluster_info,
-    performance_report,
-    benchmark_time,
-    span,
-    restart,
-):
+@pytest.fixture()
+def client(cluster, restart, benchmark_all):
     with cluster.get_client() as client:
         if restart:
             client.restart()
         client.run(lambda: None)
-
         client.register_plugin(TurnOnPandasCOW(), name="enable-cow")
-        with get_cluster_info(cluster), performance_report, benchmark_time:
+        with benchmark_all(client):
             yield client
-
-
-@pytest.fixture(scope="module")
-def spark_setup(cluster, local):
-    pytest.importorskip("pyspark")
-
-    spark_dashboard: Url
-    if local:
-        cluster.close()
-        from pyspark.sql import SparkSession
-
-        # Set app name to match that used in Coiled Spark
-        spark = (
-            SparkSession.builder.appName("SparkConnectServer")
-            .config("spark.driver.host", "127.0.0.1")
-            .config("spark.driver.bindAddress", "127.0.0.1")
-            # By default, the driver is only allowed to use up to 1g of memory
-            # which causes it to crash when collecting results
-            .config("spark.driver.memory", "10g")
-            .getOrCreate()
-        )
-        spark_dashboard = parse_url("http://localhost:4040")
-    else:
-        spark = cluster.get_spark(executor_memory_factor=0.8, worker_memory_factor=0.9)
-        # Available on coiled>=1.12.4
-        if not hasattr(cluster, "_spark_dashboard"):
-            cluster._spark_dashboard = (
-                parse_url(cluster._dashboard_address)._replace(path="/spark").url
-            )
-        spark_dashboard = parse_url(cluster._spark_dashboard)
-
-    try:
-        spark._spark_dashboard: Url = spark_dashboard
-
-        # warm start
-        from pyspark.sql import Row
-
-        df = spark.createDataFrame(
-            [
-                Row(a=1, b=2.0, c="string1"),
-            ]
-        )
-        df.show()
-        yield spark
-    finally:
-        spark.stop()
-
-
-def get_number_spark_executors(spark_dashboard: Url):
-    base_path = spark_dashboard.path or ""
-
-    url = spark_dashboard._replace(path=f"{base_path}/api/v1/applications")
-    apps = requests.get(url.url).json()
-    for app in apps:
-        if app["name"] == "SparkConnectServer":
-            appid = app["id"]
-            break
-    else:
-        raise ValueError("Failed to find Spark application 'SparkConnectServer'")
-
-    url = url._replace(path=f"{url.path}/{appid}/allexecutors")
-    executors = requests.get(url.url).json()
-    return sum(1 for executor in executors if executor["isActive"])
-
-
-@pytest.fixture
-def spark(request, spark_setup, benchmark_time):
-    n_executors_start = get_number_spark_executors(spark_setup._spark_dashboard)
-    with benchmark_time:
-        yield spark_setup
-    n_executors_finish = get_number_spark_executors(spark_setup._spark_dashboard)
-
-    if n_executors_finish != n_executors_start:
-        msg = (
-            "Executor count changed between start and end of yield. "
-            f"Startd with {n_executors_start}, ended with {n_executors_finish}"
-        )
-        if request.config.getoption("ignore-spark-executor-count"):
-            warnings.warn(msg)
-        else:
-            raise RuntimeError(msg)
-
-    spark_setup.catalog.clearCache()
 
 
 @pytest.fixture
@@ -341,11 +343,13 @@ def warm_start(module_run, local):
 
 
 @pytest.fixture(scope="function")
-def run(module_run, local, restart, benchmark_time, warm_start, make_chart):
+def run(module_run, local, restart, benchmark_all, warm_start, make_chart):
+    client = None
     if restart and not local:
-        module_run.client.restart()
+        client = module_run.client
+        client.restart()
 
-    with benchmark_time:
+    with benchmark_all(client):
         yield module_run
 
 

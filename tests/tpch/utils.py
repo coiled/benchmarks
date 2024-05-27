@@ -43,7 +43,7 @@ def get_cluster_spec(scale: int, shutdown_on_close: bool) -> dict[str, Any]:
     everywhere = dict(
         idle_timeout="1h",
         wait_for_workers=True,
-        scheduler_vm_types=["m6i.xlarge"],
+        scheduler_vm_types=["m6i.2xlarge"],
         shutdown_on_close=shutdown_on_close,
     )
 
@@ -75,8 +75,8 @@ def get_cluster_spec(scale: int, shutdown_on_close: bool) -> dict[str, Any]:
     elif scale == 10000:
         return {
             "worker_vm_types": ["m6i.xlarge"],
-            "n_workers": 32,
-            "worker_disk_size": 200,
+            "n_workers": 32 * 10,
+            "worker_disk_size": 100,
             **everywhere,
         }
 
