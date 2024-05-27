@@ -17,36 +17,35 @@ workflows will not work on a fork (`yourname/benchmarks`).
 ### 2. Create files in AB_environments/
 
 Open the `AB_environments/` directory and rename/create files as needed.
-Each A/B runtime is made of exactly four files:
-- `AB_<name>.cluster.yaml` (coiled.Cluster kwargs)
-- `AB_<name>.conda.yaml` (a conda environment file, specifying python version and 
-  non-pip packages)
+Each A/B runtime is made of exactly three files:
+- `AB_<name>.conda.yaml` (a conda environment file)
 - `AB_<name>.dask.yaml` (a dask configuration file)
-- `AB_<name>.requirements.in` (a pip-compile requirements file)
+- `AB_<name>.cluster.yaml` (coiled.Cluster kwargs)
 
-You may create as many A/B runtime configs as you want in a single `coiled/benchmarks`
+You may create as many A/B runtime configs as you want in a single `coiled-runtime`
 branch.
 You can use the utility `make_envs.py <name>, [name], ...` to automate file creation.
 
-`AB_<name>.requirements.in` can contain whatever you want, as long as it can run the
+The conda environment file can contain whatever you want, as long as it can run the
 tests; e.g.
 
+```yaml
+channels:
+  - conda-forge
+dependencies:
+    - python =3.9
+    - <copy-paste from ci/environment.yaml, minus bits you want to change>
+    # Changes from the default environment start here
+    - dask ==2023.4.1
+    - distributed ==2023.4.1
 ```
--r ../ci/requirements-1general-deps.in
--r ../ci/requirements-1test.in
-dask==2024.3.1
-distributed==2024.3.1
-dask-expr==1.0.0
-```
-
 Instead of published packages, you could also use arbitrary git hashes of arbitrary
 forks, e.g.
-```
--r ../ci/requirements-1general-deps.in
--r ../ci/requirements-1test.in
-git+https://github.com/dask/dask@b85bf5be72b02342222c8a0452596539fce19bce
-git+https://github.com/yourname/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
-git+https://github.com/otherguy/dask-expr@0aab0e0f1e4cd91b15df19512493ffe05bffb73a
+
+```yaml
+    - pip:
+      - git+https://github.com/dask/dask@b85bf5be72b02342222c8a0452596539fce19bce
+      - git+https://github.com/yourname/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
 ```
 
 You may also ignore the default environment and go for a barebones environment. The bare
@@ -54,20 +53,19 @@ minimum you need to install is ``dask``, ``distributed``, ``coiled`` and ``s3fs`
 This will however skip some tests, e.g. zarr and ML-related ones, and it will also
 expose you to less controlled behaviour e.g. dependent on which versions of numpy and
 pandas are pulled in:
-```
-    -r ../ci/requirements-1test.in
-    dask ==2023.4.1
-    distributed ==2023.4.1
-    coiled
-    s3fs
+```yaml
+channels:
+  - conda-forge
+dependencies:
+    - python =3.9
+    - dask ==2023.4.1
+    - distributed ==2023.4.1
+    - coiled
+    - s3fs
 ```
 
-**Note:** CI invokes `pip-compile` internally. Any important pins must be done in the
-`.in` file. You can retrieve the output of `mamba list --export` from the CI log if you
-want to reproduce an exact environment locally.
-
-`AB_<name>.dask.yaml` is a dask config file. If you don't want to change the config,
-you must create an empty file.
+The second file in each triplet is a dask config file. If you don't want to change the
+config, you must create an empty file.
 
 e.g.
 ```yaml
@@ -76,7 +74,7 @@ distributed:
     work-stealing: False
 ```
 
-`AB_<name>.cluster.yaml` defines creation options to the dask cluster. It must be
+The third and final file defines creation options to the dask cluster. It must be
 formatted as follows:
 ```yaml
 default:
@@ -95,8 +93,8 @@ default:
 The `default` section applies to all `<cluster name>` sections, unless explicitly
 overridden.
 
-Anything that's omitted defaults to the contents of `../cluster_kwargs.yaml`. 
-Leave this file blank if you're happy with the defaults.
+Anything that's omitted defaults to the contents of `cluster_kwargs.yaml`. Leave this
+file blank if you're happy with the defaults.
 
 For example:
 ```yaml
@@ -107,13 +105,11 @@ small_cluster:
 
 
 ### 3. Create baseline files
-If you create *any* files in `AB_environments/`, you *must* create the baseline
-environment:
+If you create *any* files in `AB_environments/`, you *must* create the baseline environment:
 
-- `AB_baseline.cluster.yaml`
 - `AB_baseline.conda.yaml`
 - `AB_baseline.dask.yaml`
-- `AB_baseline.requirements.in`
+- `AB_baseline.cluster.yaml`
 
 ### 4. Tweak configuration file
 Open `AB_environments/config.yaml` and set the `repeat` setting to a number higher than 0.
@@ -160,25 +156,14 @@ channels:
   - conda-forge
 dependencies:
     - python =3.9
-    - pip
-    - pip-tools
+    - coiled
+    - dask
+    - distributed
+    - s3fs
 ```
-  
-- `AB_environments/AB_baseline.requirements.in`:
-
-```
-    -r ../ci/requirements-1general-deps.in
-    -r ../ci/requirements-1test.in
-    coiled
-    dask
-    distributed
-    s3fs
-```
-
 - `AB_environments/AB_baseline.dask.yaml`: (empty file)
 - `AB_environments/AB_baseline.cluster.yaml`: (empty file)
 - `AB_environments/AB_no_steal.conda.yaml`: (same as baseline)
-- `AB_environments/AB_no_steal.requirements.in`: (same as baseline)
 - `AB_environments/AB_no_steal.dask.yaml`:
 ```yaml
 distributed:
@@ -200,12 +185,12 @@ max_parallel:
 ```
 
 ### 6. Run CI
-- `git push`. Note: you should *not* open a Pull Request. 
-- Open [the GitHub Actions tab] 
+- `git push`. Note: you should *not* open a Pull Request.
+- Open [the GitHub Actions tab]
   (https://github.com/coiled/benchmarks/actions/workflows/ab_tests.yml)
   and wait for the run to complete.
 - Open the run from the link above. In the Summary tab, scroll down and download the
-  `static-dashboard` artifact. 
+  `static-dashboard` artifact.
   Note: artifacts will appear only after the run is complete.
 - Decompress `static-dashboard.zip` and open `index.html` in your browser.
 
@@ -221,8 +206,8 @@ Environment build fails with a message such as:
 > coiled 0.2.27 requires distributed>=2.23.0, but you have distributed 2.8.0+1709.ge0932ec2 which is incompatible.
 
 #### Solution:
-Your pip environment points to a fork of dask, distributed, and/or dask-expr, but its
-owner did not synchronize the tags. To fix, *the owner of the fork* must run:
+Your conda environment points to a fork of dask/dask or dask/distributed, but its owner
+did not synchronize the tags. To fix, the owner of the fork must run:
 ```bash
 $ git remote -v
 origin  https://github.com/yourname/distributed.git (fetch)
@@ -258,3 +243,35 @@ special `- pip:` tag. Installing a package with conda and then upgrading it with
 Specifically, `dask` and `distributed` *can* be installed with conda and then upgraded
 with pip, *but* they must be *both* upgraded. Note that specifying the same version with
 pip of a package won't upgrade it.
+
+This is bad:
+```yaml
+dependencies:
+  - pip:
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+dask-2023.3.2 and distributed-2023.3.2 will be installed from conda anyway, e.g. by
+coiled.
+
+This is bad:
+```yaml
+dependencies:
+  - dask ==2023.3.2
+  - distributed ==2023.3.2
+  - pip:
+      - dask ==2023.3.2
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+The dask version is the same in pip and conda, so conda wins.
+
+This is good:
+```yaml
+dependencies:
+  - dask ==2023.3.2
+  - distributed ==2023.3.2
+  - pip:
+      - dask ==2023.4.1
+      - git+https://github.com/dask/distributed@803c624fcef99e3b6f3f1c5bce61a2fb4c9a1717
+```
+dask and distributed versions from conda are properly uninstalled after they serve as a
+dependency for the other conda packages.
