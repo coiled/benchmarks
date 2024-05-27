@@ -37,8 +37,8 @@ def configure_rechunking(request, memory_multiplier):
 
 @pytest.fixture(params=["8 MiB", "128 MiB"])
 def configure_chunksize(request, memory_multiplier):
-    if memory_multiplier > 0.4 and parse_bytes(request.param) < parse_bytes("64 MiB"):
-        pytest.skip("too slow")
+    # if memory_multiplier > 0.4 and parse_bytes(request.param) < parse_bytes("64 MiB"):
+    # pytest.skip("too slow")
 
     with dask.config.set({"array.chunk-size": request.param}):
         yield
