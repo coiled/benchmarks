@@ -8,7 +8,7 @@ Set of Dask benchmarks run daily at scale in Coiled Clusters.
 
 ## Blogs
 
-Some these benchmarks have been published in blogs. These are the best source for viewing results:
+Some of these benchmarks have been published in blogs. These are the best source for viewing results:
 
  - [DataFrames at Scale Comparison: TPC-H](https://docs.coiled.io/blog/tpch.html)
 
