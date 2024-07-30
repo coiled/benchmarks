@@ -16,6 +16,7 @@ targets:
   - tests/benchmarks
   # - tests/runtime
   # - tests/stability
+  - tests/tpch
   # - tests/tpch/test_dask.py
   # - tests/benchmarks/test_futures.py
   # - tests/benchmarks/test_array.py::test_basic_sum
