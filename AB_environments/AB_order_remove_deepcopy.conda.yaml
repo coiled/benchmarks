@@ -55,6 +55,6 @@ dependencies:
     # conda. You may alternatively point to your own git fork (but make sure you
     # sync'ed tags!)
     # Read README.md for troubleshooting.
-    - git+https://github.com/fjetter/dask@task_spec_class
-    - git+https://github.com/fjetter/distributed@support_task_spec
+    - git+https://github.com/fjetter/dask@dask_order_remove_deepcopy
+    - git+https://github.com/fjetter/distributed
     - git+https://github.com/dask-contrib/dask-expr
