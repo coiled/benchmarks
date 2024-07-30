@@ -114,7 +114,7 @@ jobs:
 
       - name: Upload benchmark results
         uses: actions/upload-artifact@v4
-        if: always()
+        if:  ${{ !cancelled() }}
         with:
           name: ${{ matrix.runtime-version }}-${{ matrix.repeat }}
           path: |
@@ -125,7 +125,7 @@ jobs:
   process-results:
     needs: [discover_ab_envs, tests]
     name: Combine separate benchmark results
-    if: always() && fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
+    if: ${{ !cancelled() && fromJson(needs.discover_ab_envs.outputs.matrix).run_AB }}
     runs-on: ubuntu-latest
     concurrency:
       # Fairly strict concurrency rule to avoid stepping on benchmark db.
@@ -163,7 +163,7 @@ jobs:
   static-site:
     needs: [discover_ab_envs, process-results]
     # Always generate the site, as this can be skipped even if an indirect dependency fails (like a test run)
-    if: always() && fromJson(needs.discover_ab_envs.outputs.matrix).run_AB
+    if: ${{ !cancelled() &&  fromJson(needs.discover_ab_envs.outputs.matrix).run_AB }}
     name: Build static dashboards
     runs-on: ubuntu-latest
     steps:
