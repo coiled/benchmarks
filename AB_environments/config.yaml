@@ -8,13 +8,18 @@ repeat: 5
 # Set to true to automatically create a verbatim copy of AB_baseline and then compare
 # the two in the A/B tests. Set to false to save some money if you are already confident
 # that the 'repeat' setting is high enough.
-test_null_hypothesis: true
+test_null_hypothesis: false
 
 # Test directories, test files, or individual tests to run.
 targets:
   # - tests
-  - tests/benchmarks/test_h2o.py
+  - tests/benchmarks/test_h2o.py::test_q3
+  - tests/benchmarks/test_h2o.py::test_q5
+  - tests/benchmarks/test_h2o.py::test_q6
+  - tests/benchmarks/test_h2o.py::test_q8
   - tests/benchmarks/test_xgboost.py
+  - tests/benchmarks/test_join.py
+  - tests/benchmarks/test_rechunk.py::test_swap_axes
   # - tests/runtime
   # - tests/stability
   # - tests/tpch/test_dask.py

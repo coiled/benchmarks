@@ -13,7 +13,7 @@ default:
 
 # For all tests using the small_client fixture
 small_cluster:
-  n_workers: 10
+  n_workers: 12
   worker_vm_types: [r7g.large]  # 2CPU, 8GiB
 
 # For tests/benchmarks/test_parquet.py
