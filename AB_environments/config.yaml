@@ -8,7 +8,7 @@ repeat: 3
 # Set to true to automatically create a verbatim copy of AB_baseline and then compare
 # the two in the A/B tests. Set to false to save some money if you are already confident
 # that the 'repeat' setting is high enough.
-test_null_hypothesis: false
+test_null_hypothesis: true
 
 # Test directories, test files, or individual tests to run.
 targets:
@@ -16,7 +16,7 @@ targets:
   - tests/benchmarks
   # - tests/runtime
   # - tests/stability
-  # - tests/tpch/test_dask.py
+  - tests/tpch/test_dask.py
   # - tests/benchmarks/test_futures.py
   # - tests/benchmarks/test_array.py::test_basic_sum
 
