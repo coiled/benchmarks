@@ -55,6 +55,6 @@ dependencies:
     # conda. You may alternatively point to your own git fork (but make sure you
     # sync'ed tags!)
     # Read README.md for troubleshooting.
-    - git+https://github.com/phofl/dask@array-shuffle-take
+    - git+https://github.com/phofl/dask@array-shuffle-for-take
     - git+https://github.com/dask/distributed
     - git+https://github.com/dask/dask-expr
