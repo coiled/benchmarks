@@ -21,7 +21,7 @@ from ..utils_test import (
 
 def _create_indexer(n, chunk_n):
     idx = np.arange(0, n)
-    np.random.shuffle(idx[: n // 10])
+    np.random.shuffle(idx)
 
     indexer = []
     for i in range(0, n, chunk_n):
