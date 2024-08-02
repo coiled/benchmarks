@@ -1,6 +1,12 @@
-# Special environment file for A/B testing, used to define the conda environment for the
-# baseline environment.
-# Change contents, but do not rename.
+# Sample conda environment file for A/B testing.
+# Change contents/delete/rename as needed.
+
+# Every A/B environment *must* present these three files:
+# - AB_<name>.conda.yaml
+# - AB_<name>.dask.yaml
+# - AB_<name>.cluster.yaml
+
+# You should always start from a copy-paste from AB_baseline.conda.yaml
 
 channels:
   - conda-forge
