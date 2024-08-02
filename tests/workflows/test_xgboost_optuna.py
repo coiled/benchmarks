@@ -7,8 +7,8 @@ optuna = pytest.importorskip("optuna")
 xgb = pytest.importorskip("xgboost")
 pytest.importorskip("sklearn")
 
-from optuna.integration.dask import DaskStorage  # noqa: E402
 from optuna.samplers import RandomSampler  # noqa: E402
+from optuna_integration import DaskStorage  # noqa: E402
 from sklearn.datasets import fetch_covtype  # noqa: E402
 from sklearn.model_selection import KFold, cross_val_score  # noqa: E402
 from sklearn.preprocessing import LabelEncoder  # noqa: E402

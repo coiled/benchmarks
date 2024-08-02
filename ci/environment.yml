@@ -39,6 +39,7 @@ dependencies:
   - zict ==3.0.0
   - xgboost ==2.1.1
   - optuna ==3.6.1
+  - optuna-integration ==3.6.0
   - scipy ==1.14.0
   - sqlalchemy ==2.0.31
   - pynvml ==11.5.3
