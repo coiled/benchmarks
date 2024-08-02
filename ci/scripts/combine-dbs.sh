@@ -16,7 +16,6 @@ DB_NAME=benchmark.tmp.db alembic upgrade head
 # Delete old records and vacuum to reduce on-disk size
 sqlite3 benchmark.tmp.db <<EOF
 DELETE FROM test_run WHERE session_id not in (SELECT DISTINCT session_id FROM test_run WHERE start > date('now', '-90 days'));
-DELETE FROM tpch_run WHERE session_id not in (SELECT DISTINCT session_id FROM tpch_run WHERE start > date('now', '-90 days'));
 VACUUM;
 EOF
 # Merge in the individual job dbs into our working copy
