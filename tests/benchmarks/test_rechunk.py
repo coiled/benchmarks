@@ -24,7 +24,7 @@ def configure_rechunking(request, memory_multiplier):
             yield
     else:
         disk = "disk" in request.param
-        if not disk and memory_multiplier > 0.4:
+        if not disk and memory_multiplier > 0.67:
             pytest.skip("Out of memory")
         with dask.config.set(
             {
