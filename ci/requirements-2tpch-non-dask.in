@@ -1,4 +1,0 @@
--r requirements-1general-deps.in
--r requirements-1test.in
--r requirements-1dask-git-tip.in
--r requirements-1tpch-non-dask.in

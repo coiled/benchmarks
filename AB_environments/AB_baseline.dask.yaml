@@ -1,12 +1,7 @@
-# Environment file for A/B testing, used to define dask config options
-# (overriding the built-in config).
+# Special environment file for A/B testing, used to define dask config options
+# (overriding the built-in config) for the baseline environment.
+# Change contents, but do not rename.
 # Leave empty if you don't want to override anything.
-#
-# You may change contents and duplicate to other environments, but do not rename
-# the AB_baseline files.
-# Please read README.md for more information.
-
-# EXAMPLE - uncomment/change as needed
-# distributed:
-#   scheduler:
-#     worker-saturation: 1.2
+dask:
+  dataframe:
+    query-planning: True

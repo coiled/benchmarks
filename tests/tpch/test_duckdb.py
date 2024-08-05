@@ -8,6 +8,21 @@ duckdb = pytest.importorskip("duckdb")
 from . import duckdb_queries  # noqa: E402
 
 
+@pytest.fixture(autouse=True)
+def add_duckdb_version(tpch_database_table_schema):
+    tpch_database_table_schema.duckdb_version = duckdb.__version__
+
+
+@pytest.fixture(autouse=True)
+def add_cluster_spec_to_db(tpch_database_table_schema, machine_spec, local):
+    if not local:
+        tpch_database_table_schema.n_workers = 1
+        tpch_database_table_schema.worker_vm_type = machine_spec["vm_type"]
+        tpch_database_table_schema.cluster_disk_size = machine_spec.get(
+            "worker_disk_size"
+        )
+
+
 @pytest.fixture
 def connection(local, restart):
     def _():

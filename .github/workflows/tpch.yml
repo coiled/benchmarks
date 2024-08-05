@@ -57,11 +57,14 @@ jobs:
         python-version: "3.9"
         environment-file: ci/environment.yml
 
-    - name: Pip Compile
-      run: pip-compile ci/requirements-2tpch-non-dask.in
+    - name: Add TPC-H non-dask dependencies
+      run: mamba env update --file ci/environment-tpch-nondask.yml
 
-    - name: Add Environment dependencies
-      run: python -m pip install -r ci/requirements-2tpch-non-dask.txt
+    - name: Upgrade dask to git tip
+      run: mamba env update --file ci/environment-git-tip.yml
+
+    - name: Add test dependencies
+      run: mamba env update --file ci/environment-test.yml
 
     - name: Dump environment
       run: |
