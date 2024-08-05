@@ -21,7 +21,7 @@ dependencies:
   - fsspec ==2024.6.1
   - s3fs ==2024.6.1
   - gcsfs ==2024.6.1
-  - pyarrow ==16.0.0
+  - pyarrow ==15.0.0
   - jupyterlab ==4.2.4
   - lz4 ==4.3.3
   - ipywidgets ==8.1.3
