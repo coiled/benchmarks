@@ -5,34 +5,7 @@ import dask.array as da
 import pytest
 from dask.utils import parse_bytes
 
-from ..conftest import requires_p2p_memory, requires_p2p_rechunk
 from ..utils_test import cluster_memory, scaled_array_shape, wait
-
-
-@pytest.fixture(
-    params=[
-        pytest.param("tasks", marks=pytest.mark.shuffle_tasks),
-        pytest.param("p2p-disk", marks=[pytest.mark.shuffle_p2p, requires_p2p_rechunk]),
-        pytest.param(
-            "p2p-memory", marks=[pytest.mark.shuffle_p2p, requires_p2p_memory]
-        ),
-    ]
-)
-def configure_rechunking(request, memory_multiplier):
-    if request.param == "tasks":
-        with dask.config.set({"array.rechunk.method": "tasks"}):
-            yield
-    else:
-        disk = "disk" in request.param
-        if not disk and memory_multiplier > 0.67:
-            pytest.skip("Out of memory")
-        with dask.config.set(
-            {
-                "array.rechunk.method": "p2p",
-                "distributed.p2p.disk": disk,
-            }
-        ):
-            yield
 
 
 @pytest.fixture(params=["8 MiB", "128 MiB"])
@@ -48,7 +21,6 @@ def test_tiles_to_rows(
     # Order matters: don't initialize client when skipping test
     memory_multiplier,
     configure_chunksize,
-    configure_rechunking,
     small_client,
 ):
     """2D array sliced into square tiles becomes sliced by columns.
@@ -67,7 +39,6 @@ def test_swap_axes(
     # Order matters: don't initialize client when skipping test
     memory_multiplier,
     configure_chunksize,
-    configure_rechunking,
     small_client,
 ):
     """2D array sliced by columns becomes sliced by rows.
@@ -86,7 +57,6 @@ def test_adjacent_groups(
     # Order matters: don't initialize client when skipping test
     memory_multiplier,
     configure_chunksize,
-    configure_rechunking,
     small_client,
 ):
     """M-to-N use case, where each input task feeds into a localized but substantial
@@ -103,7 +73,6 @@ def test_adjacent_groups(
 def test_heal_oversplit(
     # Order matters: don't initialize client when skipping test
     memory_multiplier,
-    configure_rechunking,
     small_client,
 ):
     """rechunk() is used to heal a situation where chunks are too small.
