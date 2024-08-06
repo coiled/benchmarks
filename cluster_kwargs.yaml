@@ -21,6 +21,8 @@ default:
 small_cluster:
   n_workers: 10
   worker_vm_types: [m6i.large]  # 2CPU, 8GiB
+  worker_disk_size: 64
+
 
 # For tests/benchmarks/test_parquet.py
 parquet_cluster:
