@@ -3,18 +3,10 @@ set -euxo pipefail
 
 DB_NAME=${DB_NAME:-'benchmark.db'}
 
-# Possibly apply migrations to the main db,
-# working on a copy with a known name so it's
-# easier to refer to in sqlite
-if [ -f "$DB_NAME" ]; then
-  cp "$DB_NAME" benchmark.tmp.db
-else
-  sqlite3 benchmark.tmp.db "VACUUM;"
-fi
-DB_NAME=benchmark.tmp.db alembic upgrade head
+alembic upgrade head
 
 # Delete old records and vacuum to reduce on-disk size
-sqlite3 benchmark.tmp.db <<EOF
+sqlite3 "$DB_NAME" <<EOF
 DELETE FROM test_run WHERE session_id not in (SELECT DISTINCT session_id FROM test_run WHERE start > date('now', '-90 days'));
 VACUUM;
 EOF
@@ -34,7 +26,7 @@ do
   for tab in "tpch_run" "test_run"
   do
   sqlite3 "$FILE" <<EOF
-attach "benchmark.tmp.db" as lead;
+attach "$DB_NAME" as lead;
 create temporary table tmp as select * from main.$tab;
 update tmp set id=NULL;
 insert into lead.$tab select * from tmp;
@@ -43,4 +35,4 @@ EOF
   done
 done
 
-mv benchmark.tmp.db "$DB_NAME"
+sqlite3 "$DB_NAME" "VACUUM;"
