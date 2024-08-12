@@ -96,6 +96,12 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
           AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
           AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+          PYTHON_STUB_PAT: ${{ secrets.PYTHON_STUB_PAT }}
+          SNOWFLAKE_USER: ${{ secrets.SNOWFLAKE_USER }}
+          SNOWFLAKE_PASSWORD: ${{ secrets.SNOWFLAKE_PASSWORD }}
+          SNOWFLAKE_ACCOUNT: ${{ secrets.SNOWFLAKE_ACCOUNT }}
+          SNOWFLAKE_WAREHOUSE: ${{ secrets.SNOWFLAKE_WAREHOUSE }}
+          SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           AB_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: ${{ matrix.runtime-version }}-${{ matrix.repeat }}.db
           CLUSTER_DUMP: always
