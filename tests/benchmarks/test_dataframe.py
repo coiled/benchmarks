@@ -46,7 +46,6 @@ def test_dataframe_align(small_client):
 @pytest.mark.xfail(reason="https://github.com/coiled/benchmarks/pull/1116")
 def test_filter(small_client):
     """How fast can we filter a DataFrame?"""
-
     memory = cluster_memory(small_client)
     df = timeseries_of_size(memory)
     name = df.head(1).name.iloc[0]  # Get first name that appears
