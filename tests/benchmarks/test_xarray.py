@@ -41,7 +41,7 @@ def group_reduction_client(
     [
         lambda x: x.groupby("time.month").mean(method="cohorts"),
         lambda x: x.groupby("time.month").mean(method="map-reduce"),
-        lambda x: x.chunk(TimeResampler("ME"))
+        lambda x: x.chunk(time=TimeResampler("ME"))
         .groupby("time.month")
         .mean(method="cohorts"),
     ],
