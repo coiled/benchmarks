@@ -48,6 +48,7 @@ def group_reduction_client(
 )
 def test_xarray_groupby_reduction(group_reduction_client, func):
     pytest.importorskip("xarray")
+    pytest.importorskip("flox")
 
     import xarray as xr
 
