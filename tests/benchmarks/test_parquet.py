@@ -50,6 +50,10 @@ def parquet_client(parquet_cluster, cluster_kwargs, upload_cluster_dump, benchma
             yield client
 
 
+@pytest.mark.skipif(
+    HAS_PYARROW12,
+    reason="50x slower than PyArrow 11; https://github.com/coiled/benchmarks/issues/998",
+)
 @run_up_to_nthreads("parquet_cluster", 100, reason="fixed dataset")
 def test_read_spark_generated_data(parquet_client):
     """
