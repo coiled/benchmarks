@@ -39,11 +39,18 @@ def group_reduction_client(
 @pytest.mark.parametrize(
     "func",
     [
-        lambda x: x.groupby("time.month").mean(method="cohorts"),
-        lambda x: x.groupby("time.month").mean(method="map-reduce"),
-        lambda x: x.chunk(time=TimeResampler("ME"))
-        .groupby("time.month")
-        .mean(method="cohorts"),
+        pytest.param(
+            lambda x: x.groupby("time.month").mean(method="cohorts"), id="cohorts"
+        ),
+        pytest.param(
+            lambda x: x.groupby("time.month").mean(method="map-reduce"), id="map-reduce"
+        ),
+        pytest.param(
+            lambda x: x.chunk(time=TimeResampler("ME"))
+            .groupby("time.month")
+            .mean(method="cohorts"),
+            id="chunked-cohorts",
+        ),
     ],
 )
 def test_xarray_groupby_reduction(group_reduction_client, func):
