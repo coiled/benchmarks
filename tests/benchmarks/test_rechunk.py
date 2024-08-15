@@ -70,7 +70,7 @@ def test_tiles_to_rows(
     memory = cluster_memory(small_client)
     shape = scaled_array_shape(memory * 1.5, ("x", "x"))
 
-    a = da.random.random(shape, chunks="auto")
+    a = da.random.random(shape, chunks=input_chunk_size)
     a = a.rechunk((-1, "auto")).sum()
     wait(a, small_client, timeout=600)
 
