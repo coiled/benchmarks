@@ -13,7 +13,16 @@ def input_chunk_size(request):
     return request.param
 
 
-def configure_rechunking(request):
+@pytest.fixture(
+    params=[
+        pytest.param("tasks", marks=pytest.mark.shuffle_tasks),
+        pytest.param("p2p-disk", marks=[pytest.mark.shuffle_p2p, requires_p2p_rechunk]),
+        pytest.param(
+            "p2p-memory", marks=[pytest.mark.shuffle_p2p, requires_p2p_memory]
+        ),
+    ]
+)
+def configure_rechunking_in_memory(request):
     if request.param == "tasks":
         with dask.config.set({"array.rechunk.method": "tasks"}):
             yield
@@ -28,21 +37,30 @@ def configure_rechunking(request):
             yield
 
 
-@pytest.mark.parametrize(
-    "configure_rechunking",
-    [
+@pytest.fixture(
+    params=[
         pytest.param("tasks", marks=pytest.mark.shuffle_tasks),
-        pytest.param("p2p-disk", marks=[pytest.mark.shuffle_p2p, requires_p2p_rechunk]),
-        pytest.param(
-            "p2p-memory", marks=[pytest.mark.shuffle_p2p, requires_p2p_memory]
-        ),
-    ],
-    indirect=True,
+        pytest.param("p2p", marks=[pytest.mark.shuffle_p2p, requires_p2p_rechunk]),
+    ]
 )
+def configure_rechunking_out_of_core(request):
+    if request.param == "tasks":
+        with dask.config.set({"array.rechunk.method": "tasks"}):
+            yield
+    else:
+        with dask.config.set(
+            {
+                "array.rechunk.method": "p2p",
+                "distributed.p2p.disk": True,
+            }
+        ):
+            yield
+
+
 def test_tiles_to_rows(
     # Order matters: don't initialize client when skipping test
     input_chunk_size,
-    configure_rechunking,
+    configure_rechunking_in_memory,
     small_client,
 ):
     """2D array sliced into square tiles becomes sliced by columns.
@@ -57,21 +75,10 @@ def test_tiles_to_rows(
     wait(a, small_client, timeout=600)
 
 
-@pytest.mark.parametrize(
-    "configure_rechunking",
-    [
-        pytest.param("tasks", marks=pytest.mark.shuffle_tasks),
-        pytest.param("p2p-disk", marks=[pytest.mark.shuffle_p2p, requires_p2p_rechunk]),
-        pytest.param(
-            "p2p-memory", marks=[pytest.mark.shuffle_p2p, requires_p2p_memory]
-        ),
-    ],
-    indirect=True,
-)
 def test_swap_axes_in_memory(
     # Order matters: don't initialize client when skipping test
     input_chunk_size,
-    configure_rechunking,
+    configure_rechunking_in_memory,
     small_client,
 ):
     """2D array sliced by columns becomes sliced by rows.
@@ -86,17 +93,9 @@ def test_swap_axes_in_memory(
     wait(a, small_client, timeout=600)
 
 
-@pytest.mark.parametrize(
-    "configure_rechunking",
-    [
-        pytest.param("tasks", marks=pytest.mark.shuffle_tasks),
-        pytest.param("p2p-disk", marks=[pytest.mark.shuffle_p2p, requires_p2p_rechunk]),
-    ],
-    indirect=True,
-)
 def test_swap_axes_out_of_core(
     # Order matters: don't initialize client when skipping test
-    configure_rechunking,
+    configure_rechunking_out_of_core,
     small_client,
 ):
     """2D array sliced by columns becomes sliced by rows.
@@ -111,21 +110,10 @@ def test_swap_axes_out_of_core(
     wait(a, small_client, timeout=600)
 
 
-@pytest.mark.parametrize(
-    "configure_rechunking",
-    [
-        pytest.param("tasks", marks=pytest.mark.shuffle_tasks),
-        pytest.param("p2p-disk", marks=[pytest.mark.shuffle_p2p, requires_p2p_rechunk]),
-        pytest.param(
-            "p2p-memory", marks=[pytest.mark.shuffle_p2p, requires_p2p_memory]
-        ),
-    ],
-    indirect=True,
-)
 def test_adjacent_groups(
     # Order matters: don't initialize client when skipping test
     input_chunk_size,
-    configure_rechunking,
+    configure_rechunking_in_memory,
     small_client,
 ):
     """M-to-N use case, where each input task feeds into a localized but substantial
@@ -139,20 +127,9 @@ def test_adjacent_groups(
     wait(a, small_client, timeout=600)
 
 
-@pytest.mark.parametrize(
-    "configure_rechunking",
-    [
-        pytest.param("tasks", marks=pytest.mark.shuffle_tasks),
-        pytest.param("p2p-disk", marks=[pytest.mark.shuffle_p2p, requires_p2p_rechunk]),
-        pytest.param(
-            "p2p-memory", marks=[pytest.mark.shuffle_p2p, requires_p2p_memory]
-        ),
-    ],
-    indirect=True,
-)
 def test_heal_oversplit(
     # Order matters: don't initialize client when skipping test
-    configure_rechunking,
+    configure_rechunking_in_memory,
     small_client,
 ):
     """rechunk() is used to heal a situation where chunks are too small.
