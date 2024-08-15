@@ -35,8 +35,8 @@ h2o_datasets:
   # - 0.5 GB (parquet)
   # - 5 GB (parquet)
   # - 50 GB (parquet)
-  - 5 GB (parquet+pyarrow)
-  # - 50 GB (parquet+pyarrow)
+  # - 5 GB (parquet+pyarrow)
+  - 50 GB (parquet+pyarrow)
   # - 500 GB (parquet+pyarrow)
 
 # AWS implements limiters to how many EC2 instances you can spawn in parallel on the
