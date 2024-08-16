@@ -9,6 +9,9 @@ from xarray.groupers import TimeResampler
 from tests.conftest import dump_cluster_kwargs
 from tests.utils_test import wait
 
+xr = pytest.importorskip("xarray")
+pytest.importorskip("flox")
+
 
 @pytest.fixture(scope="module")
 def group_reduction_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
@@ -54,11 +57,6 @@ def group_reduction_client(
     ],
 )
 def test_xarray_groupby_reduction(group_reduction_client, func):
-    pytest.importorskip("xarray")
-    pytest.importorskip("flox")
-
-    import xarray as xr
-
     ds = xr.open_zarr(
         fsspec.get_mapper(
             "s3://noaa-nwm-retrospective-2-1-zarr-pds/rtout.zarr", anon=True
