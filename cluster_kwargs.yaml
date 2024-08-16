@@ -37,7 +37,6 @@ spill_cluster:
 group_reduction_cluster:
   n_workers: 20
   worker_vm_types: [m6i.xlarge]  # 4CPU, 16GiB
-  spot_policy: spot_with_fallback
   region: "us-east-1"  # Same region as dataset
 
 # For tests/workflows/test_embarrassingly_parallel.py
