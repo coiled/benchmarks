@@ -75,12 +75,10 @@ def ddf(request):
 
 
 def test_q1(ddf):
-    ddf = ddf[["id1", "v1"]]
     ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"}).compute()
 
 
 def test_q2(ddf):
-    ddf = ddf[["id1", "id2", "v1"]]
     (
         ddf.groupby(["id1", "id2"], dropna=False, observed=True)
         .agg({"v1": "sum"})
@@ -89,7 +87,6 @@ def test_q2(ddf):
 
 
 def test_q3(ddf):
-    ddf = ddf[["id3", "v1", "v3"]]
     (
         ddf.groupby("id3", dropna=False, observed=True)
         .agg({"v1": "sum", "v3": "mean"})
@@ -98,7 +95,6 @@ def test_q3(ddf):
 
 
 def test_q4(ddf):
-    ddf = ddf[["id4", "v1", "v2", "v3"]]
     (
         ddf.groupby("id4", dropna=False, observed=True)
         .agg({"v1": "mean", "v2": "mean", "v3": "mean"})
@@ -107,7 +103,6 @@ def test_q4(ddf):
 
 
 def test_q5(ddf):
-    ddf = ddf[["id6", "v1", "v2", "v3"]]
     (
         ddf.groupby("id6", dropna=False, observed=True)
         .agg(
@@ -119,7 +114,6 @@ def test_q5(ddf):
 
 def test_q6(ddf, shuffle_method):
     # Median aggregation uses an explicitly-set shuffle
-    ddf = ddf[["id4", "id5", "v3"]]
     (
         ddf.groupby(["id4", "id5"], dropna=False, observed=True)
         .agg({"v3": ["median", "std"]}, shuffle=shuffle_method)
@@ -128,7 +122,6 @@ def test_q6(ddf, shuffle_method):
 
 
 def test_q7(ddf):
-    ddf = ddf[["id3", "v1", "v2"]]
     (
         ddf.groupby("id3", dropna=False, observed=True)
         .agg({"v1": "max", "v2": "min"})
@@ -139,9 +132,8 @@ def test_q7(ddf):
 
 def test_q8(ddf, configure_shuffling):
     # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
-    ddf = ddf[["id6", "v1", "v2", "v3"]]
     (
-        ddf[~ddf["v3"].isna()][["id6", "v3"]]
+        ddf[~ddf["v3"].isna()]
         .groupby("id6", dropna=False, observed=True)
         .apply(
             lambda x: x.nlargest(2, columns="v3"),
@@ -153,10 +145,8 @@ def test_q8(ddf, configure_shuffling):
 
 def test_q9(ddf, configure_shuffling):
     # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
-    ddf = ddf[["id2", "id4", "v1", "v2"]]
     (
-        ddf[["id2", "id4", "v1", "v2"]]
-        .groupby(["id2", "id4"], dropna=False, observed=True)
+        ddf.groupby(["id2", "id4"], dropna=False, observed=True)
         .apply(
             lambda x: pd.Series({"r2": x.corr(numeric_only=True)["v1"]["v2"] ** 2}),
             meta={"r2": "float64"},
