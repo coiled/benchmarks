@@ -4,12 +4,11 @@ import fsspec
 import pytest
 from coiled import Cluster
 from distributed import Client
-from xarray.groupers import TimeResampler
-
 from tests.conftest import dump_cluster_kwargs
 from tests.utils_test import wait
 
 xr = pytest.importorskip("xarray")
+from xarray.groupers import TimeResampler
 pytest.importorskip("flox")
 
 
