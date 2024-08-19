@@ -4,11 +4,11 @@ import fsspec
 import pytest
 from coiled import Cluster
 from distributed import Client
+
 from tests.conftest import dump_cluster_kwargs
 from tests.utils_test import wait
 
 xr = pytest.importorskip("xarray")
-from xarray.groupers import TimeResampler
 pytest.importorskip("flox")
 
 
@@ -48,7 +48,7 @@ def group_reduction_client(
             lambda x: x.groupby("time.month").mean(method="map-reduce"), id="map-reduce"
         ),
         pytest.param(
-            lambda x: x.chunk(time=TimeResampler("ME"))
+            lambda x: x.chunk(time=xr.groupers.TimeResampler("ME"))
             .groupby("time.month")
             .mean(method="cohorts"),
             id="chunked-cohorts",
