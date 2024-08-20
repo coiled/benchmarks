@@ -1,4 +1,4 @@
-def query_1(connection, dataset_path, scale):
+def query_01(connection, dataset_path, scale):
     return connection.execute(
         f"""
         with lineitem as (
@@ -30,7 +30,7 @@ def query_1(connection, dataset_path, scale):
     ).arrow()
 
 
-def query_2(connection, dataset_path, scale):
+def query_02(connection, dataset_path, scale):
     return connection.execute(
         f"""
         with part as (select * from read_parquet('{dataset_path}part/*.parquet')),
@@ -87,7 +87,7 @@ def query_2(connection, dataset_path, scale):
     ).arrow()
 
 
-def query_3(connection, dataset_path, scale):
+def query_03(connection, dataset_path, scale):
     return connection.execute(
         f"""
         with customer as (select * from read_parquet('{dataset_path}customer/*.parquet')),
@@ -121,7 +121,7 @@ def query_3(connection, dataset_path, scale):
     ).arrow()
 
 
-def query_4(connection, dataset_path, scale):
+def query_04(connection, dataset_path, scale):
     return connection.execute(
         f"""
         with orders as (select * from read_parquet('{dataset_path}orders/*.parquet')),
@@ -152,7 +152,7 @@ def query_4(connection, dataset_path, scale):
     ).arrow()
 
 
-def query_5(connection, dataset_path, scale):
+def query_05(connection, dataset_path, scale):
     return connection.execute(
         f"""
         with customer as (select * from read_parquet('{dataset_path}customer/*.parquet')),
@@ -190,7 +190,7 @@ def query_5(connection, dataset_path, scale):
     ).arrow()
 
 
-def query_6(connection, dataset_path, scale):
+def query_06(connection, dataset_path, scale):
     return connection.execute(
         f"""
         with lineitem as (
@@ -210,7 +210,7 @@ def query_6(connection, dataset_path, scale):
     ).arrow()
 
 
-def query_7(connection, dataset_path, scale):
+def query_07(connection, dataset_path, scale):
     return connection.execute(
         f"""
         with supplier as (select * from read_parquet('{dataset_path}supplier/*.parquet')),
@@ -262,7 +262,7 @@ def query_7(connection, dataset_path, scale):
     ).arrow()
 
 
-def query_8(connection, dataset_path, scale):
+def query_08(connection, dataset_path, scale):
     return connection.execute(
         f"""
         with part as (select * from read_parquet('{dataset_path}part/*.parquet')),
@@ -317,7 +317,7 @@ def query_8(connection, dataset_path, scale):
     ).arrow()
 
 
-def query_9(connection, dataset_path, scale):
+def query_09(connection, dataset_path, scale):
     return connection.execute(
         f"""
         with part as (select * from read_parquet('{dataset_path}part/*.parquet')),
