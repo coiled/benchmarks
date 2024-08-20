@@ -22,46 +22,46 @@ def dataset_path(local, scale):
 
 
 @pytest.mark.shuffle_p2p
-def test_query_1(client, dataset_path, fs, scale):
+def test_query_01(client, dataset_path, fs, scale):
     dask_queries.query_01(dataset_path, fs, scale).compute()
 
 
 @pytest.mark.shuffle_p2p
-def test_query_2(client, dataset_path, fs, scale):
+def test_query_02(client, dataset_path, fs, scale):
     dask_queries.query_02(dataset_path, fs, scale).compute()
 
 
 @pytest.mark.shuffle_p2p
-def test_query_3(client, dataset_path, fs, scale):
+def test_query_03(client, dataset_path, fs, scale):
     dask_queries.query_03(dataset_path, fs, scale).compute()
 
 
 @pytest.mark.shuffle_p2p
-def test_query_4(client, dataset_path, fs, scale):
+def test_query_04(client, dataset_path, fs, scale):
     dask_queries.query_04(dataset_path, fs, scale).compute()
 
 
 @pytest.mark.shuffle_p2p
-def test_query_5(client, dataset_path, fs, scale):
+def test_query_05(client, dataset_path, fs, scale):
     dask_queries.query_05(dataset_path, fs, scale).compute()
 
 
-def test_query_6(client, dataset_path, fs, scale):
+def test_query_06(client, dataset_path, fs, scale):
     dask_queries.query_06(dataset_path, fs, scale).compute()
 
 
 @pytest.mark.shuffle_p2p
-def test_query_7(client, dataset_path, fs, scale):
+def test_query_07(client, dataset_path, fs, scale):
     dask_queries.query_07(dataset_path, fs, scale).compute()
 
 
 @pytest.mark.shuffle_p2p
-def test_query_8(client, dataset_path, fs, scale):
+def test_query_08(client, dataset_path, fs, scale):
     dask_queries.query_08(dataset_path, fs, scale).compute()
 
 
 @pytest.mark.shuffle_p2p
-def test_query_9(client, dataset_path, fs, scale):
+def test_query_09(client, dataset_path, fs, scale):
     dask_queries.query_09(dataset_path, fs, scale).compute()
 
 
