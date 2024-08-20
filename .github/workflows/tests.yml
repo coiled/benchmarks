@@ -108,10 +108,7 @@ jobs:
         run: |
           echo PYTEST_MARKERS=" and not workflows" >> $GITHUB_ENV
 
-      - name: Disable non-Dask TPCH benchmarks on most PRs and on daily schedule (except Sundays)
-        if: |
-            matrix.name_prefix != 'tpch' 
-            || (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'tpch'))
+      - name: Disable non-Dask TPCH benchmarks
         run: |
           echo PYTEST_MARKERS="${{ env.PYTEST_MARKERS }} and not tpch_nondask" >> $GITHUB_ENV
 

@@ -45,7 +45,7 @@ def read_data(filename):
         return pl.scan_parquet(fileglob)
 
 
-def test_query_1(run, restart, dataset_path):
+def test_query_01(run, restart, dataset_path):
     def _():
         var_1 = datetime(1998, 9, 2)
         q = read_data(dataset_path + "lineitem")
@@ -78,7 +78,7 @@ def test_query_1(run, restart, dataset_path):
     run(_)
 
 
-def test_query_2(run, restart, dataset_path):
+def test_query_02(run, restart, dataset_path):
     def _():
         var_1 = 15
         var_2 = "BRASS"
@@ -131,7 +131,7 @@ def test_query_2(run, restart, dataset_path):
     run(_)
 
 
-def test_query_3(run, restart, dataset_path):
+def test_query_03(run, restart, dataset_path):
     def _():
         var_1 = var_2 = datetime(1995, 3, 15)
         var_3 = "BUILDING"
@@ -168,7 +168,7 @@ def test_query_3(run, restart, dataset_path):
     run(_)
 
 
-def test_query_4(run, restart, dataset_path):
+def test_query_04(run, restart, dataset_path):
     def _():
         var_1 = datetime(1993, 7, 1)
         var_2 = datetime(1993, 10, 1)
@@ -190,7 +190,7 @@ def test_query_4(run, restart, dataset_path):
     run(_)
 
 
-def test_query_5(run, restart, dataset_path):
+def test_query_05(run, restart, dataset_path):
     def _():
         var_1 = "ASIA"
         var_2 = datetime(1994, 1, 1)
@@ -228,7 +228,7 @@ def test_query_5(run, restart, dataset_path):
     run(_)
 
 
-def test_query_6(run, restart, dataset_path):
+def test_query_06(run, restart, dataset_path):
     def _():
         var_1 = datetime(1994, 1, 1)
         var_2 = datetime(1995, 1, 1)
@@ -251,7 +251,7 @@ def test_query_6(run, restart, dataset_path):
     run(_)
 
 
-def test_query_7(run, restart, dataset_path):
+def test_query_07(run, restart, dataset_path):
     def _():
         nation_ds = read_data(dataset_path + "nation")
         customer_ds = read_data(dataset_path + "customer")
@@ -300,7 +300,7 @@ def test_query_7(run, restart, dataset_path):
     run(_)
 
 
-def test_query_8(run, restart, dataset_path):
+def test_query_08(run, restart, dataset_path):
     def _():
         part_ds = read_data(dataset_path + "part")
         supplier_ds = read_data(dataset_path + "supplier")
@@ -352,7 +352,7 @@ def test_query_8(run, restart, dataset_path):
     run(_)
 
 
-def test_query_9(run, restart, dataset_path):
+def test_query_09(run, restart, dataset_path):
     def _():
         part_ds = read_data(dataset_path + "part")
         supplier_ds = read_data(dataset_path + "supplier")

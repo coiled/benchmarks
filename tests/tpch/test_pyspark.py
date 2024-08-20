@@ -162,7 +162,7 @@ def register_table(spark, path, name):
     df.createOrReplaceTempView(name)
 
 
-def test_query_1(spark, dataset_path):
+def test_query_01(spark, dataset_path):
     register_table(spark, dataset_path, "lineitem")
 
     query = """select
@@ -190,7 +190,7 @@ def test_query_1(spark, dataset_path):
     spark.sql(query).collect()
 
 
-def test_query_2(spark, dataset_path):
+def test_query_02(spark, dataset_path):
     for name in ("part", "supplier", "partsupp", "nation", "region"):
         register_table(spark, dataset_path, name)
 
@@ -244,7 +244,7 @@ def test_query_2(spark, dataset_path):
     spark.sql(query).collect()
 
 
-def test_query_3(spark, dataset_path):
+def test_query_03(spark, dataset_path):
     for name in ("customer", "orders", "lineitem"):
         register_table(spark, dataset_path, name)
 
@@ -277,7 +277,7 @@ def test_query_3(spark, dataset_path):
     spark.sql(query).collect()
 
 
-def test_query_4(spark, dataset_path):
+def test_query_04(spark, dataset_path):
     for name in ("orders", "lineitem"):
         register_table(spark, dataset_path, name)
 
@@ -308,7 +308,7 @@ def test_query_4(spark, dataset_path):
     spark.sql(query).collect()
 
 
-def test_query_5(spark, dataset_path):
+def test_query_05(spark, dataset_path):
     for name in (
         "customer",
         "orders",
@@ -348,7 +348,7 @@ def test_query_5(spark, dataset_path):
     spark.sql(query).collect()
 
 
-def test_query_6(spark, dataset_path):
+def test_query_06(spark, dataset_path):
     for name in ("lineitem",):
         register_table(spark, dataset_path, name)
 
@@ -367,7 +367,7 @@ def test_query_6(spark, dataset_path):
     spark.sql(query).collect()
 
 
-def test_query_7(spark, dataset_path):
+def test_query_07(spark, dataset_path):
     for name in ("supplier", "lineitem", "orders", "customer", "nation"):
         register_table(spark, dataset_path, name)
 
@@ -416,7 +416,7 @@ def test_query_7(spark, dataset_path):
     spark.sql(query).collect()
 
 
-def test_query_8(spark, dataset_path):
+def test_query_08(spark, dataset_path):
     for name in (
         "part",
         "supplier",
@@ -473,7 +473,7 @@ def test_query_8(spark, dataset_path):
     spark.sql(query).collect()
 
 
-def test_query_9(spark, dataset_path):
+def test_query_09(spark, dataset_path):
     for name in ("part", "supplier", "lineitem", "partsupp", "orders", "nation"):
         register_table(spark, dataset_path, name)
 
