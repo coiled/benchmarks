@@ -5,11 +5,9 @@ on:
       - main
     tags:
       - "*"
-  pull_request:
   schedule:
     # Runs "At 00:01" (see https://crontab.guru)
-    - cron: "1 0 * * 0" # every Sunday (relevant for non-Dask TPC-H benchmarks) 
-    - cron: "1 0 * * 1-6" # every day except Sunday
+    - cron: "1 0 * * 0" # every Sunday 
   workflow_dispatch:
 
 concurrency:
