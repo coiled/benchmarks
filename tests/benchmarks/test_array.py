@@ -37,10 +37,10 @@ def test_anom_mean(small_client, new_array):
         dims=["time", "x"],
         coords={"day": ("time", np.arange(data.shape[0]) % ngroups)},
     )
-
-    clim = arr.groupby("day").mean(dim="time")
-    anom = arr.groupby("day") - clim
-    anom_mean = anom.mean(dim="time")
+    with xarray.set_options(use_flox=False):
+        clim = arr.groupby("day").mean(dim="time")
+        anom = arr.groupby("day") - clim
+        anom_mean = anom.mean(dim="time")
 
     wait(anom_mean, small_client, 10 * 60)
 
@@ -136,7 +136,8 @@ def test_climatic_mean(small_client, new_array):
         coords={"init_date": np.arange(data.shape[1]) % 10},
     )
     # arr_clim = array.groupby("init_date.month").mean(dim="init_date")
-    arr_clim = array.groupby("init_date").mean(dim="init_date")
+    with xarray.set_options(use_flox=False):
+        arr_clim = array.groupby("init_date").mean(dim="init_date")
 
     wait(arr_clim, small_client, 15 * 60)
 
