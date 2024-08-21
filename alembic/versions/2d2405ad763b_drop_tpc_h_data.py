@@ -1,7 +1,7 @@
 """Drop TPC-H data
 
 Revision ID: 2d2405ad763b
-Revises: e11cd1aaed38
+Revises: 59c5cc87c066
 Create Date: 2024-08-15 13:54:45.251458
 
 """
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = '2d2405ad763b'
-down_revision = 'e11cd1aaed38'
+down_revision = '59c5cc87c066'
 branch_labels = None
 depends_on = None
 
