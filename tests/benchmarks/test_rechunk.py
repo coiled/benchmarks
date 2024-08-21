@@ -78,7 +78,6 @@ def test_tiles_to_rows(
 def test_swap_axes_in_memory(
     # Order matters: don't initialize client when skipping test
     input_chunk_size,
-    configure_rechunking_in_memory,
     small_client,
 ):
     """2D array sliced by columns becomes sliced by rows.
@@ -95,7 +94,6 @@ def test_swap_axes_in_memory(
 
 def test_swap_axes_out_of_core(
     # Order matters: don't initialize client when skipping test
-    configure_rechunking_out_of_core,
     small_client,
 ):
     """2D array sliced by columns becomes sliced by rows.
@@ -113,7 +111,6 @@ def test_swap_axes_out_of_core(
 def test_adjacent_groups(
     # Order matters: don't initialize client when skipping test
     input_chunk_size,
-    configure_rechunking_in_memory,
     small_client,
 ):
     """M-to-N use case, where each input task feeds into a localized but substantial
@@ -129,7 +126,6 @@ def test_adjacent_groups(
 
 def test_heal_oversplit(
     # Order matters: don't initialize client when skipping test
-    configure_rechunking_in_memory,
     small_client,
 ):
     """rechunk() is used to heal a situation where chunks are too small.
