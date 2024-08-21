@@ -14,7 +14,3 @@
 dask:
   dataframe:
     query-planning: True
-
-array:
-  rechunk:
-    method: "auto"
