@@ -10,7 +10,7 @@ import dask.dataframe as dd
 import pandas as pd
 import pytest
 
-from ..utils_test import run_up_to_nthreads
+from ..utils_test import run_up_to_nthreads, wait
 
 DATASETS = {
     "0.5 GB (csv)": "s3://coiled-datasets/h2o-benchmark/N_1e7_K_1e2/*.csv",
@@ -75,81 +75,73 @@ def ddf(request):
 
 
 def test_q1(ddf):
-    ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"}).persist()
+    result = ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"})
+    wait(result, timeout=600)
 
 
 def test_q2(ddf):
-    (
-        ddf.groupby(["id1", "id2"], dropna=False, observed=True)
-        .agg({"v1": "sum"})
-        .compute()
-    )
+    result = ddf.groupby(["id1", "id2"], dropna=False, observed=True).agg({"v1": "sum"})
+    wait(result, timeout=600)
 
 
 def test_q3(ddf):
-    (
-        ddf.groupby("id3", dropna=False, observed=True)
-        .agg({"v1": "sum", "v3": "mean"})
-        .persist()
+    result = ddf.groupby("id3", dropna=False, observed=True).agg(
+        {"v1": "sum", "v3": "mean"}
     )
+    wait(result, timeout=600)
 
 
 def test_q4(ddf):
-    (
-        ddf.groupby("id4", dropna=False, observed=True)
-        .agg({"v1": "mean", "v2": "mean", "v3": "mean"})
-        .persist()
+    result = ddf.groupby("id4", dropna=False, observed=True).agg(
+        {"v1": "mean", "v2": "mean", "v3": "mean"}
     )
+    wait(result, timeout=600)
 
 
 def test_q5(ddf):
-    (
-        ddf.groupby("id6", dropna=False, observed=True)
-        .agg(
-            {"v1": "sum", "v2": "sum", "v3": "sum"},
-        )
-        .persist()
+    result = ddf.groupby("id6", dropna=False, observed=True).agg(
+        {"v1": "sum", "v2": "sum", "v3": "sum"},
     )
+    wait(result, timeout=600)
 
 
 def test_q6(ddf, shuffle_method):
     # Median aggregation uses an explicitly-set shuffle
-    (
-        ddf.groupby(["id4", "id5"], dropna=False, observed=True)
-        .agg({"v3": ["median", "std"]}, shuffle=shuffle_method)
-        .persist()  # requires shuffle arg to be set explicitly
+    result = (
+        ddf.groupby(["id4", "id5"], dropna=False, observed=True).agg(
+            {"v3": ["median", "std"]}, shuffle=shuffle_method
+        )
+        # requires shuffle arg to be set explicitly
     )
+    wait(result, timeout=600)
 
 
 def test_q7(ddf):
-    (
+    result = (
         ddf.groupby("id3", dropna=False, observed=True)
         .agg({"v1": "max", "v2": "min"})
         .assign(range_v1_v2=lambda x: x["v1"] - x["v2"])[["range_v1_v2"]]
-        .persist()
     )
+    wait(result, timeout=600)
 
 
 def test_q8(ddf, configure_shuffling):
     # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
-    (
+    result = (
         ddf[~ddf["v3"].isna()]
         .groupby("id6", dropna=False, observed=True)
         .apply(
             lambda x: x.nlargest(2, columns="v3"),
             meta={"id6": "Int64", "v3": "float64"},
         )[["v3"]]
-        .persist()
     )
+    wait(result, timeout=600)
 
 
 def test_q9(ddf, configure_shuffling):
     # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
-    (
-        ddf.groupby(["id2", "id4"], dropna=False, observed=True)
-        .apply(
-            lambda x: pd.Series({"r2": x.corr(numeric_only=True)["v1"]["v2"] ** 2}),
-            meta={"r2": "float64"},
-        )
-        .persist()
+    result = ddf.groupby(["id2", "id4"], dropna=False, observed=True).apply(
+        lambda x: pd.Series({"r2": x.corr(numeric_only=True)["v1"]["v2"] ** 2}),
+        meta={"r2": "float64"},
     )
+    wait(result, timeout=600)
