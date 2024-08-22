@@ -79,6 +79,7 @@ era5_rechunking:
   workspace: dask-engineering-gcp
   region: us-central1
   worker_vm_types: [e2-standard-4]
+  scheduler_vm_types: [e2-standard-4]
 
 # Specific tests
 test_work_stealing_on_scaling_up:
