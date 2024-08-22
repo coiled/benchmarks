@@ -75,7 +75,7 @@ def ddf(request):
 
 
 def test_q1(ddf):
-    ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"}).compute()
+    ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"}).persist()
 
 
 def test_q2(ddf):
@@ -90,7 +90,7 @@ def test_q3(ddf):
     (
         ddf.groupby("id3", dropna=False, observed=True)
         .agg({"v1": "sum", "v3": "mean"})
-        .compute()
+        .persist()
     )
 
 
@@ -98,7 +98,7 @@ def test_q4(ddf):
     (
         ddf.groupby("id4", dropna=False, observed=True)
         .agg({"v1": "mean", "v2": "mean", "v3": "mean"})
-        .compute()
+        .persist()
     )
 
 
@@ -108,7 +108,7 @@ def test_q5(ddf):
         .agg(
             {"v1": "sum", "v2": "sum", "v3": "sum"},
         )
-        .compute()
+        .persist()
     )
 
 
@@ -117,7 +117,7 @@ def test_q6(ddf, shuffle_method):
     (
         ddf.groupby(["id4", "id5"], dropna=False, observed=True)
         .agg({"v3": ["median", "std"]}, shuffle=shuffle_method)
-        .compute()  # requires shuffle arg to be set explicitly
+        .persist()  # requires shuffle arg to be set explicitly
     )
 
 
@@ -126,7 +126,7 @@ def test_q7(ddf):
         ddf.groupby("id3", dropna=False, observed=True)
         .agg({"v1": "max", "v2": "min"})
         .assign(range_v1_v2=lambda x: x["v1"] - x["v2"])[["range_v1_v2"]]
-        .compute()
+        .persist()
     )
 
 
@@ -139,7 +139,7 @@ def test_q8(ddf, configure_shuffling):
             lambda x: x.nlargest(2, columns="v3"),
             meta={"id6": "Int64", "v3": "float64"},
         )[["v3"]]
-        .compute()
+        .persist()
     )
 
 
@@ -151,5 +151,5 @@ def test_q9(ddf, configure_shuffling):
             lambda x: pd.Series({"r2": x.corr(numeric_only=True)["v1"]["v2"] ** 2}),
             meta={"r2": "float64"},
         )
-        .compute()
+        .persist()
     )
