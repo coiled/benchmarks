@@ -33,6 +33,12 @@ spill_cluster:
   worker_disk_size: 64
   worker_vm_types: [m6i.large]  # 2CPU, 8GiB
 
+# For tests/benchmarks/test_xarray.py
+group_reduction_cluster:
+  n_workers: 20
+  worker_vm_types: [m6i.xlarge]  # 4CPU, 16GiB
+  region: "us-east-1"  # Same region as dataset
+
 # For tests/workflows/test_embarrassingly_parallel.py
 embarrassingly_parallel:
   n_workers: 100

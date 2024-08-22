@@ -160,6 +160,6 @@ def test_dask_results(
 ):
     from . import dask_queries
 
-    func = getattr(dask_queries, f"query_{query}")
+    func = getattr(dask_queries, f"query_{query:02d}")
     result = func(dataset_path, None, scale).compute()
     verify_result(result, query, answers_path, s3_storage_options)

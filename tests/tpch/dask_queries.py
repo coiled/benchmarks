@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import dask.dataframe as dd
 
 
-def query_1(dataset_path, fs, scale):
+def query_01(dataset_path, fs, scale):
     VAR1 = datetime(1998, 9, 2)
     lineitem_ds = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
 
@@ -40,7 +40,7 @@ def query_1(dataset_path, fs, scale):
     return total.reset_index().sort_values(["l_returnflag", "l_linestatus"])
 
 
-def query_2(dataset_path, fs, scale):
+def query_02(dataset_path, fs, scale):
     var1 = 15
     var2 = "BRASS"
     var3 = "EUROPE"
@@ -109,7 +109,7 @@ def query_2(dataset_path, fs, scale):
     )
 
 
-def query_3(dataset_path, fs, scale):
+def query_03(dataset_path, fs, scale):
     var1 = datetime.strptime("1995-03-15", "%Y-%m-%d")
     var2 = "BUILDING"
 
@@ -138,7 +138,7 @@ def query_3(dataset_path, fs, scale):
     )
 
 
-def query_4(dataset_path, fs, scale):
+def query_04(dataset_path, fs, scale):
     date1 = datetime.strptime("1993-10-01", "%Y-%m-%d")
     date2 = datetime.strptime("1993-07-01", "%Y-%m-%d")
 
@@ -162,7 +162,7 @@ def query_4(dataset_path, fs, scale):
     return result_df
 
 
-def query_5(dataset_path, fs, scale):
+def query_05(dataset_path, fs, scale):
     date1 = datetime.strptime("1994-01-01", "%Y-%m-%d")
     date2 = datetime.strptime("1995-01-01", "%Y-%m-%d")
 
@@ -191,7 +191,7 @@ def query_5(dataset_path, fs, scale):
     return gb.reset_index().sort_values("revenue", ascending=False)
 
 
-def query_6(dataset_path, fs, scale):
+def query_06(dataset_path, fs, scale):
     date1 = datetime.strptime("1994-01-01", "%Y-%m-%d")
     date2 = datetime.strptime("1995-01-01", "%Y-%m-%d")
     var3 = 24
@@ -211,7 +211,7 @@ def query_6(dataset_path, fs, scale):
     return revenue.sum().to_frame("revenue")
 
 
-def query_7(dataset_path, fs, scale):
+def query_07(dataset_path, fs, scale):
     var1 = datetime.strptime("1995-01-01", "%Y-%m-%d")
     var2 = datetime.strptime("1997-01-01", "%Y-%m-%d")
 
@@ -306,7 +306,7 @@ def query_7(dataset_path, fs, scale):
     )
 
 
-def query_8(dataset_path, fs, scale):
+def query_08(dataset_path, fs, scale):
     var1 = datetime.strptime("1995-01-01", "%Y-%m-%d")
     var2 = datetime.strptime("1997-01-01", "%Y-%m-%d")
 
@@ -364,7 +364,7 @@ def query_8(dataset_path, fs, scale):
     return final.sort_values(by=["o_year"], ascending=[True])[["o_year", "mkt_share"]]
 
 
-def query_9(dataset_path, fs, scale):
+def query_09(dataset_path, fs, scale):
     """
     select
         nation,

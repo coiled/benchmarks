@@ -5,11 +5,9 @@ on:
       - main
     tags:
       - "*"
-  pull_request:
   schedule:
     # Runs "At 00:01" (see https://crontab.guru)
-    - cron: "1 0 * * 0" # every Sunday (relevant for non-Dask TPC-H benchmarks) 
-    - cron: "1 0 * * 1-6" # every day except Sunday
+    - cron: "1 0 * * 0" # every Sunday 
   workflow_dispatch:
 
 concurrency:
@@ -110,11 +108,7 @@ jobs:
         run: |
           echo PYTEST_MARKERS=" and not workflows" >> $GITHUB_ENV
 
-      - name: Disable non-Dask TPCH benchmarks on most PRs and on daily schedule (except Sundays)
-        if: |
-            matrix.name_prefix != 'tpch' ||
-            (github.event_name != 'schedule' || github.event.schedule != '1 0 * * 0') &&
-            (github.event_name != 'pull_request' || !contains(github.event.pull_request.labels.*.name, 'tpch'))
+      - name: Disable non-Dask TPCH benchmarks
         run: |
           echo PYTEST_MARKERS="${{ env.PYTEST_MARKERS }} and not tpch_nondask" >> $GITHUB_ENV
 
