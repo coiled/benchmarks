@@ -35,11 +35,6 @@ else:
     }
 
 
-@pytest.fixture(autouse=True)
-def client(small_client):
-    yield small_client
-
-
 @pytest.fixture(params=sorted(enabled_datasets), scope="module")
 def ddf(request):
     n_gib = float(request.param.split(" GB ")[0])
@@ -74,38 +69,38 @@ def ddf(request):
         yield dd.read_parquet(uri, engine="pyarrow", storage_options={"anon": True})
 
 
-def test_q1(ddf):
+def test_query_01(ddf, small_client):
     result = ddf.groupby("id1", dropna=False, observed=True).agg({"v1": "sum"})
-    wait(result, timeout=600)
+    wait(result, small_client, timeout=600)
 
 
-def test_q2(ddf):
+def test_query_02(ddf, small_client):
     result = ddf.groupby(["id1", "id2"], dropna=False, observed=True).agg({"v1": "sum"})
-    wait(result, timeout=600)
+    wait(result, small_client, timeout=600)
 
 
-def test_q3(ddf):
+def test_query_03(ddf, small_client):
     result = ddf.groupby("id3", dropna=False, observed=True).agg(
         {"v1": "sum", "v3": "mean"}
     )
-    wait(result, timeout=600)
+    wait(result, small_client, timeout=600)
 
 
-def test_q4(ddf):
+def test_query_04(ddf, small_client):
     result = ddf.groupby("id4", dropna=False, observed=True).agg(
         {"v1": "mean", "v2": "mean", "v3": "mean"}
     )
-    wait(result, timeout=600)
+    wait(result, small_client, timeout=600)
 
 
-def test_q5(ddf):
+def test_query_05(ddf, small_client):
     result = ddf.groupby("id6", dropna=False, observed=True).agg(
         {"v1": "sum", "v2": "sum", "v3": "sum"},
     )
-    wait(result, timeout=600)
+    wait(result, small_client, timeout=600)
 
 
-def test_q6(ddf, shuffle_method):
+def test_query_06(ddf, shuffle_method, small_client):
     # Median aggregation uses an explicitly-set shuffle
     result = (
         ddf.groupby(["id4", "id5"], dropna=False, observed=True).agg(
@@ -113,19 +108,19 @@ def test_q6(ddf, shuffle_method):
         )
         # requires shuffle arg to be set explicitly
     )
-    wait(result, timeout=600)
+    wait(result, small_client, timeout=600)
 
 
-def test_q7(ddf):
+def test_query_07(ddf, small_client):
     result = (
         ddf.groupby("id3", dropna=False, observed=True)
         .agg({"v1": "max", "v2": "min"})
         .assign(range_v1_v2=lambda x: x["v1"] - x["v2"])[["range_v1_v2"]]
     )
-    wait(result, timeout=600)
+    wait(result, small_client, timeout=600)
 
 
-def test_q8(ddf, configure_shuffling):
+def test_query_08(ddf, configure_shuffling, small_client):
     # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
     result = (
         ddf[~ddf["v3"].isna()]
@@ -135,13 +130,13 @@ def test_q8(ddf, configure_shuffling):
             meta={"id6": "Int64", "v3": "float64"},
         )[["v3"]]
     )
-    wait(result, timeout=600)
+    wait(result, small_client, timeout=600)
 
 
-def test_q9(ddf, configure_shuffling):
+def test_query_09(ddf, configure_shuffling, small_client):
     # .groupby(...).apply(...) uses a shuffle to transfer data before applying the function
     result = ddf.groupby(["id2", "id4"], dropna=False, observed=True).apply(
         lambda x: pd.Series({"r2": x.corr(numeric_only=True)["v1"]["v2"] ** 2}),
         meta={"r2": "float64"},
     )
-    wait(result, timeout=600)
+    wait(result, small_client, timeout=600)
