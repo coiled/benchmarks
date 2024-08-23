@@ -75,7 +75,7 @@ snowflake:
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
 era5_rechunking:
-  n_workers: 100
+  n_workers: 4
   workspace: dask-engineering-gcp
   region: us-central1
   worker_vm_types: [e2-standard-4]

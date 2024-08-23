@@ -6,7 +6,7 @@ from coiled.credentials.google import CoiledShippedCredentials
 
 
 @pytest.mark.client("era5_rechunking")
-def test_era5_rechunking(client):
+def test_era5_rechunking(client, gcs_url):
     # # Create cluster
     # cluster = coiled.Cluster(
     #     n_workers=100,
@@ -21,7 +21,8 @@ def test_era5_rechunking(client):
         "gs://weatherbench2/datasets/era5/1959-2023_01_10-full_37-1h-0p25deg-chunk-1.zarr",
     ).drop_encoding()
 
-    time_range = slice("2020-01-01", "2023-01-01")  # 101.83 GiB
+    time_range = slice("2020-01-01", "2020-01-02")  # Super small for debugging
+    # time_range = slice("2020-01-01", "2023-01-01")  # 101.83 GiB
     subset = ds.sea_surface_temperature.sel(time=time_range)
 
     # Rechunk
@@ -29,7 +30,4 @@ def test_era5_rechunking(client):
         result = subset.chunk({"time": -1, "longitude": "auto", "latitude": "auto"})
 
     # Write result to cloud storage
-    result.to_zarr(
-        "gs://coiled-scratch-space/benchmarks/era5.zarr/",
-        storage_options={"token": CoiledShippedCredentials()},
-    )
+    result.to_zarr(gcs_url, storage_options={"token": CoiledShippedCredentials()})
