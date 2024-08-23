@@ -60,7 +60,6 @@ def configure_rechunking_out_of_core(request):
 def test_tiles_to_rows(
     # Order matters: don't initialize client when skipping test
     input_chunk_size,
-    configure_rechunking_in_memory,
     small_client,
 ):
     """2D array sliced into square tiles becomes sliced by columns.
