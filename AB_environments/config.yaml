@@ -3,7 +3,7 @@
 # Setting it to 5 is a good value to get statistically significant results.
 # This must remain set to 0 in the main branch, thus completely disabling
 # A/B tests, in order to avoid unnecessary runs.
-repeat: 0
+repeat: 5
 
 # Set to true to automatically create a verbatim copy of AB_baseline and then compare
 # the two in the A/B tests. Set to false to save some money if you are already confident
@@ -28,14 +28,14 @@ markers:
 # markers: not shuffle_tasks
 
 # Enable specific H2O datasets
-h2o_datasets:
+h2o_datasets: []
   # - 0.5 GB (csv)
   # - 5 GB (csv)
   # - 50 GB (csv)
   # - 0.5 GB (parquet)
   # - 5 GB (parquet)
   # - 50 GB (parquet)
-  - 5 GB (parquet+pyarrow)
+  # - 5 GB (parquet+pyarrow)
   # - 50 GB (parquet+pyarrow)
   # - 500 GB (parquet+pyarrow)
 
