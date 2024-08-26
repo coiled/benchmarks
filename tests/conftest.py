@@ -19,10 +19,10 @@ import dask.array as da
 import dask_expr
 import distributed
 import filelock
+import gcsfs
 import pandas
 import pytest
 import s3fs
-import gcsfs
 import sqlalchemy
 import yaml
 from coiled import Cluster
@@ -679,7 +679,7 @@ def s3_cluster_dump_url(s3, s3_scratch):
 
 
 GCS_REGION = "us-central1"
-GCS_BUCKET = "gs://coiled-scratch-space/benchmarks-bot"
+GCS_BUCKET = "gs://coiled-oss-scratch/benchmarks-bot"
 
 
 @pytest.fixture(scope="session")

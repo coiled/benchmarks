@@ -122,6 +122,20 @@ jobs:
             echo PYTEST_MARKERS=${PYTEST_MARKERS} >> $GITHUB_ENV
           fi
 
+      # TODO: Will need something like this to auth the CI runner
+      - name: Google auth
+        uses: "google-github-actions/auth@v2"
+        with:
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+      # - name: "Set up Cloud SDK"
+      #   uses: "google-github-actions/setup-gcloud@v2"
+      #   with:
+      #     skip_install: true
+      # - name: "Use gcloud CLI"
+      #   run: |
+      #     gcloud info
+      #     gcloud config set project ${{ inputs.gcp-project-name }}
+
       - name: Run Coiled Runtime Tests
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
