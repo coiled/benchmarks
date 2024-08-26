@@ -683,16 +683,8 @@ GCS_BUCKET = "gs://coiled-oss-scratch/benchmarks-bot"
 
 
 @pytest.fixture(scope="session")
-def gcs_storage_options():
-    return {
-        # "key": os.environ.get("AWS_ACCESS_KEY_ID"),
-        # "secret": os.environ.get("AWS_SECRET_ACCESS_KEY"),
-    }
-
-
-@pytest.fixture(scope="session")
-def gcs(gcs_storage_options):
-    return gcsfs.GCSFileSystem(**gcs_storage_options)
+def gcs():
+    return gcsfs.GCSFileSystem()
 
 
 @pytest.fixture(scope="session")
