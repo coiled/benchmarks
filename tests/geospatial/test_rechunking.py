@@ -1,4 +1,3 @@
-import dask
 import pytest
 import xarray as xr
 from coiled.credentials.google import CoiledShippedCredentials
@@ -19,8 +18,7 @@ def test_era5_rechunking(client, gcs_url):
     subset = ds.sea_surface_temperature.sel(time=time_range)
 
     # Rechunk
-    with dask.config.set({"array.rechunk.method": "p2p"}):  # Use new algorithm
-        result = subset.chunk({"time": -1, "longitude": "auto", "latitude": "auto"})
+    result = subset.chunk({"time": -1, "longitude": "auto", "latitude": "auto"})
 
     # Write result to cloud storage
     result.to_zarr(gcs_url, storage_options={"token": CoiledShippedCredentials()})
