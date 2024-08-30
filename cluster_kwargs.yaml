@@ -74,14 +74,6 @@ snowflake:
   n_workers: 20
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
-era5_rechunking:
-  n_workers: 10
-  workspace: dask-engineering-gcp
-  region: us-central1
-  worker_vm_types: [e2-standard-4]
-  scheduler_vm_types: [e2-standard-4]
-  spot_policy: on-demand
-
 # Specific tests
 test_work_stealing_on_scaling_up:
   n_workers: 1
