@@ -74,6 +74,7 @@ snowflake:
   n_workers: 20
   worker_vm_types: [m6i.xlarge] # 4 CPU, 16 GiB (preferred default instance)
 
+
 # Specific tests
 test_work_stealing_on_scaling_up:
   n_workers: 1

@@ -1,4 +1,4 @@
-name: Geospatial Workflow
+name: Geospatial Workflows
 on:
   workflow_dispatch:
     inputs:
