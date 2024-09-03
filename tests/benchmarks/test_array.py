@@ -5,6 +5,7 @@ import time
 import dask.array as da
 import numpy as np
 import pytest
+from dask.core import flatten
 from dask.utils import parse_bytes
 
 from ..utils_test import (
@@ -258,3 +259,29 @@ def test_map_overlap_sample(small_client, new_array):
     x = new_array((10000, 10000), chunks=(50, 50))  # 40_000 19.5 kiB chunks
     y = x.map_overlap(lambda x: x, depth=1)
     y[5000:5010, 5000:5010].compute()
+
+
+def _create_indexer(n, chunk_n):
+    idx = np.arange(0, n)
+    np.random.shuffle(idx[: n // 10])
+
+    indexer = []
+    for i in range(0, n, chunk_n):
+        indexer.append(idx[i : i + chunk_n].tolist())
+    return indexer
+
+
+def test_take(small_client, new_array):
+    n = 2000
+    chunk_n = 250
+    x = new_array((n, n, n), chunks=(chunk_n, chunk_n, chunk_n))
+    indexer = list(flatten(_create_indexer(n, chunk_n)))
+    x[:, indexer, :].sum().compute()
+
+
+# def test_shuffle(small_client, new_array):
+#     n = 2000
+#     chunk_n = 250
+#     x = new_array((n, n, n), chunks=(chunk_n, chunk_n, chunk_n))
+#     indexer = _create_indexer(n, chunk_n)
+#     x.shuffle(indexer, axis=1).sum().compute()
