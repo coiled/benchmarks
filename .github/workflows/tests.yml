@@ -31,7 +31,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python_version: ["3.10"]
-        pytest_args: [tests --ignore=tests/tpch --ignore=tests/geospatial]
+        pytest_args: [tests --ignore=tests/tpch]
         extra-env: [""]
         name_prefix: [tests]
         include:
@@ -120,6 +120,11 @@ jobs:
             echo PYTEST_MARKERS=${PYTEST_MARKERS}
             echo PYTEST_MARKERS=${PYTEST_MARKERS} >> $GITHUB_ENV
           fi
+
+      - name: Google auth
+        uses: "google-github-actions/auth@v2"
+        with:
+          credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
 
       - name: Run Coiled Runtime Tests
         env:

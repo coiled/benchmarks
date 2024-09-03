@@ -3,7 +3,6 @@ import xarray as xr
 from coiled.credentials.google import CoiledShippedCredentials
 
 
-@pytest.mark.timeout(5400)  # 90 minutes
 @pytest.mark.client("era5_rechunking")
 def test_era5_rechunking(client, gcs_url, scale):
     # Load dataset
