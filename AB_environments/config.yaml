@@ -22,7 +22,7 @@ targets:
 
 # pytest markers or marker expressions. See setup.cfg for available ones.
 # Leave blank to run all marked and unmarked tests.
-markers:
+markers: not tpch_nondask
 # markers: shuffle_p2p
 # markers: shuffle_p2p or shuffle_tasks
 # markers: not shuffle_tasks
