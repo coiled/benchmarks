@@ -315,7 +315,7 @@ def machine_spec(scale):
 
 
 @pytest.fixture(scope="module")
-def module_run(local, module, scale, name, machine_spec):
+def module_run(local, module, scale, name, machine_spec, github_cluster_tags):
     if local:
 
         def _run(function):
@@ -325,7 +325,11 @@ def module_run(local, module, scale, name, machine_spec):
 
     else:
 
-        @coiled.function(**machine_spec, name=f"tpch-{module}-{scale}-{name}")
+        @coiled.function(
+            **machine_spec,
+            name=f"tpch-{module}-{scale}-{name}",
+            tags=github_cluster_tags,
+        )
         def _run(function):
             return function()
 
