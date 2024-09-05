@@ -48,63 +48,63 @@ def connection(local, restart):
 
 def test_query_01(run, connection, dataset_path, scale):
     def _():
-        duckdb_queries.query_1(connection(), dataset_path, scale)
+        duckdb_queries.query_01(connection(), dataset_path, scale)
 
     run(_)
 
 
 def test_query_02(run, connection, dataset_path, scale):
     def _():
-        duckdb_queries.query_2(connection(), dataset_path, scale)
+        duckdb_queries.query_02(connection(), dataset_path, scale)
 
     run(_)
 
 
 def test_query_03(run, connection, dataset_path, scale):
     def _():
-        duckdb_queries.query_3(connection(), dataset_path, scale)
+        duckdb_queries.query_03(connection(), dataset_path, scale)
 
     run(_)
 
 
 def test_query_04(run, connection, dataset_path, scale):
     def _():
-        duckdb_queries.query_4(connection(), dataset_path, scale)
+        duckdb_queries.query_04(connection(), dataset_path, scale)
 
     run(_)
 
 
 def test_query_05(run, connection, dataset_path, scale):
     def _():
-        duckdb_queries.query_5(connection(), dataset_path, scale)
+        duckdb_queries.query_05(connection(), dataset_path, scale)
 
     run(_)
 
 
 def test_query_06(run, connection, dataset_path, scale):
     def _():
-        duckdb_queries.query_6(connection(), dataset_path, scale)
+        duckdb_queries.query_06(connection(), dataset_path, scale)
 
     run(_)
 
 
 def test_query_07(run, connection, dataset_path, scale):
     def _():
-        duckdb_queries.query_7(connection(), dataset_path, scale)
+        duckdb_queries.query_07(connection(), dataset_path, scale)
 
     run(_)
 
 
 def test_query_08(run, connection, dataset_path, scale):
     def _():
-        duckdb_queries.query_8(connection(), dataset_path, scale)
+        duckdb_queries.query_08(connection(), dataset_path, scale)
 
     run(_)
 
 
 def test_query_09(run, connection, dataset_path, scale):
     def _():
-        duckdb_queries.query_9(connection(), dataset_path, scale)
+        duckdb_queries.query_09(connection(), dataset_path, scale)
 
     run(_)
 
