@@ -19,6 +19,7 @@ import dask.array as da
 import dask_expr
 import distributed
 import filelock
+import gcsfs
 import pandas
 import pytest
 import s3fs
@@ -675,6 +676,33 @@ def s3_cluster_dump_url(s3, s3_scratch):
     dump_url = f"{s3_scratch}/cluster_dumps"
     s3.mkdirs(dump_url, exist_ok=True)
     return dump_url
+
+
+GCS_REGION = "us-central1"
+GCS_BUCKET = "gs://coiled-oss-scratch/benchmarks-bot"
+
+
+@pytest.fixture(scope="session")
+def gcs():
+    return gcsfs.GCSFileSystem()
+
+
+@pytest.fixture(scope="session")
+def gcs_scratch(gcs):
+    # Ensure that the test-scratch directory exists,
+    # but do NOT remove it as multiple test runs could be
+    # accessing it at the same time
+    scratch_url = f"{GCS_BUCKET}/test-scratch"
+    gcs.mkdirs(scratch_url, exist_ok=True)
+    return scratch_url
+
+
+@pytest.fixture(scope="function")
+def gcs_url(gcs, gcs_scratch, test_name_uuid):
+    url = f"{gcs_scratch}/{test_name_uuid}"
+    gcs.mkdirs(url, exist_ok=False)
+    yield url
+    gcs.rm(url, recursive=True)
 
 
 # this code was taken from pytest docs
