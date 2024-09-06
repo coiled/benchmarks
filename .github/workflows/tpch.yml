@@ -54,7 +54,7 @@ jobs:
         miniforge-variant: Mambaforge
         use-mamba: true
         condarc-file: ci/condarc
-        python-version: "3.9"
+        python-version: "3.10"
         environment-file: ci/environment.yml
 
     - name: Add TPC-H non-dask dependencies
