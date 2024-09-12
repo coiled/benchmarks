@@ -47,6 +47,7 @@ dependencies:
   - bokeh ==3.5.1
   - gilknocker ==0.4.1
   - openssl >1.1.0g
+  - rioxarray ==0.17.0
 
 ########################################################
 # PLEASE READ:
