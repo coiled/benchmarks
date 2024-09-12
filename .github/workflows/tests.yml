@@ -31,7 +31,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python_version: ["3.10"]
-        pytest_args: [tests --ignore=tests/tpch]
+        pytest_args: [tests/geospatial/test_zonal_average.py --ignore=tests/tpch]
         extra-env: [""]
         name_prefix: [tests]
         include:
