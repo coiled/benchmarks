@@ -13,7 +13,7 @@ def test_era5_rechunking(client, gcs_url, scale):
     if scale == "small":
         # 101.83 GiB (small)
         time_range = slice("2020-01-01", "2023-01-01")
-        variables = ["sea_surface_temperature"]
+        variables = ["sea_surface_temperature", "snow_depth"]
     elif scale == "medium":
         # 2.12 TiB (medium)
         time_range = slice(None)
