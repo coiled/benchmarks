@@ -2,7 +2,6 @@
 This example was adapted from https://github.com/dcherian/dask-demo/blob/main/nwm-aws.ipynb
 """
 
-import dask
 import flox.xarray
 import numpy as np
 import rioxarray
@@ -10,7 +9,7 @@ import xarray as xr
 
 
 def test_nwm(
-    s3_url,
+    s3,
     scale,
     client_factory,
     cluster_kwargs={
@@ -38,11 +37,10 @@ def test_nwm(
             time_range = slice("1979-02-01", "2020-12-31")
         subset = ds.zwattablrt.sel(time=time_range)
 
-        with dask.annotate(retries=3):
-            counties = rioxarray.open_rasterio(
-                "s3://nwm-250m-us-counties/Counties_on_250m_grid.tif",
-                chunks="auto",
-            ).squeeze()
+        counties = rioxarray.open_rasterio(
+            s3.open("s3://nwm-250m-us-counties/Counties_on_250m_grid.tif"),
+            chunks="auto",
+        ).squeeze()
 
         # Remove any small floating point error in coordinate locations
         _, counties_aligned = xr.align(subset, counties, join="override")
@@ -60,7 +58,4 @@ def test_nwm(
             expected_groups=(county_id,),
         )
 
-        county_mean.load()
-        yearly_mean = county_mean.mean("time")
-        # Save dataset for further analysis
-        yearly_mean.to_netcdf(s3_url)
+        county_mean.compute()
