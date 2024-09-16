@@ -44,12 +44,10 @@ def test_nwm(
 
         # Remove any small floating point error in coordinate locations
         _, counties_aligned = xr.align(subset, counties, join="override")
-
         counties_aligned = counties_aligned.persist()
 
         county_id = np.unique(counties_aligned.data).compute()
         county_id = county_id[county_id != 0]
-        print(f"There are {len(county_id)} counties!")
 
         county_mean = flox.xarray.xarray_reduce(
             subset,
