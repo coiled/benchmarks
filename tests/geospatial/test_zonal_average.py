@@ -17,13 +17,13 @@ def test_nwm(
         "region": "us-east-1",
         "wait_for_workers": True,
     },
-    scale_n_workers={
-        "small": 10,
-        "large": 200,
+    scale_kwargs={
+        "small": {"n_workers": 10},
+        "large": {"n_workers": 200, "scheduler_memory": "32 GiB"},
     },
 ):
     with client_factory(
-        n_workers=scale_n_workers[scale], **cluster_kwargs
+        **scale_kwargs[scale], **cluster_kwargs
     ) as client:  # noqa: F841
         ds = xr.open_zarr(
             "s3://noaa-nwm-retrospective-2-1-zarr-pds/rtout.zarr", consolidated=True
@@ -48,7 +48,6 @@ def test_nwm(
 
         county_id = np.unique(counties_aligned.data).compute()
         county_id = county_id[county_id != 0]
-
         county_mean = flox.xarray.xarray_reduce(
             subset,
             counties_aligned.rename("county"),

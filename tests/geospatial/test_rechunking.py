@@ -11,13 +11,14 @@ def test_era5_rechunking(
         "region": "us-central1",
         "wait_for_workers": True,
     },
-    scale_n_workers={
-        "small": 10,
-        "large": 100,
+    scale_kwargs={
+        "small": {"n_workers": 10},
+        "medium": {"n_workers": 10},
+        "large": {"n_workers": 100},
     },
 ):
     with client_factory(
-        n_workers=scale_n_workers[scale], **cluster_kwargs
+        **scale_kwargs[scale], **cluster_kwargs
     ) as client:  # noqa: F841
         # Load dataset
         ds = xr.open_zarr(
