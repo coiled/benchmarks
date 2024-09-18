@@ -59,17 +59,16 @@ def test_netcdf_to_zarr(
         ]
 
         if scale == "small":
-            # 130 files (152.83 GiB)
-            # One model and one variable
+            # 130 files (152.83 GiB). One model and one variable.
             models = models[:1]
             variables = variables[:1]
         elif scale == "medium":
-            # 715 files (XX TiB)
-            # One model and all variables
+            # 715 files. One model and all variables.
+            # Currently fails after hitting 20 minute idle timeout
+            # sending `to_zarr` graph to the scheduler.
             models = models[:1]
         else:
-            # 11635 files (XX TiB)
-            # All models and variables
+            # 11635 files. All models and variables.
             pass
 
         # Get netCDF data files -- see https://registry.opendata.aws/nex-gddp-cmip6
@@ -77,8 +76,8 @@ def test_netcdf_to_zarr(
         file_list = []
         for model in models:
             for variable in variables:
-                source_directory = f"s3://nex-gddp-cmip6/NEX-GDDP-CMIP6/{model}/historical/r1i1p1f1/{variable}/*.nc"
-                file_list += [f"s3://{path}" for path in s3.glob(source_directory)]
+                data_dir = f"s3://nex-gddp-cmip6/NEX-GDDP-CMIP6/{model}/historical/r1i1p1f1/{variable}/*.nc"
+                file_list += [f"s3://{path}" for path in s3.glob(data_dir)]
         files = [s3.open(f) for f in file_list]
         print(f"Processing {len(files)} NetCDF files")
 
