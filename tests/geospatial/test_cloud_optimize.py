@@ -86,6 +86,9 @@ def test_cloud_optimize(
             engine="h5netcdf",
             combine="nested",
             concat_dim="time",
+            data_vars="minimal",
+            coords="minimal",
+            compat="override",
             parallel=True,
         )
 
