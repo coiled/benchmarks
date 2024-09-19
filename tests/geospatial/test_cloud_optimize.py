@@ -1,8 +1,7 @@
 import xarray as xr
-from dask.utils import format_bytes
 
 
-def test_netcdf_to_zarr(
+def test_cloud_optimize(
     scale,
     s3,
     s3_url,
@@ -81,6 +80,7 @@ def test_netcdf_to_zarr(
         files = [s3.open(f) for f in file_list]
         print(f"Processing {len(files)} NetCDF files")
 
+        # Load input NetCDF data files
         ds = xr.open_mfdataset(
             files,
             engine="h5netcdf",
@@ -88,5 +88,9 @@ def test_netcdf_to_zarr(
             concat_dim="time",
             parallel=True,
         )
-        print(f"Converting {format_bytes(ds.nbytes)} from NetCDF to Zarr")
+
+        # Rechunk from "pancake" to "pencil" format
+        ds = ds.chunk({"time": -1, "lon": "auto", "lat": "auto"})
+
+        # Write out to a Zar dataset
         ds.to_zarr(s3_url)
