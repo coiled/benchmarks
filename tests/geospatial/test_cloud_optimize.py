@@ -7,7 +7,7 @@ def test_cloud_optimize(
     s3_url,
     client_factory,
     cluster_kwargs={
-        "workspace": "dask-engineering",
+        "workspace": "dask-benchmarks",
         "region": "us-west-2",
         "wait_for_workers": True,
     },
@@ -81,6 +81,7 @@ def test_cloud_optimize(
         print(f"Processing {len(files)} NetCDF files")
 
         # Load input NetCDF data files
+        # TODO: Reduce explicit settings once https://github.com/pydata/xarray/issues/8778 is completed.
         ds = xr.open_mfdataset(
             files,
             engine="h5netcdf",
