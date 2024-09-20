@@ -1,6 +1,6 @@
 import uuid
 
-import dask
+import dask_expr as dx
 import distributed
 import pytest
 from coiled import Cluster
@@ -29,12 +29,12 @@ def test_repeated_merge_spill(
     ) as cluster:
         with Client(cluster) as client:
             with upload_cluster_dump(client), benchmark_all(client):
-                ddf = dask.datasets.timeseries(
+                ddf = dx.datasets.timeseries(
                     "2020",
                     "2025",
                     partition_freq="2w",
                 )
-                ddf2 = dask.datasets.timeseries(
+                ddf2 = dx.datasets.timeseries(
                     "2020",
                     "2023",
                     partition_freq="2w",

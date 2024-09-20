@@ -126,6 +126,9 @@ jobs:
         with:
           credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
 
+      - name: Install dask-expr
+        run: python -m pip install git+https://github.com/phofl/dask-expr.git@benchmarks
+
       - name: Run Coiled Runtime Tests
         env:
           DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}

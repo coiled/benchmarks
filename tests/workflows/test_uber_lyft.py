@@ -1,4 +1,4 @@
-import dask.dataframe as dd
+import dask_expr as dd
 import pytest
 
 pytestmark = pytest.mark.workflows
