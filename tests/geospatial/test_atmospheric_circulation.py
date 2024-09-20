@@ -61,14 +61,13 @@ def test_atmospheric_circulation(
         temdiags = zonal_means.merge(anomaly[["uv", "vt", "uw"]].mean("longitude"))
 
         # This is incredibly slow, takes a while for flox to construct the graph
-        # daily = temdiags.resample(time="D").mean()
+        daily = temdiags.resample(time="D").mean()
 
-        # Option 2: rechunk to make it a blockwise problem
-        # we should do this automatically
-        daily = (
-            temdiags.chunk(time=xr.groupers.TimeResampler("D"))
-            .resample(time="D")
-            .mean()
-        )
+        # # Users often rework things via a rechunk to make this a blockwise problem
+        # daily = (
+        #     temdiags.chunk(time=xr.groupers.TimeResampler("D"))
+        #     .resample(time="D")
+        #     .mean()
+        # )
 
         daily.to_zarr(gcs_url, storage_options={"token": CoiledShippedCredentials()})
