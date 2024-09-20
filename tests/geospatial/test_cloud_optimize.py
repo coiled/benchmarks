@@ -62,10 +62,11 @@ def test_cloud_optimize(
             models = models[:1]
             variables = variables[:1]
         elif scale == "medium":
-            # 715 files. One model and all variables.
+            # 390 files. Two models and two variables.
             # Currently fails after hitting 20 minute idle timeout
-            # sending `to_zarr` graph to the scheduler.
-            models = models[:1]
+            # sending large graph to the scheduler.
+            models = models[:2]
+            variables = variables[:2]
         else:
             # 11635 files. All models and variables.
             pass
