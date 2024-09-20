@@ -1,4 +1,5 @@
 import xarray as xr
+from coiled.credentials.google import CoiledShippedCredentials
 
 
 def test_atmospheric_circulation(
@@ -70,4 +71,4 @@ def test_atmospheric_circulation(
             .mean()
         )
 
-        daily.to_zarr(gcs_url)
+        daily.to_zarr(gcs_url, storage_options={"token": CoiledShippedCredentials()})
