@@ -13,7 +13,7 @@ def test_nwm(
     scale,
     client_factory,
     cluster_kwargs={
-        "workspace": "dask-engineering",
+        "workspace": "dask-benchmarks",
         "region": "us-east-1",
         "wait_for_workers": True,
     },
