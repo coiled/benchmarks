@@ -10,7 +10,6 @@ METHOD = "explicit"
 """
 
 import numpy as np
-import pytest
 import xarray as xr
 from coiled.credentials.google import CoiledShippedCredentials
 
@@ -29,18 +28,18 @@ def compute_hourly_climatology(
 def compute_rolling_mean(ds: xr.Dataset, window_weights: xr.DataArray) -> xr.Dataset:
     window_size = len(window_weights)
     half_window_size = window_size // 2  # For padding
-    stacked = xr.concat(
+    ds = xr.concat(
         [
             replace_time_with_doy(ds.sel(time=str(y)))
             for y in np.unique(ds.time.dt.year)
         ],
         dim="year",
     )
-    stacked = stacked.fillna(stacked.sel(dayofyear=365))
-    stacked = stacked.pad(pad_width={"dayofyear": half_window_size}, mode="wrap")
-    stacked = stacked.rolling(dayofyear=window_size, center=True).construct("window")
-    rolling = stacked.weighted(window_weights).mean(dim=("window", "year"))
-    return rolling.isel(dayofyear=slice(half_window_size, -half_window_size))
+    ds = ds.fillna(ds.sel(dayofyear=365))
+    ds = ds.pad(pad_width={"dayofyear": half_window_size}, mode="wrap")
+    ds = ds.rolling(dayofyear=window_size, center=True).construct("window")
+    ds = ds.weighted(window_weights).mean(dim=("window", "year"))
+    return ds.isel(dayofyear=slice(half_window_size, -half_window_size))
 
 
 def create_window_weights(window_size: int) -> xr.DataArray:
@@ -66,7 +65,7 @@ def replace_time_with_doy(ds: xr.Dataset) -> xr.Dataset:
 
 
 def select_hour(ds: xr.Dataset, hour: int) -> xr.Dataset:
-    """Select given hour of day from Datset."""
+    """Select given hour of day from dataset."""
     # Select hour
     ds = ds.isel(time=ds.time.dt.hour == hour)
     # Adjust time dimension
@@ -74,47 +73,63 @@ def select_hour(ds: xr.Dataset, hour: int) -> xr.Dataset:
     return ds
 
 
-@pytest.mark.client("compute_climatology")
-def test_compute_climatology(client, gcs_url, scale):
-    # Load dataset
-    ds = xr.open_zarr(
-        "gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721_with_derived_variables.zarr",
-    )
+def test_compute_climatology(
+    gcs_url,
+    scale,
+    client_factory,
+    cluster_kwargs={
+        "workspace": "dask-engineering-gcp",
+        "region": "us-central1",
+        "wait_for_workers": True,
+    },
+    scale_kwargs={
+        "small": {"n_workers": 10},
+        "medium": {"n_workers": 100},
+        "large": {"n_workers": 100},
+    },
+):
+    with client_factory(
+        **scale_kwargs[scale], **cluster_kwargs
+    ) as client:  # noqa: F841
+        # Load dataset
+        ds = xr.open_zarr(
+            "gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721_with_derived_variables.zarr",
+        )
 
-    if scale == "small":
-        # 101.83 GiB (small)
-        time_range = slice("2020-01-01", "2022-12-31")
-        variables = ["sea_surface_temperature"]
-    elif scale == "medium":
-        # 2.12 TiB (medium)
-        time_range = slice("1959-01-01", "2022-12-31")
-        variables = ["sea_surface_temperature"]
-    else:
-        # 4.24 TiB (large)
-        # This currently doesn't complete successfully.
-        time_range = slice("1959-01-01", "2022-12-31")
-        variables = ["sea_surface_temperature", "snow_depth"]
-    ds = ds[variables].sel(time=time_range)
+        if scale == "small":
+            # 101.83 GiB (small)
+            time_range = slice("2020-01-01", "2022-12-31")
+            variables = ["sea_surface_temperature"]
+        elif scale == "medium":
+            # 2.12 TiB (medium)
+            time_range = slice("1959-01-01", "2022-12-31")
+            variables = ["sea_surface_temperature"]
+        else:
+            # 4.24 TiB (large)
+            # This currently doesn't complete successfully.
+            time_range = slice("1959-01-01", "2022-12-31")
+            variables = ["sea_surface_temperature", "snow_depth"]
+        ds = ds[variables].sel(time=time_range)
 
-    ds = ds.drop_vars([k for k, v in ds.items() if "time" not in v.dims])
-    pencil_chunks = {"time": -1, "longitude": "auto", "latitude": "auto"}
+        ds = ds.drop_vars([k for k, v in ds.items() if "time" not in v.dims])
+        pencil_chunks = {"time": -1, "longitude": "auto", "latitude": "auto"}
 
-    working = ds.chunk(pencil_chunks)
-    hours = xr.DataArray(range(0, 24, 6), dims=["hour"])
-    daysofyear = xr.DataArray(range(1, 367), dims=["dayofyear"])
-    template = (
-        working.isel(time=0)
-        .drop_vars("time")
-        .expand_dims(hour=hours, dayofyear=daysofyear)
-        .assign_coords(hour=hours, dayofyear=daysofyear)
-    )
-    working = working.map_blocks(compute_hourly_climatology, template=template)
+        working = ds.chunk(pencil_chunks)
+        hours = xr.DataArray(range(0, 24, 6), dims=["hour"])
+        daysofyear = xr.DataArray(range(1, 367), dims=["dayofyear"])
+        template = (
+            working.isel(time=0)
+            .drop_vars("time")
+            .expand_dims(hour=hours, dayofyear=daysofyear)
+            .assign_coords(hour=hours, dayofyear=daysofyear)
+        )
+        working = working.map_blocks(compute_hourly_climatology, template=template)
 
-    pancake_chunks = {
-        "hour": 1,
-        "dayofyear": 1,
-        "latitude": ds.chunks["latitude"],
-        "longitude": ds.chunks["longitude"],
-    }
-    result = working.chunk(pancake_chunks)
-    result.to_zarr(gcs_url, storage_options={"token": CoiledShippedCredentials()})
+        pancake_chunks = {
+            "hour": 1,
+            "dayofyear": 1,
+            "latitude": ds.chunks["latitude"],
+            "longitude": ds.chunks["longitude"],
+        }
+        result = working.chunk(pancake_chunks)
+        result.to_zarr(gcs_url, storage_options={"token": CoiledShippedCredentials()})
