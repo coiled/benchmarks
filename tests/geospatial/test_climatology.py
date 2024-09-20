@@ -99,7 +99,7 @@ def test_compute_climatology(client, gcs_url, scale):
     input_chunks_without_time = {
         dim: chunks for dim, chunks in ds.chunks.items() if dim != "time"
     }
-    pencil_chunks = {"time": -1, "longitude": 4, "latitude": 4, "level": 13}
+    pencil_chunks = {"time": -1, "longitude": 4, "latitude": 4}
     ds = ds.chunk(pencil_chunks)
 
     hours = xr.DataArray(range(0, 24, 6), dims=["hour"])
