@@ -8,24 +8,24 @@
 default:
   package_sync: true
   wait_for_workers: true
-  # scheduler_vm_types: [r7g.large]
+  scheduler_vm_types: [c4-standard-2]
   spot_policy: on-demand
 
 # For all tests using the small_client fixture
 small_cluster:
   n_workers: 12
-  # worker_vm_types: [r7g.large]  # 2CPU, 8GiB
+  worker_vm_types: [c4-standard-2]  # 2CPU, 8GiB
 
 # For tests/benchmarks/test_parquet.py
 parquet_cluster:
   n_workers: 15
-  # worker_vm_types: [r7g.xlarge]  # 4 CPU, 16 GiB
+  worker_vm_types: [c4-standard-4]  # 4 CPU, 16 GiB
 
 # For tests/benchmarks/test_spill.py
 spill_cluster:
   n_workers: 5
   worker_disk_size: 64
-  # worker_vm_types: [r7g.large]  # 2CPU, 8GiB
+  worker_vm_types: [c4-standard-2]  # 2CPU, 8GiB
 
 # For tests/workflows/test_embarrassingly_parallel.py
 embarrassingly_parallel:
@@ -36,16 +36,16 @@ embarrassingly_parallel:
 # For tests/workflows/test_xgboost_optuna.py
 xgboost_optuna:
   n_workers: 50
-  # worker_vm_types: [r7g.xlarge]  # 4 CPU, 16 GiB (preferred default instance)
+  worker_vm_types: [c4-standard-4]  # 4 CPU, 16 GiB (preferred default instance)
 
 # For tests/workflows/test_uber_lyft.py
 uber_lyft:
   n_workers: 20
-  # worker_vm_types: [r7g.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+  worker_vm_types: [c4-standard-4] # 4 CPU, 16 GiB (preferred default instance)
 
 uber_lyft_large:
   n_workers: 50
-  # worker_vm_types: [r7g.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+  worker_vm_types: [c4-standard-4] # 4 CPU, 16 GiB (preferred default instance)
 
 # For tests/workflows/test_pytorch_optuna.py
 pytorch_optuna:
@@ -60,7 +60,7 @@ pytorch_optuna:
 # For tests/workflows/test_snowflake.py
 snowflake:
   n_workers: 20
-  # worker_vm_types: [r7g.xlarge] # 4 CPU, 16 GiB (preferred default instance)
+  worker_vm_types: [c4-standard-4] # 4 CPU, 16 GiB (preferred default instance)
 
 
 # Specific tests

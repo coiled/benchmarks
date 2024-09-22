@@ -22,6 +22,7 @@ targets:
   - tests/benchmarks/test_rechunk.py::test_swap_axes
   - tests/workflows/test_xgboost_optuna.py
   - tests/workflows/test_uber_lyft.py
+  - tests/workflows/test_snowflake.py
   # - tests/runtime
   # - tests/stability
   # - tests/tpch/test_dask.py
