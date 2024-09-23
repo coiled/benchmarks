@@ -284,6 +284,14 @@ def ec2_instance_cpus(name: str) -> int:
     if size.endswith("xlarge"):
         return int(size[len("xlarge") :]) * 4
 
+    # hacky hack for gcp
+    if kind.endswith("standard-2"):
+        return 2
+    if kind.endswith("standard-4"):
+        return 4
+    if kind.endswith("standard-6"):
+        return 6
+
     # nano, micro, small, and medium instances are probably uninteresting for dask.
     # metal is interesting, but every architecture has its own number of cores and it
     # would be too much of an effort to hardcode them all here.
