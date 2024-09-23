@@ -65,7 +65,7 @@ def test_atmospheric_circulation(
 
         # # Users often rework things via a rechunk to make this a blockwise problem
         # daily = (
-        #     temdiags.chunk(time=xr.groupers.TimeResampler("D"))
+        #     temdiags.chunk(time=24)
         #     .resample(time="D")
         #     .mean()
         # )
