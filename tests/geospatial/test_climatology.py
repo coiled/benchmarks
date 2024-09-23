@@ -93,7 +93,7 @@ def test_compute_climatology(
     ) as client:  # noqa: F841
         # Load dataset
         ds = xr.open_zarr(
-            "gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721_with_derived_variables.zarr",
+            "gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721.zarr",
         )
 
         if scale == "small":
@@ -111,19 +111,26 @@ def test_compute_climatology(
             variables = ["sea_surface_temperature", "snow_depth"]
         ds = ds[variables].sel(time=time_range)
 
+        # Drop all static variables
         ds = ds.drop_vars([k for k, v in ds.items() if "time" not in v.dims])
-        pencil_chunks = {"time": -1, "longitude": "auto", "latitude": "auto"}
 
-        working = ds.chunk(pencil_chunks)
-        hours = xr.DataArray(range(0, 24, 6), dims=["hour"])
-        daysofyear = xr.DataArray(range(1, 367), dims=["dayofyear"])
-        template = (
-            working.isel(time=0)
-            .drop_vars("time")
-            .expand_dims(hour=hours, dayofyear=daysofyear)
-            .assign_coords(hour=hours, dayofyear=daysofyear)
-        )
-        working = working.map_blocks(compute_hourly_climatology, template=template)
+        # Split time dimension into three dimensions
+        ds["dayofyear"] = ds.time.dt.dayofyear
+        ds["hour"] = ds.time.dt.hour
+        ds["year"] = ds.time.dt.year
+        ds = ds.set_index(time=["year", "dayofyear", "hour"]).unstack()
+
+        # Fill empty values for non-leap years
+        ds = ds.ffill(dim="dayofyear", limit=1)
+
+        # Calculate climatology
+        window_size = 61
+        window_weights = create_window_weights(window_size)
+        half_window_size = window_size // 2
+        ds = ds.pad(pad_width={"dayofyear": half_window_size}, mode="wrap")
+        ds = ds.rolling(dayofyear=window_size, center=True).construct("window")
+        ds = ds.weighted(window_weights).mean(dim=("window", "year"))
+        ds = ds.isel(dayofyear=slice(half_window_size, -half_window_size))
 
         pancake_chunks = {
             "hour": 1,
@@ -131,5 +138,5 @@ def test_compute_climatology(
             "latitude": ds.chunks["latitude"],
             "longitude": ds.chunks["longitude"],
         }
-        result = working.chunk(pancake_chunks)
+        result = ds.chunk(pancake_chunks)
         result.to_zarr(gcs_url, storage_options={"token": CoiledShippedCredentials()})
