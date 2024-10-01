@@ -73,14 +73,77 @@ def select_hour(ds: xr.Dataset, hour: int) -> xr.Dataset:
     return ds
 
 
-def test_compute_climatology(
+def test_rechunk_map_blocks(
     gcs_url,
     scale,
     client_factory,
     cluster_kwargs={
-        "workspace": "dask-engineering-gcp",
+        "workspace": "dask-benchmarks-gcp",
         "region": "us-central1",
         "wait_for_workers": True,
+    },
+    scale_kwargs={
+        "small": {"n_workers": 10},
+        "medium": {"n_workers": 100},
+        "large": {"n_workers": 100},
+    },
+):
+    with client_factory(
+        **scale_kwargs[scale], **cluster_kwargs
+    ) as client:  # noqa: F841
+        # Load dataset
+        ds = xr.open_zarr(
+            "gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721.zarr",
+        )
+
+        if scale == "small":
+            # 101.83 GiB (small)
+            time_range = slice("2020-01-01", "2022-12-31")
+            variables = ["sea_surface_temperature"]
+        elif scale == "medium":
+            # 2.12 TiB (medium)
+            time_range = slice("1959-01-01", "2022-12-31")
+            variables = ["sea_surface_temperature"]
+        else:
+            # 4.24 TiB (large)
+            # This currently doesn't complete successfully.
+            time_range = slice("1959-01-01", "2022-12-31")
+            variables = ["sea_surface_temperature", "snow_depth"]
+        ds = ds[variables].sel(time=time_range)
+
+        ds = ds.drop_vars([k for k, v in ds.items() if "time" not in v.dims])
+        pencil_chunks = {"time": -1, "longitude": "128", "latitude": "128"}
+
+        working = ds.chunk(pencil_chunks)
+        hours = xr.DataArray(range(0, 24, 6), dims=["hour"])
+        daysofyear = xr.DataArray(range(1, 367), dims=["dayofyear"])
+        template = (
+            working.isel(time=0)
+            .drop_vars("time")
+            .expand_dims(hour=hours, dayofyear=daysofyear)
+            .assign_coords(hour=hours, dayofyear=daysofyear)
+        )
+        working = working.map_blocks(compute_hourly_climatology, template=template)
+
+        pancake_chunks = {
+            "hour": 1,
+            "dayofyear": 1,
+            "latitude": ds.chunks["latitude"],
+            "longitude": ds.chunks["longitude"],
+        }
+        result = working.chunk(pancake_chunks)
+        result.to_zarr(gcs_url, storage_options={"token": CoiledShippedCredentials()})
+
+
+def test_highlevel_api(
+    gcs_url,
+    scale,
+    client_factory,
+    cluster_kwargs={
+        "workspace": "dask-benchmarks-gcp",
+        "region": "us-central1",
+        "wait_for_workers": True,
+        "idle_timeout": "2h",
     },
     scale_kwargs={
         "small": {"n_workers": 10},
@@ -128,6 +191,7 @@ def test_compute_climatology(
         window_weights = create_window_weights(window_size)
         half_window_size = window_size // 2
         ds = ds.pad(pad_width={"dayofyear": half_window_size}, mode="wrap")
+        ds = ds.chunk(latitude=128, longitude=128)
         ds = ds.rolling(dayofyear=window_size, center=True).construct("window")
         ds = ds.weighted(window_weights).mean(dim=("window", "year"))
         ds = ds.isel(dayofyear=slice(half_window_size, -half_window_size))
