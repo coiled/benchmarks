@@ -191,6 +191,7 @@ def test_highlevel_api(
         window_weights = create_window_weights(window_size)
         half_window_size = window_size // 2
         ds = ds.pad(pad_width={"dayofyear": half_window_size}, mode="wrap")
+        # FIXME: https://github.com/pydata/xarray/issues/9550
         ds = ds.chunk(latitude=128, longitude=128)
         ds = ds.rolling(dayofyear=window_size, center=True).construct("window")
         ds = ds.weighted(window_weights).mean(dim=("window", "year"))
