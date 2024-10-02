@@ -112,7 +112,7 @@ def test_rechunk_map_blocks(
         ds = ds[variables].sel(time=time_range)
 
         ds = ds.drop_vars([k for k, v in ds.items() if "time" not in v.dims])
-        pencil_chunks = {"time": -1, "longitude": "128", "latitude": "128"}
+        pencil_chunks = {"time": -1, "longitude": "auto", "latitude": "auto"}
 
         working = ds.chunk(pencil_chunks)
         hours = xr.DataArray(range(0, 24, 6), dims=["hour"])
@@ -143,7 +143,7 @@ def test_highlevel_api(
         "workspace": "dask-benchmarks-gcp",
         "region": "us-central1",
         "wait_for_workers": True,
-        "idle_timeout": "2h",
+        "idle_timeout": "1h",
     },
     scale_kwargs={
         "small": {"n_workers": 10},
