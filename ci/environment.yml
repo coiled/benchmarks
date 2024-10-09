@@ -49,6 +49,7 @@ dependencies:
   - openssl >1.1.0g
   - rioxarray ==0.17.0
   - h5netcdf ==1.3.0
+  - xesmf ==0.8.7
 
 ########################################################
 # PLEASE READ:
