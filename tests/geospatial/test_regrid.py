@@ -1,13 +1,16 @@
 import numpy as np
+import pytest
 import xarray as xr
 import xesmf as xe
 from coiled.credentials.google import CoiledShippedCredentials
 
 
+@pytest.mark.parametrize("output_resolution", [1.5, 0.1])
 def test_xesmf(
     gcs_url,
     scale,
     client_factory,
+    output_resolution,
     cluster_kwargs={
         "workspace": "dask-engineering-gcp",
         "region": "us-central1",
@@ -47,12 +50,12 @@ def test_xesmf(
             {
                 "latitude": (
                     ["latitude"],
-                    np.arange(90, -91.5, -1.5),
+                    np.arange(90, -90 - output_resolution, -output_resolution),
                     {"units": "degrees_north"},
                 ),
                 "longitude": (
                     ["longitude"],
-                    np.arange(0, 360, 1.5),
+                    np.arange(0, 360, output_resolution),
                     {"units": "degrees_east"},
                 ),
             }
@@ -60,6 +63,5 @@ def test_xesmf(
         regridder = xe.Regridder(ds, out_grid, "bilinear", periodic=True)
         regridded = regridder(ds, keep_attrs=True)
 
-        # 144 MiB chunks for variables with level dimension since there is a single level chunk
-        result = regridded.chunk(time=100)
+        result = regridded.chunk(time="auto")
         result.to_zarr(gcs_url, storage_options={"token": CoiledShippedCredentials()})
