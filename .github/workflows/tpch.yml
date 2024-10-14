@@ -100,7 +100,6 @@ jobs:
         AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
         DB_NAME: tpch_${{ inputs.scale }}.db
-        CLUSTER_DUMP: always
         DASK_DATAFRAME__QUERY_PLANNING: True
       run: |
         pytest --benchmark \
