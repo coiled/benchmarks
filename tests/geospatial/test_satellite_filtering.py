@@ -2,9 +2,9 @@ import datetime
 
 import fsspec
 import geojson
+import odc.stac
 import planetary_computer
 import pystac_client
-import stackstac
 import xarray as xr
 from distributed import wait
 
@@ -58,7 +58,7 @@ def test_satellite_filtering(
     scale,
     client_factory,
     cluster_kwargs={
-        "workspace": "dask-engineering-azure",
+        "workspace": "dask-benchmarks-azure",
         "region": "westeurope",
         "wait_for_workers": True,
     },
@@ -104,14 +104,20 @@ def test_satellite_filtering(
         items = search.item_collection()
 
         # Construct Xarray Dataset from stack items
-        ds = stackstac.stack(items, assets=["B08", "B11"], chunksize=(400, 1, 256, 256))
+        ds = odc.stac.load(
+            items,
+            chunks={},
+            patch_url=planetary_computer.sign,
+            resolution=40,
+            crs="EPSG:3857",
+            groupby="solar_day",
+        )
         # See https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a#Baseline-Change
         ds = harmonize_to_old(ds)
 
         # Compute humidity index
-        humidity = (ds.sel(band="B08") - ds.sel(band="B11")) / (
-            ds.sel(band="B08") + ds.sel(band="B11")
-        )
+        humidity = (ds.B08 - ds.B11) / (ds.B08 + ds.B11)
+
         result = humidity.groupby("time.month").mean()
         result = result.persist()
         wait(result)
