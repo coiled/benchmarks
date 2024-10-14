@@ -667,8 +667,10 @@ def s3_scratch(s3):
 def s3_url(s3, s3_scratch, test_name_uuid):
     url = f"{s3_scratch}/{test_name_uuid}"
     s3.mkdirs(url, exist_ok=False)
-    yield url
-    s3.rm(url, recursive=True)
+    try:
+        yield url
+    finally:
+        s3.rm(url, recursive=True)
 
 
 @pytest.fixture(scope="session")
@@ -701,8 +703,10 @@ def gcs_scratch(gcs):
 def gcs_url(gcs, gcs_scratch, test_name_uuid):
     url = f"{gcs_scratch}/{test_name_uuid}"
     gcs.mkdirs(url, exist_ok=False)
-    yield url
-    gcs.rm(url, recursive=True)
+    try:
+        yield url
+    finally:
+        gcs.rm(url, recursive=True)
 
 
 # this code was taken from pytest docs
