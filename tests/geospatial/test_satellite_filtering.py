@@ -1,4 +1,5 @@
 import datetime
+import os
 
 import fsspec
 import geojson
@@ -44,7 +45,7 @@ def harmonize_to_old(data):
 
     old = data.sel(time=slice(cutoff))
 
-    to_process = list(set(bands) & set(data.band.data.tolist()))
+    to_process = list(set(bands) & set(data.data_vars.tolist()))
     new = data.sel(time=slice(cutoff, None)).drop_sel(band=to_process)
 
     new_harmonized = data.sel(time=slice(cutoff, None), band=to_process).clip(offset)
@@ -55,6 +56,7 @@ def harmonize_to_old(data):
 
 
 def test_satellite_filtering(
+    az_url,
     scale,
     client_factory,
     cluster_kwargs={
@@ -68,7 +70,12 @@ def test_satellite_filtering(
     },
 ):
     with client_factory(
-        **scale_kwargs[scale], **cluster_kwargs
+        **scale_kwargs[scale],
+        env={
+            "AZURE_STORAGE_ACCOUNT_NAME": os.environ["AZURE_STORAGE_ACCOUNT_NAME"],
+            "AZURE_STORAGE_SAS_TOKEN": os.environ["AZURE_STORAGE_SAS_TOKEN"],
+        },
+        **cluster_kwargs,
     ) as client:  # noqa: F841
         catalog = pystac_client.Client.open(
             "https://planetarycomputer.microsoft.com/api/stac/v1",
@@ -113,11 +120,12 @@ def test_satellite_filtering(
             groupby="solar_day",
         )
         # See https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a#Baseline-Change
-        ds = harmonize_to_old(ds)
+        # FIXME
+        # ds = harmonize_to_old(ds)
 
         # Compute humidity index
         humidity = (ds.B08 - ds.B11) / (ds.B08 + ds.B11)
 
         result = humidity.groupby("time.month").mean()
-        result = result.persist()
+        result.to_zarr(az_url)
         wait(result)

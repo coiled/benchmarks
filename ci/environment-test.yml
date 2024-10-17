@@ -13,6 +13,7 @@ dependencies:
   - pytest
   - pytest-timeout
   - pytest-xdist
+  - python-dotenv
   - pyyaml
   # TPC-H correctness test and DuckDB implementation
   # Can add duckdb back to conda install after:

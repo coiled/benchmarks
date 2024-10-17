@@ -14,6 +14,7 @@ import time
 import uuid
 from functools import lru_cache
 
+import adlfs
 import dask
 import dask.array as da
 import dask_expr
@@ -29,6 +30,7 @@ from coiled import Cluster
 from dask.distributed import Client, WorkerPlugin
 from dask.distributed.diagnostics.memory_sampler import MemorySampler
 from dask.distributed.scheduler import logger as scheduler_logger
+from dotenv import load_dotenv
 from packaging.version import Version
 from sqlalchemy.orm import Session
 
@@ -703,6 +705,32 @@ def gcs_url(gcs, gcs_scratch, test_name_uuid):
     gcs.mkdirs(url, exist_ok=False)
     yield url
     gcs.rm(url, recursive=True)
+
+
+@pytest.fixture(scope="session")
+def az():
+    load_dotenv()
+    return adlfs.AzureBlobFileSystem()
+
+
+@pytest.fixture(scope="session")
+def az_scratch(az):
+    # Ensure that the test-scratch directory exists,
+    # but do NOT remove it as multiple test runs could be
+    # accessing it at the same time
+    scratch_url = "az://coiled-runtime-ci/scratch-space"
+    az.mkdirs(scratch_url, exist_ok=True)
+    return scratch_url
+
+
+@pytest.fixture(scope="function")
+def az_url(az, az_scratch, test_name_uuid):
+    url = f"{az_scratch}/{test_name_uuid}"
+    az.mkdirs(url, exist_ok=False)
+    try:
+        yield url
+    finally:
+        az.rm(url, recursive=True)
 
 
 # this code was taken from pytest docs
