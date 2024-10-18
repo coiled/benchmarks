@@ -15,7 +15,6 @@ pytestmark = pytest.mark.stability
     reason="https://github.com/dask/distributed/issues/6110",
 )
 def test_repeated_merge_spill(
-    upload_cluster_dump,
     benchmark_all,
     cluster_kwargs,
     dask_env_variables,
@@ -28,7 +27,7 @@ def test_repeated_merge_spill(
         **cluster_kwargs["test_repeated_merge_spill"],
     ) as cluster:
         with Client(cluster) as client:
-            with upload_cluster_dump(client), benchmark_all(client):
+            with benchmark_all(client):
                 ddf = dask.datasets.timeseries(
                     "2020",
                     "2025",

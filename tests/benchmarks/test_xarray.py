@@ -36,15 +36,13 @@ def group_reduction_cluster(dask_env_variables, cluster_kwargs, github_cluster_t
 
 
 @pytest.fixture
-def group_reduction_client(
-    group_reduction_cluster, cluster_kwargs, upload_cluster_dump, benchmark_all
-):
+def group_reduction_client(group_reduction_cluster, cluster_kwargs, benchmark_all):
     n_workers = cluster_kwargs["group_reduction_cluster"]["n_workers"]
     with Client(group_reduction_cluster) as client:
         group_reduction_cluster.scale(n_workers)
         client.wait_for_workers(n_workers, timeout=600)
         client.restart()
-        with upload_cluster_dump(client), benchmark_all(client):
+        with benchmark_all(client):
             yield client
 
 

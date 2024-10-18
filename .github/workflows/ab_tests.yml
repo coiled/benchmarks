@@ -104,7 +104,6 @@ jobs:
           SNOWFLAKE_ROLE: ${{ secrets.SNOWFLAKE_ROLE }}
           AB_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: ${{ matrix.runtime-version }}-${{ matrix.repeat }}.db
-          CLUSTER_DUMP: always
           CLUSTER_KWARGS: AB_environments/${{ matrix.runtime-version }}.cluster.yaml
           H2O_DATASETS: ${{ matrix.h2o_datasets }}
         run: pytest --benchmark ${{ matrix.pytest_args }}

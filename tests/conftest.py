@@ -560,7 +560,6 @@ def small_client(
     testrun_uid,
     small_cluster,
     cluster_kwargs,
-    upload_cluster_dump,
     benchmark_all,
 ):
     n_workers = cluster_kwargs["small_cluster"]["n_workers"]
@@ -571,26 +570,25 @@ def small_client(
         small_cluster.scale(n_workers)
         client.wait_for_workers(n_workers, timeout=600)
 
-        with upload_cluster_dump(client):
-            log_on_scheduler(client, "Finished client setup of %s", test_label)
+        log_on_scheduler(client, "Finished client setup of %s", test_label)
 
-            with benchmark_all(client):
-                yield client
+        with benchmark_all(client):
+            yield client
 
-            # Note: normally, this RPC call is almost instantaneous. However, in the
-            # case where the scheduler is still very busy when the fixtured test returns
-            # (e.g. test_futures.py::test_large_map_first_work), it can be delayed into
-            # several seconds. We don't want to capture this extra delay with
-            # benchmark_time, as it's beyond the scope of the test.
-            log_on_scheduler(client, "Starting client teardown of %s", test_label)
+        # Note: normally, this RPC call is almost instantaneous. However, in the
+        # case where the scheduler is still very busy when the fixtured test returns
+        # (e.g. test_futures.py::test_large_map_first_work), it can be delayed into
+        # several seconds. We don't want to capture this extra delay with
+        # benchmark_time, as it's beyond the scope of the test.
+        log_on_scheduler(client, "Starting client teardown of %s", test_label)
 
-        client.restart()
-        # Run connects to all workers once and to ensure they're up before we do
-        # something else. With another call of restart when entering this
-        # fixture again, this can trigger a race condition that kills workers
-        # See https://github.com/dask/distributed/issues/7312 Can be removed
-        # after this issue is fixed.
-        client.run(lambda: None)
+    client.restart()
+    # Run connects to all workers once and to ensure they're up before we do
+    # something else. With another call of restart when entering this
+    # fixture again, this can trigger a race condition that kills workers
+    # See https://github.com/dask/distributed/issues/7312 Can be removed
+    # after this issue is fixed.
+    client.run(lambda: None)
 
 
 @pytest.fixture
@@ -599,7 +597,6 @@ def client(
     dask_env_variables,
     cluster_kwargs,
     github_cluster_tags,
-    upload_cluster_dump,
     benchmark_all,
 ):
     name = request.param["name"]
@@ -614,7 +611,7 @@ def client(
                 client.upload_file(request.param["upload_file"])
             if request.param["worker_plugin"] is not None:
                 client.register_worker_plugin(request.param["worker_plugin"])
-            with upload_cluster_dump(client), benchmark_all(client):
+            with benchmark_all(client):
                 yield client
 
 
@@ -669,15 +666,10 @@ def s3_scratch(s3):
 def s3_url(s3, s3_scratch, test_name_uuid):
     url = f"{s3_scratch}/{test_name_uuid}"
     s3.mkdirs(url, exist_ok=False)
-    yield url
-    s3.rm(url, recursive=True)
-
-
-@pytest.fixture(scope="session")
-def s3_cluster_dump_url(s3, s3_scratch):
-    dump_url = f"{s3_scratch}/cluster_dumps"
-    s3.mkdirs(dump_url, exist_ok=True)
-    return dump_url
+    try:
+        yield url
+    finally:
+        s3.rm(url, recursive=True)
 
 
 GCS_REGION = "us-central1"
@@ -703,8 +695,10 @@ def gcs_scratch(gcs):
 def gcs_url(gcs, gcs_scratch, test_name_uuid):
     url = f"{gcs_scratch}/{test_name_uuid}"
     gcs.mkdirs(url, exist_ok=False)
-    yield url
-    gcs.rm(url, recursive=True)
+    try:
+        yield url
+    finally:
+        gcs.rm(url, recursive=True)
 
 
 @pytest.fixture(scope="session")
@@ -745,43 +739,6 @@ def pytest_runtest_makereport(item, call):
     # be "setup", "call", "teardown"
 
     setattr(item, "rep_" + rep.when, rep)
-
-
-@pytest.fixture
-def upload_cluster_dump(
-    request, s3_cluster_dump_url, s3_storage_options, test_run_benchmark
-):
-    @contextlib.contextmanager
-    def _upload_cluster_dump(client):
-        failed = False
-        # the code below is a workaround to make cluster dumps work with clients in fixtures
-        # and outside fixtures.
-        try:
-            yield
-        except Exception:
-            failed = True
-            raise
-        else:
-            # we need this for tests that are not using the client fixture
-            # for those cases request.node.rep_call.failed can't be access.
-            try:
-                failed = request.node.rep_call.failed
-            except AttributeError:
-                failed = False
-        finally:
-            cluster_dump = os.environ.get("CLUSTER_DUMP", "false")
-            if cluster_dump == "always" or (cluster_dump == "fail" and failed):
-                dump_path = (
-                    f"{s3_cluster_dump_url}/{client.cluster.name}/"
-                    f"{test_run_benchmark.path.replace('/', '.')}.{request.node.name}"
-                )
-                test_run_benchmark.cluster_dump_url = dump_path + ".msgpack.gz"
-                logger.info(
-                    f"Cluster state dump can be found at: {dump_path}.msgpack.gz"
-                )
-                client.dump_cluster_state(dump_path, **s3_storage_options)
-
-    yield _upload_cluster_dump
 
 
 requires_p2p_shuffle = pytest.mark.skipif(

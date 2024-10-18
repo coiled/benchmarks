@@ -28,7 +28,6 @@ def test_trivial_workload_should_not_cause_work_stealing(small_client):
 )
 def test_work_stealing_on_scaling_up(
     test_name_uuid,
-    upload_cluster_dump,
     benchmark_all,
     cluster_kwargs,
     dask_env_variables,
@@ -43,7 +42,7 @@ def test_work_stealing_on_scaling_up(
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103
             client.wait_for_workers(1, timeout=300)
-            with upload_cluster_dump(client), benchmark_all(client):
+            with benchmark_all(client):
                 # Slow task.
                 def func1(chunk):
                     if sum(chunk.shape) != 0:  # Make initialization fast
@@ -89,7 +88,6 @@ def test_work_stealing_on_inhomogeneous_workload(small_client):
 @run_up_to_nthreads("small_cluster", 100, reason="fixed dataset")
 def test_work_stealing_on_straggling_worker(
     test_name_uuid,
-    upload_cluster_dump,
     benchmark_all,
     cluster_kwargs,
     dask_env_variables,
@@ -105,7 +103,7 @@ def test_work_stealing_on_straggling_worker(
         with Client(cluster) as client:
             # FIXME https://github.com/coiled/platform/issues/103
             client.wait_for_workers(kwargs["n_workers"], timeout=600)
-            with upload_cluster_dump(client), benchmark_all(client):
+            with benchmark_all(client):
 
                 def clog():
                     time.sleep(1)
