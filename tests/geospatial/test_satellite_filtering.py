@@ -7,22 +7,21 @@ import odc.stac
 import planetary_computer
 import pystac_client
 import xarray as xr
-from distributed import wait
 
 
-def harmonize_to_old(data):
+def harmonize_to_old(data: xr.Dataset) -> xr.Dataset:
     """
     Harmonize new Sentinel-2 data to the old baseline.
 
     Parameters
     ----------
-    data: xarray.DataArray
-        A DataArray with four dimensions: time, band, y, x
+    data:
+        A Dataset with various bands as data variables and three dimensions: time, y, x
 
     Returns
     -------
-    harmonized: xarray.DataArray
-        A DataArray with all values harmonized to the old
+    harmonized: xarray.Dataset
+        A Dataset with all values harmonized to the old
         processing baseline.
     """
     cutoff = datetime.datetime(2022, 1, 25)
@@ -43,15 +42,15 @@ def harmonize_to_old(data):
         "B12",
     ]
 
-    old = data.sel(time=slice(cutoff))
+    to_process = list(set(bands) & set(list(data.data_vars)))
+    old = data.sel(time=slice(cutoff))[to_process]
 
-    to_process = list(set(bands) & set(data.data_vars.tolist()))
-    new = data.sel(time=slice(cutoff, None)).drop_sel(band=to_process)
+    new = data.sel(time=slice(cutoff, None)).drop_vars(to_process)
 
-    new_harmonized = data.sel(time=slice(cutoff, None), band=to_process).clip(offset)
+    new_harmonized = data.sel(time=slice(cutoff, None))[to_process].clip(offset)
     new_harmonized -= offset
 
-    new = xr.concat([new, new_harmonized], "band").sel(band=data.band.data.tolist())
+    new = xr.merge([new, new_harmonized])
     return xr.concat([old, new], dim="time")
 
 
@@ -120,12 +119,10 @@ def test_satellite_filtering(
             groupby="solar_day",
         )
         # See https://planetarycomputer.microsoft.com/dataset/sentinel-2-l2a#Baseline-Change
-        # FIXME
-        # ds = harmonize_to_old(ds)
+        ds = harmonize_to_old(ds)
 
         # Compute humidity index
         humidity = (ds.B08 - ds.B11) / (ds.B08 + ds.B11)
 
         result = humidity.groupby("time.month").mean()
         result.to_zarr(az_url)
-        wait(result)
