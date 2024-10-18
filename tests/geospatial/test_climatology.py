@@ -97,15 +97,15 @@ def test_rechunk_map_blocks(
         )
 
         if scale == "small":
-            # 101.83 GiB (small)
+            # 16.96 GiB (small)
             time_range = slice("2020-01-01", "2022-12-31")
             variables = ["sea_surface_temperature"]
         elif scale == "medium":
-            # 2.12 TiB (medium)
+            # 361.8 GiB (medium)
             time_range = slice("1959-01-01", "2022-12-31")
             variables = ["sea_surface_temperature"]
         else:
-            # 4.24 TiB (large)
+            # 723.6 GiB (large)
             # This currently doesn't complete successfully.
             time_range = slice("1959-01-01", "2022-12-31")
             variables = ["sea_surface_temperature", "snow_depth"]
