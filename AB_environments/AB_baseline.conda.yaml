@@ -53,6 +53,7 @@ dependencies:
   - planetary-computer ==1.0.0
   - pystac-client ==0.8.3
   - odc-stac ==0.3.10
+  - adlfs ==2024.7.0
   # End copy-paste
 
   - pip:
