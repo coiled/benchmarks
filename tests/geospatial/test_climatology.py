@@ -174,6 +174,7 @@ def test_highlevel_api(
             time_range = slice("1959-01-01", "2022-12-31")
             variables = ["sea_surface_temperature", "snow_depth"]
         ds = ds[variables].sel(time=time_range)
+        original_chunks = ds.chunks
 
         # Drop all static variables
         ds = ds.drop_vars([k for k, v in ds.items() if "time" not in v.dims])
@@ -201,8 +202,8 @@ def test_highlevel_api(
         pancake_chunks = {
             "hour": 1,
             "dayofyear": 1,
-            "latitude": ds.chunks["latitude"],
-            "longitude": ds.chunks["longitude"],
+            "latitude": original_chunks["latitude"],
+            "longitude": original_chunks["longitude"],
         }
         result = ds.chunk(pancake_chunks)
         result.to_zarr(gcs_url, storage_options={"token": CoiledShippedCredentials()})
