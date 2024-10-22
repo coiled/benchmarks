@@ -77,7 +77,7 @@ def pytest_sessionfinish(session, exitstatus):
 
 dask.config.set(
     {
-        "coiled.account": "dask-benchmarks",
+        "coiled.account": "dask-engineering",
         "distributed.admin.system-monitor.gil.enabled": True,
     }
 )
