@@ -110,6 +110,7 @@ def test_rechunk_map_blocks(
             time_range = slice("1959-01-01", "2022-12-31")
             variables = ["sea_surface_temperature", "snow_depth"]
         ds = ds[variables].sel(time=time_range)
+        original_chunks = ds.chunks
 
         ds = ds.drop_vars([k for k, v in ds.items() if "time" not in v.dims])
         pencil_chunks = {"time": -1, "longitude": "auto", "latitude": "auto"}
@@ -128,8 +129,8 @@ def test_rechunk_map_blocks(
         pancake_chunks = {
             "hour": 1,
             "dayofyear": 1,
-            "latitude": ds.chunks["latitude"],
-            "longitude": ds.chunks["longitude"],
+            "latitude": original_chunks["latitude"],
+            "longitude": original_chunks["longitude"],
         }
         result = working.chunk(pancake_chunks)
         result.to_zarr(gcs_url, storage_options={"token": CoiledShippedCredentials()})
