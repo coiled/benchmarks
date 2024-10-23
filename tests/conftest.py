@@ -925,7 +925,7 @@ def performance_report(
         yield
     else:
         if not pytestconfig.getoption("--performance-report"):
-            yield
+            yield contextlib.nullcontext
         else:
 
             @contextlib.contextmanager
