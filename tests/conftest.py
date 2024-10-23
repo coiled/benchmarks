@@ -71,6 +71,12 @@ def pytest_addoption(parser):
     )
 
     parser.addoption(
+        "--performance-report",
+        action="store_true",
+        help="Collect performance report for tests",
+    )
+
+    parser.addoption(
         "--memray",
         action="store",
         default="scheduler",
@@ -881,22 +887,23 @@ def memray_profile(
             yield
         elif memray_option != "scheduler":
             raise ValueError(f"Unhandled value for --memray: {memray_option}")
+        else:
 
-        @contextlib.contextmanager
-        def _memray_profile(client):
-            profiles_path = tmp_path / "profiles"
-            profiles_path.mkdir()
-            try:
-                with memray.memray_scheduler(directory=profiles_path):
-                    yield
-            finally:
-                archive = tmp_path / "memray.tar.gz"
-                with tarfile.open(archive, mode="w:gz") as tar:
-                    for item in profiles_path.iterdir():
-                        tar.add(item, arcname=item.name)
-                test_run_benchmark.memray_profiles_url = str(
-                    s3_performance_url / "memray.tar.gz"
-                )
-                s3.put(archive, s3_performance_url)
+            @contextlib.contextmanager
+            def _memray_profile(client):
+                profiles_path = tmp_path / "profiles"
+                profiles_path.mkdir()
+                try:
+                    with memray.memray_scheduler(directory=profiles_path):
+                        yield
+                finally:
+                    archive = tmp_path / "memray.tar.gz"
+                    with tarfile.open(archive, mode="w:gz") as tar:
+                        for item in profiles_path.iterdir():
+                            tar.add(item, arcname=item.name)
+                    test_run_benchmark.memray_profiles_url = (
+                        f"{s3_performance_url}/{archive.name}"
+                    )
+                    s3.put(archive, s3_performance_url)
 
-        yield _memray_profile
+            yield _memray_profile
