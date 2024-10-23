@@ -41,6 +41,8 @@ def client_factory(cluster_name, github_cluster_tags, benchmark_all):
             if env:
                 cluster.send_private_envs(env=env)
             with cluster.get_client() as client:
+                # FIXME https://github.com/coiled/platform/issues/103
+                client.wait_for_workers(n_workers)
                 with benchmark_all(client):
                     yield client
 
