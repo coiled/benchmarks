@@ -663,9 +663,9 @@ def s3_factory(s3_storage_options):
 
 
 @pytest.fixture(scope="session")
-def s3_memray_profiles(s3):
-    profiles_url = f"{S3_BUCKET}/memray-profiles"
-    # Ensure that the memray-profiles directory exists,
+def s3_performance(s3):
+    profiles_url = f"{S3_BUCKET}/performance"
+    # Ensure that the performance directory exists,
     # but do NOT remove it as multiple test runs could be
     # accessing it at the same time
     s3.mkdirs(profiles_url, exist_ok=True)
@@ -693,8 +693,8 @@ def s3_url(s3, s3_scratch, test_name_uuid):
 
 
 @pytest.fixture(scope="function")
-def s3_memray_profiles_url(s3, s3_memray_profiles, test_name_uuid):
-    url = f"{s3_memray_profiles}/{test_name_uuid}"
+def s3_performance_url(s3, s3_performance, test_name_uuid):
+    url = f"{s3_performance}/{test_name_uuid}"
     s3.mkdirs(url, exist_ok=False)
     return url
 
@@ -867,7 +867,7 @@ def memory_multiplier(request):
 def memray_profile(
     pytestconfig,
     s3,
-    s3_memray_profiles_url,
+    s3_performance_url,
     s3_storage_options,
     test_run_benchmark,
     tmp_path,
@@ -894,7 +894,9 @@ def memray_profile(
                 with tarfile.open(archive, mode="w:gz") as tar:
                     for item in profiles_path.iterdir():
                         tar.add(item, arcname=item.name)
-                test_run_benchmark.memray_profiles_url = s3_memray_profiles_url
-                s3.put(archive, s3_memray_profiles_url)
+                test_run_benchmark.memray_profiles_url = str(
+                    s3_performance_url / "memray.tar.gz"
+                )
+                s3.put(archive, s3_performance_url)
 
         yield _memray_profile

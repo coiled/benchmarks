@@ -107,7 +107,7 @@ jobs:
           CLUSTER_KWARGS: AB_environments/${{ matrix.runtime-version }}.cluster.yaml
           H2O_DATASETS: ${{ matrix.h2o_datasets }}
           MEMRAY_PROFILE: "scheduler"
-        run: pytest --benchmark ${{ matrix.pytest_args }}
+        run: pytest --benchmark --memray $MEMRAY_PROFILE ${{ matrix.pytest_args }}
 
       - name: Dump coiled.Cluster kwargs
         run: cat cluster_kwargs.merged.yaml

@@ -143,7 +143,7 @@ jobs:
           DASK_DATAFRAME__QUERY_PLANNING: True
           MEMRAY_PROFILE: "scheduler"
         run: |
-          pytest --benchmark -n 4 --dist loadscope ${{ env.PYTEST_MARKERS }} ${{ matrix.pytest_args }}
+          pytest --benchmark -n 4 --dist loadscope --memray $MEMRAY_PROFILE ${{ env.PYTEST_MARKERS }} ${{ matrix.pytest_args }}
 
       - name: Dump coiled.Cluster kwargs
         run: cat cluster_kwargs.merged.yaml || true
