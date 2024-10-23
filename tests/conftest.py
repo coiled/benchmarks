@@ -884,7 +884,7 @@ def memray_profile(
         memray_option = pytestconfig.getoption("--memray")
 
         if memray_option == "none":
-            yield
+            yield contextlib.nullcontext
         elif memray_option != "scheduler":
             raise ValueError(f"Unhandled value for --memray: {memray_option}")
         else:
