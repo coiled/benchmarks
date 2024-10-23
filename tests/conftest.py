@@ -9,6 +9,7 @@ import pathlib
 import pickle
 import subprocess
 import sys
+import tarfile
 import threading
 import time
 import uuid
@@ -28,6 +29,7 @@ import sqlalchemy
 import yaml
 from coiled import Cluster
 from dask.distributed import Client, WorkerPlugin
+from dask.distributed.diagnostics import memray
 from dask.distributed.diagnostics.memory_sampler import MemorySampler
 from dask.distributed.scheduler import logger as scheduler_logger
 from dotenv import load_dotenv
@@ -66,6 +68,14 @@ def pytest_addoption(parser):
 
     parser.addoption(
         "--benchmark", action="store_true", help="Collect benchmarking data for tests"
+    )
+
+    parser.addoption(
+        "--memray",
+        action="store",
+        default="scheduler",
+        help="Memray profiles to collect: scheduler or none",
+        choices=("scheduler", "none"),
     )
 
 
@@ -653,6 +663,16 @@ def s3_factory(s3_storage_options):
 
 
 @pytest.fixture(scope="session")
+def s3_memray_profiles(s3):
+    profiles_url = f"{S3_BUCKET}/memray-profiles"
+    # Ensure that the memray-profiles directory exists,
+    # but do NOT remove it as multiple test runs could be
+    # accessing it at the same time
+    s3.mkdirs(profiles_url, exist_ok=True)
+    return profiles_url
+
+
+@pytest.fixture(scope="session")
 def s3_scratch(s3):
     # Ensure that the test-scratch directory exists,
     # but do NOT remove it as multiple test runs could be
@@ -670,6 +690,13 @@ def s3_url(s3, s3_scratch, test_name_uuid):
         yield url
     finally:
         s3.rm(url, recursive=True)
+
+
+@pytest.fixture(scope="function")
+def s3_memray_profiles_url(s3, s3_memray_profiles, test_name_uuid):
+    url = f"{s3_memray_profiles}/{test_name_uuid}"
+    s3.mkdirs(url, exist_ok=False)
+    return url
 
 
 GCS_REGION = "us-central1"
@@ -834,3 +861,40 @@ def new_array(request):
 @pytest.fixture(params=[0.1, 1])
 def memory_multiplier(request):
     return request.param
+
+
+@pytest.fixture
+def memray_profile(
+    pytestconfig,
+    s3,
+    s3_memray_profiles_url,
+    s3_storage_options,
+    test_run_benchmark,
+    tmp_path,
+):
+    if not test_run_benchmark:
+        yield
+    else:
+        memray_option = pytestconfig.getoption("--memray")
+
+        if memray_option == "none":
+            yield
+        elif memray_option != "scheduler":
+            raise ValueError(f"Unhandled value for --memray: {memray_option}")
+
+        @contextlib.contextmanager
+        def _memray_profile(client):
+            profiles_path = tmp_path / "profiles"
+            profiles_path.mkdir()
+            try:
+                with memray.memray_scheduler(directory=profiles_path):
+                    yield
+            finally:
+                archive = tmp_path / "memray.tar.gz"
+                with tarfile.open(archive, mode="w:gz") as tar:
+                    for item in profiles_path.iterdir():
+                        tar.add(item, arcname=item.name)
+                test_run_benchmark.memray_profiles_url = s3_memray_profiles_url
+                s3.put(archive, s3_memray_profiles_url)
+
+        yield _memray_profile

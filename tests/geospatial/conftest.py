@@ -27,7 +27,7 @@ def cluster_name(request, scale):
 
 
 @pytest.fixture()
-def client_factory(cluster_name, github_cluster_tags, benchmark_all):
+def client_factory(cluster_name, github_cluster_tags, benchmark_all, memray_profile):
     import contextlib
 
     @contextlib.contextmanager
@@ -41,7 +41,7 @@ def client_factory(cluster_name, github_cluster_tags, benchmark_all):
             if env:
                 cluster.send_private_envs(env=env)
             with cluster.get_client() as client:
-                with benchmark_all(client):
+                with memray_profile(client), benchmark_all(client):
                     yield client
 
     return _
