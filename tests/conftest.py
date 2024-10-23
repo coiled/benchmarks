@@ -71,12 +71,6 @@ def pytest_addoption(parser):
     )
 
     parser.addoption(
-        "--performance-report",
-        action="store_true",
-        help="Collect performance report for tests",
-    )
-
-    parser.addoption(
         "--memray",
         action="store",
         default="scheduler",
