@@ -62,6 +62,7 @@ class TestRun(Base):
     # Artifacts
     performance_report_url = Column(String, nullable=True)  # Not yet collected
     cluster_dump_url = Column(String, nullable=True)
+    memray_profiles_url = Column(String, nullable=True)
 
 
 class TPCHRun(Base):

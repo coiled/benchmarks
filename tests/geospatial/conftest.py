@@ -27,7 +27,7 @@ def cluster_name(request, scale):
 
 
 @pytest.fixture()
-def client_factory(cluster_name, github_cluster_tags, benchmark_all):
+def client_factory(cluster_name, github_cluster_tags, benchmark_all, memray_profile):
     import contextlib
 
     @contextlib.contextmanager
@@ -43,7 +43,7 @@ def client_factory(cluster_name, github_cluster_tags, benchmark_all):
             with cluster.get_client() as client:
                 # FIXME https://github.com/coiled/platform/issues/103
                 client.wait_for_workers(n_workers)
-                with benchmark_all(client):
+                with memray_profile(client), benchmark_all(client):
                     yield client
 
     return _

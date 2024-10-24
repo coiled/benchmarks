@@ -60,6 +60,7 @@ dependencies:
   - pystac-client ==0.8.3
   - odc-stac ==0.3.10
   - adlfs ==2024.7.0
+  - memray ==1.13.4
   # End copy-paste
 
   - pip:
