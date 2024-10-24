@@ -15,7 +15,6 @@ def test_nwm(
     cluster_kwargs={
         "workspace": "dask-benchmarks",
         "region": "us-east-1",
-        "wait_for_workers": True,
     },
     scale_kwargs={
         "small": {"n_workers": 10},

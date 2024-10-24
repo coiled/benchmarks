@@ -61,7 +61,6 @@ def test_satellite_filtering(
     cluster_kwargs={
         "workspace": "dask-benchmarks-azure",
         "region": "westeurope",
-        "wait_for_workers": True,
     },
     scale_kwargs={
         "small": {"n_workers": 10},

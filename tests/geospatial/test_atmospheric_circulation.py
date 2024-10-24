@@ -9,7 +9,6 @@ def test_atmospheric_circulation(
     cluster_kwargs={
         "workspace": "dask-benchmarks-gcp",
         "region": "us-central1",
-        "wait_for_workers": True,
     },
     scale_kwargs={
         "small": {"n_workers": 10},

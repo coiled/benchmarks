@@ -9,7 +9,6 @@ def test_cloud_optimize(
     cluster_kwargs={
         "workspace": "dask-benchmarks",
         "region": "us-west-2",
-        "wait_for_workers": True,
     },
     scale_kwargs={
         "small": {"n_workers": 10},
