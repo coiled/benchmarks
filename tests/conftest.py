@@ -689,7 +689,10 @@ def s3_url(s3, s3_scratch, test_name_uuid):
     try:
         yield url
     finally:
-        s3.rm(url, recursive=True)
+        try:
+            s3.rm(url, recursive=True)
+        except FileNotFoundError:
+            pass
 
 
 @pytest.fixture(scope="function")
@@ -725,7 +728,10 @@ def gcs_url(gcs, gcs_scratch, test_name_uuid):
     try:
         yield url
     finally:
-        gcs.rm(url, recursive=True)
+        try:
+            gcs.rm(url, recursive=True)
+        except FileNotFoundError:
+            pass
 
 
 @pytest.fixture(scope="session")
@@ -751,7 +757,10 @@ def az_url(az, az_scratch, test_name_uuid):
     try:
         yield url
     finally:
-        az.rm(url, recursive=True)
+        try:
+            az.rm(url, recursive=True)
+        except FileNotFoundError:
+            pass
 
 
 # this code was taken from pytest docs

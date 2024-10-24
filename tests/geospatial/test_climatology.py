@@ -80,7 +80,6 @@ def test_rechunk_map_blocks(
     cluster_kwargs={
         "workspace": "dask-benchmarks-gcp",
         "region": "us-central1",
-        "wait_for_workers": True,
     },
     scale_kwargs={
         "small": {"n_workers": 10},
@@ -143,7 +142,6 @@ def test_highlevel_api(
     cluster_kwargs={
         "workspace": "dask-benchmarks-gcp",
         "region": "us-central1",
-        "wait_for_workers": True,
         "idle_timeout": "1h",
     },
     scale_kwargs={
