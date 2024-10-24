@@ -71,6 +71,12 @@ def pytest_addoption(parser):
     )
 
     parser.addoption(
+        "--performance-report",
+        action="store_true",
+        help="Collect performance report for tests",
+    )
+
+    parser.addoption(
         "--memray",
         action="store",
         default="scheduler",
@@ -910,3 +916,33 @@ def memray_profile(
                     s3.put(archive, s3_performance_url)
 
             yield _memray_profile
+
+
+@pytest.fixture
+def performance_report(
+    pytestconfig,
+    s3,
+    s3_performance_url,
+    s3_storage_options,
+    test_run_benchmark,
+    tmp_path,
+):
+    if not test_run_benchmark:
+        yield
+    else:
+        if not pytestconfig.getoption("--performance-report"):
+            yield contextlib.nullcontext
+        else:
+
+            @contextlib.contextmanager
+            def _performance_report():
+                try:
+                    filename = f"{s3_performance_url}/performance_report.html.gz"
+                    with distributed.performance_report(
+                        filename=filename, storage_options=s3_storage_options
+                    ):
+                        yield
+                finally:
+                    test_run_benchmark.performance_report_url = filename
+
+            yield _performance_report
