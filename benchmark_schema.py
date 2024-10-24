@@ -63,6 +63,7 @@ class TestRun(Base):
     performance_report_url = Column(String, nullable=True)  # Not yet collected
     cluster_dump_url = Column(String, nullable=True)
     memray_profiles_url = Column(String, nullable=True)
+    py_spy_profiles_url = Column(String, nullable=True)
 
 
 class TPCHRun(Base):
