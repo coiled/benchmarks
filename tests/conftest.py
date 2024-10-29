@@ -888,7 +888,7 @@ def memray_profile(
     tmp_path,
 ):
     if not test_run_benchmark:
-        yield
+        yield contextlib.nullcontext
     else:
         memray_option = pytestconfig.getoption("--memray")
 
