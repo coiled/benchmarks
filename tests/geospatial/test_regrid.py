@@ -27,7 +27,7 @@ def test_xesmf(
     ) as client:  # noqa: F841
         # Load dataset
         ds = xr.open_zarr(
-            "gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721.zarr",
+            "gs://weatherbench2/datasets/era5/1959-2023_01_10-full_37-1h-0p25deg-chunk-1.zarr",
         )
 
         if scale == "small":
