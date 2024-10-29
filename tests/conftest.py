@@ -928,7 +928,7 @@ def performance_report(
     tmp_path,
 ):
     if not test_run_benchmark:
-        yield
+        yield contextlib.nullcontext
     else:
         if not pytestconfig.getoption("--performance-report"):
             yield contextlib.nullcontext
