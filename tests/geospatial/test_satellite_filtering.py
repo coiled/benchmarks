@@ -67,6 +67,18 @@ def test_satellite_filtering(
         "large": {"n_workers": 100},
     },
 ):
+    """
+    This benchmark processes Sentinel-2 satellite imagery. It computes the monthly average of a humidity index
+    and stores the result to a Zarr dataset.
+
+    The benchmark can be scaled across these dimensions:
+    * Indices to calculate
+    * Time
+    * Space
+    * Cluster size
+
+    At the moment, the spatial extent is fixed to Germany and only a single index is derived.
+    """
     with client_factory(
         **scale_kwargs[scale],
         env={

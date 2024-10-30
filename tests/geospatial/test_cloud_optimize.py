@@ -16,6 +16,21 @@ def test_cloud_optimize(
         "large": {"n_workers": 200},
     },
 ):
+    """
+    This benchmark loads the NASA Earth Exchange Global Daily Downscaled Projections (NEX-GDDP-CMIP6)
+    dataset stored in NetCDF, rechunks it from time-oriented chunks to spatial chunks, and writes it
+    to a Zarr dataset.
+
+    The benchmark can be scaled across these dimensions:
+
+    * Models
+    * Variables
+    * Time
+    * Space
+    * Cluster size
+
+    At the moment, it is not scaled along the temporal or spatial dimensions.
+    """
     with client_factory(
         **scale_kwargs[scale], **cluster_kwargs
     ) as client:  # noqa: F841
@@ -96,5 +111,5 @@ def test_cloud_optimize(
         # Rechunk from "pancake" to "pencil" format
         ds = ds.chunk({"time": -1, "lon": "auto", "lat": "auto"})
 
-        # Write out to a Zar dataset
+        # Write out to a Zarr dataset
         ds.to_zarr(s3_url)
