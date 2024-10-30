@@ -20,5 +20,4 @@ def test_cloud_optimize(
         **scale_kwargs[scale], **cluster_kwargs
     ) as client:  # noqa: F841
         result = cloud_optimize(scale, s3fs=s3, storage_url=s3_url)
-        fut = client.compute(result, snyc=False)
-        fut.result()
+        result.compute()

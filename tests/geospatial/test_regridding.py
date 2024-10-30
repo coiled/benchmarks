@@ -30,5 +30,4 @@ def test_xesmf(
             storage_url=gcs_url,
             storage_options={"token": CoiledShippedCredentials()},
         )
-        fut = client.compute(result, sync=False)
-        fut.result()
+        result.compute()
