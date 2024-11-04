@@ -16,8 +16,7 @@ def xesmf(
     )
     # Fixed time range and variable as the interesting part of this benchmark scales with the
     # regridding matrix
-    time_range = slice("2020-01-01", "2021-12-31")
-    variables = ["sea_surface_temperature"]
+    ds = ds[["sea_surface_temperature"]].sel(time=slice("2020-01-01", "2021-12-31"))
     if scale == "small":
         # Regridding from a resolution of 0.25 degress to 1 degrees
         # results in 4 MiB weight matrix
@@ -30,7 +29,6 @@ def xesmf(
         # Regridding from a resolution of 0.25 degrees to 0.05 degrees
         # results in 1.55 GiB weight matrix
         output_resolution = 0.05
-    ds = ds[variables].sel(time=time_range)
 
     out_grid = xr.Dataset(
         {
