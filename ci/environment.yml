@@ -47,6 +47,7 @@ dependencies:
   - bokeh ==3.5.1
   - gilknocker ==0.4.1
   - openssl >1.1.0g
+  - rasterio >=1.4.0
   - rioxarray ==0.17.0
   - h5netcdf ==1.3.0
   - xesmf ==0.8.7

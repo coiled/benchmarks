@@ -24,8 +24,9 @@ def nwm(
     subset = ds.zwattablrt.sel(time=time_range)
 
     counties = rioxarray.open_rasterio(
-        s3fs.open("s3://nwm-250m-us-counties/Counties_on_250m_grid.tif"),
+        "s3://nwm-250m-us-counties/Counties_on_250m_grid.tif",
         chunks="auto",
+        opener=s3fs.open,
     ).squeeze()
 
     # Remove any small floating point error in coordinate locations
