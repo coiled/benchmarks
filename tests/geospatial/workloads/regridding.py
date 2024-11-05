@@ -8,30 +8,28 @@ from dask.delayed import Delayed
 
 def xesmf(
     scale: Literal["small", "medium", "large"],
-    output_resolution: float,
     storage_url: str,
     storage_options: dict[str, Any],
 ) -> Delayed:
     ds = xr.open_zarr(
         "gs://weatherbench2/datasets/era5/1959-2023_01_10-full_37-1h-0p25deg-chunk-1.zarr",
     )
-
+    # Fixed time range and variable as the interesting part of this benchmark scales with the
+    # regridding matrix
+    ds = ds[["sea_surface_temperature"]].sel(time=slice("2020-01-01", "2021-12-31"))
     if scale == "small":
-        # 101.83 GiB (small)
-        time_range = slice("2020-01-01", "2022-12-31")
-        variables = ["sea_surface_temperature"]
+        # Regridding from a resolution of 0.25 degress to 1 degrees
+        # results in 4 MiB weight matrix
+        output_resolution = 1
     elif scale == "medium":
-        # 2.12 TiB (medium)
-        time_range = slice("1959-01-01", "2022-12-31")
-        variables = ["sea_surface_temperature"]
+        # Regridding from a resolution of 0.25 degrees to 0.2 degrees
+        # results in 100 MiB weight matrix
+        output_resolution = 0.2
     else:
-        # 4.24 TiB (large)
-        # This currently doesn't complete successfully.
-        time_range = slice("1959-01-01", "2022-12-31")
-        variables = ["sea_surface_temperature", "snow_depth"]
-    ds = ds[variables].sel(time=time_range)
+        # Regridding from a resolution of 0.25 degrees to 0.05 degrees
+        # results in 1.55 GiB weight matrix
+        output_resolution = 0.05
 
-    # 240x121
     out_grid = xr.Dataset(
         {
             "latitude": (
