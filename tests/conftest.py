@@ -84,6 +84,14 @@ def pytest_addoption(parser):
         choices=("scheduler", "none"),
     )
 
+    parser.addoption(
+        "--py-spy",
+        action="store",
+        default="none",
+        help="py-spy profiles to collect: scheduler, workers, all, or none",
+        choices=("scheduler", "workers", "all", "none"),
+    )
+
 
 def pytest_sessionfinish(session, exitstatus):
     # https://github.com/pytest-dev/pytest/issues/2393
@@ -670,12 +678,12 @@ def s3_factory(s3_storage_options):
 
 @pytest.fixture(scope="session")
 def s3_performance(s3):
-    profiles_url = f"{S3_BUCKET}/performance"
+    performance_url = f"{S3_BUCKET}/performance"
     # Ensure that the performance directory exists,
     # but do NOT remove it as multiple test runs could be
     # accessing it at the same time
-    s3.mkdirs(profiles_url, exist_ok=True)
-    return profiles_url
+    s3.mkdirs(performance_url, exist_ok=True)
+    return performance_url
 
 
 @pytest.fixture(scope="session")
@@ -894,28 +902,98 @@ def memray_profile(
 
         if memray_option == "none":
             yield contextlib.nullcontext
-        elif memray_option != "scheduler":
+            return
+
+        if memray_option != "scheduler":
             raise ValueError(f"Unhandled value for --memray: {memray_option}")
-        else:
 
-            @contextlib.contextmanager
-            def _memray_profile(client):
-                profiles_path = tmp_path / "profiles"
-                profiles_path.mkdir()
-                try:
-                    with memray.memray_scheduler(directory=profiles_path):
-                        yield
-                finally:
-                    archive = tmp_path / "memray.tar.gz"
-                    with tarfile.open(archive, mode="w:gz") as tar:
-                        for item in profiles_path.iterdir():
-                            tar.add(item, arcname=item.name)
-                    test_run_benchmark.memray_profiles_url = (
-                        f"{s3_performance_url}/{archive.name}"
-                    )
-                    s3.put(archive, s3_performance_url)
+        @contextlib.contextmanager
+        def _memray_profile(client):
+            local_directory = tmp_path / "profiles" / "memray"
+            local_directory.mkdir(parents=True)
+            try:
+                with memray.memray_scheduler(directory=local_directory):
+                    yield
+            finally:
+                archive_name = "memray.tar.gz"
+                archive = tmp_path / archive_name
+                with tarfile.open(archive, mode="w:gz") as tar:
+                    for item in local_directory.iterdir():
+                        tar.add(item, arcname=item.name)
+                destination = f"{s3_performance_url}/{archive_name}"
+                test_run_benchmark.memray_profiles_url = destination
+                s3.put_file(archive, destination)
 
-            yield _memray_profile
+        yield _memray_profile
+
+
+@pytest.fixture
+def py_spy_profile(
+    pytestconfig,
+    s3,
+    s3_performance_url,
+    s3_storage_options,
+    test_run_benchmark,
+    tmp_path,
+):
+    if not test_run_benchmark:
+        yield contextlib.nullcontext
+        return
+
+    py_spy_option = pytestconfig.getoption("--py-spy")
+    if py_spy_option == "none":
+        yield contextlib.nullcontext
+        return
+
+    profile_scheduler = False
+    profile_workers = False
+
+    if py_spy_option == "scheduler":
+        profile_scheduler = True
+    elif py_spy_option == "workers":
+        profile_workers = True
+    elif py_spy_option == "all":
+        profile_scheduler = True
+        profile_workers = True
+    else:
+        raise ValueError(f"Unhandled value for --py-spy: {py_spy_option}")
+
+    try:
+        from dask_pyspy import pyspy, pyspy_on_scheduler
+    except ModuleNotFoundError as e:
+        raise ModuleNotFoundError(
+            "py-spy profiling benchmarks requires dask-pyspy to be installed."
+        ) from e
+
+    @contextlib.contextmanager
+    def _py_spy_profile(client):
+        local_directory = tmp_path / "profiles" / "py-spy"
+        local_directory.mkdir(parents=True)
+
+        worker_ctx = contextlib.nullcontext()
+        if profile_workers:
+            worker_ctx = pyspy(local_directory, client=client)
+
+        scheduler_ctx = contextlib.nullcontext()
+        if profile_scheduler:
+            scheduler_ctx = pyspy_on_scheduler(
+                local_directory / "scheduler.json", client=client
+            )
+
+        try:
+            with worker_ctx, scheduler_ctx:
+                yield
+        finally:
+            archive_name = "py-spy.tar.gz"
+            archive = tmp_path / archive_name
+            with tarfile.open(archive, mode="w:gz") as tar:
+                for item in local_directory.iterdir():
+                    tar.add(item, arcname=item.name)
+            destination = f"{s3_performance_url}/{archive_name}"
+            test_run_benchmark.py_spy_profiles_url = destination
+            s3.put_file(archive, destination)
+
+    yield _py_spy_profile
 
 
 @pytest.fixture
@@ -929,20 +1007,21 @@ def performance_report(
 ):
     if not test_run_benchmark:
         yield contextlib.nullcontext
-    else:
-        if not pytestconfig.getoption("--performance-report"):
-            yield contextlib.nullcontext
-        else:
+        return
 
-            @contextlib.contextmanager
-            def _performance_report():
-                try:
-                    filename = f"{s3_performance_url}/performance_report.html.gz"
-                    with distributed.performance_report(
-                        filename=filename, storage_options=s3_storage_options
-                    ):
-                        yield
-                finally:
-                    test_run_benchmark.performance_report_url = filename
+    if not pytestconfig.getoption("--performance-report"):
+        yield contextlib.nullcontext
+        return
 
-            yield _performance_report
+    @contextlib.contextmanager
+    def _performance_report():
+        try:
+            filename = f"{s3_performance_url}/performance_report.html.gz"
+            with distributed.performance_report(
+                filename=filename, storage_options=s3_storage_options
+            ):
+                yield
+        finally:
+            test_run_benchmark.performance_report_url = filename
+
+    yield _performance_report
