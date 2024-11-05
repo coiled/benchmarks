@@ -937,63 +937,63 @@ def py_spy_profile(
     tmp_path,
 ):
     if not test_run_benchmark:
-        yield
+        yield contextlib.nullcontext
+        return
+
+    py_spy_option = pytestconfig.getoption("--py-spy")
+    if py_spy_option == "none":
+        yield contextlib.nullcontext
+        return
+
+    profile_scheduler = False
+    profile_workers = False
+
+    if py_spy_option == "scheduler":
+        profile_scheduler = True
+    elif py_spy_option == "workers":
+        profile_workers = True
+    elif py_spy_option == "all":
+        profile_scheduler = True
+        profile_workers = True
     else:
-        py_spy_option = pytestconfig.getoption("--py-spy")
+        raise ValueError(f"Unhandled value for --py-spy: {py_spy_option}")
 
-        if py_spy_option == "none":
-            yield contextlib.nullcontext
-            return
+    try:
+        from dask_pyspy import pyspy, pyspy_on_scheduler
+    except ModuleNotFoundError as e:
+        raise ModuleNotFoundError(
+            "py-spy profiling benchmarks requires dask-pyspy to be installed."
+        ) from e
 
-        profile_scheduler = False
-        profile_workers = False
+    @contextlib.contextmanager
+    def _py_spy_profile(client):
+        local_directory = tmp_path / "profiles" / "py-spy"
+        local_directory.mkdir(parents=True)
 
-        if py_spy_option == "scheduler":
-            profile_scheduler = True
-        elif py_spy_option == "workers":
-            profile_workers = True
-        elif py_spy_option == "all":
-            profile_scheduler = True
-            profile_workers = True
-        else:
-            raise ValueError(f"Unhandled value for --py-spy: {py_spy_option}")
+        worker_ctx = contextlib.nullcontext()
+        if profile_workers:
+            worker_ctx = pyspy(local_directory, client=client)
+
+        scheduler_ctx = contextlib.nullcontext()
+        if profile_scheduler:
+            scheduler_ctx = pyspy_on_scheduler(
+                local_directory / "scheduler.json", client=client
+            )
 
         try:
-            from dask_pyspy import pyspy, pyspy_on_scheduler
-        except ModuleNotFoundError as e:
-            raise ModuleNotFoundError(
-                "py-spy profiling benchmarks requires dask-pyspy to be installed."
-            ) from e
+            with worker_ctx, scheduler_ctx:
+                yield
+        finally:
+            archive_name = "py-spy.tar.gz"
+            archive = tmp_path / archive_name
+            with tarfile.open(archive, mode="w:gz") as tar:
+                for item in local_directory.iterdir():
+                    tar.add(item, arcname=item.name)
+            destination = f"{s3_performance_url}/{archive_name}"
+            test_run_benchmark.py_spy_profiles_url = destination
+            s3.put_file(archive, destination)
 
-        @contextlib.contextmanager
-        def _py_spy_profile(client):
-            local_directory = tmp_path / "profiles" / "py-spy"
-            local_directory.mkdir(parents=True)
-
-            worker_ctx = contextlib.nullcontext()
-            if profile_workers:
-                worker_ctx = pyspy(local_directory, client=client)
-
-            scheduler_ctx = contextlib.nullcontext()
-            if profile_scheduler:
-                scheduler_ctx = pyspy_on_scheduler(
-                    local_directory / "scheduler.json", client=client
-                )
-
-            try:
-                with worker_ctx, scheduler_ctx:
-                    yield
-            finally:
-                archive_name = "py-spy.tar.gz"
-                archive = tmp_path / archive_name
-                with tarfile.open(archive, mode="w:gz") as tar:
-                    for item in local_directory.iterdir():
-                        tar.add(item, arcname=item.name)
-                destination = f"{s3_performance_url}/{archive_name}"
-                test_run_benchmark.py_spy_profiles_url = destination
-                s3.put_file(archive, destination)
-
-        yield _py_spy_profile
+    yield _py_spy_profile
 
 
 @pytest.fixture
@@ -1007,20 +1007,21 @@ def performance_report(
 ):
     if not test_run_benchmark:
         yield contextlib.nullcontext
-    else:
-        if not pytestconfig.getoption("--performance-report"):
-            yield contextlib.nullcontext
-        else:
+        return
 
-            @contextlib.contextmanager
-            def _performance_report():
-                try:
-                    filename = f"{s3_performance_url}/performance_report.html.gz"
-                    with distributed.performance_report(
-                        filename=filename, storage_options=s3_storage_options
-                    ):
-                        yield
-                finally:
-                    test_run_benchmark.performance_report_url = filename
+    if not pytestconfig.getoption("--performance-report"):
+        yield contextlib.nullcontext
+        return
 
-            yield _performance_report
+    @contextlib.contextmanager
+    def _performance_report():
+        try:
+            filename = f"{s3_performance_url}/performance_report.html.gz"
+            with distributed.performance_report(
+                filename=filename, storage_options=s3_storage_options
+            ):
+                yield
+        finally:
+            test_run_benchmark.performance_report_url = filename
+
+    yield _performance_report
