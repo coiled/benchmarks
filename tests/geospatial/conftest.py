@@ -1,4 +1,5 @@
 import os
+import time
 import uuid
 
 import coiled
@@ -26,19 +27,32 @@ def cluster_name(request, scale):
     return f"geospatial-{module}-{scale}-{uuid.uuid4().hex[:8]}"
 
 
-@pytest.fixture()
-def client_factory(
+@pytest.fixture(
+    params=[
+        pytest.param("execution", marks=pytest.mark.geo_execution),
+        pytest.param("submission", marks=pytest.mark.geo_submission),
+    ]
+)
+def benchmark_type(request):
+    return request.param
+
+
+@pytest.fixture
+def setup_benchmark(
+    benchmark_type,
     cluster_name,
     github_cluster_tags,
     benchmark_all,
-    py_spy_profile,
     memray_profile,
+    py_spy_profile,
     performance_report,
 ):
+    should_execute = benchmark_type == "execution"
     import contextlib
 
     @contextlib.contextmanager
     def _(n_workers, env=None, **cluster_kwargs):
+        n_workers = n_workers if should_execute else 0
         with coiled.Cluster(
             name=cluster_name,
             tags=github_cluster_tags,
@@ -48,11 +62,40 @@ def client_factory(
             if env:
                 cluster.send_private_envs(env=env)
             with cluster.get_client() as client:
-                # FIXME https://github.com/coiled/platform/issues/103
-                client.wait_for_workers(n_workers)
-                with performance_report(), py_spy_profile(client), memray_profile(
-                    client
-                ), benchmark_all(client):
-                    yield client
+                if should_execute:
+                    # FIXME https://github.com/coiled/platform/issues/103
+                    client.wait_for_workers(n_workers)
+                    with performance_report(), py_spy_profile(client), memray_profile(
+                        client
+                    ), benchmark_all(client):
+
+                        def benchmark_execution(func, *args, **kwargs):
+                            func(*args, **kwargs).compute()
+
+                        yield benchmark_execution
+                else:
+                    submitted = False
+
+                    def track_submission(event):
+                        nonlocal submitted
+                        ts, msg = event
+                        if not isinstance(msg, dict):
+                            return
+
+                        if not msg.get("action", None) == "update-graph":
+                            return
+
+                        submitted = True
+
+                    def benchmark_submission(func, *args, **kwargs):
+                        _ = client.compute(func(*args, **kwargs), sync=False)
+                        while submitted is False:
+                            time.sleep(0.1)
+
+                    client.subscribe_topic("scheduler", track_submission)
+                    with performance_report(), py_spy_profile(client), memray_profile(
+                        client
+                    ), benchmark_all(client):
+                        yield benchmark_submission
 
     return _

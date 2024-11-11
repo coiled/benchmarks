@@ -17,7 +17,7 @@ from tests.geospatial.workloads.climatology import highlevel_api, rechunk_map_bl
 def test_rechunk_map_blocks(
     gcs_url,
     scale,
-    client_factory,
+    setup_benchmark,
     cluster_kwargs={
         "workspace": "dask-benchmarks-gcp",
         "region": "us-central1",
@@ -28,21 +28,21 @@ def test_rechunk_map_blocks(
         "large": {"n_workers": 100},
     },
 ):
-    with client_factory(
+    with setup_benchmark(
         **scale_kwargs[scale], **cluster_kwargs
-    ) as client:  # noqa: F841
-        result = rechunk_map_blocks(
+    ) as benchmark:  # noqa: F841
+        benchmark(
+            rechunk_map_blocks,
             scale=scale,
             storage_url=gcs_url,
             storage_options={"token": CoiledShippedCredentials()},
         )
-        result.compute()
 
 
 def test_highlevel_api(
     gcs_url,
     scale,
-    client_factory,
+    setup_benchmark,
     cluster_kwargs={
         "workspace": "dask-benchmarks-gcp",
         "region": "us-central1",
@@ -54,12 +54,12 @@ def test_highlevel_api(
         "large": {"n_workers": 100},
     },
 ):
-    with client_factory(
+    with setup_benchmark(
         **scale_kwargs[scale], **cluster_kwargs
-    ) as client:  # noqa: F841
-        result = highlevel_api(
+    ) as benchmark:  # noqa: F841
+        benchmark(
+            highlevel_api,
             scale=scale,
             storage_url=gcs_url,
             storage_options={"token": CoiledShippedCredentials()},
         )
-        result.compute()

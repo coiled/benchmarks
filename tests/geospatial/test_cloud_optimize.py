@@ -5,7 +5,7 @@ def test_cloud_optimize(
     scale,
     s3,
     s3_url,
-    client_factory,
+    setup_benchmark,
     cluster_kwargs={
         "workspace": "dask-benchmarks",
         "region": "us-west-2",
@@ -16,8 +16,7 @@ def test_cloud_optimize(
         "large": {"n_workers": 200},
     },
 ):
-    with client_factory(
+    with setup_benchmark(
         **scale_kwargs[scale], **cluster_kwargs
-    ) as client:  # noqa: F841
-        result = cloud_optimize(scale, s3fs=s3, storage_url=s3_url)
-        result.compute()
+    ) as benchmark:  # noqa: F841
+        benchmark(cloud_optimize, scale, s3fs=s3, storage_url=s3_url)

@@ -7,7 +7,7 @@ from tests.geospatial.workloads.zonal_average import nwm
 
 def test_nwm(
     scale,
-    client_factory,
+    setup_benchmark,
     cluster_kwargs={
         "workspace": "dask-benchmarks",
         "region": "us-east-1",
@@ -17,8 +17,7 @@ def test_nwm(
         "large": {"n_workers": 200, "scheduler_memory": "32 GiB"},
     },
 ):
-    with client_factory(
+    with setup_benchmark(
         **scale_kwargs[scale], **cluster_kwargs
-    ) as client:  # noqa: F841
-        result = nwm(scale=scale)
-        result.compute()
+    ) as benchmark:  # noqa: F841
+        benchmark(nwm, scale=scale)
