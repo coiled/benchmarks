@@ -6,7 +6,6 @@ from tests.geospatial.workloads.zonal_average import nwm
 
 
 def test_nwm(
-    s3,
     scale,
     client_factory,
     cluster_kwargs={
@@ -21,5 +20,5 @@ def test_nwm(
     with client_factory(
         **scale_kwargs[scale], **cluster_kwargs
     ) as client:  # noqa: F841
-        result = nwm(scale=scale, s3fs=s3)
+        result = nwm(scale=scale)
         result.compute()

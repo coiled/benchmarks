@@ -1,0 +1,6 @@
+# This is an addition to ci/environment.yml.
+# Add dependencies exclusively needed to run geospatial tests on dask competitors.
+channels:
+  - conda-forge
+dependencies:
+  - memray ==1.13.4
