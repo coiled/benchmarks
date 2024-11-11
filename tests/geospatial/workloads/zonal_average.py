@@ -1,6 +1,6 @@
 from typing import Literal
 
-import flox
+import flox.xarray
 import fsspec
 import numpy as np
 import rioxarray
