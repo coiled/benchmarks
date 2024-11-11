@@ -1,15 +1,14 @@
 from typing import Literal
 
 import flox
+import fsspec
 import numpy as np
 import rioxarray
 import xarray as xr
-from s3fs import S3FileSystem
 
 
 def nwm(
     scale: Literal["small", "medium", "large"],
-    s3fs: S3FileSystem,
 ) -> xr.DataArray:
     ds = xr.open_zarr(
         "s3://noaa-nwm-retrospective-2-1-zarr-pds/rtout.zarr", consolidated=True
@@ -26,7 +25,7 @@ def nwm(
     counties = rioxarray.open_rasterio(
         "s3://nwm-250m-us-counties/Counties_on_250m_grid.tif",
         chunks="auto",
-        opener=s3fs.open,
+        opener=fsspec.open,
     ).squeeze()
 
     # Remove any small floating point error in coordinate locations
