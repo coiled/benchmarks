@@ -6,7 +6,7 @@ from tests.geospatial.workloads.regridding import xesmf
 def test_xesmf(
     gcs_url,
     scale,
-    client_factory,
+    setup_benchmark,
     cluster_kwargs={
         "workspace": "dask-benchmarks-gcp",
         "region": "us-central1",
@@ -18,12 +18,12 @@ def test_xesmf(
         "large": {"n_workers": 10},
     },
 ):
-    with client_factory(
+    with setup_benchmark(
         **scale_kwargs[scale], **cluster_kwargs
-    ) as client:  # noqa: F841
-        result = xesmf(
+    ) as benchmark:  # noqa: F841
+        benchmark(
+            xesmf,
             scale=scale,
             storage_url=gcs_url,
             storage_options={"token": CoiledShippedCredentials()},
         )
-        result.compute()
