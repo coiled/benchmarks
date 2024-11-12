@@ -50,14 +50,22 @@ jobs:
         echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
         mamba env export | grep -E -v '^prefix:.*$'
 
+    - name: Google auth
+      uses: "google-github-actions/auth@v2"
+      with:
+        credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+
     - name: Run geospatial benchmarks
       env:
         DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
         AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
         AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
         AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+        AZURE_STORAGE_ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME}}
+        AZURE_STORAGE_SAS_TOKEN: ${{ secrets.AZURE_STORAGE_SAS_TOKEN}}
         COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
-        DB_NAME: tpch_${{ inputs.scale }}.db
+        DB_NAME: geospatial_${{ inputs.scale }}.db
+        MEMRAY_PROFILE: "none"
       run: |
         pytest --benchmark \
             tests/geospatial \
