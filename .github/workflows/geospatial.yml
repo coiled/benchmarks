@@ -35,9 +35,6 @@ jobs:
         python-version: "3.10"
         environment-file: ci/environment.yml
 
-    - name: Upgrade dask to git tip
-      run: mamba env update --file ci/environment-git-tip.yml
-
     - name: Add geospatial dependencies
       run: mamba env update --file ci/environment-geospatial.yml
 
