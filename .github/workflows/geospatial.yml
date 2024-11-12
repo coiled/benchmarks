@@ -1,0 +1,82 @@
+name: Geospatial Benchmarks
+on:
+  workflow_dispatch:
+    inputs:
+      scale:
+        description: 'Scale'
+        required: true
+        default: 'small'
+        type: choice
+        options:
+          - 'small'
+          - 'medium'
+          - 'large'
+      
+defaults:
+  # Required shell entrypoint to have properly activated conda environments
+  run:
+    shell: bash -l {0}
+
+jobs:
+  geospatial:
+    name: Geospatial
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+
+    - name: Set up environment
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        miniforge-version: latest
+        use-mamba: true
+        condarc-file: ci/condarc
+        python-version: "3.10"
+        environment-file: ci/environment.yml
+
+    - name: Add geospatial dependencies
+      run: mamba env update --file ci/environment-geospatial.yml
+
+    - name: Upgrade dask to git tip
+      run: mamba env update --file ci/environment-git-tip.yml
+
+    - name: Add test dependencies
+      run: mamba env update --file ci/environment-test.yml
+
+    - name: Dump environment
+      run: |
+        # For debugging
+        echo -e "--\n--Conda Environment (re-create this with \`conda env create --name <name> -f <output_file>\`)\n--"
+        mamba env export | grep -E -v '^prefix:.*$'
+
+    - name: Google auth
+      uses: "google-github-actions/auth@v2"
+      with:
+        credentials_json: "${{ secrets.GCP_CREDENTIALS }}"
+
+    - name: Run geospatial benchmarks
+      env:
+        DASK_COILED__TOKEN: ${{ secrets.COILED_BENCHMARK_BOT_TOKEN }}
+        AWS_ACCESS_KEY_ID: ${{ secrets.RUNTIME_CI_BOT_AWS_ACCESS_KEY_ID }}
+        AWS_DEFAULT_REGION: us-east-2 # this is needed for boto for some reason
+        AWS_SECRET_ACCESS_KEY: ${{ secrets.RUNTIME_CI_BOT_AWS_SECRET_ACCESS_KEY }}
+        AZURE_STORAGE_ACCOUNT_NAME: ${{ secrets.AZURE_STORAGE_ACCOUNT_NAME}}
+        AZURE_STORAGE_SAS_TOKEN: ${{ secrets.AZURE_STORAGE_SAS_TOKEN}}
+        COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
+        DB_NAME: geospatial_${{ inputs.scale }}.db
+        MEMRAY_PROFILE: "none"
+      run: |
+        pytest --benchmark \
+            tests/geospatial \
+            -n 4 --dist loadscope \
+            --scale ${{ inputs.scale }} \
+
+    - name: Upload benchmark results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: geospatial-benchmark
+        path: |
+          geospatial_${{ inputs.scale }}.db
+          mamba_env_export.yml
