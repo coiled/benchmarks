@@ -73,7 +73,7 @@ jobs:
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-variant: Mambaforge
+          miniforge-version: latest
           use-mamba: true
           condarc-file: ci/condarc
           environment-file: AB_environments/${{ matrix.runtime-version }}.conda.yaml
@@ -178,7 +178,7 @@ jobs:
       - name: Set up environment
         uses: conda-incubator/setup-miniconda@v3
         with:
-          miniforge-variant: Mambaforge
+          miniforge-version: latest
           use-mamba: true
           environment-file: ci/environment-dashboard.yml
 
