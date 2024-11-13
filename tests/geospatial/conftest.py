@@ -16,6 +16,22 @@ def pytest_addoption(parser):
         help="Scale to run. Either 'small' or 'large'",
     )
 
+    parser.addoption(
+        "--memray",
+        action="store",
+        default="scheduler",
+        help="Memray profiles to collect: scheduler or none",
+        choices=("scheduler", "none"),
+    )
+
+    parser.addoption(
+        "--py-spy",
+        action="store",
+        default="none",
+        help="py-spy profiles to collect: scheduler, workers, all, or none",
+        choices=("scheduler", "workers", "all", "none"),
+    )
+
 
 @pytest.fixture(scope="session")
 def scale(request):
