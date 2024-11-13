@@ -136,9 +136,8 @@ jobs:
           AZURE_STORAGE_SAS_TOKEN: ${{ secrets.AZURE_STORAGE_SAS_TOKEN}}
           COILED_RUNTIME_VERSION: ${{ matrix.runtime-version }}
           DB_NAME: ${{ matrix.name_prefix }}-${{ matrix.os }}-py${{ matrix.python_version }}.db
-          MEMRAY_PROFILE: "none"
         run: |
-          pytest --benchmark -n 4 --dist loadscope --memray ${{ env.MEMRAY_PROFILE }} ${{ env.PYTEST_MARKERS }} ${{ matrix.pytest_args }}
+          pytest --benchmark -n 4 --dist loadscope ${{ env.PYTEST_MARKERS }} ${{ matrix.pytest_args }}
 
       - name: Dump coiled.Cluster kwargs
         run: cat cluster_kwargs.merged.yaml || true
