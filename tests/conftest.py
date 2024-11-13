@@ -9,7 +9,6 @@ import pathlib
 import pickle
 import subprocess
 import sys
-import tarfile
 import threading
 import time
 import uuid
@@ -29,7 +28,6 @@ import sqlalchemy
 import yaml
 from coiled import Cluster
 from dask.distributed import Client, WorkerPlugin
-from dask.distributed.diagnostics import memray
 from dask.distributed.diagnostics.memory_sampler import MemorySampler
 from dask.distributed.scheduler import logger as scheduler_logger
 from dotenv import load_dotenv
@@ -74,22 +72,6 @@ def pytest_addoption(parser):
         "--performance-report",
         action="store_true",
         help="Collect performance report for tests",
-    )
-
-    parser.addoption(
-        "--memray",
-        action="store",
-        default="scheduler",
-        help="Memray profiles to collect: scheduler or none",
-        choices=("scheduler", "none"),
-    )
-
-    parser.addoption(
-        "--py-spy",
-        action="store",
-        default="none",
-        help="py-spy profiles to collect: scheduler, workers, all, or none",
-        choices=("scheduler", "workers", "all", "none"),
     )
 
 
@@ -606,13 +588,13 @@ def small_client(
         # benchmark_time, as it's beyond the scope of the test.
         log_on_scheduler(client, "Starting client teardown of %s", test_label)
 
-    client.restart()
-    # Run connects to all workers once and to ensure they're up before we do
-    # something else. With another call of restart when entering this
-    # fixture again, this can trigger a race condition that kills workers
-    # See https://github.com/dask/distributed/issues/7312 Can be removed
-    # after this issue is fixed.
-    client.run(lambda: None)
+        client.restart()
+        # Run connects to all workers once and to ensure they're up before we do
+        # something else. With another call of restart when entering this
+        # fixture again, this can trigger a race condition that kills workers
+        # See https://github.com/dask/distributed/issues/7312 Can be removed
+        # after this issue is fixed.
+        client.run(lambda: None)
 
 
 @pytest.fixture
@@ -884,116 +866,6 @@ def new_array(request):
 @pytest.fixture(params=[0.1, 1])
 def memory_multiplier(request):
     return request.param
-
-
-@pytest.fixture
-def memray_profile(
-    pytestconfig,
-    s3,
-    s3_performance_url,
-    s3_storage_options,
-    test_run_benchmark,
-    tmp_path,
-):
-    if not test_run_benchmark:
-        yield contextlib.nullcontext
-    else:
-        memray_option = pytestconfig.getoption("--memray")
-
-        if memray_option == "none":
-            yield contextlib.nullcontext
-            return
-
-        if memray_option != "scheduler":
-            raise ValueError(f"Unhandled value for --memray: {memray_option}")
-
-        @contextlib.contextmanager
-        def _memray_profile(client):
-            local_directory = tmp_path / "profiles" / "memray"
-            local_directory.mkdir(parents=True)
-            try:
-                with memray.memray_scheduler(directory=local_directory):
-                    yield
-            finally:
-                archive_name = "memray.tar.gz"
-                archive = tmp_path / archive_name
-                with tarfile.open(archive, mode="w:gz") as tar:
-                    for item in local_directory.iterdir():
-                        tar.add(item, arcname=item.name)
-                destination = f"{s3_performance_url}/{archive_name}"
-                test_run_benchmark.memray_profiles_url = destination
-                s3.put_file(archive, destination)
-
-        yield _memray_profile
-
-
-@pytest.fixture
-def py_spy_profile(
-    pytestconfig,
-    s3,
-    s3_performance_url,
-    s3_storage_options,
-    test_run_benchmark,
-    tmp_path,
-):
-    if not test_run_benchmark:
-        yield contextlib.nullcontext
-        return
-
-    py_spy_option = pytestconfig.getoption("--py-spy")
-    if py_spy_option == "none":
-        yield contextlib.nullcontext
-        return
-
-    profile_scheduler = False
-    profile_workers = False
-
-    if py_spy_option == "scheduler":
-        profile_scheduler = True
-    elif py_spy_option == "workers":
-        profile_workers = True
-    elif py_spy_option == "all":
-        profile_scheduler = True
-        profile_workers = True
-    else:
-        raise ValueError(f"Unhandled value for --py-spy: {py_spy_option}")
-
-    try:
-        from dask_pyspy import pyspy, pyspy_on_scheduler
-    except ModuleNotFoundError as e:
-        raise ModuleNotFoundError(
-            "py-spy profiling benchmarks requires dask-pyspy to be installed."
-        ) from e
-
-    @contextlib.contextmanager
-    def _py_spy_profile(client):
-        local_directory = tmp_path / "profiles" / "py-spy"
-        local_directory.mkdir(parents=True)
-
-        worker_ctx = contextlib.nullcontext()
-        if profile_workers:
-            worker_ctx = pyspy(local_directory, client=client)
-
-        scheduler_ctx = contextlib.nullcontext()
-        if profile_scheduler:
-            scheduler_ctx = pyspy_on_scheduler(
-                local_directory / "scheduler.json", client=client
-            )
-
-        try:
-            with worker_ctx, scheduler_ctx:
-                yield
-        finally:
-            archive_name = "py-spy.tar.gz"
-            archive = tmp_path / archive_name
-            with tarfile.open(archive, mode="w:gz") as tar:
-                for item in local_directory.iterdir():
-                    tar.add(item, arcname=item.name)
-            destination = f"{s3_performance_url}/{archive_name}"
-            test_run_benchmark.py_spy_profiles_url = destination
-            s3.put_file(archive, destination)
-
-    yield _py_spy_profile
 
 
 @pytest.fixture

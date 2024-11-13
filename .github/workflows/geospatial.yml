@@ -71,6 +71,7 @@ jobs:
             tests/geospatial -m geo_execution \
             -n 4 --dist loadscope \
             --scale ${{ inputs.scale }} \
+             --memray ${{ env.MEMRAY_PROFILE }} \
 
     - name: Upload benchmark results
       uses: actions/upload-artifact@v4
