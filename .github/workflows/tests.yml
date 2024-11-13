@@ -2,7 +2,7 @@ name: Tests
 on:
   schedule:
     # Runs at 00:00 on Sunday, Tuesday, and Thursday. (see https://crontab.guru)
-    - cron: "1 0 * * 0,2,4"
+    - cron: "0 0 * * 0,2,4"
   workflow_dispatch:
 
 concurrency:
