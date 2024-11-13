@@ -69,7 +69,6 @@ jobs:
       run: |
         pytest --benchmark \
             tests/geospatial -m geo_execution \
-            -n 4 --dist loadscope \
             --scale ${{ inputs.scale }} \
 
     - name: Upload benchmark results
