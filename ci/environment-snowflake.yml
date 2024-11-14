@@ -3,8 +3,8 @@
 channels:
   - conda-forge
 dependencies:
-  - dask-snowflake ==0.3.1
-  - pandas ==2.0.3  # Pinned by snowflake-connector-python
-  - snowflake-connector-python ==3.5.0
-  - snowflake-sqlalchemy ==1.5.1
-  - sqlalchemy ==1.4.49  # Pinned by snowflake-sqlalchemy
+  - pip
+  - snowflake-connector-python ==3.12.2
+  - snowflake-sqlalchemy ==1.6.1
+  - pip:
+    - git+https://github.com/coiled/dask-snowflake
