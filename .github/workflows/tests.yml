@@ -262,7 +262,7 @@ jobs:
           script: |
             const workflow_url = `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
             const issue_body = `[Workflow Run URL](${workflow_url})`
-            github.issues.create({
+            github.rest.issues.create({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 body: issue_body,
