@@ -11,6 +11,7 @@ def era5_rechunking(
 ) -> Delayed:
     ds = xr.open_zarr(
         "gs://weatherbench2/datasets/era5/1959-2023_01_10-full_37-1h-0p25deg-chunk-1.zarr",
+        chunks={"time": "auto"},
     ).drop_encoding()
 
     if scale == "small":

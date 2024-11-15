@@ -11,7 +11,7 @@ def atmospheric_circulation(
 ) -> Delayed:
     ds = xr.open_zarr(
         "gs://weatherbench2/datasets/era5/1959-2023_01_10-full_37-1h-0p25deg-chunk-1.zarr",
-        chunks={},
+        chunks={"time": "auto"},
     )
     if scale == "small":
         # 852.56 GiB (small)
