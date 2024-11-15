@@ -1,5 +1,7 @@
 import os
 
+import pytest
+
 from tests.geospatial.workloads.satellite_filtering import satellite_filtering
 
 
@@ -16,6 +18,8 @@ def test_satellite_filtering(
         "large": {"n_workers": 100},
     },
 ):
+    if scale not in scale_kwargs.keys():
+        pytest.skip(reason=f"{scale=} not implemented")
     with setup_benchmark(
         **scale_kwargs[scale],
         env={

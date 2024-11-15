@@ -24,6 +24,8 @@ def test_nwm(
         pytest.skip(
             reason="FIXME: Submission requires pre-computations, but no workers were requested."
         )
+    if scale not in scale_kwargs.keys():
+        pytest.skip(reason=f"{scale=} not implemented")
     with setup_benchmark(
         **scale_kwargs[scale], **cluster_kwargs
     ) as benchmark:  # noqa: F841
