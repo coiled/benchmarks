@@ -19,4 +19,4 @@ def test_cloud_optimize(
     with setup_benchmark(
         **scale_kwargs[scale], **cluster_kwargs
     ) as benchmark:  # noqa: F841
-        benchmark(cloud_optimize, scale, s3fs=s3, storage_url=s3_url)
+        benchmark(cloud_optimize, scale, fs=s3, storage_url=s3_url)
