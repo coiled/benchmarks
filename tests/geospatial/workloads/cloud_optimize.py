@@ -5,7 +5,7 @@ from s3fs import S3FileSystem
 
 
 def cloud_optimize(
-    scale: Literal["small", "medium", "large"], s3fs: S3FileSystem, storage_url: str
+    scale: Literal["small", "medium", "large"], fs: S3FileSystem, storage_url: str
 ):
     models = [
         "ACCESS-CM2",
@@ -59,12 +59,11 @@ def cloud_optimize(
 
     # Get netCDF data files -- see https://registry.opendata.aws/nex-gddp-cmip6
     # for dataset details.
-    file_list = []
+    files = []
     for model in models:
         for variable in variables:
             data_dir = f"s3://nex-gddp-cmip6/NEX-GDDP-CMIP6/{model}/historical/r1i1p1f1/{variable}/*.nc"
-            file_list += [f"s3://{path}" for path in s3fs.glob(data_dir)]
-    files = [s3fs.open(f) for f in file_list]
+            files += [f"s3://{path}" for path in fs.glob(data_dir)]
     print(f"Processing {len(files)} NetCDF files")
 
     # Load input NetCDF data files
