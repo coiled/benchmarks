@@ -12,6 +12,7 @@ channels:
   - conda-forge
 dependencies:
   - python =3.10  # Single '=' means latest patch version available
+  - memray ==1.13.4
   # Copy-paste from ci/environment.yml
   - pip
   - coiled >=0.2.54
@@ -51,8 +52,8 @@ dependencies:
   - bokeh ==3.5.1
   - gilknocker ==0.4.1
   - openssl >1.1.0g
-  - rioxarray ==0.17.0
   - rasterio >=1.4.0
+  - rioxarray ==0.17.0
   - h5netcdf ==1.3.0
   - xesmf ==0.8.7
   - bottleneck ==1.4.1
@@ -61,7 +62,9 @@ dependencies:
   - pystac-client ==0.8.3
   - odc-stac ==0.3.10
   - adlfs ==2024.7.0
-  - memray ==1.13.4
+  # https://github.com/coiled/benchmarks/issues/1616
+  - cryptography ==44.0.0
+  - pyopenssl ==24.3.0
   # End copy-paste
 
   - pip:

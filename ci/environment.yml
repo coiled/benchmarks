@@ -57,6 +57,9 @@ dependencies:
   - pystac-client ==0.8.3
   - odc-stac ==0.3.10
   - adlfs ==2024.7.0
+  # https://github.com/coiled/benchmarks/issues/1616
+  - cryptography ==44.0.0
+  - pyopenssl ==24.3.0
 
 ########################################################
 # PLEASE READ:
