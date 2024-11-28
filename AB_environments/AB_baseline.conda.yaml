@@ -58,7 +58,7 @@ dependencies:
   - adlfs ==2024.7.0
   # https://github.com/coiled/benchmarks/issues/1616
   - cryptography ==44.0.0
-  - pyopenssl ==24.3.0
+  - pyopenssl ==24.2.1
   # End copy-paste
 
   - pip:
