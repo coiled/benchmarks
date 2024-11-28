@@ -50,7 +50,7 @@ dependencies:
   - rasterio >=1.4.0
   - rioxarray ==0.17.0
   - h5netcdf ==1.4.1
-  - xesmf ==0.8.8
+  - xesmf ==0.8.7
   - bottleneck ==1.4.2
   - geojson ==3.1.0
   - planetary-computer ==1.0.0
