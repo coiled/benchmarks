@@ -14,7 +14,7 @@ def test_satellite_filtering(
         "region": "westeurope",
     },
     scale_kwargs={
-        "small": {"n_workers": 10},
+        "small": {"n_workers": 50},
         "large": {"n_workers": 100},
     },
 ):

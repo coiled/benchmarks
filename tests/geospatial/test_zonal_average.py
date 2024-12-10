@@ -16,7 +16,7 @@ def test_nwm(
         "region": "us-east-1",
     },
     scale_kwargs={
-        "small": {"n_workers": 10},
+        "small": {"n_workers": 50},
         "large": {"n_workers": 200, "scheduler_memory": "32 GiB"},
     },
 ):

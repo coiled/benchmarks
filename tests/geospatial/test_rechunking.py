@@ -12,7 +12,7 @@ def test_era5_rechunking(
         "region": "us-central1",
     },
     scale_kwargs={
-        "small": {"n_workers": 10},
+        "small": {"n_workers": 50},
         "medium": {"n_workers": 100},
         "large": {"n_workers": 100},
     },

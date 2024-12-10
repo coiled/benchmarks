@@ -13,7 +13,7 @@ def test_xesmf(
         "wait_for_workers": True,
     },
     scale_kwargs={
-        "small": {"n_workers": 10},
+        "small": {"n_workers": 50},
         "medium": {"n_workers": 10},
         "large": {"n_workers": 10},
     },

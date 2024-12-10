@@ -11,7 +11,7 @@ def test_cloud_optimize(
         "region": "us-west-2",
     },
     scale_kwargs={
-        "small": {"n_workers": 10},
+        "small": {"n_workers": 50},
         "medium": {"n_workers": 100},
         "large": {"n_workers": 200},
     },

@@ -23,7 +23,7 @@ def test_rechunk_map_blocks(
         "region": "us-central1",
     },
     scale_kwargs={
-        "small": {"n_workers": 10},
+        "small": {"n_workers": 50},
         "medium": {"n_workers": 100},
         "large": {"n_workers": 100},
     },
@@ -49,7 +49,7 @@ def test_highlevel_api(
         "idle_timeout": "1h",
     },
     scale_kwargs={
-        "small": {"n_workers": 10},
+        "small": {"n_workers": 50},
         "medium": {"n_workers": 100},
         "large": {"n_workers": 100},
     },
