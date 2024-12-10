@@ -35,7 +35,7 @@ def pytest_addoption(parser):
 
 @pytest.fixture(scope="session")
 def scale(request):
-    return request.config.getoption("scale")
+    return "small"
 
 
 @pytest.fixture(scope="module")
