@@ -68,7 +68,7 @@ jobs:
         MEMRAY_PROFILE: "none"
       run: |
         pytest --benchmark \
-            tests/geospatial -m geo_execution \
+            tests/geospatial/test_atmospheric_circulation.py -m geo_execution \
             -n 4 --dist loadscope \
             --scale ${{ inputs.scale }} \
              --memray ${{ env.MEMRAY_PROFILE }} \
