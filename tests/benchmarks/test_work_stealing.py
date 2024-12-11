@@ -21,6 +21,21 @@ def test_trivial_workload_should_not_cause_work_stealing(small_client):
     small_client.gather(futs)
 
 
+@run_up_to_nthreads("small_cluster", 100, reason="fixed dataset")
+def test_work_stealing_on_inhomogeneous_workload(small_client):
+    np.random.seed(42)
+    delays = np.random.lognormal(1, 1.3, 500)
+
+    @delayed
+    def clog(n):
+        time.sleep(min(n, 60))
+        return n
+
+    results = [clog(i) for i in delays]
+    futs = small_client.compute(results)
+    small_client.gather(futs)
+
+
 @run_up_to_nthreads("small_cluster", 50, reason="fixed dataset")
 @pytest.mark.xfail(
     Version(distributed.__version__) < Version("2022.6.1"),
@@ -68,21 +83,6 @@ def test_work_stealing_on_scaling_up(
                 cluster.scale(20)
 
                 _ = future.result()
-
-
-@run_up_to_nthreads("small_cluster", 100, reason="fixed dataset")
-def test_work_stealing_on_inhomogeneous_workload(small_client):
-    np.random.seed(42)
-    delays = np.random.lognormal(1, 1.3, 500)
-
-    @delayed
-    def clog(n):
-        time.sleep(min(n, 60))
-        return n
-
-    results = [clog(i) for i in delays]
-    futs = small_client.compute(results)
-    small_client.gather(futs)
 
 
 @run_up_to_nthreads("small_cluster", 100, reason="fixed dataset")
