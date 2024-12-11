@@ -27,6 +27,9 @@ markers: geo_execution
 # markers: shuffle_p2p or shuffle_tasks
 # markers: not shuffle_tasks
 
+geo:
+  scale: small
+
 # Enable specific H2O datasets
 h2o_datasets:
   # - 0.5 GB (csv)
