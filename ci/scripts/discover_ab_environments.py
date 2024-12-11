@@ -66,9 +66,10 @@ def build_json() -> JSONOutput:
         pytest_args.append(f"-m '{cfg['markers']}'")
     for target in cfg["targets"]:
         pytest_args.append(f"'{target}'")
-    for geo in cfg.get("geo", {}):
-        if scale := geo.get("scale"):
-            pytest_args.append(f"--scale {scale}")
+    geo = cfg['geo']
+    if scale := geo.get("scale", 'small'):
+        pytest_args.append(f"--scale {scale}")
+
     return {
         "run_AB": True,
         "repeat": list(range(1, cfg["repeat"] + 1)),
