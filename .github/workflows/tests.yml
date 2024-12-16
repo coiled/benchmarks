@@ -64,13 +64,14 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v3.0.4
+        uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
           use-mamba: true
           condarc-file: ci/condarc
           python-version: ${{ matrix.python_version }}
           environment-file: ci/environment.yml
+          conda-remove-defaults: "true"
 
       - name: Add extra packages to environment
         if: ${{ matrix.extra-env != '' }}
@@ -225,6 +226,7 @@ jobs:
           miniforge-version: latest
           use-mamba: true
           environment-file: ci/environment-dashboard.yml
+          conda-remove-defaults: "true"
 
       - name: Run detect regressions
         run: |
@@ -291,6 +293,7 @@ jobs:
           miniforge-version: latest
           use-mamba: true
           environment-file: ci/environment-dashboard.yml
+          conda-remove-defaults: "true"
 
       - name: Generate dashboards
         run: python dashboard.py -d benchmark.db -o static
