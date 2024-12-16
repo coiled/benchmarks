@@ -192,6 +192,7 @@ def setup_benchmark(
             name=cluster_name,
             tags=github_cluster_tags,
             n_workers=n_workers,
+            spot_policy="on-demand",
             **cluster_kwargs,
         ) as cluster:
             if env:
