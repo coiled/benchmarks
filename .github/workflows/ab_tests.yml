@@ -77,6 +77,7 @@ jobs:
           use-mamba: true
           condarc-file: ci/condarc
           environment-file: AB_environments/${{ matrix.runtime-version }}.conda.yaml
+          conda-remove-defaults: "true"
 
       - name: Add test dependencies
         run: mamba env update --file ci/environment-test.yml
@@ -180,6 +181,7 @@ jobs:
           miniforge-version: latest
           use-mamba: true
           environment-file: ci/environment-dashboard.yml
+          conda-remove-defaults: "true"
 
       - name: Generate dashboards
         run: python dashboard.py -d benchmark.db -o static -b all
