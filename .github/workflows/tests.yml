@@ -64,7 +64,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v3.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
           use-mamba: true
@@ -220,7 +220,7 @@ jobs:
           name: benchmark
 
       - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v3.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
           use-mamba: true
@@ -286,7 +286,7 @@ jobs:
           name: benchmark
 
       - name: Set up environment
-        uses: conda-incubator/setup-miniconda@v3.1
+        uses: conda-incubator/setup-miniconda@v3
         with:
           miniforge-version: latest
           use-mamba: true
