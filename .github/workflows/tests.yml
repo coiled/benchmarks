@@ -78,7 +78,7 @@ jobs:
         run: mamba env update --file ${{ matrix.extra-env }}
 
       - name: Upgrade dask to git tip
-        run: mamba env update --file ci/environment-git-tip.yml
+        run: mamba env update --file ci/environment-git-tip.yml --name test
 
       - name: Add test dependencies
         run: mamba env update --file ci/environment-test.yml
