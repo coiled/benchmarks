@@ -31,8 +31,6 @@ jobs:
         name_prefix: [tests]
         include:
           - pytest_args: tests/stability
-            python_version: "3.10"
-            os: ubuntu-latest
             name_prefix: stability
           - pytest_args: tests/workflows/test_snowflake.py
             python_version: "3.10"
