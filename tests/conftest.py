@@ -17,7 +17,6 @@ from functools import lru_cache
 import adlfs
 import dask
 import dask.array as da
-import dask_expr
 import distributed
 import filelock
 import gcsfs
@@ -174,7 +173,6 @@ def database_table_schema(request, testrun_uid):
         originalname=request.node.originalname,
         path=str(request.node.path.relative_to(TEST_DIR)),
         dask_version=dask.__version__,
-        dask_expr_version=dask_expr.__version__,
         distributed_version=distributed.__version__,
         coiled_runtime_version=os.environ.get("AB_VERSION", "upstream"),
         coiled_software_name=COILED_SOFTWARE_NAME,

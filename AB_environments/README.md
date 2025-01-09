@@ -222,7 +222,6 @@ As a handy copy-paste to run from the root dir of this repository:
 ```bash
 pushd ../dask        && git fetch upstream --tags && git push origin --tags && popd
 pushd ../distributed && git fetch upstream --tags && git push origin --tags && popd
-pushd ../dask-expr   && git fetch upstream --tags && git push origin --tags && popd
 ```
 
 #### Problem:

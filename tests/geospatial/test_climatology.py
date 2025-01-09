@@ -47,10 +47,11 @@ def test_highlevel_api(
         "workspace": "dask-benchmarks-gcp",
         "region": "us-central1",
         "idle_timeout": "1h",
+        "scheduler_memory": "64 GiB",
     },
     scale_kwargs={
         "small": {"n_workers": 10},
-        "medium": {"n_workers": 100},
+        "medium": {"n_workers": 10},
         "large": {"n_workers": 100},
     },
 ):
