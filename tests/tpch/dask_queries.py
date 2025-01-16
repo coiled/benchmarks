@@ -949,7 +949,7 @@ def query_18(dataset_path, fs, scale):
     orders = dd.read_parquet(dataset_path + "orders", filesystem=fs)
     lineitem = dd.read_parquet(dataset_path + "lineitem", filesystem=fs)
 
-    # FIXME: https://github.com/dask-contrib/dask-expr/issues/867
+    # FIXME: https://github.com/dask/dask-expr/issues/867
     qnt_over_300 = (
         lineitem.groupby("l_orderkey").l_quantity.sum(split_out=True).reset_index()
     )

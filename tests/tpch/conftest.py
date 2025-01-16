@@ -7,7 +7,6 @@ from contextlib import nullcontext
 
 import coiled
 import dask
-import dask_expr
 import distributed
 import filelock
 import pytest
@@ -142,7 +141,6 @@ def tpch_database_table_schema(request, testrun_uid, scale, query, local):
         originalname=request.node.originalname,
         path=str(request.node.path.relative_to(TEST_DIR)),
         dask_version=dask.__version__,
-        dask_expr_version=dask_expr.__version__,
         distributed_version=distributed.__version__,
         python_version=".".join(map(str, sys.version_info)),
         platform=sys.platform,
