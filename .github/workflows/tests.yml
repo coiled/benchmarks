@@ -4,7 +4,7 @@ on:
     # Runs at 00:00 on Sunday, Tuesday, and Thursday. (see https://crontab.guru)
     - cron: "0 0 * * 0,2,4"
   workflow_dispatch:
-
+  push:
 concurrency:
   # Include `github.event_name` to avoid pushes to `main` and
   # scheduled jobs canceling one another
