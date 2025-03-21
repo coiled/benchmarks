@@ -35,11 +35,11 @@ def spill_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
 
 
 @pytest.fixture
-def spill_client(spill_cluster, cluster_kwargs, benchmark_all):
+def spill_client(spill_cluster, cluster_kwargs, benchmark_all, wait_for_workers):
     n_workers = cluster_kwargs["spill_cluster"]["n_workers"]
     with Client(spill_cluster) as client:
         spill_cluster.scale(n_workers)
-        client.wait_for_workers(n_workers, timeout=600)
+        wait_for_workers(client, n_workers, timeout=600)
         client.restart()
         with benchmark_all(client):
             yield client

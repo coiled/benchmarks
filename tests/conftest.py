@@ -15,6 +15,7 @@ import uuid
 from functools import lru_cache
 
 import adlfs
+import coiled
 import dask
 import dask.array as da
 import dask_expr
@@ -567,6 +568,7 @@ def small_client(
     small_cluster,
     cluster_kwargs,
     benchmark_all,
+    wait_for_workers,
 ):
     n_workers = cluster_kwargs["small_cluster"]["n_workers"]
     test_label = f"{request.node.name}, session_id={testrun_uid}"
@@ -574,7 +576,7 @@ def small_client(
         log_on_scheduler(client, "Starting client setup of %s", test_label)
         client.restart()
         small_cluster.scale(n_workers)
-        client.wait_for_workers(n_workers, timeout=600)
+        wait_for_workers(client, n_workers, timeout=600)
 
         log_on_scheduler(client, "Finished client setup of %s", test_label)
 
@@ -897,3 +899,15 @@ def performance_report(
             test_run_benchmark.performance_report_url = filename
 
     yield _performance_report
+
+
+@pytest.fixture
+def wait_for_workers():
+    def _(client, n_workers, timeout):
+        # https://github.com/coiled/platform/pull/8226
+        if Version(coiled.__version__) <= Version("1.87"):
+            client.sync(client._wait_for_workers, n_workers, timeout=timeout)
+        else:
+            client.wait_for_workers(n_workers, timeout=timeout)
+
+    return _
