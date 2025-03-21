@@ -14,7 +14,6 @@ dependencies:
   - coiled
   - conda
   - dask
-  - dask-expr
   - dask-ml
   - distributed
   - filelock
