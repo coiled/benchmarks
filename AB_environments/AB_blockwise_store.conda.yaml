@@ -1,12 +1,6 @@
-# Sample conda environment file for A/B testing.
-# Change contents/delete/rename as needed.
-
-# Every A/B environment *must* present these three files:
-# - AB_<name>.conda.yaml
-# - AB_<name>.dask.yaml
-# - AB_<name>.cluster.yaml
-
-# You should always start from a copy-paste from AB_baseline.conda.yaml
+# Special environment file for A/B testing, used to define the conda environment for the
+# baseline environment.
+# Change contents, but do not rename.
 
 channels:
   - conda-forge
@@ -18,8 +12,8 @@ dependencies:
   - coiled >=0.2.54
   - numpy ==2.0.2
   - pandas ==2.2.3
-  - dask ==2024.11.2
-  - distributed ==2024.11.2
+  - dask ==2025.3.0
+  - distributed ==2025.3.0
   - dask-labextension ==7.0.0
   - dask-ml ==2024.4.4
   - fsspec ==2024.10.0
@@ -33,7 +27,7 @@ dependencies:
   - scikit-learn ==1.5.2
   - ipycytoscape ==1.3.3
   - click ==8.1.7
-  - xarray ==2024.11.0
+  - xarray ==2025.3.0
   - flox ==0.9.15
   - zarr ==2.18.3
   - cftime ==1.6.4
@@ -71,5 +65,5 @@ dependencies:
     # conda. You may alternatively point to your own git fork (but make sure you
     # sync'ed tags!)
     # Read README.md for troubleshooting.
-    - git+https://github.com/dask/dask@191d39177009d2cce25b818878118e35329b6db3
-    - git+https://github.com/dask/distributed@0304fb6e665e36abf9e3086173cccd36e29ae84d
+    - git+https://github.com/dask/dask@main
+    - git+https://github.com/dask/distributed@main
