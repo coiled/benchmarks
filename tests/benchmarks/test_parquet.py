@@ -40,11 +40,11 @@ def parquet_cluster(dask_env_variables, cluster_kwargs, github_cluster_tags):
 
 
 @pytest.fixture
-def parquet_client(parquet_cluster, cluster_kwargs, benchmark_all):
+def parquet_client(parquet_cluster, cluster_kwargs, benchmark_all, wait_for_workers):
     n_workers = cluster_kwargs["parquet_cluster"]["n_workers"]
     with distributed.Client(parquet_cluster) as client:
         parquet_cluster.scale(n_workers)
-        client.wait_for_workers(n_workers, timeout=600)
+        wait_for_workers(client, n_workers, timeout=600)
         client.restart()
         with benchmark_all(client):
             yield client

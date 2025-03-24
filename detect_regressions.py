@@ -87,7 +87,7 @@ def detect_regressions(database_file, is_pr=False):
                                 df_test[metric].iloc[-3] * units_norm,
                             )
                             reg = (
-                                f"{runtime = }, {name = }, {category = }, "
+                                f"{runtime=}, {name=}, {category=}, "
                                 f"last_three_{metric} {u} = "
                                 f"{last_three}, "
                                 f"{metric}_threshold {u} = {metric_threshold * units_norm} \n"
