@@ -903,7 +903,7 @@ def performance_report(
 def wait_for_workers():
     def _(client, n_workers, timeout):
         # https://github.com/coiled/platform/pull/8226
-        if Version(coiled.__version__) <= Version("1.87"):
+        if Version(coiled.__version__) <= Version("1.89"):
             client.sync(client._wait_for_workers, n_workers, timeout=timeout)
         else:
             client.wait_for_workers(n_workers, timeout=timeout)
