@@ -13,8 +13,9 @@ test_null_hypothesis: false
 # Test directories, test files, or individual tests to run.
 targets:
   # - tests
-  - tests/benchmarks/test_array.py
-  - tests/benchmarks/test_xarray.py
+  # - tests/benchmarks/test_array.py
+  # - tests/benchmarks/test_xarray.py
+  - tests/geospatial
   # - tests/tpch
   # - tests/runtime
   # - tests/stability
