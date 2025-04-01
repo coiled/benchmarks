@@ -107,7 +107,7 @@ jobs:
           DB_NAME: ${{ matrix.runtime-version }}-${{ matrix.repeat }}.db
           CLUSTER_KWARGS: AB_environments/${{ matrix.runtime-version }}.cluster.yaml
           H2O_DATASETS: ${{ matrix.h2o_datasets }}
-        run: pytest --benchmark ${{ matrix.pytest_args }}
+        run: pytest --benchmark ${{ matrix.pytest_args }} -s
 
       - name: Dump coiled.Cluster kwargs
         run: cat cluster_kwargs.merged.yaml
