@@ -419,7 +419,7 @@ def span(request):
 
 @pytest.fixture(scope="function")
 def benchmark_all(
-    benchmark_memory,
+    # benchmark_memory,
     benchmark_task_durations,
     benchmark_coiled_prometheus,
     get_cluster_info,
@@ -453,7 +453,7 @@ def benchmark_all(
     @contextlib.contextmanager
     def _benchmark_all(client):
         with (
-            benchmark_memory(client),
+            # benchmark_memory(client),
             benchmark_task_durations(client),
             get_cluster_info(client.cluster),
             benchmark_coiled_prometheus(client),
