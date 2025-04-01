@@ -65,5 +65,5 @@ dependencies:
     # conda. You may alternatively point to your own git fork (but make sure you
     # sync'ed tags!)
     # Read README.md for troubleshooting.
-    - git+https://github.com/fjetter/dask@main
-    - git+https://github.com/dask/distributed@to_serialize_no_deepcopy
+    - git+https://github.com/dask/dask@main
+    - git+https://github.com/fjetter/distributed@to_serialize_no_deepcopy
