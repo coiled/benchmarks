@@ -65,5 +65,5 @@ dependencies:
     # conda. You may alternatively point to your own git fork (but make sure you
     # sync'ed tags!)
     # Read README.md for troubleshooting.
-    - git+https://github.com/fjetter/dask@annotations_fix
-    - git+https://github.com/dask/distributed@main
+    - git+https://github.com/dask/dask@main
+    - git+https://github.com/fjetter/distributed@update_graph_remove_dependencies
