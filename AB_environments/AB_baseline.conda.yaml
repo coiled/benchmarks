@@ -36,7 +36,7 @@ dependencies:
   - tornado ==6.4.2
   - toolz ==1.0.0
   - zict ==3.0.0
-  - xgboost ==2.1.2
+  - xgboost ==3.0.2
   - optuna ==4.1.0
   - optuna-integration ==4.1.0
   - scipy ==1.14.1
