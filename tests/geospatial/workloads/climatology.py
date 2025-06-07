@@ -72,6 +72,7 @@ def rechunk_map_blocks(
     # Load dataset
     ds = xr.open_zarr(
         "gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721.zarr",
+        chunks={"time": "auto"},
     )
 
     if scale == "small":
@@ -122,6 +123,7 @@ def highlevel_api(
     # Load dataset
     ds = xr.open_zarr(
         "gs://weatherbench2/datasets/era5/1959-2023_01_10-wb13-6h-1440x721.zarr",
+        chunks={"time": "auto"},
     )
 
     if scale == "small":
