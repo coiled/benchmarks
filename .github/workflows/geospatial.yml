@@ -39,9 +39,6 @@ jobs:
     - name: Add geospatial dependencies
       run: mamba env update --file ci/environment-geospatial.yml
 
-    - name: Upgrade dask to git tip
-      run: mamba env update --file ci/environment-git-tip.yml
-
     - name: Add test dependencies
       run: mamba env update --file ci/environment-test.yml
 

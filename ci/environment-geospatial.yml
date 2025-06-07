@@ -4,5 +4,7 @@ channels:
   - conda-forge
 dependencies:
   - memray ==1.13.4
-  - pip:
-    - git+https://github.com/pydata/xarray
+  - dask ==2024.9.0
+  - dask-expr ==1.1.14
+  - distributed ==2024.9.0
+  - xarray ==2024.9.0
